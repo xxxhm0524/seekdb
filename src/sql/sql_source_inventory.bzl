@@ -218,6 +218,8 @@ SQL_UNITY_GROUPS = [
         language = "c++",
         srcs = [
             "src/sql/engine/basic/ob_batch_result_holder.cpp",
+            "src/sql/engine/basic/file_table/ob_file_table_csv.cpp",
+            "src/sql/engine/basic/file_table/ob_file_table_parquet.cpp",
             "src/sql/engine/basic/ob_temp_block_store.cpp",
             "src/sql/engine/basic/ob_temp_column_store.cpp",
             "src/sql/engine/basic/ob_temp_column_spill_spool.cpp",

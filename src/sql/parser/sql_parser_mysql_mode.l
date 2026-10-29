@@ -1735,6 +1735,28 @@ BEGIN(in_c_comment);
   }
 }
 
+  /* File-table functions: lexed together with '(' so the grammar has an
+   * unambiguous table reference, mirroring TABLE(...). */
+"read_csv(" {
+  return FT_READ_CSV;
+}
+
+"read_json(" {
+  return FT_READ_JSON;
+}
+
+"read_parquet(" {
+  return FT_READ_PARQUET;
+}
+
+"read_ndjson(" {
+  return FT_READ_NDJSON;
+}
+
+"glob(" {
+  return FT_GLOB;
+}
+
 {identifier} {
   const NonReservedKeyword *word = NULL;
   if (IS_FAST_PARAMETERIZE) {

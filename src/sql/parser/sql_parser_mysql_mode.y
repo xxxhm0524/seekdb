@@ -58,6 +58,13 @@
 %destructor {oceanbase::common::ob_free($$);}<str_value_>
 
 %token <node> NAME_OB
+// File-table functions are lexed together with their opening parenthesis so that
+// `read_csv(...)` is an unambiguous table reference (same idea as TABLE(...)).
+%token FT_READ_CSV
+%token FT_READ_JSON
+%token FT_READ_NDJSON
+%token FT_READ_PARQUET
+%token FT_GLOB
 %token <node> STRING_VALUE
 %token <node> NATIONAL_LITERAL
 %token <node> INTNUM
@@ -385,6 +392,7 @@ END_P SET_VAR DELIMITER
 %type <node> drop_table_stmt table_list drop_view_stmt table_or_tables
 %type <node> explain_stmt explainable_stmt format_name kill_stmt create_outline_stmt alter_outline_stmt drop_outline_stmt opt_outline_target
 %type <node> expr_list expr expr_const conf_const simple_expr simple_expr_list expr_or_default bit_expr bool_pri predicate explain_or_desc pl_expr_stmt
+%type <node> file_table_func_name
 %type <node> column_ref multi_delete_table
 %type <node> case_expr func_expr in_expr sub_query_flag search_expr
 %type <node> case_arg when_clause_list when_clause case_default
@@ -469,6 +477,7 @@ END_P SET_VAR DELIMITER
 %type <node> recyclebin_restore_stmt purge_stmt opt_recyclebin_restore_rename_table opt_recyclebin_restore_rename_database
 %type <node> cache_type
 %type <node> into_opt into_clause field_opt field_term field_term_list line_opt line_term line_term_list into_var_list into_var file_opt file_option_list file_option file_size_const binary_format
+%type <node> copy_stmt copy_option_list copy_option opt_copy_options
 %type <node> string_list text_string string_val_list
 %type <node> list_expr list_partition_element list_partition_expr list_partition_list list_partition_option opt_list_partition_list opt_list_subpartition_list list_subpartition_list list_subpartition_element drop_partition_name_list
 %type <node> distribute_method distribute_method_list opt_distribute_method_list
@@ -556,6 +565,7 @@ opt_end_p:
 /* only preparable statement will set question mark size */
 stmt:
     select_stmt             { $$ = $1; question_mark_issue($$, result); }
+  | copy_stmt               { $$ = $1; question_mark_issue($$, result); }
   | insert_stmt             { $$ = $1; question_mark_issue($$, result); }
   | create_table_stmt       {
     $$ = $1;
@@ -8470,6 +8480,137 @@ select_no_parens into_clause
 }
 ;
 
+// COPY (query) TO 'path' (format csv, header, nullstr 'NULL')
+// Lowered onto SELECT ... INTO OUTFILE: the statement node stays a select, the
+// outfile node is attached where `select_into` puts it. `header` becomes a
+// SKIP_HEADER format option, which the resolver turns into header names.
+copy_stmt:
+COPY '(' select_stmt ')' TO STRING_VALUE opt_copy_options
+{
+  ParseNode *select_node = $3;
+  ParseNode *into_node = NULL;
+  ParseNode *format_list = NULL;
+  ParseNode *type_name = NULL;
+  ParseNode *type_node = NULL;
+  ParseNode *comma = NULL;
+  ParseNode *delim = NULL;
+  ParseNode *list = NULL;
+  if (OB_ISNULL(select_node)) {
+    yyerror(&@1, result, "");
+    YYABORT;
+  } else if (NULL != select_node->children_[PARSE_SELECT_INTO]
+             || NULL != select_node->children_[PARSE_SELECT_INTO_EXTRA]) {
+    yyerror(&@1, result, "COPY query must not contain INTO");
+    YYABORT;
+  } else {
+    // COPY always writes CSV with a comma delimiter; `header` adds a header row.
+    malloc_terminal_node(type_name, result->malloc_pool_, T_IDENT);
+    if (OB_ISNULL(type_name)) {
+      YYABORT;
+    } else {
+      type_name->str_value_ = parse_strdup("csv", result->malloc_pool_, &(type_name->str_len_));
+      malloc_non_terminal_node(type_node, result->malloc_pool_, T_EXTERNAL_FILE_FORMAT_TYPE, 1, type_name);
+      malloc_terminal_node(comma, result->malloc_pool_, T_VARCHAR);
+      if (OB_ISNULL(type_node) || OB_ISNULL(comma)) {
+        YYABORT;
+      } else {
+        comma->str_value_ = parse_strdup(",", result->malloc_pool_, &(comma->str_len_));
+        malloc_non_terminal_node(delim, result->malloc_pool_, T_FIELD_TERMINATED_STR, 1, comma);
+        if (OB_ISNULL(delim)) {
+          YYABORT;
+        } else {
+          malloc_non_terminal_node(list, result->malloc_pool_, T_LINK_NODE, 2, type_node, delim);
+          if (OB_ISNULL(list)) {
+            YYABORT;
+          } else if (NULL != $7) {
+            ParseNode *with_header = NULL;
+            malloc_non_terminal_node(with_header, result->malloc_pool_, T_LINK_NODE, 2, list, $7);
+            list = with_header;
+          }
+          merge_nodes(format_list, result, T_EXTERNAL_FILE_FORMAT, list);
+          malloc_non_terminal_node(into_node, result->malloc_pool_, T_INTO_OUTFILE, 3, $6, format_list, NULL);
+          if (OB_ISNULL(into_node)) {
+            YYABORT;
+          } else {
+            select_node->children_[PARSE_SELECT_INTO_EXTRA] = into_node;
+            $$ = select_node;
+          }
+        }
+      }
+    }
+  }
+}
+;
+
+opt_copy_options:
+/* empty */
+{
+  $$ = NULL;
+}
+| '(' copy_option_list ')'
+{
+  $$ = $2;
+}
+;
+
+copy_option_list:
+copy_option
+{
+  $$ = $1;
+}
+| copy_option_list ',' copy_option
+{
+  if (NULL == $3) {
+    $$ = $1;
+  } else if (NULL == $1) {
+    $$ = $3;
+  } else {
+    malloc_non_terminal_node($$, result->malloc_pool_, T_LINK_NODE, 2, $1, $3);
+  }
+}
+;
+
+copy_option:
+FORMAT NAME_OB
+{
+  malloc_non_terminal_node($$, result->malloc_pool_, T_EXTERNAL_FILE_FORMAT_TYPE, 1, $2);
+}
+| FORMAT STRING_VALUE
+{
+  malloc_non_terminal_node($$, result->malloc_pool_, T_EXTERNAL_FILE_FORMAT_TYPE, 1, $2);
+}
+| NAME_OB
+{
+  const char *option_text = $1->str_value_;
+  int option_len = (int)($1->str_len_);
+  int is_header = (6 == option_len && NULL != option_text
+                   && 'h' == (option_text[0] | 0x20) && 'e' == (option_text[1] | 0x20)
+                   && 'a' == (option_text[2] | 0x20) && 'd' == (option_text[3] | 0x20)
+                   && 'e' == (option_text[4] | 0x20) && 'r' == (option_text[5] | 0x20));
+  if (is_header) {
+    ParseNode *one = NULL;
+    malloc_terminal_node(one, result->malloc_pool_, T_INT);
+    if (OB_ISNULL(one)) {
+      yyerror(&@1, result, "");
+      YYABORT;
+    } else {
+      one->value_ = 1;
+      malloc_non_terminal_node($$, result->malloc_pool_, T_SKIP_HEADER, 1, one);
+    }
+  } else {
+    // unknown / unsupported option: ignore it rather than failing the statement
+    $$ = NULL;
+  }
+}
+| NAME_OB STRING_VALUE
+{
+  // e.g. nullstr 'NULL': accepted and currently ignored
+  ((void)($1));
+  ((void)($2));
+  $$ = NULL;
+}
+;
+
 select_with_parens:
 '(' select_no_parens ')'      { $$ = $2; }
 | '(' select_with_parens ')'  { $$ = $2; }
@@ -11257,6 +11398,67 @@ relation_factor %prec LOWER_PARENS
 | TABLE '(' simple_expr ')' AS relation_name
 {
   malloc_non_terminal_node($$, result->malloc_pool_, T_TABLE_COLLECTION_EXPRESSION, 2, $3, $6);
+}
+| file_table_func_name expr_list ')' %prec LOWER_PARENS
+{
+  malloc_non_terminal_node($$, result->malloc_pool_, T_FILE_TABLE_EXPRESSION, 3, $1, $2, NULL);
+}
+| file_table_func_name expr_list ')' relation_name
+{
+  malloc_non_terminal_node($$, result->malloc_pool_, T_FILE_TABLE_EXPRESSION, 3, $1, $2, $4);
+}
+| file_table_func_name expr_list ')' AS relation_name
+{
+  malloc_non_terminal_node($$, result->malloc_pool_, T_FILE_TABLE_EXPRESSION, 3, $1, $2, $5);
+}
+;
+
+file_table_func_name:
+FT_READ_CSV
+{
+  malloc_terminal_node($$, result->malloc_pool_, T_IDENT);
+  $$->str_value_ = parse_strdup("read_csv", result->malloc_pool_, &($$->str_len_));
+  if (OB_UNLIKELY(NULL == $$->str_value_)) {
+    yyerror(NULL, result, "No more space for mallocing string\n");
+    YYABORT_NO_MEMORY;
+  }
+}
+| FT_READ_JSON
+{
+  malloc_terminal_node($$, result->malloc_pool_, T_IDENT);
+  $$->str_value_ = parse_strdup("read_json", result->malloc_pool_, &($$->str_len_));
+  if (OB_UNLIKELY(NULL == $$->str_value_)) {
+    yyerror(NULL, result, "No more space for mallocing string\n");
+    YYABORT_NO_MEMORY;
+  }
+}
+| FT_READ_NDJSON
+{
+  /* read_ndjson is an alias of read_json: same reader, same column layout. */
+  malloc_terminal_node($$, result->malloc_pool_, T_IDENT);
+  $$->str_value_ = parse_strdup("read_json", result->malloc_pool_, &($$->str_len_));
+  if (OB_UNLIKELY(NULL == $$->str_value_)) {
+    yyerror(NULL, result, "No more space for mallocing string\n");
+    YYABORT_NO_MEMORY;
+  }
+}
+| FT_READ_PARQUET
+{
+  malloc_terminal_node($$, result->malloc_pool_, T_IDENT);
+  $$->str_value_ = parse_strdup("read_parquet", result->malloc_pool_, &($$->str_len_));
+  if (OB_UNLIKELY(NULL == $$->str_value_)) {
+    yyerror(NULL, result, "No more space for mallocing string\n");
+    YYABORT_NO_MEMORY;
+  }
+}
+| FT_GLOB
+{
+  malloc_terminal_node($$, result->malloc_pool_, T_IDENT);
+  $$->str_value_ = parse_strdup("glob", result->malloc_pool_, &($$->str_len_));
+  if (OB_UNLIKELY(NULL == $$->str_value_)) {
+    yyerror(NULL, result, "No more space for mallocing string\n");
+    YYABORT_NO_MEMORY;
+  }
 }
 ;
 

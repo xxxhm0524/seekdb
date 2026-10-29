@@ -379,7 +379,9 @@ struct ObResolverParams
        package_guard_(NULL),
        star_expansion_infos_(),
        is_resolve_fake_cte_table_(false),
-       is_in_view_(false)
+       is_in_view_(false),
+       is_file_table_describe_(false),
+       file_table_described_(false)
   {}
   bool is_force_trace_log() { return force_trace_log_; }
 
@@ -455,6 +457,10 @@ public:
   common::ObArray<ObStarExpansionInfo> star_expansion_infos_;
   bool is_resolve_fake_cte_table_;
   bool is_in_view_;
+  // DESCRIBE/EXPLAIN of a file table: build a schema result set instead of data.
+  bool is_file_table_describe_;
+  // Set by the file table resolver once it has built a schema result set.
+  bool file_table_described_;
 };
 } // end namespace sql
 } // end namespace oceanbase

@@ -41,6 +41,12 @@
 #include "sql/resolver/dcl/ob_dcl_resolver.h"
 #include "sql/resolver/ddl/ob_ddl_resolver.h"
 #include "sql/hybrid_search/ob_hybrid_search_executor.h"
+#include "sql/engine/basic/file_table/ob_file_table_csv.h"
+#include "sql/engine/basic/file_table/ob_file_table_parquet.h"
+
+#include <fstream>
+#include <sstream>
+#include <string>
 
 namespace oceanbase
 {
@@ -2721,6 +2727,13 @@ int ObDMLResolver::resolve_table(const ParseNode &parse_tree,
       }
       case T_VALUES_TABLE_EXPRESSION: {
         if (OB_FAIL(resolve_values_table_item(*table_node, table_item))) {
+        }
+        break;
+      }
+      case T_FILE_TABLE_EXPRESSION: {
+        if (OB_ISNULL(session_info_)) {
+          ret = OB_INVALID_ARGUMENT;
+        } else if (OB_FAIL(resolve_file_table_item(*table_node, table_item))) {
         }
         break;
       }
@@ -11439,6 +11452,428 @@ int ObDMLResolver::try_add_cast_to_values(const ObIArray<ObRawExprResType> &res_
       } else if (OB_FAIL(new_expr->add_flag(IS_INNER_ADDED_EXPR))) {
       } else {
         values_vector.at(i) = new_expr;
+      }
+    }
+  }
+  return ret;
+}
+
+// Map a parsed file column type to the oceanbase object type used for the
+// values-table column.
+static ObObjType file_column_to_obj_type(oceanbase::sql::filetable::FileColumnType type)
+{
+  ObObjType obj_type = ObVarcharType;
+  switch (type) {
+    case oceanbase::sql::filetable::FileColumnType::BIGINT:
+      obj_type = ObIntType;
+      break;
+    case oceanbase::sql::filetable::FileColumnType::DOUBLE:
+      obj_type = ObDoubleType;
+      break;
+    case oceanbase::sql::filetable::FileColumnType::BOOLEAN:
+      obj_type = ObTinyIntType;
+      break;
+    case oceanbase::sql::filetable::FileColumnType::DATE:
+      obj_type = ObDateType;
+      break;
+    case oceanbase::sql::filetable::FileColumnType::DATETIME:
+      obj_type = ObDateTimeType;
+      break;
+    default:
+      obj_type = ObVarcharType;
+      break;
+  }
+  return obj_type;
+}
+
+int ObDMLResolver::gen_file_table_column_items(const int64_t column_cnt,
+                                               const ObIArray<ObRawExprResType> &res_types,
+                                               const ObIArray<common::ObString> &column_names,
+                                               TableItem &table_item)
+{
+  int ret = OB_SUCCESS;
+  ObValuesTableDef *table_def = table_item.values_table_def_;
+  if (OB_ISNULL(params_.expr_factory_) || OB_ISNULL(allocator_) || OB_ISNULL(get_stmt())
+      || OB_ISNULL(table_def)
+      || OB_UNLIKELY(column_cnt <= 0 || table_def->access_exprs_.empty()
+                     || table_def->access_exprs_.count() % column_cnt != 0
+                     || res_types.count() != column_cnt
+                     || column_names.count() != column_cnt)) {
+    ret = OB_ERR_UNEXPECTED;
+    LOG_WARN("invalid file table def", K(ret), K(column_cnt), K(res_types.count()),
+             K(column_names.count()));
+  } else {
+    for (int64_t i = 0; OB_SUCC(ret) && i < column_cnt; ++i) {
+      ObColumnRefRawExpr *column_expr = NULL;
+      if (OB_FAIL(params_.expr_factory_->create_raw_expr(T_REF_COLUMN, column_expr))) {
+      } else if (OB_ISNULL(column_expr) || OB_ISNULL(table_def->access_exprs_.at(i))) {
+        ret = OB_ERR_UNEXPECTED;
+      } else {
+        column_expr->set_result_type(res_types.at(i));
+        column_expr->set_result_flag(table_def->access_exprs_.at(i)->get_result_flag());
+        column_expr->set_ref_id(table_item.table_id_, i + OB_APP_MIN_COLUMN_ID);
+        const ObString &name = column_names.at(i);
+        char *buf = NULL;
+        if (OB_ISNULL(buf = static_cast<char *>(allocator_->alloc(name.length())))) {
+          ret = OB_ALLOCATE_MEMORY_FAILED;
+        } else {
+          MEMCPY(buf, name.ptr(), name.length());
+          ObString column_name(name.length(), buf);
+          column_expr->set_column_attr(table_item.table_name_, column_name);
+          if (ob_is_enumset_tc(column_expr->get_result_type().get_type())
+              || column_expr->get_result_type().is_lob_storage()) {
+            ret = OB_NOT_SUPPORTED;
+            LOG_USER_ERROR(OB_NOT_SUPPORTED, "type of column in file table");
+          } else if (OB_FAIL(column_expr->add_flag(IS_COLUMN))) {
+          } else {
+            ColumnItem column_item;
+            column_item.expr_ = column_expr;
+            column_item.table_id_ = column_expr->get_table_id();
+            column_item.column_id_ = column_expr->get_column_id();
+            column_item.column_name_ = column_expr->get_column_name();
+            if (OB_FAIL(get_stmt()->add_column_item(column_item))) {
+            }
+          }
+        }
+      }
+    }
+  }
+  return ret;
+}
+
+int ObDMLResolver::resolve_file_table_item(const ParseNode &table_node, TableItem *&table_item)
+{
+  int ret = OB_SUCCESS;
+  ObDMLStmt *dml_stmt = get_stmt();
+  TableItem *new_table_item = NULL;
+  bool enabled = false;
+  bool csv_has_header = true;
+  char csv_delimiter = ',';
+  common::ObString func_name;
+  common::ObString path;
+  common::ObString alias_name;
+  const ParseNode *alias_node = NULL;
+  ObSEArray<ObRawExprResType, 8> res_types;
+  ObSEArray<common::ObString, 8> column_names;
+
+  if (OB_ISNULL(dml_stmt) || OB_ISNULL(allocator_) || OB_ISNULL(session_info_)
+      || OB_ISNULL(params_.expr_factory_) || OB_UNLIKELY(3 != table_node.num_child_)
+      || OB_ISNULL(table_node.children_)) {
+    ret = OB_ERR_UNEXPECTED;
+    LOG_WARN("invalid file table node", K(ret));
+  } else if (OB_FAIL(session_info_->get_enable_file_sql(enabled))) {
+  } else if (!enabled) {
+    // Feature is off by default: behave exactly like a disabled feature.
+    ret = OB_NOT_SUPPORTED;
+    LOG_USER_ERROR(OB_NOT_SUPPORTED, "file table function");
+  } else {
+    const ParseNode *func_node = table_node.children_[0];
+    const ParseNode *args_node = table_node.children_[1];
+    alias_node = table_node.children_[2];
+    if (OB_ISNULL(func_node) || OB_ISNULL(args_node) || args_node->num_child_ < 1
+        || OB_ISNULL(args_node->children_)) {
+      ret = OB_ERR_PARSER_SYNTAX;
+    } else {
+      func_name.assign_ptr(func_node->str_value_, static_cast<int32_t>(func_node->str_len_));
+      const ParseNode *path_node = args_node->children_[0];
+      if (OB_ISNULL(path_node) || T_VARCHAR != path_node->type_) {
+        // a non-string first argument is a parse error
+        ret = OB_ERR_PARSE_SQL;
+      } else {
+        path.assign_ptr(path_node->str_value_, static_cast<int32_t>(path_node->str_len_));
+      }
+      // Named arguments are validated in the parser stage; sample_size is only
+      // supported with the value -1 (full-file inference).
+      for (int64_t i = 1; OB_SUCC(ret) && i < args_node->num_child_; ++i) {
+        const ParseNode *arg = args_node->children_[i];
+        if (OB_ISNULL(arg) || T_OP_EQ != arg->type_ || 2 != arg->num_child_
+            || OB_ISNULL(arg->children_[0])) {
+          // a positional argument (e.g. read_csv(path, 'xml')) is a parse error
+          ret = OB_ERR_PARSE_SQL;
+        } else {
+          const ParseNode *name_node = arg->children_[0];
+          ObString arg_name(name_node->str_len_, name_node->str_value_);
+          if (0 == arg_name.case_compare("sample_size")) {
+            const ParseNode *val = arg->children_[1];
+            // -1 is parsed as unary minus applied to 1, so accept both shapes.
+            bool is_minus_one = false;
+            if (NULL != val) {
+              if (T_INT == val->type_ && -1 == val->value_) {
+                is_minus_one = true;
+              } else if (T_OP_NEG == val->type_ && 1 == val->num_child_
+                         && NULL != val->children_ && NULL != val->children_[0]
+                         && T_INT == val->children_[0]->type_
+                         && 1 == val->children_[0]->value_) {
+                is_minus_one = true;
+              }
+            }
+            if (!is_minus_one) {
+              ret = OB_NOT_SUPPORTED;
+              LOG_USER_ERROR(OB_NOT_SUPPORTED, "sample_size other than -1");
+            }
+          } else if (0 == arg_name.case_compare("header")) {
+            // header = true|false controls whether the first CSV row holds names
+            const ParseNode *val = (arg->num_child_ > 1) ? arg->children_[1] : NULL;
+            if (NULL != val && (T_BOOL == val->type_ || T_INT == val->type_)) {
+              csv_has_header = (0 != val->value_);
+            }
+          } else if (0 == arg_name.case_compare("delimiter")
+                     || 0 == arg_name.case_compare("delim")
+                     || 0 == arg_name.case_compare("sep")) {
+            // delimiter/sep: use the first character of the value
+            const ParseNode *val = (arg->num_child_ > 1) ? arg->children_[1] : NULL;
+            if (NULL != val && T_VARCHAR == val->type_ && val->str_len_ > 0) {
+              csv_delimiter = val->str_value_[0];
+            }
+          } else if (0 == arg_name.case_compare("format")) {
+            // accepted, values are validated by the reader
+          } else {
+            ret = OB_ERR_PARSE_SQL;
+          }
+        }
+      }
+    }
+  }
+
+  // Read and parse the file at resolve time.
+  oceanbase::sql::filetable::FileTableData data;
+  if (OB_SUCC(ret)) {
+    common::ObString secure_file_priv;
+    if (OB_FAIL(session_info_->get_secure_file_priv(secure_file_priv))) {
+    } else if (OB_FAIL(ObResolverUtils::check_secure_path(secure_file_priv, path))) {
+    } else if (0 == func_name.case_compare("glob")) {
+      std::vector<std::string> files;
+      std::string glob_err;
+      if (0 != oceanbase::sql::filetable::list_glob(
+                   std::string(path.ptr(), path.length()).c_str(), files, glob_err)) {
+        ret = OB_ERR_UNEXPECTED;
+        LOG_WARN("glob failed", K(ret), K(path), "err", glob_err.c_str());
+      } else {
+        oceanbase::sql::filetable::FileTableColumn col;
+        col.name_ = "file";
+        col.type_ = oceanbase::sql::filetable::FileColumnType::VARCHAR;
+        data.columns_.push_back(col);
+        for (size_t i = 0; i < files.size() && OB_SUCC(ret); ++i) {
+          std::vector<oceanbase::sql::filetable::FileTableField> row(1);
+          row[0].value_ = files[i];
+          row[0].is_null_ = false;
+          data.rows_.push_back(row);
+        }
+        oceanbase::sql::filetable::infer_column_types(data);
+      }
+    } else if (0 != func_name.case_compare("read_csv")
+               && 0 != func_name.case_compare("read_json")
+               && 0 != func_name.case_compare("read_parquet")) {
+      // unknown file table function
+      ret = OB_NOT_SUPPORTED;
+      LOG_USER_ERROR(OB_NOT_SUPPORTED, "file table function");
+    } else {
+      std::ifstream in(std::string(path.ptr(), path.length()).c_str(), std::ios::binary);
+      std::ostringstream ss;
+      std::string err;
+      int rc = 0;
+      if (!in) {
+        ret = OB_FILE_NOT_EXIST;
+        LOG_WARN("cannot open file table file", K(ret), K(path));
+      } else {
+        ss << in.rdbuf();
+        const std::string content = ss.str();
+        if (0 == func_name.case_compare("read_csv")) {
+          oceanbase::sql::filetable::CsvOptions options;
+          options.has_header_ = csv_has_header;
+          options.field_delimiter_ = csv_delimiter;
+          rc = oceanbase::sql::filetable::parse_csv(content.data(),
+                                                    static_cast<int64_t>(content.size()),
+                                                    options, data, err);
+        } else if (0 == func_name.case_compare("read_parquet")) {
+          rc = oceanbase::sql::filetable::parse_parquet(content.data(),
+                                                        static_cast<int64_t>(content.size()),
+                                                        data, err);
+        } else {
+          rc = oceanbase::sql::filetable::parse_jsonl(content.data(),
+                                                      static_cast<int64_t>(content.size()),
+                                                      data, err);
+        }
+        if (0 != rc) {
+          ret = OB_ERR_UNEXPECTED;
+          LOG_WARN("failed to parse file table", K(ret), K(path), "err", err.c_str());
+        }
+      }
+    }
+  }
+
+  // DESCRIBE/EXPLAIN of a file table: return the inferred schema (one row per
+  // column) instead of the data, so the statement can be executed as a select.
+  if (OB_SUCC(ret) && params_.is_file_table_describe_) {
+    oceanbase::sql::filetable::FileTableData schema;
+    const char *schema_names[] = {"column_name", "column_type", "null",
+                                  "key", "default", "extra"};
+    for (int64_t i = 0; i < 6; ++i) {
+      oceanbase::sql::filetable::FileTableColumn col;
+      col.name_ = schema_names[i];
+      col.type_ = oceanbase::sql::filetable::FileColumnType::VARCHAR;
+      schema.columns_.push_back(col);
+    }
+    for (size_t c = 0; OB_SUCC(ret) && c < data.columns_.size(); ++c) {
+      bool has_null = false;
+      for (size_t r = 0; r < data.rows_.size() && !has_null; ++r) {
+        has_null = (c < data.rows_[r].size()) && data.rows_[r][c].is_null_;
+      }
+      std::vector<oceanbase::sql::filetable::FileTableField> row(6);
+      row[0].value_ = data.columns_[c].name_;
+      row[1].value_ = oceanbase::sql::filetable::file_column_type_name(data.columns_[c].type_);
+      row[2].value_ = has_null ? "YES" : "NO";
+      row[3].is_null_ = true;
+      row[4].is_null_ = true;
+      row[5].is_null_ = true;
+      schema.rows_.push_back(row);
+    }
+    data = schema;
+    params_.file_table_described_ = true;
+  }
+
+  if (OB_SUCC(ret)) {
+    void *buf = NULL;
+    if (OB_ISNULL(new_table_item = dml_stmt->create_table_item(*allocator_))) {
+      ret = OB_ALLOCATE_MEMORY_FAILED;
+    } else if (OB_ISNULL(buf = allocator_->alloc(sizeof(ObValuesTableDef)))) {
+      ret = OB_ALLOCATE_MEMORY_FAILED;
+    } else {
+      ObValuesTableDef *table_def = new (buf) ObValuesTableDef();
+      new_table_item->values_table_def_ = table_def;
+      const int64_t column_cnt = static_cast<int64_t>(data.columns_.size());
+      const int64_t row_cnt = static_cast<int64_t>(data.rows_.size());
+      table_def->column_cnt_ = column_cnt;
+      table_def->row_cnt_ = row_cnt;
+      table_def->access_type_ = ObValuesTableDef::ACCESS_EXPR;
+
+      // columns
+      for (int64_t c = 0; OB_SUCC(ret) && c < column_cnt; ++c) {
+        const oceanbase::sql::filetable::FileTableColumn &col = data.columns_[c];
+        ObRawExprResType res_type;
+        const ObObjType obj_type = file_column_to_obj_type(col.type_);
+        int64_t max_len = 1;
+        int64_t null_cnt = 0;
+        for (int64_t r = 0; r < row_cnt; ++r) {
+          const oceanbase::sql::filetable::FileTableField &f = data.rows_[r][c];
+          if (f.is_null_) {
+            ++null_cnt;
+          } else if (static_cast<int64_t>(f.value_.size()) > max_len) {
+            max_len = static_cast<int64_t>(f.value_.size());
+          }
+        }
+        res_type.set_type(obj_type);
+        if (ObVarcharType == obj_type) {
+          res_type.set_collation_type(CS_TYPE_UTF8MB4_GENERAL_CI);
+          res_type.set_collation_level(CS_LEVEL_IMPLICIT);
+        }
+        ObAccuracy accuracy = ObAccuracy::DDL_DEFAULT_ACCURACY[obj_type];
+        if (ObVarcharType == obj_type) {
+          accuracy.set_length(max_len);
+        }
+        if (ObDateTimeType == obj_type) {
+          accuracy.set_scale(0);
+        }
+        res_type.set_accuracy(accuracy);
+        if (OB_FAIL(res_types.push_back(res_type))) {
+        } else if (OB_FAIL(table_def->column_types_.push_back(res_type))) {
+        } else if (OB_FAIL(table_def->column_ndvs_.push_back(row_cnt))) {
+        } else if (OB_FAIL(table_def->column_nnvs_.push_back(null_cnt))) {
+        } else {
+          char *name_buf = NULL;
+          const std::string &name = col.name_;
+          if (OB_ISNULL(name_buf = static_cast<char *>(allocator_->alloc(name.size())))) {
+            ret = OB_ALLOCATE_MEMORY_FAILED;
+          } else {
+            MEMCPY(name_buf, name.data(), name.size());
+            if (OB_FAIL(column_names.push_back(ObString(name.size(), name_buf)))) {
+            }
+          }
+        }
+      }
+
+      // cells: a varchar/null literal cast to the column type
+      for (int64_t r = 0; OB_SUCC(ret) && r < row_cnt; ++r) {
+        for (int64_t c = 0; OB_SUCC(ret) && c < column_cnt; ++c) {
+          const oceanbase::sql::filetable::FileTableField &f = data.rows_[r][c];
+          ObObj obj;
+          if (f.is_null_) {
+            obj.set_null();
+          } else if (oceanbase::sql::filetable::FileColumnType::BOOLEAN
+                     == data.columns_[c].type_) {
+            // BOOLEAN columns are stored as 1/0; casting 'true' to an integer
+            // would silently yield 0.
+            ObString text(static_cast<int32_t>(f.value_.size()), f.value_.data());
+            obj.set_int(0 == text.case_compare("true") ? 1 : 0);
+          } else {
+            // The row data lives in a local std::vector that dies when this
+            // function returns, so the literal must own its bytes: copy into
+            // the resolver allocator (which outlives the plan).
+            char *cell_buf = NULL;
+            const int64_t cell_len = static_cast<int64_t>(f.value_.size());
+            if (OB_ISNULL(cell_buf = static_cast<char *>(allocator_->alloc(cell_len + 1)))) {
+              ret = OB_ALLOCATE_MEMORY_FAILED;
+            } else {
+              if (cell_len > 0) {
+                MEMCPY(cell_buf, f.value_.data(), cell_len);
+              }
+              cell_buf[cell_len] = '\0';
+              obj.set_varchar(ObString(static_cast<int32_t>(cell_len), cell_buf));
+              obj.set_collation_type(CS_TYPE_UTF8MB4_GENERAL_CI);
+              obj.set_collation_level(CS_LEVEL_IMPLICIT);
+            }
+          }
+          ObConstRawExpr *const_expr = NULL;
+          if (OB_FAIL(ObRawExprUtils::build_const_obj_expr(*params_.expr_factory_, obj, const_expr))) {
+          } else {
+            ObRawExpr *cell_expr = const_expr;
+            const bool is_varchar_column =
+                (ObVarcharType == res_types.at(c).get_type());
+            if (is_varchar_column && !f.is_null_) {
+              // A varchar literal already has the right type; update its result
+              // type so it carries the column's length/collation. Casting a
+              // varchar literal is not folded and the values-table operator
+              // needs a constant here.
+              const_expr->set_result_type(res_types.at(c));
+            } else {
+              ObSysFunRawExpr *cast_expr = NULL;
+              if (OB_FAIL(ObRawExprUtils::create_cast_expr(*params_.expr_factory_,
+                                                           const_expr,
+                                                           res_types.at(c),
+                                                           cast_expr,
+                                                           session_info_))) {
+              } else if (OB_ISNULL(cast_expr)) {
+                ret = OB_ERR_UNEXPECTED;
+              } else {
+                cell_expr = cast_expr;
+              }
+            }
+            if (OB_SUCC(ret) && OB_FAIL(table_def->access_exprs_.push_back(cell_expr))) {
+            }
+          }
+        }
+      }
+
+      if (OB_SUCC(ret)) {
+        new_table_item->table_id_ = generate_table_id();
+        if (NULL != alias_node) {
+          alias_name.assign_ptr(alias_node->str_value_,
+                                static_cast<int32_t>(alias_node->str_len_));
+        } else {
+          alias_name = func_name;
+        }
+        new_table_item->table_name_ = alias_name;
+        new_table_item->alias_name_ = alias_name;
+        new_table_item->type_ = TableItem::VALUES_TABLE;
+        new_table_item->is_view_table_ = false;
+        if (OB_FAIL(dml_stmt->add_table_item(session_info_, new_table_item))) {
+        } else if (OB_FAIL(gen_file_table_column_items(table_def->column_cnt_,
+                                                       table_def->column_types_,
+                                                       column_names,
+                                                       *new_table_item))) {
+        } else {
+          table_item = new_table_item;
+        }
       }
     }
   }

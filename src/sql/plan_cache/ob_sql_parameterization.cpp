@@ -2108,6 +2108,18 @@ int ObSqlParameterization::mark_tree(ParseNode *tree ,SqlInfo &sql_info)
       if (OB_FAIL(mark_args(tree, mark_arr, ARGS_NUMBER_FIVE, sql_info))) {
       }
     }
+  } else if (T_FILE_TABLE_EXPRESSION == tree->type_) {
+    // read_csv/read_json/...: the path and the named arguments must stay literal,
+    // the resolver reads the file at resolve time.
+    if (3 != tree->num_child_) {
+      ret = OB_INVALID_ARGUMENT;
+      SQL_PC_LOG(WARN, "invalid file table expr argument", K(ret), K(tree->num_child_));
+    } else {
+      const int64_t ARGS_NUMBER_THREE = 3;
+      bool mark_arr[ARGS_NUMBER_THREE] = {1, 1, 1};
+      if (OB_FAIL(mark_args(tree, mark_arr, ARGS_NUMBER_THREE, sql_info))) {
+      }
+    }
   } else if (T_FUN_SYS_TREAT == tree->type_) {
     if (2 != tree->num_child_) {
       ret = OB_INVALID_ARGUMENT;

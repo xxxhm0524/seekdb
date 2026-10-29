@@ -26,6 +26,22 @@ const static int64_t EXPLAIN_DISPLAY_OPTION = 1;
 const static int64_t EXPLAIN_INTO_TABLE = 2;
 const static int64_t EXPLAIN_STMT_ID = 3;
 const static int64_t EXPLAIN_CHILD_STMT = 4;
+
+// A file table (read_csv/read_json/read_parquet) has no catalog entry, so
+// EXPLAIN/DESCRIBE of such a query must return the schema rows: the file table
+// resolver builds a schema result set and the resolved select is returned as
+// the statement instead of the explain wrapper.
+static bool has_file_table_expr(const ParseNode &node)
+{
+  bool found = (T_FILE_TABLE_EXPRESSION == node.type_);
+  for (int64_t i = 0; !found && NULL != node.children_ && i < node.num_child_; ++i) {
+    if (NULL != node.children_[i]) {
+      found = has_file_table_expr(*node.children_[i]);
+    }
+  }
+  return found;
+}
+
 int ObExplainResolver::resolve(const ParseNode &parse_tree)
 {
   int ret = OB_SUCCESS;
@@ -55,6 +71,10 @@ int ObExplainResolver::resolve(const ParseNode &parse_tree)
       LOG_WARN("invalid stmt type for EXPLAIN", "type", child_node->type_);
       LOG_USER_ERROR(OB_NOT_SUPPORTED, "stmt type for EXPLAIN");
     } else {
+      // A file table has no catalog entry, so DESCRIBE/EXPLAIN of a file table
+      // resolves to a schema result set. That must run as a plain select: an
+      // explain statement would only print a plan and never return rows.
+      params_.is_file_table_describe_ = true;
       ObResolver resolver(params_);
       if (OB_FAIL(resolver.resolve(ObResolver::IS_NOT_PREPARED_STMT,
                                    *child_node,
@@ -62,7 +82,12 @@ int ObExplainResolver::resolve(const ParseNode &parse_tree)
       } else if (OB_ISNULL(child_stmt)) {
         ret = OB_ERR_UNEXPECTED;
         LOG_WARN("failed to generate stmt for child stmt");
+      } else if (has_file_table_expr(*child_node)) {
+        params_.file_table_described_ = false;
+        params_.is_file_table_describe_ = false;
+        stmt_ = child_stmt;
       } else {
+        params_.is_file_table_describe_ = false;
         explain_stmt->set_explain_query_stmt(static_cast<ObDMLStmt *>(child_stmt));
         ParseNode *format = parse_tree.children_[EXPLAIN_FORMAT];
         if (NULL != format) {

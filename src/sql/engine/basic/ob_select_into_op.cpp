@@ -943,6 +943,29 @@ int ObSelectIntoOp::print_field(const ObObj &obj, ObCsvFileWriter &data_writer)
   return ret;
 }
 
+int ObSelectIntoOp::write_csv_header(ObCsvFileWriter *csv_data_writer)
+{
+  int ret = OB_SUCCESS;
+  if (header_written_ || OB_ISNULL(csv_data_writer)
+      || T_INTO_OUTFILE != MY_SPEC.into_type_ || MY_SPEC.user_vars_.empty()) {
+    // nothing to do
+  } else {
+    header_written_ = true;
+    const int64_t name_cnt = MY_SPEC.user_vars_.count();
+    for (int64_t i = 0; OB_SUCC(ret) && i < name_cnt; ++i) {
+      ObObj name_obj;
+      name_obj.set_varchar(MY_SPEC.user_vars_.at(i));
+      name_obj.set_collation_type(cs_type_);
+      OZ(print_field(name_obj, *csv_data_writer));
+      if (OB_SUCC(ret) && i != name_cnt - 1) {
+        OZ(write_obj_to_file(field_str_, *csv_data_writer));
+      }
+    }
+    OZ(write_obj_to_file(line_str_, *csv_data_writer));
+  }
+  return ret;
+}
+
 int ObSelectIntoOp::into_outfile(ObExternalFileWriter *data_writer)
 {
   int ret = OB_SUCCESS;
@@ -952,6 +975,7 @@ int ObSelectIntoOp::into_outfile(ObExternalFileWriter *data_writer)
   ObCsvFileWriter *csv_data_writer = NULL;
   if (OB_ISNULL(csv_data_writer = static_cast<ObCsvFileWriter *>(data_writer))) {
     ret = OB_ERR_UNEXPECTED;
+  } else if (OB_FAIL(write_csv_header(csv_data_writer))) {
   }
   for (int64_t i = 0; OB_SUCC(ret) && i < select_exprs.count(); ++i) {
     if (OB_ISNULL(select_exprs.at(i))) {
@@ -992,6 +1016,8 @@ int ObSelectIntoOp::into_outfile_batch_csv(const ObBatchRows &brs, ObExternalFil
   ObDatum *datum = NULL;
   ObObj obj;
   ObCsvFileWriter *csv_data_writer = NULL;
+  if (OB_FAIL(write_csv_header(static_cast<ObCsvFileWriter *>(data_writer)))) {
+  }
   for (int64_t i = 0; OB_SUCC(ret) && i < select_exprs.count(); ++i) {
     if (OB_FAIL(select_exprs.at(i)->eval_batch(eval_ctx_, *brs.skip_, brs.size_))) {
     } else if (OB_FAIL(datum_vectors.push_back(select_exprs.at(i)->locate_expr_datumvector(eval_ctx_)))) {

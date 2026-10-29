@@ -5208,6 +5208,20 @@ public:
   inline virtual share::ObSysVarClassType get_type() const { return share::SYS_VAR_OB_SPARSE_DROP_RATIO_SEARCH; }
   inline virtual const common::ObObj &get_global_default_value() const { return share::ObSysVariables::get_default_value(718); }
 };
+class ObSysVarEnableFileSql : public ObBoolSysVar
+{
+public:
+  ObSysVarEnableFileSql() : ObBoolSysVar(NULL, NULL, NULL, NULL, NULL) {}
+  inline virtual share::ObSysVarClassType get_type() const { return share::SYS_VAR_ENABLE_FILE_SQL; }
+  inline virtual const common::ObObj &get_global_default_value() const { return share::ObSysVariables::get_default_value(719); }
+  // Accept MySQL-style ON/OFF/TRUE/FALSE as well as 0/1 regardless of how the
+  // base class resolved its type-name table.
+  virtual int check_update_type(const ObSetVar &set_var, const common::ObObj &val) override;
+  virtual int do_check_and_convert(sql::ObExecContext &ctx,
+                                   const ObSetVar &set_var,
+                                   const common::ObObj &in_val,
+                                   common::ObObj &out_val) override;
+};
 
 
 class ObSysVarFactory

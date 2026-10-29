@@ -3035,6 +3035,22 @@ int ObSelectResolver::resolve_into_outfile_with_format(const ParseNode *node, Ob
     if (OB_SUCC(ret)
         && OB_FAIL(external_format.to_string_with_alloc(into_item.external_properties_, *allocator_, true))) {
     }
+    // COPY ... (header): carry the output column names so the writer can emit a
+    // header line. user_vars_ is unused for OUTFILE and is already serialized
+    // into the plan, so no extra plan field is needed.
+    if (OB_SUCC(ret) && external_format.csv_format_.skip_header_lines_ > 0) {
+      into_item.user_vars_.reset();
+      ObSelectStmt *header_stmt = get_select_stmt();
+      if (OB_ISNULL(header_stmt)) {
+        ret = OB_ERR_UNEXPECTED;
+      } else {
+        for (int64_t i = 0; OB_SUCC(ret) && i < header_stmt->get_select_item_size(); ++i) {
+          if (OB_FAIL(into_item.user_vars_.push_back(header_stmt->get_select_item(i).alias_name_))) {
+            LOG_WARN("failed to push header column name", K(ret), K(i));
+          }
+        }
+      }
+    }
   }
   // file: single, max_file_size, buffer_size
   if (OB_SUCC(ret) && NULL != node->children_[2]) {
