@@ -97,6 +97,65 @@ void test_csv()
   check(s.columns_.size() == 2 && s.rows_.size() == 1, "csv delimiter=';': split correctly");
 }
 
+void test_type_inference()
+{
+  // BIGINT range boundaries: values outside int64 must widen, not overflow.
+  check(is_bigint("9223372036854775807"), "type: int64 max is BIGINT");
+  check(is_bigint("-9223372036854775808"), "type: int64 min is BIGINT");
+  check(!is_bigint("9223372036854775808"), "type: int64 max+1 is not BIGINT");
+  check(!is_bigint("-9223372036854775809"), "type: int64 min-1 is not BIGINT");
+
+  const char *overflow = "v\n9223372036854775808\n";
+  FileTableData o;
+  std::string oe;
+  check(0 == parse_csv(overflow, static_cast<int64_t>(std::strlen(overflow)), CsvOptions(), o, oe),
+        "type: overflow parses");
+  check(!o.columns_.empty() && o.columns_[0].type_ == FileColumnType::DOUBLE,
+        "type: overflowing integer widens to DOUBLE");
+
+  // Mixing numbers with date-looking text has no lossless primitive type.
+  const char *mixed = "v\n1\n2026-01-02\n";
+  FileTableData m;
+  std::string me;
+  check(0 == parse_csv(mixed, static_cast<int64_t>(std::strlen(mixed)), CsvOptions(), m, me),
+        "type: number+date parses");
+  check(!m.columns_.empty() && m.columns_[0].type_ == FileColumnType::VARCHAR,
+        "type: number+date widens to VARCHAR");
+
+  // DATE + DATETIME widens to DATETIME; BIGINT + DOUBLE widens to DOUBLE.
+  const char *temporal = "v\n2026-01-02\n2026-01-02 03:04:05\n";
+  FileTableData t;
+  std::string te;
+  check(0 == parse_csv(temporal, static_cast<int64_t>(std::strlen(temporal)), CsvOptions(), t, te),
+        "type: date+datetime parses");
+  check(!t.columns_.empty() && t.columns_[0].type_ == FileColumnType::DATETIME,
+        "type: date+datetime widens to DATETIME");
+
+  const char *numeric = "v\n1\n2.5\n";
+  FileTableData n;
+  std::string ne;
+  check(0 == parse_csv(numeric, static_cast<int64_t>(std::strlen(numeric)), CsvOptions(), n, ne),
+        "type: int+double parses");
+  check(!n.columns_.empty() && n.columns_[0].type_ == FileColumnType::DOUBLE,
+        "type: int+double widens to DOUBLE");
+
+  // Path normalization closes `..` traversal before the secure-path check.
+  check(normalize_path("/allowed/../secret.csv") == "/secret.csv",
+        "path: parent traversal is resolved");
+  check(normalize_path("/allowed/./data/../basic.csv") == "/allowed/basic.csv",
+        "path: dot components are resolved");
+  check(normalize_path("/allowed/*.csv") == "/allowed/*.csv", "path: glob is preserved");
+  check(normalize_path("a/../../b") == "../b", "path: relative parent is preserved");
+
+  // Blank physical lines in the middle of a document are ignored.
+  const char *blank = "a,b\n1,2\n\n3,4\n";
+  FileTableData b;
+  std::string be;
+  check(0 == parse_csv(blank, static_cast<int64_t>(std::strlen(blank)), CsvOptions(), b, be),
+        "csv blank line: parses");
+  check(b.rows_.size() == 2, "csv blank line: skipped");
+}
+
 void test_jsonl()
 {
   // union of keys, missing values are NULL
@@ -124,6 +183,25 @@ void test_jsonl()
   std::string ae;
   check(0 == parse_jsonl(arr, static_cast<int64_t>(std::strlen(arr)), a, ae), "json array: parses");
   check(a.rows_.size() == 2, "json array: 2 rows");
+
+  // Surrogate pairs become one 4-byte UTF-8 code point.
+  const char *surrogate = "{\"s\":\"\\uD83D\\uDE00\"}\n";
+  FileTableData s;
+  std::string se;
+  check(0 == parse_jsonl(surrogate, static_cast<int64_t>(std::strlen(surrogate)), s, se),
+        "jsonl: surrogate pair parses");
+  check(!s.rows_.empty() && s.rows_[0][0].value_ == "\xF0\x9F\x98\x80",
+        "jsonl: surrogate pair is one code point");
+
+  // Malformed JSON numbers must be rejected rather than treated as text.
+  const char *bad_numbers[] = {
+      "{\"n\":01}\n", "{\"n\":1.}\n", "{\"n\":1e}\n", "{\"n\":+1}\n", "{\"n\":1-2}\n"};
+  for (size_t i = 0; i < sizeof(bad_numbers) / sizeof(bad_numbers[0]); ++i) {
+    FileTableData b;
+    std::string be;
+    check(0 != parse_jsonl(bad_numbers[i], static_cast<int64_t>(std::strlen(bad_numbers[i])), b, be),
+          "jsonl: malformed number rejected");
+  }
 }
 
 void test_parquet(const std::string &fixture)
@@ -154,6 +232,65 @@ void test_parquet(const std::string &fixture)
   check(out == "abc", "snappy: decoded value");
 }
 
+void test_parquet_dictionary_v2(const std::string &fixture)
+{
+  std::string content = read_file(fixture);
+  if (content.empty()) {
+    std::printf("skip: parquet dict v2 fixture not present (%s)\n", fixture.c_str());
+    return;
+  }
+  FileTableData d;
+  std::string err;
+  check(0 == parse_parquet(content.data(), static_cast<int64_t>(content.size()), d, err),
+        "parquet dict v2: parses");
+  check(d.columns_.size() == 1 && d.rows_.size() == 4, "parquet dict v2: shape");
+  if (d.columns_.size() == 1 && d.rows_.size() == 4) {
+    check(d.columns_[0].type_ == FileColumnType::VARCHAR, "parquet dict v2: VARCHAR column");
+    check(d.rows_[0][0].value_ == "alpha", "parquet dict v2: first dictionary value");
+    check(d.rows_[1][0].value_ == "beta", "parquet dict v2: second dictionary value");
+    check(d.rows_[2][0].value_ == "alpha", "parquet dict v2: repeated index");
+    check(d.rows_[3][0].is_null_, "parquet dict v2: null definition level");
+  }
+}
+
+void test_parquet_v1_plain(const std::string &fixture)
+{
+  std::string content = read_file(fixture);
+  if (content.empty()) {
+    std::printf("skip: parquet v1 plain fixture not present (%s)\n", fixture.c_str());
+    return;
+  }
+  FileTableData d;
+  std::string err;
+  check(0 == parse_parquet(content.data(), static_cast<int64_t>(content.size()), d, err),
+        "parquet v1 plain: parses");
+  check(d.columns_.size() == 1 && d.rows_.size() == 3, "parquet v1 plain: shape");
+  if (d.columns_.size() == 1 && d.rows_.size() == 3) {
+    check(d.rows_[0][0].value_ == "1" && d.rows_[1][0].value_ == "2"
+              && d.rows_[2][0].value_ == "3",
+          "parquet v1 plain: values");
+  }
+}
+
+void test_parquet_v1_dictionary(const std::string &fixture)
+{
+  std::string content = read_file(fixture);
+  if (content.empty()) {
+    std::printf("skip: parquet v1 dict fixture not present (%s)\n", fixture.c_str());
+    return;
+  }
+  FileTableData d;
+  std::string err;
+  check(0 == parse_parquet(content.data(), static_cast<int64_t>(content.size()), d, err),
+        "parquet v1 dict: parses");
+  check(d.columns_.size() == 1 && d.rows_.size() == 3, "parquet v1 dict: shape");
+  if (d.columns_.size() == 1 && d.rows_.size() == 3) {
+    check(d.rows_[0][0].value_ == "10" && d.rows_[1][0].value_ == "20"
+              && d.rows_[2][0].value_ == "10",
+          "parquet v1 dict: values");
+  }
+}
+
 void test_glob(const std::string &dir)
 {
   std::vector<std::string> files;
@@ -176,8 +313,12 @@ int main(int argc, char **argv)
   const std::string dir = argc > 1 ? argv[1]
                                    : "/root/fts-run/data_for_mysqltest_file_sql";
   test_csv();
+  test_type_inference();
   test_jsonl();
   test_parquet(dir + "/simple.parquet");
+  test_parquet_dictionary_v2(dir + "/dict_v2.parquet");
+  test_parquet_v1_plain(dir + "/plain_v1.parquet");
+  test_parquet_v1_dictionary(dir + "/dict_v1.parquet");
   test_glob(dir);
 
   std::printf("\n%s (%d failure%s)\n", 0 == g_failures ? "ALL PASS" : "FAILURES", g_failures,

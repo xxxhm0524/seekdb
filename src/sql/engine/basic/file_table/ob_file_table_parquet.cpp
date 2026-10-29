@@ -540,6 +540,26 @@ bool parse_data_page_header_v2(ThriftReader &r, PageHeader &h)
   }
 }
 
+bool parse_dictionary_page_header(ThriftReader &r, PageHeader &h)
+{
+  int16_t last = 0, id = 0;
+  uint8_t t = 0;
+  bool stop = false;
+  while (true) {
+    if (!next_field(r, last, id, t, stop)) {
+      return false;
+    }
+    if (stop) {
+      return true;
+    }
+    switch (id) {
+      case 1: if (!read_i32(r, h.num_values_)) return false; break;
+      case 2: if (!read_i32(r, h.encoding_)) return false; break;
+      default: if (!r.skip(t)) return false; break;
+    }
+  }
+}
+
 bool parse_page_header(ThriftReader &r, PageHeader &h)
 {
   int16_t last = 0, id = 0;
@@ -559,6 +579,10 @@ bool parse_page_header(ThriftReader &r, PageHeader &h)
       case 5:
         if (TT_STRUCT != t) return false;
         if (!parse_data_page_header_v1(r, h)) return false;
+        break;
+      case 7:
+        if (TT_STRUCT != t) return false;
+        if (!parse_dictionary_page_header(r, h)) return false;
         break;
       case 8:
         if (TT_STRUCT != t) return false;
@@ -637,6 +661,23 @@ bool decode_levels(const uint8_t *data,
     }
   }
   return static_cast<int64_t>(out.size()) == num_values;
+}
+
+// Dictionary-encoded data pages start with one byte holding the bit width of
+// the indices, followed by the RLE/bit-packed hybrid stream itself.
+bool decode_dictionary_indices(const uint8_t *data,
+                               int64_t len,
+                               int64_t num_values,
+                               std::vector<int32_t> &out)
+{
+  if (nullptr == data || len < 1) {
+    return false;
+  }
+  const int bit_width = data[0];
+  if (bit_width < 0 || bit_width > 32) {
+    return false;
+  }
+  return decode_levels(data + 1, len - 1, bit_width, num_values, out);
 }
 
 std::string render_i64(int64_t v)
@@ -805,6 +846,62 @@ int snappy_decompress(const char *in, int64_t in_len, std::string &out)
   return out.size() == uncompressed_len ? 0 : -1;
 }
 
+bool decompress_page(const uint8_t *data,
+                     int64_t len,
+                     int32_t codec,
+                     std::string &out)
+{
+  if (CC_UNCOMPRESSED == codec) {
+    out.assign(reinterpret_cast<const char *>(data), static_cast<size_t>(len));
+    return true;
+  }
+  if (CC_SNAPPY == codec) {
+    return 0 == snappy_decompress(reinterpret_cast<const char *>(data), len, out);
+  }
+  return false;
+}
+
+// Decode exactly `value_count` non-null values from one data page. Dictionary
+// pages are decoded separately; PLAIN_DICTIONARY/RLE_DICTIONARY pages only
+// carry indices into that dictionary.
+bool decode_page_values(int32_t ptype,
+                        int32_t encoding,
+                        const uint8_t *data,
+                        int64_t len,
+                        int64_t value_count,
+                        const std::vector<FileTableField> &dictionary,
+                        std::vector<FileTableField> &out)
+{
+  out.clear();
+  out.reserve(static_cast<size_t>(value_count));
+  if (0 == encoding) {  // PLAIN
+    int64_t pos = 0;
+    for (int64_t i = 0; i < value_count; ++i) {
+      FileTableField f;
+      if (0 != decode_plain_value(ptype, data, len, pos, f)) {
+        return false;
+      }
+      out.push_back(f);
+    }
+    return true;
+  }
+  if (2 == encoding || 8 == encoding) {  // PLAIN_DICTIONARY / RLE_DICTIONARY
+    std::vector<int32_t> indices;
+    if (!decode_dictionary_indices(data, len, value_count, indices)) {
+      return false;
+    }
+    for (int64_t i = 0; i < value_count; ++i) {
+      const int32_t index = indices[static_cast<size_t>(i)];
+      if (index < 0 || static_cast<size_t>(index) >= dictionary.size()) {
+        return false;
+      }
+      out.push_back(dictionary[static_cast<size_t>(index)]);
+    }
+    return true;
+  }
+  return false;
+}
+
 // ---------------------------------------------------------- parquet --------
 int parse_parquet(const char *data, int64_t len, FileTableData &out, std::string &err)
 {
@@ -842,6 +939,7 @@ int parse_parquet(const char *data, int64_t len, FileTableData &out, std::string
     std::string name_;
     int32_t type_ = -1;
     int32_t repetition_ = -1;
+    int32_t max_def_ = 0;
   };
   std::vector<Leaf> leaves;
   for (size_t i = 1; i < meta.schema_.size(); ++i) {
@@ -850,10 +948,15 @@ int parse_parquet(const char *data, int64_t len, FileTableData &out, std::string
       err = "nested parquet schemas are not supported";
       return -1;
     }
+    if (RT_REPEATED == e.repetition_) {
+      err = "repeated parquet fields are not supported";
+      return -1;
+    }
     Leaf leaf;
     leaf.name_ = e.name_;
     leaf.type_ = e.type_;
     leaf.repetition_ = e.repetition_;
+    leaf.max_def_ = (RT_OPTIONAL == e.repetition_) ? 1 : 0;
     leaves.push_back(leaf);
   }
   if (leaves.empty()) {
@@ -904,6 +1007,8 @@ int parse_parquet(const char *data, int64_t len, FileTableData &out, std::string
                                                         : cm.data_page_offset_);
       int64_t values_left = cm.num_values_;
       size_t row = base_row;
+      std::vector<FileTableField> dictionary;
+      bool dictionary_ready = false;
       while (values_left > 0) {
         if (offset < 0 || offset >= len) {
           err = "page offset out of range";
@@ -921,58 +1026,150 @@ int parse_parquet(const char *data, int64_t len, FileTableData &out, std::string
         }
         const int64_t header_size = (r.p_ - reinterpret_cast<const uint8_t *>(data + offset));
         const uint8_t *body = reinterpret_cast<const uint8_t *>(data + offset + header_size);
-        if (offset + header_size + ph.compressed_size_ > len) {
+        if (ph.compressed_size_ < 0 || offset + header_size + ph.compressed_size_ > len) {
           err = "page body out of range";
           return -1;
         }
+
+        if (PAGE_DICTIONARY == ph.type_) {
+          std::string dict_plain;
+          if (!decompress_page(body, ph.compressed_size_, cm.codec_, dict_plain)) {
+            err = "unsupported parquet dictionary page compression";
+            return -1;
+          }
+          if (ph.num_values_ < 0) {
+            err = "invalid parquet dictionary size";
+            return -1;
+          }
+          std::vector<FileTableField> dict_values;
+          if (!decode_page_values(leaf.type_, 0,
+                                  reinterpret_cast<const uint8_t *>(dict_plain.data()),
+                                  static_cast<int64_t>(dict_plain.size()),
+                                  ph.num_values_, dictionary, dict_values)) {
+            err = "failed to decode parquet dictionary";
+            return -1;
+          }
+          dictionary.swap(dict_values);
+          dictionary_ready = true;
+          offset += header_size + ph.compressed_size_;
+          continue;
+        }
+        if (PAGE_INDEX == ph.type_) {
+          offset += header_size + ph.compressed_size_;
+          continue;
+        }
+        if (PAGE_DATA != ph.type_ && PAGE_DATA_V2 != ph.type_) {
+          err = "unsupported parquet page type";
+          return -1;
+        }
+        if (ph.num_values_ <= 0) {
+          err = "invalid parquet data page value count";
+          return -1;
+        }
+
+        std::vector<int32_t> defs;
+        std::string decoded_storage;
+        const uint8_t *value_data = nullptr;
+        int64_t value_len = 0;
         if (PAGE_DATA_V2 == ph.type_) {
           const int32_t rep_len = ph.rep_levels_len_;
           const int32_t def_len = ph.def_levels_len_;
-          const uint8_t *levels = body;
+          if (rep_len != 0 || def_len < 0
+              || static_cast<int64_t>(rep_len) + def_len > ph.compressed_size_) {
+            err = "invalid parquet data page levels";
+            return -1;
+          }
+          if (def_len > 0 && leaf.max_def_ > 0
+              && !decode_levels(body + rep_len, def_len, 1, ph.num_values_, defs)) {
+            err = "failed to decode definition levels";
+            return -1;
+          }
           const uint8_t *vals = body + rep_len + def_len;
           const int64_t vals_len = ph.compressed_size_ - rep_len - def_len;
-          std::string plain;
-          if (ph.is_compressed_ && CC_SNAPPY == cm.codec_) {
-            if (0 != snappy_decompress(reinterpret_cast<const char *>(vals), vals_len, plain)) {
-              err = "snappy decompression failed";
+          if (ph.is_compressed_ && CC_UNCOMPRESSED != cm.codec_) {
+            if (!decompress_page(vals, vals_len, cm.codec_, decoded_storage)) {
+              err = "unsupported parquet value compression";
               return -1;
             }
+            value_data = reinterpret_cast<const uint8_t *>(decoded_storage.data());
+            value_len = static_cast<int64_t>(decoded_storage.size());
           } else {
-            plain.assign(reinterpret_cast<const char *>(vals), static_cast<size_t>(vals_len));
+            value_data = vals;
+            value_len = vals_len;
           }
-          std::vector<int32_t> defs;
-          if (def_len > 0 && RT_OPTIONAL == leaf.repetition_) {
-            if (!decode_levels(levels + rep_len, def_len, 1, ph.num_values_, defs)) {
+        } else {
+          // DataPage v1: the whole page (levels and values) uses the column
+          // codec. Definition levels are a 4-byte length followed by the
+          // RLE/bit-packed hybrid stream. Repeated fields were rejected above.
+          std::string page;
+          if (!decompress_page(body, ph.compressed_size_, cm.codec_, page)) {
+            err = "unsupported parquet page compression";
+            return -1;
+          }
+          int64_t value_offset = 0;
+          if (leaf.max_def_ > 0) {
+            if (page.size() < 4) {
+              err = "truncated parquet definition levels";
+              return -1;
+            }
+            const int32_t def_len = read_le32(reinterpret_cast<const uint8_t *>(page.data()));
+            if (def_len < 0 || static_cast<int64_t>(def_len) + 4 > static_cast<int64_t>(page.size())) {
+              err = "invalid parquet definition level length";
+              return -1;
+            }
+            if (def_len > 0
+                && !decode_levels(reinterpret_cast<const uint8_t *>(page.data()) + 4,
+                                  def_len, 1, ph.num_values_, defs)) {
               err = "failed to decode definition levels";
               return -1;
             }
+            value_offset = 4 + def_len;
           }
-          const uint8_t *vp = reinterpret_cast<const uint8_t *>(plain.data());
-          const int64_t vlen = static_cast<int64_t>(plain.size());
-          int64_t vpos = 0;
-          for (int32_t i = 0; i < ph.num_values_; ++i) {
-            const bool is_null = (RT_OPTIONAL == leaf.repetition_)
-                                 && (static_cast<size_t>(i) < defs.size()) && (defs[i] <= 0);
-            FileTableField f;
-            if (is_null) {
-              f.is_null_ = true;
-            } else if (0 != decode_plain_value(leaf.type_, vp, vlen, vpos, f)) {
-              err = "failed to decode plain value";
-              return -1;
+          decoded_storage.swap(page);
+          value_data = reinterpret_cast<const uint8_t *>(decoded_storage.data()) + value_offset;
+          value_len = static_cast<int64_t>(decoded_storage.size()) - value_offset;
+        }
+
+        int64_t non_null_count = ph.num_values_;
+        if (!defs.empty()) {
+          non_null_count = 0;
+          for (size_t i = 0; i < defs.size(); ++i) {
+            if (defs[i] > 0) {
+              ++non_null_count;
             }
-            if (row < out.rows_.size()) {
-              out.rows_[row][c] = f;
-            }
-            ++row;
           }
-          values_left -= ph.num_values_;
-          offset += header_size + ph.compressed_size_;
-        } else if (PAGE_DICTIONARY == ph.type_ || PAGE_INDEX == ph.type_) {
-          offset += header_size + ph.compressed_size_;
-        } else {
-          err = "unsupported parquet page type (only DATA_PAGE_V2 is supported)";
+        }
+        if ((2 == ph.encoding_ || 8 == ph.encoding_) && !dictionary_ready) {
+          err = "dictionary-encoded page without a dictionary";
           return -1;
         }
+        std::vector<FileTableField> decoded_values;
+        if (!decode_page_values(leaf.type_, ph.encoding_, value_data, value_len,
+                                non_null_count, dictionary, decoded_values)) {
+          err = "failed to decode parquet values";
+          return -1;
+        }
+        size_t value_index = 0;
+        for (int32_t i = 0; i < ph.num_values_; ++i) {
+          const bool is_null = (leaf.max_def_ > 0)
+                               && (static_cast<size_t>(i) < defs.size())
+                               && (defs[i] <= 0);
+          FileTableField f;
+          if (is_null) {
+            f.is_null_ = true;
+          } else if (value_index < decoded_values.size()) {
+            f = decoded_values[value_index++];
+          } else {
+            err = "parquet page has fewer values than levels";
+            return -1;
+          }
+          if (row < out.rows_.size()) {
+            out.rows_[row][c] = f;
+          }
+          ++row;
+        }
+        values_left -= ph.num_values_;
+        offset += header_size + ph.compressed_size_;
       }
     }
   }

@@ -107,6 +107,14 @@ std::string make_unique_column_name(const std::vector<std::string> &existing,
                                     const std::string &candidate);
 
 /**
+ * Lexically resolve "." and ".." components (both '/' and '\\' separators)
+ * before the secure_file_priv prefix check. This keeps `/allowed/../secret`
+ * from masquerading as a path inside `/allowed` even though the OS resolves it
+ * outside. The file does not need to exist; glob wildcards are preserved.
+ */
+std::string normalize_path(const std::string &path);
+
+/**
  * Infer the column types from all parsed rows (full-file inference, never a
  * sample). Nullability is YES iff at least one field in the column is NULL.
  */

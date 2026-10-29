@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <set>
+#include <utility>
 
 #include <dirent.h>
 #include <fnmatch.h>
@@ -79,6 +80,68 @@ std::string make_unique_column_name(const std::vector<std::string> &existing,
   }
 }
 
+std::string normalize_path(const std::string &path)
+{
+  if (path.empty()) {
+    return path;
+  }
+  const bool windows_style = path.find('\\') != std::string::npos
+                             && path.find('/') == std::string::npos;
+  const char sep = windows_style ? '\\' : '/';
+  auto is_sep = [](char c) { return c == '/' || c == '\\'; };
+
+  std::string prefix;
+  size_t pos = 0;
+  if (path.size() >= 2 && std::isalpha(static_cast<unsigned char>(path[0])) && path[1] == ':') {
+    prefix = path.substr(0, 2);
+    pos = 2;
+    if (pos < path.size() && is_sep(path[pos])) {
+      prefix.push_back(sep);
+      ++pos;
+    }
+  } else if (is_sep(path[0])) {
+    prefix.assign(1, sep);
+    pos = 1;
+  }
+  const bool absolute = !prefix.empty();
+
+  std::vector<std::string> parts;
+  while (pos <= path.size()) {
+    size_t end = pos;
+    while (end < path.size() && !is_sep(path[end])) {
+      ++end;
+    }
+    const std::string part = path.substr(pos, end - pos);
+    if (part.empty() || part == ".") {
+      // skip
+    } else if (part == "..") {
+      if (!parts.empty() && parts.back() != "..") {
+        parts.pop_back();
+      } else if (!absolute) {
+        parts.push_back(part);
+      }
+    } else {
+      parts.push_back(part);
+    }
+    if (end >= path.size()) {
+      break;
+    }
+    pos = end + 1;
+  }
+
+  std::string out = prefix;
+  for (size_t i = 0; i < parts.size(); ++i) {
+    if (!out.empty() && out.back() != sep) {
+      out.push_back(sep);
+    }
+    out += parts[i];
+  }
+  if (out.empty()) {
+    out = absolute ? std::string(1, sep) : ".";
+  }
+  return out;
+}
+
 bool is_bigint(const std::string &s)
 {
   if (s.empty()) {
@@ -96,10 +159,12 @@ bool is_bigint(const std::string &s)
       return false;
     }
   }
-  if (s.size() > 20) {
-    return false;
-  }
-  return true;
+  // A syntactically integral value outside int64 must widen to DOUBLE rather
+  // than being cast (and silently wrapped/truncated) as a BIGINT.
+  errno = 0;
+  char *end = nullptr;
+  (void)strtoll(s.c_str(), &end, 10);
+  return ERANGE != errno && nullptr != end && end == s.c_str() + s.size();
 }
 
 bool is_double(const std::string &s)
@@ -335,11 +400,17 @@ int parse_csv(const char *data,
     finish_record();
   }
 
-  // Drop a trailing empty record produced by a final newline.
-  while (!records.empty() && records.back().size() == 1 && records.back()[0].is_null_
-         && records.back()[0].value_.empty()) {
-    records.pop_back();
+  // Ignore physically blank lines (including the one a final newline would
+  // otherwise turn into an all-NULL one-field row).
+  std::vector<std::vector<FileTableField>> non_blank;
+  non_blank.reserve(records.size());
+  for (size_t i = 0; i < records.size(); ++i) {
+    std::vector<FileTableField> &rec = records[i];
+    if (!(rec.size() == 1 && rec[0].is_null_ && rec[0].value_.empty())) {
+      non_blank.push_back(std::move(rec));
+    }
   }
+  records.swap(non_blank);
 
   if (records.empty()) {
     err = "empty csv file";
@@ -362,7 +433,7 @@ int parse_csv(const char *data,
   }
 
   for (int64_t r = first_row; r < static_cast<int64_t>(records.size()); ++r) {
-    const std::vector<FileTableField> &rec = records[r];
+    std::vector<FileTableField> &rec = records[r];
     if (out.columns_.empty()) {
       for (size_t i = 0; i < rec.size(); ++i) {
         FileTableColumn col;
@@ -374,13 +445,14 @@ int parse_csv(const char *data,
       err = "row " + std::to_string(r) + " has more fields than the header";
       return -1;
     }
-    std::vector<FileTableField> row(rec.begin(), rec.end());
-    while (row.size() < out.columns_.size()) {
+    while (rec.size() < out.columns_.size()) {
       FileTableField missing;
       missing.is_null_ = true;
-      row.push_back(missing);
+      rec.push_back(missing);
     }
-    out.rows_.push_back(row);
+    // Move rows outright: the intermediate record buffer would otherwise
+    // double peak memory for large files.
+    out.rows_.push_back(std::move(rec));
     if (options.max_rows_ > 0 && static_cast<int64_t>(out.rows_.size()) >= options.max_rows_) {
       break;
     }
@@ -438,12 +510,18 @@ void infer_column_types(FileTableData &data)
       }
     }
 
+    const bool saw_number = saw_int || saw_double;
+    const bool saw_temporal = saw_date || saw_datetime;
     FileColumnType type = FileColumnType::VARCHAR;
     if (!saw_value) {
       type = FileColumnType::VARCHAR;
     } else if (saw_text) {
       type = FileColumnType::VARCHAR;
-    } else if (saw_bool && (saw_int || saw_double || saw_date || saw_datetime)) {
+    } else if (saw_bool && (saw_number || saw_temporal)) {
+      type = FileColumnType::VARCHAR;
+    } else if (saw_number && saw_temporal) {
+      // A column holding both numbers and date-looking strings has no single
+      // lossless primitive type; VARCHAR preserves every value.
       type = FileColumnType::VARCHAR;
     } else if (saw_bool) {
       type = FileColumnType::BOOLEAN;
@@ -489,6 +567,55 @@ struct JsonReader
     return false;
   }
 
+  static int hex_value(char h)
+  {
+    if (h >= '0' && h <= '9') {
+      return h - '0';
+    }
+    if (h >= 'a' && h <= 'f') {
+      return h - 'a' + 10;
+    }
+    if (h >= 'A' && h <= 'F') {
+      return h - 'A' + 10;
+    }
+    return -1;
+  }
+
+  bool read_hex4(unsigned &code)
+  {
+    code = 0;
+    for (int i = 0; i < 4; ++i) {
+      if (p_ >= end_) {
+        return false;
+      }
+      const int value = hex_value(*p_++);
+      if (value < 0) {
+        return false;
+      }
+      code = (code << 4) | static_cast<unsigned>(value);
+    }
+    return true;
+  }
+
+  static void append_utf8(std::string &out, unsigned code)
+  {
+    if (code < 0x80) {
+      out.push_back(static_cast<char>(code));
+    } else if (code < 0x800) {
+      out.push_back(static_cast<char>(0xC0 | (code >> 6)));
+      out.push_back(static_cast<char>(0x80 | (code & 0x3F)));
+    } else if (code < 0x10000) {
+      out.push_back(static_cast<char>(0xE0 | (code >> 12)));
+      out.push_back(static_cast<char>(0x80 | ((code >> 6) & 0x3F)));
+      out.push_back(static_cast<char>(0x80 | (code & 0x3F)));
+    } else {
+      out.push_back(static_cast<char>(0xF0 | (code >> 18)));
+      out.push_back(static_cast<char>(0x80 | ((code >> 12) & 0x3F)));
+      out.push_back(static_cast<char>(0x80 | ((code >> 6) & 0x3F)));
+      out.push_back(static_cast<char>(0x80 | (code & 0x3F)));
+    }
+  }
+
   bool parse_string(std::string &out)
   {
     skip_ws();
@@ -497,9 +624,13 @@ struct JsonReader
     }
     ++p_;
     while (p_ < end_) {
-      char c = *p_++;
+      const char c = *p_++;
       if (c == '"') {
         return true;
+      }
+      if (static_cast<unsigned char>(c) < 0x20) {
+        // Raw control characters are not allowed inside JSON strings.
+        return false;
       }
       if (c != '\\') {
         out.push_back(c);
@@ -508,7 +639,7 @@ struct JsonReader
       if (p_ >= end_) {
         return false;
       }
-      char e = *p_++;
+      const char e = *p_++;
       switch (e) {
         case '"': out.push_back('"'); break;
         case '\\': out.push_back('\\'); break;
@@ -520,32 +651,25 @@ struct JsonReader
         case 't': out.push_back('\t'); break;
         case 'u': {
           unsigned code = 0;
-          for (int i = 0; i < 4; ++i) {
-            if (p_ >= end_) {
+          if (!read_hex4(code)) {
+            return false;
+          }
+          // Combine a UTF-16 surrogate pair into one code point; a lone
+          // surrogate is malformed JSON and is rejected.
+          if (code >= 0xD800 && code <= 0xDBFF) {
+            unsigned low = 0;
+            if (end_ - p_ < 6 || p_[0] != '\\' || p_[1] != 'u') {
               return false;
             }
-            char h = *p_++;
-            code <<= 4;
-            if (h >= '0' && h <= '9') {
-              code |= static_cast<unsigned>(h - '0');
-            } else if (h >= 'a' && h <= 'f') {
-              code |= static_cast<unsigned>(h - 'a' + 10);
-            } else if (h >= 'A' && h <= 'F') {
-              code |= static_cast<unsigned>(h - 'A' + 10);
-            } else {
+            p_ += 2;
+            if (!read_hex4(low) || low < 0xDC00 || low > 0xDFFF) {
               return false;
             }
+            code = 0x10000 + ((code - 0xD800) << 10) + (low - 0xDC00);
+          } else if (code >= 0xDC00 && code <= 0xDFFF) {
+            return false;
           }
-          if (code < 0x80) {
-            out.push_back(static_cast<char>(code));
-          } else if (code < 0x800) {
-            out.push_back(static_cast<char>(0xC0 | (code >> 6)));
-            out.push_back(static_cast<char>(0x80 | (code & 0x3F)));
-          } else {
-            out.push_back(static_cast<char>(0xE0 | (code >> 12)));
-            out.push_back(static_cast<char>(0x80 | ((code >> 6) & 0x3F)));
-            out.push_back(static_cast<char>(0x80 | (code & 0x3F)));
-          }
+          append_utf8(out, code);
           break;
         }
         default: return false;
@@ -558,15 +682,41 @@ struct JsonReader
   {
     skip_ws();
     const char *start = p_;
-    if (p_ < end_ && (*p_ == '-' || *p_ == '+')) {
+    if (p_ < end_ && *p_ == '-') {
       ++p_;
     }
-    while (p_ < end_
-           && (is_digit(*p_) || *p_ == '.' || *p_ == 'e' || *p_ == 'E' || *p_ == '+' || *p_ == '-')) {
-      ++p_;
-    }
-    if (p_ == start) {
+    if (p_ >= end_) {
       return false;
+    }
+    if (*p_ == '0') {
+      ++p_;
+    } else if (is_digit(*p_)) {
+      while (p_ < end_ && is_digit(*p_)) {
+        ++p_;
+      }
+    } else {
+      return false;
+    }
+    if (p_ < end_ && *p_ == '.') {
+      ++p_;
+      if (p_ >= end_ || !is_digit(*p_)) {
+        return false;
+      }
+      while (p_ < end_ && is_digit(*p_)) {
+        ++p_;
+      }
+    }
+    if (p_ < end_ && (*p_ == 'e' || *p_ == 'E')) {
+      ++p_;
+      if (p_ < end_ && (*p_ == '+' || *p_ == '-')) {
+        ++p_;
+      }
+      if (p_ >= end_ || !is_digit(*p_)) {
+        return false;
+      }
+      while (p_ < end_ && is_digit(*p_)) {
+        ++p_;
+      }
     }
     out.assign(start, static_cast<size_t>(p_ - start));
     return true;

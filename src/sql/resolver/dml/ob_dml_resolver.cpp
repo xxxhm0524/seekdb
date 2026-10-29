@@ -11635,17 +11635,21 @@ int ObDMLResolver::resolve_file_table_item(const ParseNode &table_node, TableIte
     }
   }
 
-  // Read and parse the file at resolve time.
+  // Read and parse the file at resolve time. Normalize lexical `.`/`..`
+  // components first: check_secure_path compares the textual prefix, so
+  // `/allowed/../secret` would otherwise pass while the OS opens `/secret`.
   oceanbase::sql::filetable::FileTableData data;
   if (OB_SUCC(ret)) {
+    const std::string file_path =
+        oceanbase::sql::filetable::normalize_path(std::string(path.ptr(), path.length()));
+    const common::ObString normalized_path(static_cast<int64_t>(file_path.size()), file_path.c_str());
     common::ObString secure_file_priv;
     if (OB_FAIL(session_info_->get_secure_file_priv(secure_file_priv))) {
-    } else if (OB_FAIL(ObResolverUtils::check_secure_path(secure_file_priv, path))) {
+    } else if (OB_FAIL(ObResolverUtils::check_secure_path(secure_file_priv, normalized_path))) {
     } else if (0 == func_name.case_compare("glob")) {
       std::vector<std::string> files;
       std::string glob_err;
-      if (0 != oceanbase::sql::filetable::list_glob(
-                   std::string(path.ptr(), path.length()).c_str(), files, glob_err)) {
+      if (0 != oceanbase::sql::filetable::list_glob(file_path.c_str(), files, glob_err)) {
         ret = OB_ERR_UNEXPECTED;
         LOG_WARN("glob failed", K(ret), K(path), "err", glob_err.c_str());
       } else {
@@ -11668,7 +11672,7 @@ int ObDMLResolver::resolve_file_table_item(const ParseNode &table_node, TableIte
       ret = OB_NOT_SUPPORTED;
       LOG_USER_ERROR(OB_NOT_SUPPORTED, "file table function");
     } else {
-      std::ifstream in(std::string(path.ptr(), path.length()).c_str(), std::ios::binary);
+      std::ifstream in(file_path.c_str(), std::ios::binary);
       std::ostringstream ss;
       std::string err;
       int rc = 0;
@@ -11722,7 +11726,9 @@ int ObDMLResolver::resolve_file_table_item(const ParseNode &table_node, TableIte
       std::vector<oceanbase::sql::filetable::FileTableField> row(6);
       row[0].value_ = data.columns_[c].name_;
       row[1].value_ = oceanbase::sql::filetable::file_column_type_name(data.columns_[c].type_);
-      row[2].value_ = has_null ? "YES" : "NO";
+      // A nullable Parquet column stays nullable in the schema even when this
+      // particular file happens to contain no NULLs.
+      row[2].value_ = (has_null || data.columns_[c].nullable_) ? "YES" : "NO";
       row[3].is_null_ = true;
       row[4].is_null_ = true;
       row[5].is_null_ = true;
