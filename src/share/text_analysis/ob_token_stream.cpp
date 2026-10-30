@@ -399,22 +399,21 @@ int ObTextTokenGroupNormalizer::build_grouping_map()
   }
 
   while (OB_SUCC(ret)) {
-    int64_t grouped_token_freq = 0;
     int64_t curr_token_freq = 0;
     if (OB_FAIL(in_stream_->get_next(token, curr_token_freq))) {
       if (OB_UNLIKELY(OB_ITER_END != ret)) {
       }
     } else {
       ObString token_string = token.get_string();
-      int hash_ret = grouping_map_.get_refactored(token_string, grouped_token_freq);
+      auto add_frequency = [curr_token_freq](auto &entry) { entry.second += curr_token_freq; };
+      int hash_ret = grouping_map_.atomic_refactored(token_string, add_frequency);
       if (OB_HASH_NOT_EXIST == hash_ret) {
         ObString copied_token_string;
         if (OB_FAIL(ob_write_string(token_allocator_, token_string, copied_token_string))) {
         } else if (OB_FAIL(grouping_map_.set_refactored(copied_token_string, curr_token_freq))) {
         }
       } else if (OB_SUCCESS == hash_ret) {
-        // add token_freq in hash map directly, to avoid deep copy token string
-        *grouping_map_.get(token_string) += curr_token_freq;
+        // The callback updated the value during the first lookup.
       } else {
         ret = hash_ret;
       }

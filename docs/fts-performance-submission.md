@@ -124,6 +124,30 @@ that interface requires preserving per-token exhaustion, duplicate-document
 merging, filter evaluation and LIMIT behavior. No query correctness or speedup
 claim is made for an unimplemented change. No compilation or tests were run.
 
+## Fifth revision: DAAT cached-row advancement and token grouping
+
+The DAAT batch merger requests one row per token iterator through
+`ObDASIter::get_next_rows`, even when `ObDASTRCacheIter` already holds the next
+materialized row. A narrow fast path now advances only that cached cursor when
+both initialization and token document-count aggregation are complete. The first
+row, cache boundaries and uncompleted aggregates keep the original interface.
+Result extraction, loser-tree insertion/rebuild, per-document coalescing, boolean
+evaluation, relevance projection and LIMIT handling are unchanged. No disk reads
+or candidate documents are skipped. This reduces call overhead within an existing
+batch; it does not implement a new multi-document merge algorithm.
+
+Token grouping previously looked up a key to retrieve its frequency, then looked
+up the same key again to update it. The hash table's existing atomic callback now
+updates frequency in the first lookup. Missing keys still take the owned-string
+insertion path; lookup failures are still propagated. The grouping map belongs to
+one analyzer and is not shared across queries.
+
+No compilation or tests were run. Evaluation should cover single and multiple
+query tokens, cache-boundary sizes, partial final batches, exhausted streams,
+overlapping postings, boolean filters, relevancy and LIMIT/OFFSET. In particular,
+cached advancement is not a substitute for checking returned IDs and complete
+query results against the original version. No measured speedup is claimed.
+
 ## Reproduction
 
 Build parent and candidate with identical compiler options and run each on the
