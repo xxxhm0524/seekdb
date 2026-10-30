@@ -17,6 +17,8 @@
 #include "object/ob_object.h"
 #define USING_LOG_PREFIX STORAGE_FTS
 
+#include "lib/allocator/page_arena.h"
+#include "lib/charset/ob_charset.h"
 #include "share/rc/ob_server_runtime.h"
 #include "storage/fts/ob_fts_stop_word.h"
 #include "storage/fts/ob_fts_parser_helper.h"
@@ -26,6 +28,85 @@ namespace oceanbase
 {
 namespace storage
 {
+namespace
+{
+int convert_stopword_slow(const common::ObString &src,
+                          const ObCollationType src_coll,
+                          const ObCollationType dst_coll,
+                          common::ObString &out)
+{
+  static thread_local common::ObArenaAllocator alloc(lib::ObMemAttr("SwConvert"));
+  alloc.reuse();
+  return common::ObCharset::charset_convert(alloc, src, src_coll, dst_coll, out);
+}
+
+struct ObAddWordFreqCallback
+{
+  explicit ObAddWordFreqCallback(const int64_t freq) : freq_(freq) {}
+  int operator()(common::hash::HashMapPair<ObFTWord, int64_t> &pair)
+  {
+    pair.second += freq_;
+    return OB_SUCCESS;
+  }
+  int64_t freq_;
+};
+
+bool is_case_fold_identity(const common::ObString &src, const ObCollationType coll)
+{
+  bool identity = true;
+  const unsigned char *str = reinterpret_cast<const unsigned char *>(src.ptr());
+  const int64_t len = src.length();
+  UNUSED(coll);
+  {
+    for (int64_t i = 0; identity && i < len;) {
+      const unsigned char c = str[i];
+      if (c < 0x80) {
+        if (c >= 'A' && c <= 'Z') {
+          identity = false;
+        } else {
+          ++i;
+        }
+      } else {
+        uint32_t cp = 0;
+        int64_t char_len = 0;
+        if ((c & 0xE0) == 0xC0 && i + 1 < len) {
+          cp = ((c & 0x1F) << 6) | (str[i + 1] & 0x3F);
+          char_len = 2;
+        } else if ((c & 0xF0) == 0xE0 && i + 2 < len) {
+          cp = ((c & 0x0F) << 12) | ((str[i + 1] & 0x3F) << 6) | (str[i + 2] & 0x3F);
+          char_len = 3;
+        } else if ((c & 0xF8) == 0xF0 && i + 3 < len) {
+          cp = ((c & 0x07) << 18) | ((str[i + 1] & 0x3F) << 12)
+               | ((str[i + 2] & 0x3F) << 6) | (str[i + 3] & 0x3F);
+          char_len = 4;
+        } else {
+          identity = false;
+        }
+        if (identity) {
+          const bool stable =
+              (cp >= 0x3000 && cp <= 0x303F)   // CJK symbols and punctuation
+              || (cp >= 0x3040 && cp <= 0x30FF) // Hiragana and Katakana
+              || (cp >= 0x3100 && cp <= 0x31FF) // Bopomofo, Hangul jamo, Katakana ext
+              || (cp >= 0x3400 && cp <= 0x4DBF) // CJK extension A
+              || (cp >= 0x4E00 && cp <= 0x9FFF) // CJK unified ideographs
+              || (cp >= 0xA960 && cp <= 0xA97F) // Hangul jamo extended-A
+              || (cp >= 0xAC00 && cp <= 0xD7FF) // Hangul syllables and extended-B
+              || (cp >= 0xF900 && cp <= 0xFAFF) // CJK compatibility ideographs
+              || (cp >= 0xFE10 && cp <= 0xFE1F) // Vertical forms
+              || (cp >= 0xFE30 && cp <= 0xFE4F) // CJK compatibility forms
+              || (cp >= 0x20000 && cp <= 0x2FA1F); // CJK extensions B-F
+          if (!stable) {
+            identity = false;
+          } else {
+            i += char_len;
+          }
+        }
+      }
+    }
+  }
+  return identity;
+}
+} // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 // class ObStopWordChecker
@@ -74,22 +155,55 @@ void ObStopWordChecker::destroy()
 int ObStopWordChecker::check_stopword(const ObFTWord &word, bool &is_stopword)
 {
   int ret = OB_SUCCESS;
-  
-  
-  common::ObArenaAllocator allocator(lib::ObMemAttr("ChkStopWord"));
   if (OB_UNLIKELY(!inited_)) {
     ret = OB_NOT_INIT;
   } else if (OB_UNLIKELY(word.empty())) {
     ret = OB_INVALID_ARGUMENT;
   } else {
+    const common::ObString src = word.get_word().get_string();
+    const ObCollationType src_coll = word.get_collation_type();
+    const ObCollationType dst_coll = stopword_type_.get_collation_type();
     common::ObString cmp_str;
-    // do nothing set out with in if type is the same.
-    if (OB_FAIL(common::ObCharset::charset_convert(
-                                       allocator,
-                                       word.get_word().get_string(),
-                                       word.get_collation_type(),
-                                       stopword_type_.get_collation_type(),
-                                       cmp_str))) {
+    bool decided = false;
+    char convert_buf[FTS_STOP_WORD_MAX_LENGTH * 4];
+    if (common::ObCharset::charset_type_by_coll(src_coll)
+        == common::ObCharset::charset_type_by_coll(dst_coll)) {
+      if (src.length() > FTS_STOP_WORD_MAX_LENGTH) {
+        is_stopword = false;
+        decided = true;
+      } else {
+        cmp_str = src;
+      }
+    } else {
+      int64_t maxmb = 1;
+      if (OB_FAIL(common::ObCharset::get_mbmaxlen_by_coll(dst_coll, maxmb))) {
+      } else if (OB_UNLIKELY(maxmb < 1)) {
+        ret = OB_ERR_UNEXPECTED;
+      } else if (src.length() > 0
+                 && src.length() * maxmb > static_cast<int64_t>(sizeof(convert_buf))) {
+        if (OB_FAIL(convert_stopword_slow(src, src_coll, dst_coll, cmp_str))) {
+        } else if (cmp_str.length() > FTS_STOP_WORD_MAX_LENGTH) {
+          is_stopword = false;
+          decided = true;
+        }
+      } else {
+        uint32_t result_len = 0;
+        if (OB_FAIL(common::ObCharset::charset_convert(src_coll,
+                                                       src.ptr(),
+                                                       static_cast<uint32_t>(src.length()),
+                                                       dst_coll,
+                                                       convert_buf,
+                                                       sizeof(convert_buf),
+                                                       result_len))) {
+        } else if (result_len > FTS_STOP_WORD_MAX_LENGTH) {
+          is_stopword = false;
+          decided = true;
+        } else {
+          cmp_str.assign_ptr(convert_buf, result_len);
+        }
+      }
+    }
+    if (OB_FAIL(ret) || decided) {
     } else {
       ObFTWord converted(cmp_str.length(), cmp_str.ptr(), stopword_type_);
       ret = stopword_set_.exist_refactored(converted);
@@ -164,15 +278,19 @@ int ObAddWord::casedown_word(const ObFTWord &src, ObFTWord &dst)
   if (OB_UNLIKELY(src.empty())) {
     ret = OB_INVALID_ARGUMENT;
   } else if (flag_.casedown()) {
-    ObString dst_str;
-    if (OB_FAIL(ObCharset::tolower(
-                    word_meta_.get_collation_type(),
-                    src.get_word().get_string(),
-                    dst_str,
-                    allocator_))) {
+    const ObString src_str = src.get_word().get_string();
+    if (is_case_fold_identity(src_str, word_meta_.get_collation_type())) {
+      dst = src;
     } else {
-      ObFTWord tmp(dst_str.length(), dst_str.ptr(), word_meta_);
-      dst = tmp;
+      ObString dst_str;
+      if (OB_FAIL(ObCharset::tolower(word_meta_.get_collation_type(),
+                                     src_str,
+                                     dst_str,
+                                     allocator_))) {
+      } else {
+        ObFTWord tmp(dst_str.length(), dst_str.ptr(), word_meta_);
+        dst = tmp;
+      }
     }
   } else {
     dst = src;
@@ -198,20 +316,15 @@ int ObAddWord::check_stopword(const ObFTWord &ft_word, bool &is_stopword)
 int ObAddWord::groupby_word(const ObFTWord &word, const int64_t word_freq)
 {
   int ret = OB_SUCCESS;
-  int64_t word_count = 0;
   if (OB_UNLIKELY(word.empty() || word_freq <= 0)) {
     ret = OB_INVALID_ARGUMENT;
   } else if (!flag_.groupby_word()) {
     if (OB_FAIL(word_map_.set_refactored(word, 1/*word count*/))) {
     }
-  } else if (OB_FAIL(word_map_.get_refactored(word, word_count)) && OB_HASH_NOT_EXIST != ret) {
   } else {
-    if (OB_HASH_NOT_EXIST == ret) {
-      word_count = 1;
-    } else {
-      word_count += word_freq;
-    }
-    if (OB_FAIL(word_map_.set_refactored(word, word_count, 1/*overwrite*/))) {
+    // One hash lookup instead of get_refactored + set_refactored.
+    ObAddWordFreqCallback callback(word_freq);
+    if (OB_FAIL(word_map_.set_or_update(word, 1/*first word count*/, callback))) {
     }
   }
   return ret;
