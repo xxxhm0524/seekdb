@@ -1,8 +1,8 @@
 # Full-text hot-path optimization
 
-## Current candidate: measured conservative parser
+## Current candidate: conservative parser and storage DAAT projection
 
-The current source restores the parser/query/dictionary code to commit
+The parser/dictionary source retains commit
 `9f59c0b5e702e11e74f50fb95027b7be0b3fcdb7`, the user's first scored candidate.
 Subsequent speculative fast paths, character caches, chain-weight caches and
 dictionary lookup changes are withdrawn. Their descriptions below are historical
@@ -16,12 +16,20 @@ representative-word difference for accent-insensitive keys in that experiment;
 the entire experiment was subsequently withdrawn rather than stacked onto the
 candidate.
 
-The retained production source is identical to the first scored candidate under
-`src/`. Incremental compilation and local functional/performance validation have
+The latest increment additionally optimizes binary document-ID comparison and
+batch projection in the storage DAAT iterator identified by local CPU sampling.
+Its query-only cross-over runs observed a 7.47% query-category time reduction;
+the full-rebuild pair observed 2.89%, with a slight LIMIT regression. These
+measurements do not establish a 50% overall gain. See the
+[DAAT validation report](fts-daat-validation.md) for raw results, regression
+coverage and limitations.
+
+Incremental compilation and local functional/performance validation have
 now been performed using the existing WSL build tree. This was not a clean build
 of the entire submission commit, and local results do not establish the platform
 score. See [the local validation report](fts-local-validation.md) for measured
-results and scope. The fixed benchmark and scoring files remain unchanged.
+results and scope of the prior parser experiments. The fixed benchmark and
+scoring files remain unchanged.
 
 ## Development history (earlier candidates, partly withdrawn)
 

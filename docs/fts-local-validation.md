@@ -1,5 +1,8 @@
 # Local FTS validation, 2026-10-30
 
+This is the historical parser validation report. The subsequent storage DAAT
+increment is documented in [fts-daat-validation.md](fts-daat-validation.md).
+
 Local Ubuntu/WSL, existing native release build, no AMD/cloud GPU use. Incremental builds used at most two concurrent compile tasks. No full clean build was performed. The retained production source under src/ matches 9f59c0b5e702e11e74f50fb95027b7be0b3fcdb7.
 
 ## Method

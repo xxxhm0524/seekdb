@@ -23,6 +23,19 @@ namespace oceanbase
 namespace storage
 {
 
+// Binary VARCHAR IDs of equal length need neither charset lookup nor padding
+// handling. Keep the generic comparator for nulls and unequal lengths.
+static int compare_binary_doc_ids(const ObDatum &left, const ObDatum &right,
+                                  int &result, const common::ObDatumAccessContext *context)
+{
+  if (!left.is_null() && !right.is_null() && left.len_ == right.len_) {
+    result = left.len_ == 0 ? 0 : MEMCMP(left.ptr_, right.ptr_, left.len_);
+    return OB_SUCCESS;
+  }
+  return ObDatumFuncs::get_basic_func(ObVarcharType, CS_TYPE_BINARY)->null_first_cmp_(
+      left, right, result, context);
+}
+
 ObSRMergeCmp::ObSRMergeCmp()
   : cmp_func_(nullptr),
     iter_ids_(nullptr),
@@ -41,6 +54,9 @@ int ObSRMergeCmp::init(
     iter_ids_ = iter_ids;
     common::ObDatumBasicFuncs *basic_funcs = ObDatumFuncs::get_basic_func(id_meta.type_, id_meta.cs_type_);
     cmp_func_ = basic_funcs->null_first_cmp_;
+    if (id_meta.type_ == ObVarcharType && id_meta.cs_type_ == CS_TYPE_BINARY) {
+      cmp_func_ = compare_binary_doc_ids;
+    }
     if (OB_ISNULL(cmp_func_)) {
       ret = OB_ERR_UNEXPECTED;
     } else {
@@ -421,7 +437,9 @@ int ObSRDaaTIterImpl::project_results(const int64_t count)
       guard.set_batch_idx(i);
       ObDatum &id_proj_datum = id_proj_expr->locate_datum_for_write(*eval_ctx);
       set_datum_func_(id_proj_datum, buffered_domain_ids_[i]);
-      id_evaluated_flags.set(i);
+    }
+    if (count > 0) {
+      id_evaluated_flags.set_all(int64_t(0), count);
       id_proj_expr->set_evaluated_projected(*eval_ctx);
     }
     if (iter_param_->need_project_relevance()) {
@@ -430,7 +448,9 @@ int ObSRDaaTIterImpl::project_results(const int64_t count)
         guard.set_batch_idx(i);
         ObDatum &relevance_proj_datum = relevance_proj_expr->locate_datum_for_write(*eval_ctx);
         relevance_proj_datum.set_double(buffered_relevances_[i]);
-        relevance_evaluated_flags.set(i);
+      }
+      if (count > 0) {
+        relevance_evaluated_flags.set_all(int64_t(0), count);
         relevance_proj_expr->set_evaluated_projected(*eval_ctx);
       }
     }

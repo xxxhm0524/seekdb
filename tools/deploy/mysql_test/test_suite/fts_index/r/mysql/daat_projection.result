@@ -1,0 +1,43 @@
+DROP DATABASE IF EXISTS fts_daat_projection;
+CREATE DATABASE fts_daat_projection;
+USE fts_daat_projection;
+CREATE TABLE docs(id INT PRIMARY KEY, body VARCHAR(256), FULLTEXT INDEX ft(body));
+INSERT INTO docs VALUES (0, 'database performance'), (1, 'database audit');
+INSERT INTO docs SELECT id + 2, body FROM docs;
+INSERT INTO docs SELECT id + 4, body FROM docs;
+INSERT INTO docs SELECT id + 8, body FROM docs;
+INSERT INTO docs SELECT id + 16, body FROM docs;
+INSERT INTO docs SELECT id + 32, body FROM docs;
+INSERT INTO docs SELECT id + 64, body FROM docs;
+INSERT INTO docs SELECT id + 128, body FROM docs;
+INSERT INTO docs SELECT id + 256, body FROM docs;
+SELECT COUNT(*), SUM(id) FROM docs WHERE MATCH(body) AGAINST('database performance audit');
+COUNT(*)	SUM(id)
+512	130816
+SELECT COUNT(*), SUM(id) FROM docs WHERE MATCH(body) AGAINST('+database -audit' IN BOOLEAN MODE);
+COUNT(*)	SUM(id)
+256	65280
+SELECT COUNT(*), SUM(id) FROM docs WHERE MATCH(body) AGAINST('performance') > 0;
+COUNT(*)	SUM(id)
+256	65280
+SELECT COUNT(*) FROM docs WHERE MATCH(body) AGAINST('unmatchedword');
+COUNT(*)
+0
+SELECT COUNT(*), SUM(id) FROM (SELECT id FROM docs WHERE MATCH(body) AGAINST('database performance audit') ORDER BY id LIMIT 63 OFFSET 11) s;
+COUNT(*)	SUM(id)
+63	2646
+SELECT COUNT(*), SUM(id) FROM (SELECT id FROM docs WHERE MATCH(body) AGAINST('database performance audit') ORDER BY id LIMIT 64 OFFSET 11) s;
+COUNT(*)	SUM(id)
+64	2720
+SELECT COUNT(*), SUM(id) FROM (SELECT id FROM docs WHERE MATCH(body) AGAINST('database performance audit') ORDER BY id LIMIT 65 OFFSET 11) s;
+COUNT(*)	SUM(id)
+65	2795
+SELECT COUNT(*), SUM(id) FROM (SELECT id FROM docs WHERE MATCH(body) AGAINST('database performance audit') ORDER BY id LIMIT 257 OFFSET 11) s;
+COUNT(*)	SUM(id)
+257	35723
+SELECT d.id, (SELECT COUNT(*) FROM docs s WHERE s.id >= d.id AND MATCH(s.body) AGAINST('performance')) AS hits FROM docs d WHERE d.id IN (0, 255, 511) ORDER BY d.id;
+id	hits
+0	256
+255	128
+511	0
+DROP DATABASE fts_daat_projection;
