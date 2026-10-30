@@ -136,10 +136,10 @@ int ObTextWhitespaceTokenizer::get_next(ObDatum &next_token, int64_t &token_freq
 
 bool ObTextWhitespaceTokenizer::found_delimiter()
 {
-  bool found = false;
-  const char *curr_char = input_doc_->ptr_ + trav_pos_;
-  found = ob_isspace(cs_, *curr_char) || ob_iscntrl(cs_, *curr_char) || ob_ispunct(cs_, *curr_char);
-  return found;
+  // These three charset predicates share one byte classification table.
+  const unsigned char character = static_cast<unsigned char>(input_doc_->ptr_[trav_pos_]);
+  return cs_->ctype != nullptr
+      && ((cs_->ctype + 1)[character] & (_MY_SPC | _MY_CTR | _MY_PNT)) != 0;
 }
 
 ObTokenNormalizer::ObTokenNormalizer()
@@ -207,14 +207,18 @@ int ObTokenStopWordNormalizer::filter_special_marks(const ObDatum &check_token, 
   int ret = OB_SUCCESS;
   const int64_t token_len = check_token.len_;
   const char *token = check_token.ptr_;
-  int64_t special_mark_cnt = 0;
+  is_valid = false;
   for (int64_t i = 0; i < token_len; ++i) {
-    const char *character = token + i;
-    if (ob_ispunct(cs_, *character) || ob_iscntrl(cs_, *character)) {
-      special_mark_cnt++;
+    const unsigned char character = static_cast<unsigned char>(token[i]);
+    const bool special = cs_->ctype != nullptr
+        && ((cs_->ctype + 1)[character] & (_MY_PNT | _MY_CTR)) != 0;
+    if (!special) {
+      // One ordinary byte is enough to establish that the token is not all
+      // punctuation/control bytes; the remaining bytes cannot change this.
+      is_valid = true;
+      break;
     }
   }
-  is_valid = !(special_mark_cnt == token_len);
   return ret;
 }
 
@@ -269,12 +273,15 @@ int ObBasicEnglishNormalizer::get_next(ObDatum &next_token, int64_t &token_freq)
           }
         }
 
-        for (int32_t i = raw_token_len - 1; 0 <= i && i < raw_token_len && i >= first_alnum_pos; --i) {
-          const char *character = token + i;
-          if (ob_isalnum(cs_, *character)) {
-            last_alnum_pos = i;
-            found_alnum = true;
-            break;
+        // The forward scan already rejects tokens containing no alnum byte.
+        // Only valid tokens need a second scan to locate their trailing edge.
+        if (found_alnum) {
+          for (int32_t i = raw_token_len - 1; 0 <= i && i < raw_token_len && i >= first_alnum_pos; --i) {
+            const char *character = token + i;
+            if (ob_isalnum(cs_, *character)) {
+              last_alnum_pos = i;
+              break;
+            }
           }
         }
 
