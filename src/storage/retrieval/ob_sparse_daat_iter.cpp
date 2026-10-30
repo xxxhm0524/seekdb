@@ -279,7 +279,8 @@ int ObSRDaaTIterImpl::do_one_merge_round(int64_t &count)
     if (OB_UNLIKELY(OB_ITER_END != ret)) {
     }
   } else if (OB_FAIL(collect_dims_by_id(id_datum, relevance, need_project))) {
-  } else if (need_project && OB_FAIL(filter_on_demand(count, relevance, need_project))) {
+  } else if (need_project && iter_param_->need_filter()
+             && OB_FAIL(filter_on_demand(count, relevance, need_project))) {
   } else if (need_project && OB_FAIL(cache_result(count, *id_datum, relevance))) {
     if (OB_ITER_END != ret) {
     }
@@ -433,10 +434,19 @@ int ObSRDaaTIterImpl::project_results(const int64_t count)
 
   if (eval_ctx->is_vectorized()) {
     sql::ObBitVector &id_evaluated_flags = id_proj_expr->get_evaluated_flags(*eval_ctx);
-    for (int64_t i = 0; i < count; ++i) {
-      guard.set_batch_idx(i);
-      ObDatum &id_proj_datum = id_proj_expr->locate_datum_for_write(*eval_ctx);
-      set_datum_func_(id_proj_datum, buffered_domain_ids_[i]);
+    if (id_proj_expr->is_batch_result()) {
+      // Prepare each destination's result pointer once for this batch. A
+      // shallow document-ID assignment may have changed it in the prior batch.
+      ObDatum *id_datums = id_proj_expr->locate_datums_for_update(*eval_ctx, count);
+      for (int64_t i = 0; i < count; ++i) {
+        set_datum_func_(id_datums[i], buffered_domain_ids_[i]);
+      }
+    } else {
+      for (int64_t i = 0; i < count; ++i) {
+        guard.set_batch_idx(i);
+        ObDatum &id_proj_datum = id_proj_expr->locate_datum_for_write(*eval_ctx);
+        set_datum_func_(id_proj_datum, buffered_domain_ids_[i]);
+      }
     }
     if (count > 0) {
       id_evaluated_flags.set_all(int64_t(0), count);
@@ -444,10 +454,17 @@ int ObSRDaaTIterImpl::project_results(const int64_t count)
     }
     if (iter_param_->need_project_relevance()) {
       sql::ObBitVector &relevance_evaluated_flags = relevance_proj_expr->get_evaluated_flags(*eval_ctx);
-      for (int64_t i = 0; i < count; ++i) {
-        guard.set_batch_idx(i);
-        ObDatum &relevance_proj_datum = relevance_proj_expr->locate_datum_for_write(*eval_ctx);
-        relevance_proj_datum.set_double(buffered_relevances_[i]);
+      if (relevance_proj_expr->is_batch_result()) {
+        ObDatum *relevance_datums = relevance_proj_expr->locate_datums_for_update(*eval_ctx, count);
+        for (int64_t i = 0; i < count; ++i) {
+          relevance_datums[i].set_double(buffered_relevances_[i]);
+        }
+      } else {
+        for (int64_t i = 0; i < count; ++i) {
+          guard.set_batch_idx(i);
+          ObDatum &relevance_proj_datum = relevance_proj_expr->locate_datum_for_write(*eval_ctx);
+          relevance_proj_datum.set_double(buffered_relevances_[i]);
+        }
       }
       if (count > 0) {
         relevance_evaluated_flags.set_all(int64_t(0), count);

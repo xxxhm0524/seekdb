@@ -1,5 +1,20 @@
 # Full-text hot-path optimization
 
+## Latest increment: filter dispatch and batch frame preparation
+
+The latest increment bypasses the per-document filter call when the merge has
+no filter expression, and prepares batch-result datum buffers once per batch
+using the existing `locate_datums_for_update` API. Non-batch expressions keep
+their original per-row path. Each datum's writable result pointer is still
+restored before assignment, including shallow document IDs.
+
+Validation for this increment was limited, at the user's request, to source
+inspection, `git diff --check`, and a successful incremental release compile/link
+(24.44 seconds, at most two compile tasks). No SQL regression or performance
+benchmark was run for this increment. Earlier measured reductions below apply
+to the earlier candidate only; they do not measure this change or explain the
+latest platform zero score. A 50% overall reduction remains unproven.
+
 ## Current candidate: conservative parser and storage DAAT projection
 
 The parser/dictionary source retains commit
