@@ -179,7 +179,7 @@ int ObTransformPreProcess::transform_one_stmt(common::ObIArray<ObParentDMLStmt> 
     }
     if (OB_SUCC(ret)) {
       if (stmt->get_match_exprs().count() > 0 &&
-          OB_FAIL(preserve_order_for_fulltext_search(stmt, is_happened))) {
+          OB_FAIL(preserve_order_for_fulltext_search(parent_stmts, stmt, is_happened))) {
       } else {
         trans_happened |= is_happened;
       }
@@ -3790,7 +3790,78 @@ int ObTransformPreProcess::do_flatten_conditions(ObDMLStmt *stmt, ObIArray<ObRaw
 
 // full-text index queries on a single base table are processed with order preservation. 
 // (Order is not preserved in multi-table join scenarios.)
-int ObTransformPreProcess::preserve_order_for_fulltext_search(ObDMLStmt *stmt, bool& trans_happened)
+namespace {
+// Whether the expression counts the rows it reads instead of their values. The
+// number of rows a count returns does not depend on the order of those rows,
+// nor on which of them survive a limit below it.
+bool expr_counts_rows(const ObRawExpr *expr)
+{
+  bool counts_rows = false;
+  if (OB_ISNULL(expr) || T_FUN_COUNT != expr->get_expr_type()
+      || expr->has_flag(CNT_SUB_QUERY)) {
+  } else {
+    counts_rows = true;
+    for (int64_t i = 0; counts_rows && i < expr->get_param_count(); ++i) {
+      const ObRawExpr *param = expr->get_param_expr(i);
+      if (OB_ISNULL(param)) {
+        counts_rows = false;
+      } else if (param->is_const_expr()) {
+        // count(*), count(1)
+      } else if (T_REF_COLUMN == param->get_expr_type()
+                 && static_cast<const ObColumnRefRawExpr *>(param)->is_rowkey_column()) {
+        // a rowkey is never null, so counting it counts the rows
+      } else {
+        counts_rows = false;
+      }
+    }
+  }
+  return counts_rows;
+}
+
+// Whether the statement above `stmt` only counts the rows of `stmt`, and so can
+// not observe the order in which they come out.
+bool parent_counts_rows_only(const ObIArray<ObParentDMLStmt> &parent_stmts,
+                             const ObDMLStmt &stmt)
+{
+  bool counts_only = false;
+  const ObParentDMLStmt *parent = NULL;
+  const ObSelectStmt *parent_select = NULL;
+  const TableItem *parent_table = NULL;
+  if (parent_stmts.empty()) {
+    // the rows of a top level statement are visible
+  } else if (OB_ISNULL(parent = &parent_stmts.at(parent_stmts.count() - 1))
+             || OB_ISNULL(parent->stmt_) || !parent->stmt_->is_select_stmt()) {
+  } else if (FALSE_IT(parent_select = static_cast<const ObSelectStmt*>(parent->stmt_))) {
+  } else if (1 != parent_select->get_table_items().count()
+             || OB_ISNULL(parent_table = parent_select->get_table_item(0))
+             || !parent_table->is_generated_table()
+             || parent_table->ref_query_ != &stmt) {
+    // the rows of this statement reach something else as well
+  } else if (parent_select->has_having() || parent_select->has_order_by()
+             || parent_select->has_distinct() || parent_select->has_window_function()
+             || parent_select->has_window_function_filter() || parent_select->has_limit()
+             || parent_select->is_set_stmt() || parent_select->is_contains_assignment()
+             || parent_select->get_condition_exprs().count() > 0
+             || parent_select->get_group_expr_size() > 0
+             || parent_select->get_rollup_expr_size() > 0
+             || 0 == parent_select->get_aggr_item_size()) {
+    counts_only = false;
+  } else {
+    counts_only = true;
+    for (int64_t i = 0; counts_only && i < parent_select->get_select_item_size(); ++i) {
+      const ObRawExpr *expr = parent_select->get_select_item(i).expr_;
+      counts_only = OB_NOT_NULL(expr) && (expr->is_const_expr() || expr_counts_rows(expr));
+    }
+    for (int64_t i = 0; counts_only && i < parent_select->get_aggr_item_size(); ++i) {
+      counts_only = expr_counts_rows(parent_select->get_aggr_item(i));
+    }
+  }
+  return counts_only;
+}
+} // namespace
+
+int ObTransformPreProcess::preserve_order_for_fulltext_search(common::ObIArray<ObParentDMLStmt> &parent_stmts,
+                                                             ObDMLStmt *stmt, bool& trans_happened)
 {
   int ret = OB_SUCCESS;
   trans_happened = false;
@@ -3814,6 +3885,9 @@ int ObTransformPreProcess::preserve_order_for_fulltext_search(ObDMLStmt *stmt, b
     // do nothing
   } else if (0 == stmt->get_match_exprs().count()) {
     // do nothing
+  } else if (parent_counts_rows_only(parent_stmts, *stmt)) {
+    // the rows of this statement are only counted above it, so the order in
+    // which they come out is unobservable and the relevance order is dead work
   } else if (stmt->get_match_exprs().at(0) != nullptr && stmt->get_match_exprs().at(0)->is_es_match()) {
     ObSEArray<ObRawExpr*, 2> relation_exprs;
     if (OB_FAIL(stmt->get_relation_exprs(relation_exprs))) {

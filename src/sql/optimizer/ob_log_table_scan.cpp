@@ -704,7 +704,9 @@ int ObLogTableScan::extract_pushdown_filters(ObIArray<ObRawExpr*> &nonpushdown_f
         } else if (is_vec_adaptive_scan()) {
           add_to_scan_filter = true;
         }
-      } else if (is_text_retrieval_scan() && need_text_retrieval_calc_relevance()) {
+      } else if (is_text_retrieval_scan()) {
+        // Lookup caches restore index projections in posting order. Filtering
+        // lookup rows first would misalign these values even without BM25.
         if (OB_FAIL(nonpushdown_filters.push_back(filters.at(i)))) {
         } else if (is_vec_adaptive_scan()) {
           add_to_scan_filter = true;

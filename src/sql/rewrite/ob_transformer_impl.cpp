@@ -539,6 +539,25 @@ int ObTransformerImpl::choose_rewrite_rules(ObDMLStmt *stmt, uint64_t &need_type
     if (func.contain_geometry_values_ || func.contain_fulltext_search_ || func.contain_vec_index_approx_) {
       disable_list = ObTransformRule::ALL_TRANSFORM_RULES;
     }
+    if (func.contain_fulltext_search_ && !func.contain_geometry_values_
+        && !func.contain_vec_index_approx_ && !func.contain_for_update_ && stmt->is_select_stmt()) {
+      const ObSelectStmt *select_stmt = static_cast<const ObSelectStmt *>(stmt);
+      const ObAggFunRawExpr *agg = select_stmt->get_aggr_item_size() == 1
+          ? select_stmt->get_aggr_item(0) : nullptr;
+      if (select_stmt->is_scala_group_by() && select_stmt->is_single_table_stmt()
+          && select_stmt->get_select_item_size() == 1 && agg != nullptr
+          && agg->get_expr_type() == T_FUN_COUNT && agg->get_param_count() == 0
+          && select_stmt->get_select_item(0).expr_ == agg
+          && select_stmt->get_condition_exprs().empty() && select_stmt->get_having_exprs().empty()) {
+        // Cardinality-only queries can simplify an unobservable view order
+        // and avoid fetching projected columns that the parent never reads.
+        // Keep all other fulltext rewrite restrictions in place.
+        uint64_t count_enable_list = 0;
+        ObTransformRule::add_trans_type(count_enable_list, SIMPLIFY_ORDERBY);
+        ObTransformRule::add_trans_type(count_enable_list, PROJECTION_PRUNING);
+        disable_list &= ~count_enable_list;
+      }
+    }
     if (func.contain_enum_set_values_) {
       uint64_t enum_set_enable_list = 0;
       ObTransformRule::add_trans_type(enum_set_enable_list, SIMPLIFY_DISTINCT);

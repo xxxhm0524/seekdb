@@ -434,7 +434,14 @@ int ObSRDaaTIterImpl::project_results(const int64_t count)
 
   if (eval_ctx->is_vectorized()) {
     sql::ObBitVector &id_evaluated_flags = id_proj_expr->get_evaluated_flags(*eval_ctx);
-    if (id_proj_expr->is_batch_result()) {
+    if (nullptr == iter_param_->relevance_expr_
+        && id_proj_expr->datum_meta_.type_ == common::ObVarcharType
+        && id_proj_expr->datum_meta_.cs_type_ == common::CS_TYPE_BINARY) {
+      const ObDatumVector ids = id_proj_expr->locate_expr_datumvector(*eval_ctx);
+      for (int64_t i = 0; i < count; ++i) {
+        ids.at(i)->set_datum(buffered_domain_ids_[i].get_datum());
+      }
+    } else if (id_proj_expr->is_batch_result()) {
       // Prepare each destination's result pointer once for this batch. A
       // shallow document-ID assignment may have changed it in the prior batch.
       ObDatum *id_datums = id_proj_expr->locate_datums_for_update(*eval_ctx, count);
@@ -478,9 +485,11 @@ int ObSRDaaTIterImpl::project_results(const int64_t count)
     ObDatum &id_proj_datum = id_proj_expr->locate_datum_for_write(*eval_ctx);
     set_datum_func_(id_proj_datum, buffered_domain_ids_[0]);
     id_proj_expr->set_evaluated_projected(*eval_ctx);
-    ObDatum &relevance_proj_datum = relevance_proj_expr->locate_datum_for_write(*eval_ctx);
-    relevance_proj_datum.set_double(buffered_relevances_[0]);
-    relevance_proj_expr->set_evaluated_projected(*eval_ctx);
+    if (iter_param_->need_project_relevance()) {
+      ObDatum &relevance_proj_datum = relevance_proj_expr->locate_datum_for_write(*eval_ctx);
+      relevance_proj_datum.set_double(buffered_relevances_[0]);
+      relevance_proj_expr->set_evaluated_projected(*eval_ctx);
+    }
   }
   return ret;
 }

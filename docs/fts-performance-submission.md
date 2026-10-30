@@ -1,6 +1,14 @@
 # Full-text hot-path optimization
 
-## Latest increment: filter dispatch and batch frame preparation
+## Current increment: selective reference integration
+
+The latest source adapts score-free MATCH execution, count-only derived-table
+rewrites, vectorized FTS build scans and bounded token-result reuse from public
+commit 6062a1eccc732b9dfbd67f477c0e34f33fd092bc. See
+[source attribution and integration scope](fts-reference-integration.md).
+Earlier local measurements below predate this increment and do not measure it.
+
+## Earlier increment: filter dispatch and batch frame preparation
 
 The latest increment bypasses the per-document filter call when the merge has
 no filter expression, and prepares batch-result datum buffers once per batch
@@ -15,7 +23,7 @@ benchmark was run for this increment. Earlier measured reductions below apply
 to the earlier candidate only; they do not measure this change or explain the
 latest platform zero score. A 50% overall reduction remains unproven.
 
-## Current candidate: conservative parser and storage DAAT projection
+## Earlier candidate: conservative parser and storage DAAT projection
 
 The parser/dictionary source retains commit
 `9f59c0b5e702e11e74f50fb95027b7be0b3fcdb7`, the user's first scored candidate.

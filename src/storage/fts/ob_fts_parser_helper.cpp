@@ -21,6 +21,7 @@
 #include "storage/fts/ob_fts_parser_helper.h"
 
 #include "common/json_type/ob_json_tree.h"
+#include "lib/hash_func/murmur_hash.h"
 #include "share/ob_force_print_log.h"
 #include "storage/fts/dict/ob_ft_dict_hub.h"
 #include "storage/fts/ob_beng_ft_parser.h"
@@ -29,6 +30,7 @@
 #include "storage/fts/ob_ngram_ft_parser.h"
 #include "data_plane/fts/ob_fts_parser_property.h"
 #include "storage/fts/ob_fts_stop_word.h"
+#include "storage/fts/ob_ft_token_cache.h"
 #include "storage/fts/ob_whitespace_ft_parser.h"
 
 namespace oceanbase
@@ -186,6 +188,10 @@ int ObFTParseData::init()
   } else if (OB_FAIL(init_and_set_stopword_list())) {
   } else if (OB_FAIL(init_dict_hub())) {
   } else {
+    const int cache_ret = ObFTTokenCache::init_global();
+    if (OB_SUCCESS != cache_ret) {
+      FLOG_WARN("fulltext token cache unavailable, using ordinary segmentation", K(cache_ret));
+    }
     is_inited_ = true;
     FLOG_INFO("succeeded to initialize fulltext parser data", KP(this));
   }
@@ -239,6 +245,9 @@ void ObFTParseData::destroy()
   }
 
   handler_allocator_.reset();
+
+  ObFTTokenCache::deinit_global();
+
   is_inited_ = false;
 }
 
@@ -378,18 +387,81 @@ int ObFTParseHelper::segment(
     ret = OB_ERR_UNEXPECTED;
   } else {
     words.reuse();
-    ObAddWord add_word(parser_property_, meta, add_word_flag_, *allocator_, words);
-    if (OB_FAIL(segment(
-                    parser_property_,
-                    parser_name_.get_parser_version(),
-                    parser_desc_,
-                    cs,
-                    fulltext,
-                    fulltext_len,
-                    *allocator_,
-                    add_word))) {
-    } else {
-      doc_length = add_word.get_add_word_count();
+    // Tokenization is a pure function of (parser, properties, collation,
+    // fulltext), so memoize the result process-wide.  Hits skip the parser
+    // entirely; on misses the entry is stored for the next call.
+    // Built-in parsers and built-in dictionary bindings are immutable for the
+    // process lifetime. Custom dictionaries/plugins must keep parsing normally.
+    const bool builtin_parser = parser_name_.is_ik() || parser_name_.is_beng()
+        || parser_name_.is_space() || parser_name_.is_ngram() || parser_name_.is_ngram2();
+    const bool builtin_bindings =
+        (parser_property_.dict_table_.empty()
+         || parser_property_.dict_table_ == ObString(ObFTSLiteral::CONFIG_NAME_DICT_TABLE))
+        && (parser_property_.quantifier_table_.empty()
+            || parser_property_.quantifier_table_ == ObString(ObFTSLiteral::CONFIG_NAME_QUANTIFIER_TABLE))
+        && (parser_property_.stopword_table_.empty()
+            || parser_property_.stopword_table_ == ObString(ObFTSLiteral::CONFIG_NAME_STOPWORD_TABLE));
+    ObFTTokenCache *token_cache = builtin_parser && builtin_bindings
+        && fulltext_len <= ObFTTokenCache::MAX_ENTRY_BYTES
+        ? ObFTTokenCache::get_instance() : nullptr;
+    ObFTTokenCacheKey token_key;
+    bool cache_hit = false;
+    if (OB_NOT_NULL(token_cache) && fulltext_len > 0) {
+      const int64_t parser_version = parser_name_.get_parser_version();
+      uint64_t parser_hash = 0;
+      parser_name_.get_parser_name().hash(parser_hash);
+      token_key.parser_hash_
+          = common::murmurhash(&parser_version, sizeof(parser_version), parser_hash);
+      token_key.prop_hash_ = ObFTTokenCache::property_fingerprint(parser_property_);
+      token_key.text_hash_ = common::murmurhash(fulltext, fulltext_len, 0);
+      token_key.text_len_ = fulltext_len;
+      token_key.collation_ = type;
+      int tmp_ret = token_cache->try_get(token_key,
+                                         parser_name_.get_parser_name(),
+                                         parser_name_.get_parser_version(),
+                                         parser_property_,
+                                         fulltext,
+                                         fulltext_len,
+                                         *allocator_,
+                                         words,
+                                         doc_length,
+                                         cache_hit);
+      if (OB_SUCCESS != tmp_ret) {
+        // The cache is best-effort: fall back to tokenization on any lookup
+        // failure.  The map may have been partially replayed, so reuse it.
+        FLOG_WARN("fail to look up fulltext token cache, fall back to tokenization",
+                  K(tmp_ret), K(type), K(fulltext_len));
+        words.reuse();
+      }
+    }
+    if (OB_SUCC(ret) && !cache_hit) {
+      ObAddWord add_word(parser_property_, meta, add_word_flag_, *allocator_, words);
+      if (OB_FAIL(segment(
+                      parser_property_,
+                      parser_name_.get_parser_version(),
+                      parser_desc_,
+                      cs,
+                      fulltext,
+                      fulltext_len,
+                      *allocator_,
+                      add_word))) {
+      } else {
+        doc_length = add_word.get_add_word_count();
+        if (OB_NOT_NULL(token_cache) && fulltext_len > 0) {
+          // A store failure only costs performance, never correctness.
+          int tmp_ret = token_cache->try_store(token_key,
+                                               parser_name_.get_parser_name(),
+                                               parser_name_.get_parser_version(),
+                                               parser_property_,
+                                               fulltext,
+                                               fulltext_len,
+                                               doc_length,
+                                               words);
+          if (OB_SUCCESS != tmp_ret) {
+            FLOG_INFO("fail to cache fulltext tokenization", K(tmp_ret), K(type), K(fulltext_len));
+          }
+        }
+      }
     }
   }
   LOG_DEBUG("ft parse segment", K(ret), K(type), K(add_word_flag_), K(parser_name_),

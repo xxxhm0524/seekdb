@@ -21,6 +21,7 @@
 #include "sql/rewrite/ob_equal_analysis.h"
 #include "sql/optimizer/ob_optimizer_util.h"
 #include "sql/resolver/dml/ob_select_resolver.h"
+#include "sql/resolver/dml/ob_stmt_expr_visitor.h"
 #include "sql/rewrite/ob_transform_pre_process.h"
 #include "sql/rewrite/ob_expand_aggregate_utils.h"
 #include "sql/ob_sql_utils.h"
@@ -12804,6 +12805,52 @@ bool ObTransformUtils::is_full_group_by(ObSelectStmt& stmt, ObSQLMode mode)
   return !stmt.has_order_by() && is_only_full_group_by_on(mode);
 }
 
+int ObTransformUtils::check_need_calc_match_score(ObExecContext *exec_ctx,
+                                                const ObDMLStmt *stmt,
+                                                ObMatchFunRawExpr *match_expr,
+                                                bool &need_calc,
+                                                ObIArray<ObExprConstraint> &constraints)
+{
+  int ret = OB_SUCCESS;
+  need_calc = true;
+  ObSEArray<ObSelectStmt *, 4> child_stmts;
+  ObSEArray<ObRawExpr *, 16> exprs;
+  if (OB_ISNULL(exec_ctx) || OB_ISNULL(stmt) || OB_ISNULL(match_expr)) {
+    ret = OB_INVALID_ARGUMENT;
+  } else if (!stmt->is_select_stmt() || stmt->has_for_update()
+      || NATURAL_LANGUAGE_MODE != match_expr->get_mode_flag()
+      || !match_expr->get_columns_boosts().empty()) {
+    // Boolean matching and field boosts need their original score evaluation.
+  } else if (OB_FAIL(stmt->get_child_stmts(child_stmts))) {
+  } else if (!child_stmts.empty()) {
+    // Keep scoring until cross-scope references can also be checked.
+  } else if (OB_FAIL(stmt->get_relation_exprs(exprs))) {
+  } else {
+    // Unboosted natural-language BM25 is positive for matching documents.
+    // Check every use, including projection, ordering and numeric thresholds.
+    need_calc = false;
+    for (int64_t i = 0; OB_SUCC(ret) && !need_calc && i < exprs.count(); ++i) {
+      if (OB_FAIL(inner_check_need_calc_match_score(
+          exec_ctx, exprs.at(i), match_expr, need_calc, constraints))) {
+      }
+    }
+    if (OB_SUCC(ret) && !need_calc) {
+      // Restrict this optimization to WHERE uses. Keep even boolean result
+      // projections on the scoring path rather than exposing placeholder scores.
+      ObStmtExprGetter visitor;
+      visitor.set_relation_scope();
+      visitor.remove_scope(SCOPE_WHERE);
+      exprs.reuse();
+      if (OB_FAIL(stmt->get_relation_exprs(exprs, visitor))) {
+      }
+      for (int64_t i = 0; OB_SUCC(ret) && !need_calc && i < exprs.count(); ++i) {
+        need_calc = exprs.at(i)->has_flag(CNT_MATCH_EXPR);
+      }
+    }
+  }
+  return ret;
+}
+
 int ObTransformUtils::inner_check_need_calc_match_score(ObExecContext *exec_ctx,
                                                         ObRawExpr* expr, 
                                                         ObRawExpr* match_expr, 
@@ -12816,6 +12863,11 @@ int ObTransformUtils::inner_check_need_calc_match_score(ObExecContext *exec_ctx,
   if (OB_ISNULL(expr) || OB_ISNULL(match_expr)) {
     ret = OB_ERR_UNEXPECTED;
   } else if (expr == match_expr) {
+    need_calc = true;
+    need_check_child = false;
+  } else if (expr->is_match_against_expr()) {
+    // Equivalent MATCH calls can be distinct raw expressions before runtime
+    // expression sharing. Keep scoring rather than missing a numeric use.
     need_calc = true;
     need_check_child = false;
   } else if (expr->get_expr_type() == T_OP_GT || expr->get_expr_type() == T_OP_LT) {

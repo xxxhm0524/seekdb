@@ -12047,6 +12047,22 @@ int ObLogPlan::prepare_text_retrieval_scan(const ObIArray<ObRawExpr *> &scan_mat
     if (OB_FAIL(table_scan->set_is_skip_rowkey_doc(tr_info.doc_id_idx_tid_ == OB_INVALID_ID))) {
     } else if (OB_FAIL(table_scan->set_is_skip_rowkey_doc(tr_info.rowkey_idx_tid_ == OB_INVALID_ID))) {
     }
+    if (OB_SUCC(ret) && all_match_filters.count() == 1
+        && !table_scan->is_vec_adaptive_scan() && !table_scan->is_vec_idx_scan_post_filter()) {
+      ObSEArray<ObExprConstraint, 2> constraints;
+      bool need_score = true;
+      if (OB_FAIL(ObTransformUtils::check_need_calc_match_score(
+          get_optimizer_context().get_exec_ctx(), get_stmt(), match_against,
+          need_score, constraints))) {
+      } else if (!need_score) {
+        // A cached zero-threshold plan must not serve a nonzero parameter.
+        if (OB_FAIL(append_array_no_dup(
+            get_optimizer_context().get_query_ctx()->all_expr_constraints_, constraints))) {
+        } else {
+          tr_info.need_calc_relevance_ = false;
+        }
+      }
+    }
   }
 
   for (int64_t i = 0; OB_SUCC(ret) && i < all_match_filters.count(); ++i) {
