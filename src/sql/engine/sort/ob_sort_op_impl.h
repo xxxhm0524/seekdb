@@ -290,8 +290,7 @@ public:
     if (OB_FAIL(add_row(expr, store_row))) {
     } else if (use_heap_sort_ || use_partition_topn_sort_) {
       sort_need_dump = false;
-    } else {
-      sort_need_dump = need_dump();
+    } else if (OB_FAIL(check_need_dump(sort_need_dump))) {
     }
     return ret;
   }
@@ -323,8 +322,7 @@ public:
     if (OB_FAIL(add_batch(exprs, skip, batch_size, start_pos, append_row_count))) {
     } else if (use_heap_sort_ || use_partition_topn_sort_) {
       sort_need_dump = false;
-    } else {
-      sort_need_dump = need_dump();
+    } else if (OB_FAIL(check_need_dump(sort_need_dump))) {
     }
     return ret;
   }
@@ -714,6 +712,18 @@ protected:
   {
     return sql_mem_processor_.get_data_size() > sql_mem_processor_.get_mem_bound()
         || mem_context_->used() >= profile_.get_max_bound();
+  }
+  // Whether the rows can no longer be kept in memory: under automatic memory
+  // management the bound is first extended the same way the next add would do,
+  // so a caller switching to a dump-friendly strategy (e.g. the prescan of an
+  // online DDL sort) only switches when a dump is truly inevitable.
+  int check_need_dump(bool &sort_need_dump)
+  {
+    int ret = OB_SUCCESS;
+    sort_need_dump = need_dump();
+    if (sort_need_dump && OB_FAIL(preprocess_dump(sort_need_dump))) {
+    }
+    return ret;
   }
   int preprocess_dump(bool &dumped);
   // before add row process: update date used memory, try dump ...
