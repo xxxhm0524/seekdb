@@ -39,8 +39,11 @@ public:
       int64_t min_cpu,
       int64_t workers_per_cpu_quota)
   {
+    // The admission floor must cover the bounded fulltext build degree
+    // (min(8, cpu / 2)) even on a small host. This is an admission limit,
+    // not an allocation: idle workers cost nothing until requested.
     return 0 == configured_target
-        ? std::max(static_cast<int64_t>(3), min_cpu * workers_per_cpu_quota)
+        ? std::max(static_cast<int64_t>(16), min_cpu * workers_per_cpu_quota)
         : configured_target;
   }
 };
