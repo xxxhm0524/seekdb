@@ -5222,6 +5222,18 @@ public:
                                    const common::ObObj &in_val,
                                    common::ObObj &out_val) override;
 };
+class ObSysVarAiColumnStrictRead : public ObBoolSysVar
+{
+public:
+  ObSysVarAiColumnStrictRead() : ObBoolSysVar(NULL, NULL, NULL, NULL, NULL) {}
+  inline virtual share::ObSysVarClassType get_type() const { return share::SYS_VAR_AI_COLUMN_STRICT_READ; }
+  inline virtual const common::ObObj &get_global_default_value() const { return share::ObSysVariables::get_default_value(720); }
+  virtual int check_update_type(const ObSetVar &set_var, const common::ObObj &val) override;
+  virtual int do_check_and_convert(sql::ObExecContext &ctx,
+                                   const ObSetVar &set_var,
+                                   const common::ObObj &in_val,
+                                   common::ObObj &out_val) override;
+};
 
 
 class ObSysVarFactory

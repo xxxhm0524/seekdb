@@ -1274,6 +1274,7 @@ int ObSysVarFactory::create_all_sys_vars_()
         + sizeof(ObSysVarPushJoinPredicate)
         + sizeof(ObSysVarObSparseDropRatioSearch)
         + sizeof(ObSysVarEnableFileSql)
+        + sizeof(ObSysVarAiColumnStrictRead)
         ;
     void *ptr = NULL;
     if (OB_ISNULL(ptr = allocator_.alloc(total_mem_size))) {
@@ -7762,6 +7763,15 @@ int ObSysVarFactory::create_all_sys_vars_()
         ptr = (void *)((char *)ptr + sizeof(ObSysVarEnableFileSql));
       }
     }
+    if (OB_SUCC(ret)) {
+      if (OB_ISNULL(sys_var_ptr = new (ptr)ObSysVarAiColumnStrictRead())) {
+        ret = OB_ALLOCATE_MEMORY_FAILED;
+        LOG_ERROR("fail to new ObSysVarAiColumnStrictRead", K(ret));
+      } else {
+        store_buf_[share::ObSysVarsToIdxMap::get_store_idx(static_cast<int64_t>(share::SYS_VAR_AI_COLUMN_STRICT_READ))] = sys_var_ptr;
+        ptr = (void *)((char *)ptr + sizeof(ObSysVarAiColumnStrictRead));
+      }
+    }
 
   }
   return ret;
@@ -10667,6 +10677,10 @@ int ObSysVarFactory::create_sys_var(ObIAllocator &allocator_, share::ObSysVarCla
       ret = create_one_sys_var<ObSysVarEnableFileSql>(allocator_, sys_var_ptr, "ObSysVarEnableFileSql");
       break;
     }
+    case share::SYS_VAR_AI_COLUMN_STRICT_READ: {
+      ret = create_one_sys_var<ObSysVarAiColumnStrictRead>(allocator_, sys_var_ptr, "ObSysVarAiColumnStrictRead");
+      break;
+    }
 
     default: {
       ret = OB_ERR_UNEXPECTED;
@@ -10730,6 +10744,47 @@ int ObSysVarEnableFileSql::do_check_and_convert(ObExecContext &ctx,
                                                 const ObSetVar &set_var,
                                                 const common::ObObj &in_val,
                                                 common::ObObj &out_val)
+{
+  UNUSED(ctx);
+  int ret = OB_SUCCESS;
+  out_val = in_val;
+  if (true == set_var.is_set_default_) {
+    out_val.set_int(0);
+  } else if (ObNullType == in_val.get_type()) {
+    ret = OB_ERR_WRONG_VALUE_FOR_VAR;
+  } else if (ob_is_string_type(in_val.get_type())) {
+    common::ObString str;
+    if (OB_FAIL(in_val.get_string(str))) {
+    } else if (0 == str.case_compare("ON") || 0 == str.case_compare("TRUE")
+               || 0 == str.case_compare("1")) {
+      out_val.set_int(1);
+    } else if (0 == str.case_compare("OFF") || 0 == str.case_compare("FALSE")
+               || 0 == str.case_compare("0")) {
+      out_val.set_int(0);
+    } else {
+      ret = OB_ERR_WRONG_VALUE_FOR_VAR;
+    }
+  } else {
+    out_val.set_int(in_val.get_int());
+  }
+  return ret;
+}
+
+int ObSysVarAiColumnStrictRead::check_update_type(const ObSetVar &set_var, const common::ObObj &val)
+{
+  int ret = OB_SUCCESS;
+  if (true == set_var.is_set_default_ || ObNullType == val.get_type()) {
+    // nothing
+  } else if (!ob_is_integer_type(val.get_type()) && !ob_is_string_type(val.get_type())) {
+    ret = OB_ERR_WRONG_TYPE_FOR_VAR;
+  }
+  return ret;
+}
+
+int ObSysVarAiColumnStrictRead::do_check_and_convert(ObExecContext &ctx,
+                                                     const ObSetVar &set_var,
+                                                     const common::ObObj &in_val,
+                                                     common::ObObj &out_val)
 {
   UNUSED(ctx);
   int ret = OB_SUCCESS;
