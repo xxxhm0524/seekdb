@@ -831,12 +831,28 @@ int ObFtsIndexBuildTask::wait_aux_table_complement()
     ret = OB_STATE_NOT_MATCH;
   } else {
     int64_t finished_task_cnt = 0;
-    for (task_iter iter = dependent_task_result_map_.begin();
-        OB_SUCC(ret) && iter != dependent_task_result_map_.end(); ++iter) {
-      const uint64_t task_key = iter->first;
+    struct ChildState {
+      uint64_t key_;
+      int64_t task_id_;
+      int64_t ret_code_;
+    };
+    ObSEArray<ChildState, 4> children;
+    {
+      // Completion callbacks write this map under lock_. Copy the small set
+      // under the same lock, then release it before issuing SQL queries.
+      TCRLockGuard guard(lock_);
+      for (task_iter iter = dependent_task_result_map_.begin();
+           OB_SUCC(ret) && iter != dependent_task_result_map_.end(); ++iter) {
+        ChildState state{iter->first, iter->second.task_id_, iter->second.ret_code_};
+        if (OB_FAIL(children.push_back(state))) {
+        }
+      }
+    }
+    for (int64_t i = 0; OB_SUCC(ret) && i < children.count(); ++i) {
+      const uint64_t task_key = children.at(i).key_;
       const int64_t target_object_id = -1;
-      const int64_t child_task_id = iter->second.task_id_;
-      if (iter->second.ret_code_ == INT64_MAX) {
+      const int64_t child_task_id = children.at(i).task_id_;
+      if (children.at(i).ret_code_ == INT64_MAX) {
         // maybe ddl already finish when switching rs
         HEAP_VAR(ObDDLErrorMessageTableOperator::ObBuildDDLErrorMessage, error_message) {
           int64_t unused_user_msg_len = 0;
@@ -855,9 +871,28 @@ int ObFtsIndexBuildTask::wait_aux_table_complement()
             } else {
             }
           } else {
-            finished_task_cnt++;
-            if (error_message.ret_code_ != OB_SUCCESS) {
-              ret = error_message.ret_code_;
+            int64_t completion_code = error_message.ret_code_;
+            {
+              TCWLockGuard guard(lock_);
+              DependTaskStatus status;
+              if (OB_FAIL(dependent_task_result_map_.get_refactored(task_key, status))) {
+              } else if (status.task_id_ != child_task_id) {
+                ret = OB_STATE_NOT_MATCH;
+              } else if (status.ret_code_ != INT64_MAX) {
+                // A callback may have arrived while the SQL read was running.
+                completion_code = status.ret_code_;
+              } else {
+                status.ret_code_ = completion_code;
+                if (OB_FAIL(dependent_task_result_map_.set_refactored(task_key, status, true))) {
+                }
+              }
+            }
+            if (OB_FAIL(ret)) {
+              break;
+            }
+            ++finished_task_cnt;
+            if (completion_code != OB_SUCCESS) {
+              ret = completion_code;
               child_task_failed = true;
               state_finished = true;
               break;
@@ -866,14 +901,14 @@ int ObFtsIndexBuildTask::wait_aux_table_complement()
         }
       } else {
         finished_task_cnt++;
-        if (iter->second.ret_code_ != OB_SUCCESS) {
-          ret = iter->second.ret_code_;
+        if (children.at(i).ret_code_ != OB_SUCCESS) {
+          ret = children.at(i).ret_code_;
           child_task_failed = true;
           state_finished = true;
         }
       }
     }
-    if (finished_task_cnt == dependent_task_result_map_.size() || OB_FAIL(ret)) {
+    if (finished_task_cnt == children.count() || OB_FAIL(ret)) {
       // 1. all child tasks finish.
       // 2. the parent task exits if any child task fails.
       state_finished = true;

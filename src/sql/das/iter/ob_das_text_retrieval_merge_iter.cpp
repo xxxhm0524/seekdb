@@ -1880,7 +1880,7 @@ int ObDASTRDaatIter::pull_next_batch_rows_with_batch_mode()
     count = 0;
     if (OB_ISNULL(iter = static_cast<ObDASTRCacheIter *>(token_iters_.at(iter_idx)))) {
       ret = OB_ERR_UNEXPECTED;
-    } else if (!iter->advance_cached_row() && OB_FAIL(iter->get_next_rows(count, capacity))) {
+    } else if (OB_FAIL(iter->get_next_rows(count, capacity))) {
       if (OB_UNLIKELY(OB_ITER_END != ret)) {
       } else {
         ret = OB_SUCCESS;

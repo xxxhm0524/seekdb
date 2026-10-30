@@ -39,7 +39,7 @@ public:
                 ObFTCacheRangeContainer *range_container,
                 const ObFTDictDesc &desc)
       : is_inited_(false), desc_(desc), range_alloc_(lib::ObMemAttr("Range Dict")),
-        range_dicts_(&range_alloc_), range_container_(range_container), ordered_ranges_(false)
+        range_dicts_(&range_alloc_), range_container_(range_container)
   {
   }
   ~ObFTRangeDict() override{};
@@ -94,7 +94,6 @@ private:
       range_dicts_[i].dict_->~ObIFTDict(); // destroy dict
     }
     range_dicts_.reset();
-    ordered_ranges_ = false;
     range_alloc_.reset();
   }
 
@@ -107,7 +106,6 @@ private:
   ObArenaAllocator range_alloc_;
   ObVector<ObFTRange, ObArenaAllocator> range_dicts_;
   ObFTCacheRangeContainer *range_container_; // only used to read cache
-  bool ordered_ranges_; // validated disjoint ranges in the original lookup collation
 
 private:
   DISALLOW_COPY_AND_ASSIGN(ObFTRangeDict);

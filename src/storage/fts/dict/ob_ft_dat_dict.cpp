@@ -310,14 +310,7 @@ int ObArrayHashMap::find(const ObFTSingleWord &word, ObFTWordCode &code) const
       ret = OB_SUCCESS;
       break;
     } else {
-      // Capacity is at least 101 for generated dictionaries. Keep a fallback
-      // for smaller legacy maps; the probe sequence must not change.
-      if (header_.capacity_ >= 3) {
-        index += 3;
-        if (index >= header_.capacity_) { index -= header_.capacity_; }
-      } else {
-        index = (index + 3) % header_.capacity_;
-      }
+      index = (index + 3) % header_.capacity_;
     }
   }
   return ret;
@@ -329,12 +322,7 @@ int ObArrayHashMap::insert(const ObString &key, ObFTWordCode code)
   uint64_t hash = key.hash();
   uint64_t index = hash % header_.capacity_;
   while (header_.data[index].used) {
-    if (header_.capacity_ >= 3) {
-      index += 3;
-      if (index >= header_.capacity_) { index -= header_.capacity_; }
-    } else {
-      index = (index + 3) % header_.capacity_;
-    }
+    index = (index + 3) % header_.capacity_;
   }
 
   header_.data[index].code = code;

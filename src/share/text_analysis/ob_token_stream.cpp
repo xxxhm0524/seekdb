@@ -66,8 +66,7 @@ int ObTextTokenizer::open(const ObDatum &document, const ObCharsetInfo *cs)
 ObTextWhitespaceTokenizer::ObTextWhitespaceTokenizer()
   : ObTextTokenizer(),
     curr_token_ptr_(nullptr),
-    trav_pos_(0),
-    utf8_ascii_fast_path_(false)
+    trav_pos_(0)
 {
 }
 
@@ -75,7 +74,6 @@ void ObTextWhitespaceTokenizer::reset()
 {
   curr_token_ptr_ = nullptr;
   trav_pos_ = 0;
-  utf8_ascii_fast_path_ = false;
   ObTextTokenizer::reset();
 }
 
@@ -84,8 +82,6 @@ int ObTextWhitespaceTokenizer::inner_open(const ObDatum &document, const ObChars
   int ret = OB_SUCCESS;
   curr_token_ptr_ = nullptr;
   trav_pos_ = 0;
-  utf8_ascii_fast_path_ = ObCharset::charset_type_by_coll(
-      static_cast<ObCollationType>(cs->number)) == CHARSET_UTF8MB4;
   return ret;
 }
 
@@ -102,9 +98,7 @@ int ObTextWhitespaceTokenizer::get_next(ObDatum &next_token, int64_t &token_freq
     int64_t token_len = 0;
     // to next non-whitespace pos
     while (OB_SUCC(ret) && found_delimiter()) {
-      const int64_t c_len = utf8_ascii_fast_path_
-          && static_cast<unsigned char>(doc[trav_pos_]) < 0x80
-          ? 1 : ob_mbcharlen_ptr(cs_, doc + trav_pos_, doc + doc_len);
+      const int64_t c_len = ob_mbcharlen_ptr(cs_, doc + trav_pos_, doc + doc_len);
       trav_pos_ += c_len;
       if (trav_pos_ >= doc_len || 0 == c_len) {// if char is invalid, just skip the rest of document
         iter_end_ = true;
@@ -118,9 +112,7 @@ int ObTextWhitespaceTokenizer::get_next(ObDatum &next_token, int64_t &token_freq
 
     // to next whitespace pos
     while (OB_SUCC(ret) && !found_delimiter()) {
-      const int64_t c_len = utf8_ascii_fast_path_
-          && static_cast<unsigned char>(doc[trav_pos_]) < 0x80
-          ? 1 : ob_mbcharlen_ptr(cs_, doc + trav_pos_, doc + doc_len);
+      const int64_t c_len = ob_mbcharlen_ptr(cs_, doc + trav_pos_, doc + doc_len);
       trav_pos_ += c_len;
       token_len += c_len;
       if (trav_pos_ >= doc_len || 0 == c_len) {
@@ -310,17 +302,7 @@ int ObBasicEnglishNormalizer::get_next(ObDatum &next_token, int64_t &token_freq)
     } else {
       ObString norm_alnum_token(norm_token_len, norm_token_ptr);
       ObString norm_lower_token;
-      bool unchanged_ascii = ObCharset::charset_type_by_coll(
-          static_cast<ObCollationType>(cs_->number)) == CHARSET_UTF8MB4;
-      for (uint32_t i = 0; unchanged_ascii && i < norm_token_len; ++i) {
-        const unsigned char ch = static_cast<unsigned char>(norm_token_ptr[i]);
-        unchanged_ascii = ch < 0x80 && !(ch >= 'A' && ch <= 'Z');
-      }
-      if (unchanged_ascii) {
-        // Borrow the input only when case conversion is the identity. The
-        // parser still makes its existing owned copy before returning a token.
-        next_token.set_string(norm_alnum_token);
-      } else if (OB_FAIL(ObCharset::tolower(cs_, norm_alnum_token, norm_lower_token, norm_allocator_))) {
+      if (OB_FAIL(ObCharset::tolower(cs_, norm_alnum_token, norm_lower_token, norm_allocator_))) {
       } else {
         next_token.set_string(norm_lower_token);
       }
@@ -399,21 +381,22 @@ int ObTextTokenGroupNormalizer::build_grouping_map()
   }
 
   while (OB_SUCC(ret)) {
+    int64_t grouped_token_freq = 0;
     int64_t curr_token_freq = 0;
     if (OB_FAIL(in_stream_->get_next(token, curr_token_freq))) {
       if (OB_UNLIKELY(OB_ITER_END != ret)) {
       }
     } else {
       ObString token_string = token.get_string();
-      auto add_frequency = [curr_token_freq](auto &entry) { entry.second += curr_token_freq; };
-      int hash_ret = grouping_map_.atomic_refactored(token_string, add_frequency);
+      int hash_ret = grouping_map_.get_refactored(token_string, grouped_token_freq);
       if (OB_HASH_NOT_EXIST == hash_ret) {
         ObString copied_token_string;
         if (OB_FAIL(ob_write_string(token_allocator_, token_string, copied_token_string))) {
         } else if (OB_FAIL(grouping_map_.set_refactored(copied_token_string, curr_token_freq))) {
         }
       } else if (OB_SUCCESS == hash_ret) {
-        // The callback updated the value during the first lookup.
+        // add token_freq in hash map directly, to avoid deep copy token string
+        *grouping_map_.get(token_string) += curr_token_freq;
       } else {
         ret = hash_ret;
       }

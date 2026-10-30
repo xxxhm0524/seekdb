@@ -160,17 +160,6 @@ public:
   ObDASTRCacheIter();
   virtual ~ObDASTRCacheIter() {}
   int get_cur_row(double &relevance, ObDocIdExt &doc_id) const;
-  // DAAT consumes one saved row at a time. Do not re-enter the generic batch
-  // interface while an already materialized batch still has another row.
-  bool advance_cached_row()
-  {
-    if (is_inited_ && (!need_inv_idx_agg_ || inv_idx_agg_evaluated_)
-        && cur_idx_ >= 0 && cur_idx_ < count_ - 1) {
-      ++cur_idx_;
-      return true;
-    }
-    return false;
-  }
   INHERIT_TO_STRING_KV("ObDASTextRetrievalIter", ObDASTextRetrievalIter, K_(cur_idx), K_(count),
       K_(relevance), K_(doc_id));
 protected:

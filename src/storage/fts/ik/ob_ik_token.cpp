@@ -61,7 +61,6 @@ int ObFTSortList::add_token(const ObIKToken &token)
 
 int ObIKTokenChain::add_token_if_conflict(const ObIKToken &token, bool &added)
 {
-  invalidate_weights();
   int ret = OB_SUCCESS;
   added = true;
   if (list_.is_empty()) {
@@ -83,7 +82,6 @@ int ObIKTokenChain::add_token_if_conflict(const ObIKToken &token, bool &added)
 
 int ObIKTokenChain::add_token_if_no_conflict(const ObIKToken &token, bool &added)
 {
-  invalidate_weights();
   int ret = OB_SUCCESS;
   added = true;
   if (list_.is_empty()) {
@@ -175,32 +173,25 @@ int ObIKTokenChain::copy(ObIKTokenChain *other)
 
 int64_t ObIKTokenChain::p_weight() const
 {
-  if (p_weight_valid_) { return cached_p_weight_; }
   int64_t p_weight = 0;
   int p = 0;
   for (const ObIKToken &token : list_.tokens()) {
     p++;
     p_weight += p * token.char_cnt_;
   }
-  cached_p_weight_ = p_weight;
-  p_weight_valid_ = true;
-  return cached_p_weight_;
+  return p_weight;
 }
 int64_t ObIKTokenChain::x_weight() const
 {
-  if (x_weight_valid_) { return cached_x_weight_; }
   int64_t product = 1;
   for (const ObIKToken &token : list_.tokens()) {
     product *= token.char_cnt_;
   }
-  cached_x_weight_ = product;
-  x_weight_valid_ = true;
-  return cached_x_weight_;
+  return product;
 }
 
 int ObIKTokenChain::pop_back(ObIKToken &token)
 {
-  invalidate_weights();
   int ret = OB_SUCCESS;
   if (list_.tokens().empty()) {
     ret = OB_ENTRY_NOT_EXIST;
