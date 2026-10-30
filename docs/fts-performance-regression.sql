@@ -21,3 +21,10 @@ SELECT TOKENIZE(CONCAT(REPEAT('!', 100), 'alpha', REPEAT('?', 100)), 'beng');
 SELECT TOKENIZE(REPEAT('!', 512), 'beng');
 SELECT TOKENIZE(NULL, 'beng');
 SELECT TOKENIZE(NULL, 'ik');
+-- ASCII fast path boundaries and transitions into multibyte input.
+SELECT TOKENIZE('a z A Z 0 9 @ [ ` { / :', 'ik');
+SELECT TOKENIZE('lowercase words repeated repeated 123 abc123', 'beng');
+SELECT TOKENIZE('lower UPPER Mixed lower中文lower 😀lower', 'beng');
+SELECT TOKENIZE('lower UPPER Mixed lower中文lower 😀lower', 'ik');
+SELECT TOKENIZE(CONCAT('a', CHAR(0), 'b', CHAR(127), 'c'), 'space');
+SELECT TOKENIZE(CONCAT('a', CHAR(0), 'b', CHAR(127), 'c'), 'beng');

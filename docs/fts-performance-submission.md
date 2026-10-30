@@ -2,8 +2,8 @@
 
 ## Scope and bottleneck evidence
 
-Changes are limited to `src/storage/fts/ik/ob_ik_char_util.h` and
-`src/share/text_analysis/ob_token_stream.cpp`. The benchmark inputs, SQL,
+Changes cover the IK character context and processor dispatch, and the shared
+text token stream. The benchmark inputs, SQL,
 timers, scoring program and frozen baseline are unchanged.
 
 Source inspection identified the following repeated work. No profiling or
@@ -38,6 +38,36 @@ indexing and null-table behavior. Delimiters still mean space OR control OR
 punctuation. Token filtering still rejects exactly tokens whose every byte is
 punctuation or control; empty tokens remain invalid. English normalization still
 uses the original charset-aware alnum predicate and lowercasing function.
+
+## Second revision after platform feedback
+
+The user reported successful platform execution of commit
+`9f59c0b5e702e11e74f50fb95027b7be0b3fcdb7`, with a displayed score of 7.821.
+The individual timing metrics were not supplied, so this is not evidence of a
+particular bottleneck or a measured percentage improvement.
+
+This revision adds three source-level optimizations:
+
+* The IK parser passes its already validated character, length and type directly
+  to the processors in the same order. Each processor still executes; the
+  redundant context getter calls are removed. Existing processor implementations
+  do not move the context cursor while processing a character.
+* UTF-8 ASCII bytes bypass multibyte-length and Unicode conversion functions.
+  IK classifies ASCII using the exact English/digit ranges from the existing
+  Unicode predicates. Tokenizer delimiter classification is unchanged. Non-ASCII
+  and other encodings use the original validating functions, including malformed
+  byte handling. The UTF-8 eligibility flag is cached per context/tokenizer.
+* In UTF-8, a token containing only ASCII bytes and no uppercase ASCII letter is
+  already lowercase. The English normalizer borrows that input slice instead of
+  allocating and converting a second copy. The BENG parser retains its owned
+  token copy, and the grouping normalizer copies new keys, preserving lifetimes.
+  Uppercase or non-ASCII tokens still use charset-aware conversion.
+
+No caches of SQL results, input-specific rules, dictionary changes or query-plan
+shortcuts are introduced. This revision is uncompiled and untested at the user's
+request. It does not establish a 50% end-to-end time reduction. Nine per-metric
+timings and correctness results from platform evaluation remain necessary to
+determine whether further work should target build or query execution instead.
 
 ## Reproduction
 
