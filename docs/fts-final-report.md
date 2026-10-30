@@ -7,7 +7,7 @@
 自有的并行准入下限修改，提交为：
 
 - 基线参考：`ee1e48aa8`（本分支父提交）
-- 本候选：`41450ffe6`（`perf(fts): floor the PX admission limit for parallel fulltext builds`）
+- 本候选：`616e5d50e`（代码提交 `41450ffe6` + 本报告提交 `616e5d50e`）
 
 本分支只做全文索引相关修改，基准数据、SQL、计时、评分脚本和固定基线均未修改。
 
@@ -68,5 +68,5 @@ ROUNDS=3000、QUERY_ROUNDS=200、SAMPLES=3、WARMUP=30、SKIP_LOAD=0）。
 ## 提测字段（供人工提测）
 
 - 仓库：`https://github.com/xxxhm0524/seekdb`
-- 分支：`solution/fts-final`（推送后填写）
-- Commit：`41450ffe6...`（推送后的完整 SHA）
+- 分支：`solution/fts-final`
+- Commit：`616e5d50e1ead0e6e9305c3d4a95c8e9183744db`
