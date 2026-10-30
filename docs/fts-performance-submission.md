@@ -1,6 +1,6 @@
 # Full-text hot-path optimization
 
-## Current candidate: conservative parser plus FTS child completion reuse
+## Current candidate: measured conservative parser
 
 The current source restores the parser/query/dictionary code to commit
 `9f59c0b5e702e11e74f50fb95027b7be0b3fcdb7`, the user's first scored candidate.
@@ -8,24 +8,20 @@ Subsequent speculative fast paths, character caches, chain-weight caches and
 dictionary lookup changes are withdrawn. Their descriptions below are historical
 development notes and do not describe the current source.
 
-The new change is confined to the full-text DDL parent's auxiliary-task wait:
-once a child's persisted completion record has been found, its status is stored
-in the existing in-memory dependency map rather than re-reading the same record
-on each poll while another child remains unfinished. Pending children still
-require the original completion query; failures still fail the parent. The map
-is copied under the same read/write lock used by completion callbacks, SQL is
-issued outside that lock, and a completion callback arriving during the query
-takes precedence when storing the observed result. No state transition,
-transaction wait, schema refresh check, index data or scheduling interval is
-removed or shortened.
+After the user authorized bounded local testing, the FTS child-completion reuse
+change was also withdrawn: the A/B/B/A runs showed essentially unchanged build
+time. A separate stopword/hash update experiment showed no reliable aggregate
+benefit and was not submitted. Differential tests caught and helped correct a
+representative-word difference for accent-insensitive keys in that experiment;
+the entire experiment was subsequently withdrawn rather than stacked onto the
+candidate.
 
-The expected benefit is reduced internal SQL work during unequal child-task
-completion times. It may be small or absent if callbacks always arrive promptly.
-This does not establish why the user observed build-time fluctuations or that
-the 50% target is attainable with this change. The first candidate's reported
-score remains the only positive score supplied; this revision is unmeasured.
-No compilation, tests or benchmarks were run, as requested. Static whitespace
-checks were performed. The fixed benchmark and scoring files remain unchanged.
+The retained production source is identical to the first scored candidate under
+`src/`. Incremental compilation and local functional/performance validation have
+now been performed using the existing WSL build tree. This was not a clean build
+of the entire submission commit, and local results do not establish the platform
+score. See [the local validation report](fts-local-validation.md) for measured
+results and scope. The fixed benchmark and scoring files remain unchanged.
 
 ## Development history (earlier candidates, partly withdrawn)
 
