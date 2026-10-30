@@ -20,6 +20,12 @@ namespace sql
 {
 namespace filetable
 {
+// Canonical, component-boundary containment check. Glob checks its directory.
+int authorize_file_path(const std::string &path, const std::string &root,
+                        bool glob_pattern, std::string &resolved, std::string &err);
+// Bounded, read-only snapshot; verifies the opened descriptor and file identity.
+int read_file_snapshot(const std::string &path, const std::string &root,
+                       std::string &contents, std::string &err);
 
 enum class FileColumnType
 {

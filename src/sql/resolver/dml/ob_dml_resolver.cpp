@@ -11640,12 +11640,16 @@ int ObDMLResolver::resolve_file_table_item(const ParseNode &table_node, TableIte
   // `/allowed/../secret` would otherwise pass while the OS opens `/secret`.
   oceanbase::sql::filetable::FileTableData data;
   if (OB_SUCC(ret)) {
-    const std::string file_path =
-        oceanbase::sql::filetable::normalize_path(std::string(path.ptr(), path.length()));
-    const common::ObString normalized_path(static_cast<int64_t>(file_path.size()), file_path.c_str());
+    std::string file_path(path.ptr(), path.length());
+    std::string path_error;
+    std::string resolved_path;
     common::ObString secure_file_priv;
     if (OB_FAIL(session_info_->get_secure_file_priv(secure_file_priv))) {
-    } else if (OB_FAIL(ObResolverUtils::check_secure_path(secure_file_priv, normalized_path))) {
+    } else if (0 != oceanbase::sql::filetable::authorize_file_path(file_path,
+                   std::string(secure_file_priv.ptr(), secure_file_priv.length()),
+                   0 == func_name.case_compare("glob"), resolved_path, path_error)) {
+      ret = OB_ERR_NO_PRIVILEGE;
+      LOG_WARN("file SQL path rejected", K(ret), "reason", path_error.c_str());
     } else if (0 == func_name.case_compare("glob")) {
       std::vector<std::string> files;
       std::string glob_err;
@@ -11658,6 +11662,12 @@ int ObDMLResolver::resolve_file_table_item(const ParseNode &table_node, TableIte
         col.type_ = oceanbase::sql::filetable::FileColumnType::VARCHAR;
         data.columns_.push_back(col);
         for (size_t i = 0; i < files.size() && OB_SUCC(ret); ++i) {
+          std::string checked;
+          if (0 != oceanbase::sql::filetable::authorize_file_path(files[i],
+                  std::string(secure_file_priv.ptr(), secure_file_priv.length()), false, checked, glob_err)) {
+            ret = OB_ERR_NO_PRIVILEGE;
+            break;
+          }
           std::vector<oceanbase::sql::filetable::FileTableField> row(1);
           row[0].value_ = files[i];
           row[0].is_null_ = false;
@@ -11672,16 +11682,14 @@ int ObDMLResolver::resolve_file_table_item(const ParseNode &table_node, TableIte
       ret = OB_NOT_SUPPORTED;
       LOG_USER_ERROR(OB_NOT_SUPPORTED, "file table function");
     } else {
-      std::ifstream in(file_path.c_str(), std::ios::binary);
-      std::ostringstream ss;
+      std::string content;
       std::string err;
       int rc = 0;
-      if (!in) {
-        ret = OB_FILE_NOT_EXIST;
-        LOG_WARN("cannot open file table file", K(ret), K(path));
+      if (0 != oceanbase::sql::filetable::read_file_snapshot(file_path,
+              std::string(secure_file_priv.ptr(), secure_file_priv.length()), content, err)) {
+        ret = OB_ERR_UNEXPECTED;
+        LOG_WARN("file SQL snapshot rejected", K(ret), "reason", err.c_str());
       } else {
-        ss << in.rdbuf();
-        const std::string content = ss.str();
         if (0 == func_name.case_compare("read_csv")) {
           oceanbase::sql::filetable::CsvOptions options;
           options.has_header_ = csv_has_header;

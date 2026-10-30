@@ -11,6 +11,10 @@
 #include <cstring>
 #include <set>
 #include <utility>
+#include <cmath>
+#include <fcntl.h>
+#include <unistd.h>
+#include <limits.h>
 
 #include <dirent.h>
 #include <fnmatch.h>
@@ -39,6 +43,90 @@ std::string to_lower(const std::string &s)
 
 } // namespace
 
+int authorize_file_path(const std::string &path, const std::string &root,
+                        bool glob_pattern, std::string &resolved, std::string &err)
+{
+  resolved.clear();
+  if (path.empty() || root.empty() || to_lower(root) == "null" ||
+      path.find('\0') != std::string::npos || root.find('\0') != std::string::npos) {
+    err = "file SQL requires a nonempty secure_file_priv and a valid local path";
+    return -1;
+  }
+  char allowed[PATH_MAX];
+  char actual[PATH_MAX];
+  struct stat st;
+  if (!realpath(root.c_str(), allowed) || stat(allowed, &st) != 0 || !S_ISDIR(st.st_mode)) {
+    err = "secure_file_priv must name an existing directory";
+    return -1;
+  }
+  std::string candidate = path;
+  if (glob_pattern) {
+    const size_t slash = path.find_last_of('/');
+    candidate = slash == std::string::npos ? "." : (slash == 0 ? "/" : path.substr(0, slash));
+  }
+  if (!realpath(candidate.c_str(), actual)) {
+    err = "cannot resolve file path";
+    return -1;
+  }
+  const std::string base(allowed);
+  const std::string file(actual);
+  if (base != "/" && file != base &&
+      (file.size() <= base.size() || file.compare(0, base.size(), base) != 0 || file[base.size()] != '/')) {
+    err = "file path escapes secure_file_priv";
+    return -1;
+  }
+  resolved = glob_pattern ? file + "/" + path.substr(path.find_last_of('/') + 1) : file;
+  return 0;
+}
+
+int read_file_snapshot(const std::string &path, const std::string &root,
+                       std::string &contents, std::string &err)
+{
+  contents.clear();
+  std::string canonical;
+  if (authorize_file_path(path, root, false, canonical, err) != 0) { return -1; }
+  struct Descriptor {
+    int fd;
+    ~Descriptor() { if (fd >= 0) { close(fd); } }
+  } handle{open(canonical.c_str(), O_RDONLY | O_NONBLOCK | O_CLOEXEC)};
+  struct stat before, after, named;
+  const int64_t max_bytes = 64LL * 1024 * 1024;
+  if (handle.fd < 0 || fstat(handle.fd, &before) != 0 || !S_ISREG(before.st_mode) ||
+      before.st_size < 0 || before.st_size > max_bytes) {
+    err = "file must be regular and no larger than the 64 MiB snapshot limit";
+    return -1;
+  }
+#ifdef __linux__
+  // Inspect what open actually opened, rather than trusting an earlier realpath.
+  if (authorize_file_path("/proc/self/fd/" + std::to_string(handle.fd), root, false, canonical, err) != 0) {
+    return -1;
+  }
+#endif
+  char buffer[65536];
+  for (;;) {
+    ssize_t count = read(handle.fd, buffer, sizeof(buffer));
+    if (count < 0 && errno == EINTR) { continue; }
+    if (count < 0) { err = "file read failed"; contents.clear(); return -1; }
+    if (count == 0) { break; }
+    if (contents.size() > static_cast<size_t>(max_bytes - count)) {
+      err = "file grew beyond snapshot limit"; contents.clear(); return -1;
+    }
+    contents.append(buffer, static_cast<size_t>(count));
+  }
+  if (fstat(handle.fd, &after) != 0 || stat(path.c_str(), &named) != 0 ||
+      before.st_dev != after.st_dev || before.st_ino != after.st_ino ||
+      before.st_size != after.st_size || before.st_mtime != after.st_mtime ||
+      before.st_ctime != after.st_ctime || before.st_dev != named.st_dev ||
+      before.st_ino != named.st_ino || contents.size() != static_cast<size_t>(after.st_size)
+#ifdef __linux__
+      || before.st_mtim.tv_nsec != after.st_mtim.tv_nsec || before.st_ctim.tv_nsec != after.st_ctim.tv_nsec
+#endif
+      ) {
+    err = "file changed during schema inference"; contents.clear(); return -1;
+  }
+  return 0;
+}
+
 const char *file_column_type_name(FileColumnType type)
 {
   switch (type) {
@@ -57,7 +145,7 @@ std::string make_unique_column_name(const std::vector<std::string> &existing,
 {
   bool used = false;
   for (size_t i = 0; i < existing.size(); ++i) {
-    if (existing[i] == candidate) {
+    if (to_lower(existing[i]) == to_lower(candidate)) {
       used = true;
       break;
     }
@@ -69,7 +157,7 @@ std::string make_unique_column_name(const std::vector<std::string> &existing,
     std::string next = candidate + "__" + std::to_string(suffix);
     bool taken = false;
     for (size_t i = 0; i < existing.size(); ++i) {
-      if (existing[i] == next) {
+      if (to_lower(existing[i]) == to_lower(next)) {
         taken = true;
         break;
       }
@@ -198,7 +286,11 @@ bool is_double(const std::string &s)
       return false;
     }
   }
-  return digits && (!exp || exp_digits);
+  if (!digits || (exp && !exp_digits)) { return false; }
+  errno = 0;
+  char *end = nullptr;
+  const double value = strtod(s.c_str(), &end);
+  return errno != ERANGE && end == s.c_str() + s.size() && std::isfinite(value);
 }
 
 bool is_boolean(const std::string &s)
@@ -286,7 +378,7 @@ bool is_datetime(const std::string &s)
   }
   return pos == s.size() && valid_date_parts(year, month, day)
          && hour >= 0 && hour < 24 && minute >= 0 && minute < 60
-         && second >= 0 && second <= 60;
+         && second >= 0 && second < 60;
 }
 
 int parse_csv(const char *data,
@@ -315,6 +407,7 @@ int parse_csv(const char *data,
   bool field_quoted = false;   // current field was quoted
   bool in_quotes = false;
   bool field_started = false;  // saw any char (incl. quote) for this field
+  bool quote_closed = false;
   int64_t pos = 0;
 
   const char delim = options.field_delimiter_;
@@ -331,6 +424,7 @@ int parse_csv(const char *data,
     field.clear();
     field_quoted = false;
     field_started = false;
+    quote_closed = false;
   };
 
   auto finish_record = [&]() {
@@ -341,6 +435,10 @@ int parse_csv(const char *data,
 
   while (pos < len) {
     char c = data[pos];
+    if (field.size() > 16U * 1024 * 1024 || fields.size() > 4096) {
+      err = "CSV field/column resource limit exceeded at byte " + std::to_string(pos);
+      return -1;
+    }
     if (in_quotes) {
       if (c == '"') {
         if (pos + 1 < len && data[pos + 1] == '"') {
@@ -349,6 +447,7 @@ int parse_csv(const char *data,
           continue;
         }
         in_quotes = false;
+        quote_closed = true;
         ++pos;
         continue;
       }
@@ -390,11 +489,19 @@ int parse_csv(const char *data,
       ++pos;
       continue;
     }
+    if (quote_closed || c == '"') {
+      err = "invalid CSV quote at byte " + std::to_string(pos);
+      return -1;
+    }
     field.push_back(c);
     field_started = true;
     ++pos;
   }
 
+  if (in_quotes) {
+    err = "unterminated CSV quoted field at byte " + std::to_string(pos);
+    return -1;
+  }
   // Trailing record without newline.
   if (field_started || !field.empty() || field_quoted || !fields.empty()) {
     finish_record();
@@ -423,6 +530,7 @@ int parse_csv(const char *data,
     std::vector<std::string> names;
     for (size_t i = 0; i < header.size(); ++i) {
       std::string raw = header[i].is_null_ ? std::string() : header[i].value_;
+      if (raw.empty()) { raw = "column_" + std::to_string(i); }
       std::string name = make_unique_column_name(names, raw);
       names.push_back(name);
       FileTableColumn col;
@@ -819,6 +927,13 @@ int parse_jsonl(const char *data, int64_t len, FileTableData &out, std::string &
   std::string flattened;
   const char *body = data;
   int64_t body_len = len;
+  if (body_len >= 3 && memcmp(body, "\xef\xbb\xbf", 3) == 0) { body += 3; body_len -= 3; }
+  const char *first = body;
+  while (first < body + body_len && std::isspace(static_cast<unsigned char>(*first))) { ++first; }
+  if (first < body + body_len && *first == '[') {
+    err = "JSONL requires one flat object per line; arrays are not supported";
+    return -1;
+  }
   if (try_flatten_json_array(data, len, flattened)) {
     body = flattened.data();
     body_len = static_cast<int64_t>(flattened.size());
@@ -849,6 +964,7 @@ int parse_jsonl(const char *data, int64_t len, FileTableData &out, std::string &
     if (!blank) {
       JsonReader r{p, trim};
       JsonLine line;
+      std::set<std::string> object_keys;
       if (!r.consume('{')) {
         err = "line " + std::to_string(line_no) + ": not a JSON object";
         return -1;
@@ -862,6 +978,10 @@ int parse_jsonl(const char *data, int64_t len, FileTableData &out, std::string &
           }
           if (!r.consume(':')) {
             err = "line " + std::to_string(line_no) + ": missing ':'";
+            return -1;
+          }
+          if (!object_keys.insert(key).second) {
+            err = "line " + std::to_string(line_no) + ": duplicate JSON key";
             return -1;
           }
           FileTableField field;
