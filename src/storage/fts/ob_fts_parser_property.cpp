@@ -1018,6 +1018,9 @@ int ObFTParserProperty::parse_for_parser_helper(const ObFTParser &parser, const 
   int ret = OB_SUCCESS;
   ObFTParserJsonProps props;
   if (json_str.empty()) {
+    // Helpers can be reinitialized after explicit options. An empty option
+    // string must restore fresh defaults rather than retain the prior values.
+    *this = ObFTParserProperty();
     // No configuration was given, so the constructor defaults are used directly
     // and there is no json to build or parse. The ik branch below also records
     // these placeholder names so that a helper built from an empty property

@@ -1,6 +1,13 @@
 # Full-text hot-path optimization
 
-## Current increment: selective reference integration
+## Current increment: storage decoding and encoding selection
+
+The newest increment adapts batch string-diff decoding, fixed-width binary
+encoding selection and the BENG shared-cache policy from the later reference
+commits through 97ab48bb. See [scope and tradeoffs](fts-storage-followup.md).
+There is no measured score for this increment.
+
+## Earlier increment: selective reference integration
 
 The latest source adapts score-free MATCH execution, count-only derived-table
 rewrites, vectorized FTS build scans and bounded token-result reuse from public

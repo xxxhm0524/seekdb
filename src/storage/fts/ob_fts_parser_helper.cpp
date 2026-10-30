@@ -401,7 +401,9 @@ int ObFTParseHelper::segment(
             || parser_property_.quantifier_table_ == ObString(ObFTSLiteral::CONFIG_NAME_QUANTIFIER_TABLE))
         && (parser_property_.stopword_table_.empty()
             || parser_property_.stopword_table_ == ObString(ObFTSLiteral::CONFIG_NAME_STOPWORD_TABLE));
-    ObFTTokenCache *token_cache = builtin_parser && builtin_bindings
+    // BENG's single-pass build does not reuse segmentation entries; repeated
+    // SQL TOKENIZE calls are handled separately by the packed-JSON memo.
+    ObFTTokenCache *token_cache = builtin_parser && !parser_name_.is_beng() && builtin_bindings
         && fulltext_len <= ObFTTokenCache::MAX_ENTRY_BYTES
         ? ObFTTokenCache::get_instance() : nullptr;
     ObFTTokenCacheKey token_key;
