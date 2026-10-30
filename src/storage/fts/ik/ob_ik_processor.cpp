@@ -53,6 +53,7 @@ TokenizeContext::TokenizeContext(ObCollationType coll_type,
                                  bool is_smart)
     : coll_type_(coll_type),
       utf8_ascii_fast_path_(ObCharset::charset_type_by_coll(coll_type) == CHARSET_UTF8MB4),
+      allocator_(allocator), character_cache_(nullptr), character_cache_size_(0),
       fulltext_(fulltext), fulltext_len_(fulltext_len), cursor_(0),
       next_char_len_(0), handle_size_(0), is_smart_(is_smart), token_list_(allocator),
       result_list_(allocator)
@@ -65,7 +66,21 @@ int TokenizeContext::init()
 
   if (OB_ISNULL(fulltext_) || fulltext_len_ <= 0) {
     ret = OB_INVALID_ARGUMENT;
-  } else if (OB_FAIL(prepare_next_char())) {
+  } else {
+    // One byte per source offset: low 3 bits hold a nonzero byte length,
+    // upper bits hold CharType. Bound scratch space independently of input
+    // size; allocation failure only disables this optimization.
+    const int64_t max_cache_bytes = 64 * 1024;
+    if (character_cache_ == nullptr) {
+      character_cache_size_ = MIN(fulltext_len_, max_cache_bytes);
+      character_cache_ = static_cast<uint8_t *>(allocator_.alloc(character_cache_size_));
+      if (character_cache_ != nullptr) {
+        MEMSET(character_cache_, 0, character_cache_size_);
+      } else {
+        character_cache_size_ = 0;
+      }
+    }
+    ret = prepare_next_char();
   }
   return ret;
 }
@@ -103,29 +118,46 @@ int TokenizeContext::current_char_type(ObFTCharUtil::CharType &type)
 
 int TokenizeContext::prepare_next_char()
 {
+  return character_at(cursor_, next_char_len_, next_char_type_);
+}
+
+int TokenizeContext::character_at(int64_t offset, int64_t &length,
+                                ObFTCharUtil::CharType &type)
+{
   int ret = OB_SUCCESS;
+  if (offset < 0 || offset >= fulltext_len_) {
+    return OB_INVALID_ARGUMENT;
+  }
+  if (offset < character_cache_size_ && character_cache_[offset] != 0) {
+    const uint8_t entry = character_cache_[offset];
+    length = entry & 7;
+    type = static_cast<ObFTCharUtil::CharType>(entry >> 3);
+    return OB_SUCCESS;
+  }
   // Every ASCII byte is one complete character in UTF-8. Other encodings
   // and non-ASCII bytes retain the validating charset path.
   if (utf8_ascii_fast_path_
-      && cursor_ < fulltext_len_
-      && static_cast<unsigned char>(fulltext_[cursor_]) < 0x80) {
-    const unsigned char ch = static_cast<unsigned char>(fulltext_[cursor_]);
-    next_char_len_ = 1;
+      && static_cast<unsigned char>(fulltext_[offset]) < 0x80) {
+    const unsigned char ch = static_cast<unsigned char>(fulltext_[offset]);
+    length = 1;
     if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')) {
-      next_char_type_ = ObFTCharUtil::CharType::ENGLISH_LETTER;
+      type = ObFTCharUtil::CharType::ENGLISH_LETTER;
     } else if (ch >= '0' && ch <= '9') {
-      next_char_type_ = ObFTCharUtil::CharType::ARABIC_LETTER;
+      type = ObFTCharUtil::CharType::ARABIC_LETTER;
     } else {
-      next_char_type_ = ObFTCharUtil::CharType::USELESS;
+      type = ObFTCharUtil::CharType::USELESS;
     }
   } else if (OB_FAIL(ObCharset::first_valid_char(coll_type_,
-                                          fulltext_ + cursor_,
-                                          fulltext_len_ - cursor_,
-                                          next_char_len_))) {
+                                          fulltext_ + offset,
+                                          fulltext_len_ - offset,
+                                          length))) {
   } else if (OB_FAIL(ObFTCharUtil::classify_first_char(coll_type_,
-                                                       fulltext_ + cursor_,
-                                                       next_char_len_,
-                                                       next_char_type_))) {
+                                                       fulltext_ + offset,
+                                                       length,
+                                                       type))) {
+  }
+  if (OB_SUCC(ret) && offset < character_cache_size_ && length > 0 && length <= 7) {
+    character_cache_[offset] = static_cast<uint8_t>((static_cast<uint8_t>(type) << 3) | length);
   }
   return ret;
 }
@@ -188,6 +220,10 @@ int TokenizeContext::add_token(const char *fulltext,
 
 TokenizeContext::~TokenizeContext()
 {
+  if (character_cache_ != nullptr) {
+    allocator_.free(character_cache_);
+    character_cache_ = nullptr;
+  }
   token_list_.reset();
   result_list_.reset();
 }

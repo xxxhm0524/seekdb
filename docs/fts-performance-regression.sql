@@ -33,3 +33,8 @@ SELECT TOKENIZE('阿坝 北京 成都 广州 杭州 南京 上海 深圳 武汉 
 SELECT TOKENIZE('中华人民共和国 中华 中华人民 人民共和国 人民', 'ik');
 SELECT TOKENIZE('一百二十三个 三千米 两公斤 二十万元', 'ik');
 SELECT TOKENIZE('かな カナ 한글 ＡＢＣ １２３ 😀𠀀', 'ik');
+-- Arbitration reuses immutable character metadata across internal batches.
+SELECT TOKENIZE(REPEAT('中华人民共和国数据库全文检索，', 100), 'ik');
+SELECT TOKENIZE(REPEAT('研究生命起源 长春市长春药店 一百二十三公斤。', 20), 'ik');
+-- Beyond the scratch-cache bound: must retain the normal decoder fallback.
+SELECT TOKENIZE(CONCAT(REPEAT('alpha ', 11000), '数据库全文检索'), 'ik');

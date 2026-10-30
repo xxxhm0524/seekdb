@@ -113,7 +113,7 @@ public:
 
   bool check_conflict(const ObIKToken &token);
 
-  ObFTSortList &list() { return list_; }
+  ObFTSortList &list() { invalidate_weights(); return list_; }
 
   bool better_than(const ObIKTokenChain &other) const;
 
@@ -132,6 +132,11 @@ public:
   int64_t p_weight() const;
 
 private:
+  void invalidate_weights() const { x_weight_valid_ = false; p_weight_valid_ = false; }
+  mutable bool x_weight_valid_ = false;
+  mutable bool p_weight_valid_ = false;
+  mutable int64_t cached_x_weight_ = 1;
+  mutable int64_t cached_p_weight_ = 0;
   int min_offset_ = -1;
   int max_offset_ = -1;
   int payload_ = -1;

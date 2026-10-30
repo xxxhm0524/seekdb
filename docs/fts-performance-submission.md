@@ -92,6 +92,38 @@ No whole-query runtime reduction can be deduced from these complexity changes.
 Compilation, correctness testing and timing are still intentionally unexecuted.
 The 50% aggregate target remains unverified.
 
+## Fourth revision: reuse within IK arbitration
+
+Source inspection of `ObIKArbitrator::output_result` showed a second character
+validation/classification pass after processor traversal. The token context now
+keeps one packed metadata byte per source-byte offset, limited to the first
+64 KiB. Only successful decodes with representable lengths are cached; invalid
+input is not cached. Larger offsets and allocation failures use the original
+decoder. The cache belongs to one immutable input context, survives only its
+internal batches and is freed with that context. Token selection, compound
+handling and output positions remain in the existing arbitration code.
+
+Candidate-chain comparison repeatedly traversed the same best chain to calculate
+x/p weights. The chain now computes each weight lazily and reuses it until a
+mutation. Add, pop and mutable-list access invalidate the weights. The original
+separate formulas and comparison order are retained, so unused weights are not
+calculated speculatively. This is local intermediate-state reuse, not a cache of
+TOKENIZE/MATCH results or persistent dictionary data.
+
+The supplied platform reports showed BENG build time changing from 2.621 s to
+6.375 s, while both IK builds, both tokenize metrics and all query metrics were
+slightly faster. No commit IDs were included in those reports. The corresponding
+aggregate improvements were +0.0782091784 and -0.0431528858. These observations
+do not distinguish DDL scheduling variation from a source regression. The local
+checked-in baseline also differs from the baseline implied by platform scores;
+it has not been changed. No measurements exist for this fourth revision.
+
+The DAAT result merger was inspected, including its one-row cache interface,
+loser-tree merging and boolean filtering. It was not modified: batching across
+that interface requires preserving per-token exhaustion, duplicate-document
+merging, filter evaluation and LIMIT behavior. No query correctness or speedup
+claim is made for an unimplemented change. No compilation or tests were run.
+
 ## Reproduction
 
 Build parent and candidate with identical compiler options and run each on the
