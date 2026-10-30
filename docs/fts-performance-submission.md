@@ -69,6 +69,29 @@ request. It does not establish a 50% end-to-end time reduction. Nine per-metric
 timings and correctness results from platform evaluation remain necessary to
 determine whether further work should target build or query execution instead.
 
+## Third revision: dictionary lookup
+
+With no per-metric report available, further source inspection identified a
+linear scan of all dictionary ranges for every initial-character match. The
+candidate validates range ordering and strict non-overlap using the original
+UTF8MB4_BIN comparator when loading the per-parser dictionary. It then finds
+the first range whose end is at least the input using binary search, followed by
+the original inclusive start check. Unsorted, overlapping or invalid ranges keep
+the original first-match linear scan. There is no reordering, memoization of
+query results, mutable shared lookup state or change to dictionary contents.
+
+The DAT character-code hash map also used integer remainder at every collision
+step. With capacity at least three, adding three requires at most one wraparound
+subtraction. Lookup and insertion now both use that equivalent probe sequence;
+smaller capacities retain the remainder path. Hash functions, equality, table
+layout and persisted dictionary format are unchanged.
+
+These paths serve IK parsing for documents and query terms. Their benefit depends
+on range count and collisions, and range validation adds initialization work.
+No whole-query runtime reduction can be deduced from these complexity changes.
+Compilation, correctness testing and timing are still intentionally unexecuted.
+The 50% aggregate target remains unverified.
+
 ## Reproduction
 
 Build parent and candidate with identical compiler options and run each on the

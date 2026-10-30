@@ -382,6 +382,28 @@ int ObFTRangeDict::find_first_char_range(const ObString &single_word, ObIFTDict 
 {
   int ret = OB_SUCCESS;
   bool found = false;
+  if (ordered_ranges_) {
+    // Find the first end >= the input. Strictly disjoint, ordered ranges make
+    // it the only possible match. Preserve the original collation and bounds.
+    int64_t begin = 0;
+    int64_t end = range_dicts_.size();
+    while (begin < end) {
+      const int64_t mid = begin + (end - begin) / 2;
+      if (ObCharset::strcmp(ObCollationType::CS_TYPE_UTF8MB4_BIN,
+                            range_dicts_[mid].end_.get_word(), single_word) < 0) {
+        begin = mid + 1;
+      } else {
+        end = mid;
+      }
+    }
+    if (begin < range_dicts_.size()
+        && ObCharset::strcmp(ObCollationType::CS_TYPE_UTF8MB4_BIN,
+                              range_dicts_[begin].start_.get_word(), single_word) <= 0) {
+      dict = range_dicts_[begin].dict_;
+      return OB_SUCCESS;
+    }
+    return OB_ENTRY_NOT_EXIST;
+  }
   for (int i = 0; OB_SUCC(ret) && !found && i < range_dicts_.size(); ++i) {
     if (ObCharset::strcmp(ObCollationType::CS_TYPE_UTF8MB4_BIN,
                           range_dicts_[i].start_.get_word(),
@@ -405,6 +427,7 @@ int ObFTRangeDict::find_first_char_range(const ObString &single_word, ObIFTDict 
 int ObFTRangeDict::build_dict_from_cache(const ObFTCacheRangeContainer &range_container)
 {
   int ret = OB_SUCCESS;
+  ordered_ranges_ = false;
   for (ObList<ObFTCacheRangeHandle *, ObIAllocator>::const_iterator iter = range_container.get_handles().begin();
        OB_SUCC(ret) && iter != range_container.get_handles().end();
        iter++) {
@@ -419,6 +442,19 @@ int ObFTRangeDict::build_dict_from_cache(const ObFTCacheRangeContainer &range_co
       range.end_ = dat->end_word_;
       range.dict_ = dict;
       if (OB_FAIL(range_dicts_.push_back(range))) {
+      }
+    }
+  }
+  if (OB_SUCC(ret)) {
+    ordered_ranges_ = true;
+    for (int64_t i = 0; ordered_ranges_ && i < range_dicts_.size(); ++i) {
+      if (ObCharset::strcmp(ObCollationType::CS_TYPE_UTF8MB4_BIN,
+                            range_dicts_[i].start_.get_word(),
+                            range_dicts_[i].end_.get_word()) > 0
+          || (i > 0 && ObCharset::strcmp(ObCollationType::CS_TYPE_UTF8MB4_BIN,
+                                         range_dicts_[i - 1].end_.get_word(),
+                                         range_dicts_[i].start_.get_word()) >= 0)) {
+        ordered_ranges_ = false;
       }
     }
   }

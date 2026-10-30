@@ -28,3 +28,8 @@ SELECT TOKENIZE('lower UPPER Mixed lower中文lower 😀lower', 'beng');
 SELECT TOKENIZE('lower UPPER Mixed lower中文lower 😀lower', 'ik');
 SELECT TOKENIZE(CONCAT('a', CHAR(0), 'b', CHAR(127), 'c'), 'space');
 SELECT TOKENIZE(CONCAT('a', CHAR(0), 'b', CHAR(127), 'c'), 'beng');
+-- Dictionary lookups spanning scripts, repeated prefixes and absent entries.
+SELECT TOKENIZE('阿坝 北京 成都 广州 杭州 南京 上海 深圳 武汉 西安 郑州', 'ik');
+SELECT TOKENIZE('中华人民共和国 中华 中华人民 人民共和国 人民', 'ik');
+SELECT TOKENIZE('一百二十三个 三千米 两公斤 二十万元', 'ik');
+SELECT TOKENIZE('かな カナ 한글 ＡＢＣ １２３ 😀𠀀', 'ik');
