@@ -2,11 +2,12 @@
 
 This candidate targets the remaining build-score gap of the user-reported official result for `10efa0c9f2c84e9959d9154f602d9950421ee13b`: build 2.901x, query 2.693x, gates pass, 19.574/20. A new official evaluation is required to establish this candidate's score.
 
-> Submission note: the `amd-cagra-v2` branch applies the all-dimension
-> 160/16 graph measured here only to 256-d vectors; 128-d keeps the official
-> 10efa configuration. See [AMD-SUBMIT-CONFIG.md](AMD-SUBMIT-CONFIG.md) for the
-> exact final split and score projection. The 256-d measurements in this file
-> are the evidence for the 256-d half of that split.
+> Submission note: the `amd-cagra-v3` branch applies the all-dimension
+> 160/16 graph measured here only to 256-d vectors; 128-d uses the aggressive
+> 32/64/10 public-reference SIFT configuration. See
+> [AMD-SUBMIT-CONFIG.md](AMD-SUBMIT-CONFIG.md) for the exact final split and
+> score projection. The 256-d measurements in this file are the evidence for
+> the 256-d half of that split.
 
 ## Implementation
 

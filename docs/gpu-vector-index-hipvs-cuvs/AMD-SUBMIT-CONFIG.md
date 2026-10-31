@@ -1,4 +1,4 @@
-# Final submission configuration (`amd-cagra-v2`)
+# Final submission configuration (`amd-cagra-v3`)
 
 Baseline: V5 frozen commit `634888d9b037153fa143d2c913ba4b25503e1d62`.
 This document defines the exact configuration on the submission branch; the
@@ -10,50 +10,50 @@ candidates unless they explicitly refer to this file.
 | Parameter | 128-d (SIFT250K) | 256-d (Hidden250K) |
 | --- | --- | --- |
 | CAGRA `build_algo` | `NN_DESCENT` | `NN_DESCENT` |
-| `graph_degree` | 128 | 160 |
-| `intermediate_graph_degree` | 128 | 160 |
-| `nn_descent_niter` | 24 | 16 |
+| `graph_degree` | 32 | 160 |
+| `intermediate_graph_degree` | 64 | 160 |
+| `nn_descent_niter` | 10 | 16 |
 | `search_width` | 32 | 16 |
-| `itopk_size` | `max(4*topk, 512)` | `max(4*topk, 512)` |
+| `itopk_size` | `max(topk, 256)` | `max(topk, 512)` |
 | vector precision (external) | FP32 | FP32 |
 
-The 128-d row is exactly the configuration that the official evaluator already
-scored on commit `10efa0c9f2c84e9959d9154f602d9950421ee13b`: **build 2.901x,
-query 2.693x, gates pass, 19.574/20**. The 256-d row is the build-margin
-candidate measured in [AMD-BUILD-MARGIN.md](AMD-BUILD-MARGIN.md): paired DDL
-**16.963s -> 12.310s (1.378x)** at Recall@10/@100 **0.9274/0.8747** versus the
-10efa reference's **0.9266/0.8696**, with search width 16.
+The 128-d row follows the aggressive public-reference setting that was
+independently measured on real SIFT250K: CAGRA 32/64/10 built in 1.68-1.83s
+versus 17.6s for the frozen 128/256/100 graph (9.6-10.4x), with strict
+Recall@100 0.99975. The 256-d row is the build-margin candidate measured in
+[AMD-BUILD-MARGIN.md](AMD-BUILD-MARGIN.md): paired DDL **16.963s -> 12.310s
+(1.378x)** at Recall@10/@100 **0.9274/0.8747** versus the 10efa reference's
+**0.9266/0.8696**, with search width 16.
 
 Bridge source MD5 for this exact configuration (LF blob as committed):
-`5342d95675721b528ba42c7a455d3473`.
+`f7bcf6ae33a407e9d933991b2a34f9f1`.
 
 ## Why the split
 
-The official 19.574 result is exactly 0.426 points short of 20 because build
-2.901x sits just below the 3.0x build cap. A uniform 160-degree/16-pass graph
-(measured in `AMD-BUILD-MARGIN.md`) projects enough build margin, but it also
-changes the 128-d path whose recall and query behaviour the official run had
-already validated. Keeping 128-d on the official configuration removes that
-recall risk entirely; only the 256-d path, which carries 60% of the build
-weight, moves to the build-margin graph.
+The official 19.574 result is 0.426 points short of 20 because build 2.901x
+sits just below the 3.0x build cap. SIFT250K is the easier 128-d dataset and
+carries 40% of the build weight, so the aggressive 32/64/10 graph there
+creates a large build margin while the harder 256-d Hidden250K arm keeps the
+recall-safe 160/160/16 graph. The search kernel is pinned to the frozen
+baseline's `SINGLE_CTA`; the official GPU-path spot check rejects the
+AUTO/MULTI_CTA path even when local GPU logs look clean.
 
 ## Score projection
 
-Using the measured per-dataset incremental ratios against `10efa`:
-
-- build: `1.000^0.4 * 1.378^0.6 = 1.212x` -> `2.901 * 1.212 = 3.52x`
-- query: `1.000^0.4 * 0.8338^0.6 = 0.897x` -> `2.693 * 0.897 = 2.41x`
-
-Both exceed their score caps (build 3.0x, query 1.5x), so the projected score
-is the full **20/20** (4 hard-gate + 14 build + 2 query). This is a projection
-from paired local measurements, not a new official run; the platform result
-must still be recorded.
+The 128-d arm has an external public measurement of 9.6-10.4x build over the
+frozen baseline; the 256-d arm has the paired 1.378x build increment measured
+against the 10efa reference. Even discounting the 128-d result heavily, the
+weighted build ratio is far above the 3.0x cap. Query uses width 32 with a
+256-itopk floor on 128-d (public SIFT measurement 1.58x SQL QPS) and the
+existing 10efa query path on 256-d. The projected score is the full **20/20**
+(4 hard-gate + 14 build + 2 query). The exact cross-team number is a
+projection; the platform result must still be recorded.
 
 ## Recall and gate evidence
 
-- 128-d SIFT250K, official configuration: Recall@10/@100 `0.9975/0.9989`
-  against the frozen baseline `1.0000/1.0000` (deltas `-0.0025/-0.0011`,
-  inside the 0.005 budget).
+- 128-d SIFT250K, 32/64/10 public-reference measurement: strict Recall@100
+  `0.99975` against the frozen baseline (delta `-2.2e-4`), comfortably inside
+  both the 0.95 absolute floor and the 0.005 budget.
 - 256-d 160/16 graph: paired synthetic 250Kx256 Recall@10/@100
   `0.9274/0.8747` against reference `0.9266/0.8696` (deltas
   `+0.0008/+0.0051`). The official Hidden250K baseline is easier
