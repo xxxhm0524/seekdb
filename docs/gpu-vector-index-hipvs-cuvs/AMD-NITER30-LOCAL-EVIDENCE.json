@@ -1,0 +1,99 @@
+{
+  "baseline": {
+    "seconds": [
+      43.175,
+      40.865,
+      42.168
+    ],
+    "median": 42.168
+  },
+  "teammate32": {
+    "seconds": [
+      14.478,
+      15.191,
+      15.495
+    ],
+    "median": 15.191
+  },
+  "degree160": {
+    "seconds": [
+      11.464,
+      10.455,
+      11.65
+    ],
+    "median": 11.464
+  },
+  "candidate30": {
+    "seconds": [
+      13.946,
+      14.171,
+      13.77
+    ],
+    "median": 13.946,
+    "relative_to_teammate_median_reduction": 0.08195642156540062,
+    "baseline_build_speedup_median": 3.023662698981787
+  },
+  "candidate28": {
+    "seconds": [
+      14.085,
+      12.861,
+      13.265
+    ],
+    "median": 13.265
+  },
+  "recall10": {
+    "baseline": [
+      0.9299,
+      0.9295,
+      0.9336
+    ],
+    "teammate32": [
+      0.9334,
+      0.924,
+      0.9303
+    ],
+    "degree160": [
+      0.9352,
+      0.9289,
+      0.9344
+    ],
+    "candidate30": [
+      0.9285,
+      0.9295,
+      0.9313
+    ],
+    "candidate28": [
+      0.9256,
+      0.9271,
+      0.927
+    ]
+  },
+  "recall100": {
+    "baseline": [
+      0.862,
+      0.8625,
+      0.8637
+    ],
+    "teammate32": [
+      0.8708,
+      0.8705,
+      0.8701
+    ],
+    "degree160": [
+      0.8821,
+      0.8812,
+      0.8824
+    ],
+    "candidate30": [
+      0.8666,
+      0.8677,
+      0.8694
+    ],
+    "candidate28": [
+      0.8668,
+      0.8659,
+      0.866
+    ]
+  },
+  "scope": "Local synthetic 250000x256,512 queries, strict first-K, batched tuner; GPU build only, not SQL DDL, official score unknown."
+}

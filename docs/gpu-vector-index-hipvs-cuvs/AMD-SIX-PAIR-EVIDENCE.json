@@ -1,0 +1,105 @@
+{
+  "scope": "six alternating independent-process pairs,250000x256 uniform base seed20261030,4096 fresh queries seed20261031,exact top100 truth; GPU tuner only",
+  "pairs": [
+    {
+      "pair": 0,
+      "baseline_build": 42.11,
+      "candidate_build": 10.955,
+      "build_speedup": 3.8439068918302146,
+      "baseline_r10": 0.9262,
+      "candidate_r10": 0.9312,
+      "baseline_r100": 0.8644,
+      "candidate_r100": 0.8821,
+      "batch_search_speedup": 1.915294
+    },
+    {
+      "pair": 1,
+      "baseline_build": 43.092,
+      "candidate_build": 10.473,
+      "build_speedup": 4.1145803494700655,
+      "baseline_r10": 0.9264,
+      "candidate_r10": 0.932,
+      "baseline_r100": 0.8641,
+      "candidate_r100": 0.8816,
+      "batch_search_speedup": 0.957647
+    },
+    {
+      "pair": 2,
+      "baseline_build": 42.528,
+      "candidate_build": 11.454,
+      "build_speedup": 3.7129387113672077,
+      "baseline_r10": 0.9257,
+      "candidate_r10": 0.9328,
+      "baseline_r100": 0.8645,
+      "candidate_r100": 0.8815,
+      "batch_search_speedup": 0.988636
+    },
+    {
+      "pair": 3,
+      "baseline_build": 41.7,
+      "candidate_build": 10.756,
+      "build_speedup": 3.8769059129788026,
+      "baseline_r10": 0.9265,
+      "candidate_r10": 0.9318,
+      "baseline_r100": 0.864,
+      "candidate_r100": 0.8813,
+      "batch_search_speedup": 0.939358
+    },
+    {
+      "pair": 4,
+      "baseline_build": 42.566,
+      "candidate_build": 11.095,
+      "build_speedup": 3.8365029292474087,
+      "baseline_r10": 0.9262,
+      "candidate_r10": 0.9329,
+      "baseline_r100": 0.8642,
+      "candidate_r100": 0.8814,
+      "batch_search_speedup": 0.957471
+    },
+    {
+      "pair": 5,
+      "baseline_build": 41.394,
+      "candidate_build": 10.996,
+      "build_speedup": 3.7644598035649324,
+      "baseline_r10": 0.9265,
+      "candidate_r10": 0.9316,
+      "baseline_r100": 0.8644,
+      "candidate_r100": 0.8812,
+      "batch_search_speedup": 1.814815
+    }
+  ],
+  "official_score": null,
+  "result": "All build and recall checks pass locally; batch search exceeds 1.5x in only 2/6 pairs. Not evidence of universal full score.",
+  "single_query_ABBA": {
+    "baseline_build": [
+      40.492,
+      40.888
+    ],
+    "candidate_build": [
+      11.563,
+      11.676
+    ],
+    "baseline_search_seconds": [
+      15.273,
+      15.231
+    ],
+    "candidate_search_seconds": [
+      12.607,
+      12.627
+    ],
+    "candidate_r10": [
+      0.9325,
+      0.9317
+    ],
+    "candidate_r100": [
+      0.8814,
+      0.8814
+    ],
+    "scope": "4096 separate cuvsCagraSearch calls on same resource; excludes SQL, per-query H2D/D2H and worker dispatch",
+    "query_speedups": [
+      1.2114698183548822,
+      1.206224756474222
+    ],
+    "conclusion": "~1.21x; does not independently meet 1.5x target. SQL persistent-worker gain must be measured separately; cannot promise official 20/20."
+  }
+}

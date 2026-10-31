@@ -1,0 +1,11 @@
+=======================================================
+|ID|OPERATOR         |NAME      |EST.ROWS|EST.TIME(us)|
+-------------------------------------------------------
+|0 |VECTOR INDEX SCAN|items(idx)|1       |7           |
+=======================================================
+Outputs & filters:
+-------------------------------------
+  0 - output([items.id]), filter(nil), rowset=16
+      access([items.id]), partitions(p0)
+      is_index_back=true, is_global_index=false,
+      range_key([items.__vid_1793371978207158], [items.__type_17_1793371978796766]), range(MIN,MIN ; MAX,MAX)always true

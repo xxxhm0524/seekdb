@@ -1,0 +1,11 @@
+RESULT {"dataset": "uniform256", "dim": 256, "variant": "margin", "binary": "seekdb", "build_phase_seconds": 12.962, "first_query_build_phase_seconds": 0.054, "restart_ready_seconds": 3.093, "restart_first_query_seconds": 0.761, "deserialized_lines": 1, "rebuilt_lines": 0, "subset_result_mismatches": 0, "subset_ordered_mismatches": 0, "deleted_id_absent": true, "inserted_id_found": true, "vmhwm_gb": 2.41, "recall10": 0.9258, "recall100": 0.8746}
+RESULT {'rows': 10000, 'vsag_build_seconds': 1.55, 'approx_before': ['101', '153339', '166514', '77077', '15843', '105093', '63052', '139926', '12375', '160751'], 'exact_before': ['101', '153339', '166514', '77077', '15843', '105093', '63052', '139926', '12375', '160751'], 'approx_after': ['101', '153339', '166514', '77077', '15843', '105093', '63052', '139926', '12375', '160751'], 'exact_after': ['101', '153339', '166514', '77077', '15843', '105093', '63052', '139926', '12375', '160751'], 'exact_match_before': True, 'exact_match_after': True, 'restart_fdeserialize': False, 'any_cuvs_after_restart': False}
+Traceback (most recent call last):
+  File "/root/amd-score-20261030/analyze.py", line 4, in <module>
+    for r in sorted(rows,key=lambda x:(x['dim'],x['variant'],x['run_order'])):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/amd-score-20261030/analyze.py", line 4, in <lambda>
+    for r in sorted(rows,key=lambda x:(x['dim'],x['variant'],x['run_order'])):
+                                                             ~^^^^^^^^^^^^^
+KeyError: 'run_order'
+SUMMARY_RECOVERED: aggregation excluded non-performance JSON and completed successfully

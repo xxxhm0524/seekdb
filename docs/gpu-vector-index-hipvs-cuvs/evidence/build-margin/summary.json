@@ -1,0 +1,45 @@
+{
+  "128": {
+    "reference": {
+      "ddl_seconds": 13.175,
+      "qps10": 619.09,
+      "qps100": 514.35,
+      "recall10": 0.9879,
+      "recall100": 0.9645,
+      "vram_peak_gb": 0.73
+    },
+    "candidate": {
+      "ddl_seconds": 11.893,
+      "qps10": 493.51,
+      "qps100": 421.82,
+      "recall10": 0.9904,
+      "recall100": 0.971,
+      "vram_peak_gb": 0.77
+    },
+    "build_gain": 1.1077945009669554,
+    "query_gain": 0.808547047695927
+  },
+  "256": {
+    "reference": {
+      "ddl_seconds": 16.963,
+      "qps10": 420.43,
+      "qps100": 374.48,
+      "recall10": 0.9266,
+      "recall100": 0.8696,
+      "vram_peak_gb": 0.86
+    },
+    "candidate": {
+      "ddl_seconds": 12.31,
+      "qps10": 351.2,
+      "qps100": 311.7,
+      "recall10": 0.9274,
+      "recall100": 0.8747,
+      "vram_peak_gb": 0.89
+    },
+    "build_gain": 1.3779853777416735,
+    "query_gain": 0.8338433927262909
+  },
+  "weighted_gain_vs_10efa": 1.262788003661002,
+  "projection_only_2.901_times_gain": 3.6633479986205666,
+  "official_score": null
+}

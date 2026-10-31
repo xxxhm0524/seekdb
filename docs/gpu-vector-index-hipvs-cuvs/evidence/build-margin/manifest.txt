@@ -1,0 +1,61 @@
+Fri Oct 30 15:01:35 UTC 2026
+Linux j-wmw3bbenljvu7rp6xihf3kb5mb 6.8.0-71-generic #71-Ubuntu SMP PREEMPT_DYNAMIC Tue Jul 22 16:52:38 UTC 2025 x86_64 x86_64 x86_64 GNU/Linux
+Container CPU quota and memory limit:
+1600000 100000
+59055800320
+
+
+============================ ROCm System Management Interface ============================
+================================== Memory Usage (Bytes) ==================================
+GPU[0]		: VRAM Total Memory (B): 51522830336
+GPU[0]		: VRAM Total Used Memory (B): 28004352
+==========================================================================================
+====================================== Product Info ======================================
+GPU[0]		: Card Series: 		AMD Radeon Graphics
+GPU[0]		: Card Model: 		0x744b
+GPU[0]		: Card Vendor: 		Advanced Micro Devices, Inc. [AMD/ATI]
+GPU[0]		: Card SKU: 		D7070910
+GPU[0]		: Subsystem ID: 	0x0e0c
+GPU[0]		: Device Rev: 		0x00
+GPU[0]		: Node ID: 		4
+GPU[0]		: GUID: 		60148
+GPU[0]		: GFX Version: 		gfx1100
+==========================================================================================
+================================== End of ROCm SMI Log ===================================
+7.2.4
+set(CMAKE_CXX_COMPILER "/root/amd-score-20261030/src/deps/3rd/usr/local/oceanbase/devtools/bin/clang++-17")
+set(CMAKE_CXX_COMPILER_ARG1 "")
+set(CMAKE_CXX_COMPILER_ID "Clang")
+set(CMAKE_CXX_COMPILER_VERSION "17.0.6")
+set(CMAKE_CXX_COMPILER_VERSION_INTERNAL "")
+set(CMAKE_CXX_COMPILER_WRAPPER "")
+set(CMAKE_CXX_COMPILER_FRONTEND_VARIANT "GNU")
+set(CMAKE_CXX_COMPILER_AR "CMAKE_CXX_COMPILER_AR-NOTFOUND")
+set(CMAKE_CXX_COMPILER_RANLIB "CMAKE_CXX_COMPILER_RANLIB-NOTFOUND")
+set(CMAKE_CXX_COMPILER_LINKER "/root/amd-score-20261030/src/deps/3rd/usr/local/oceanbase/devtools/bin/ld.lld")
+set(CMAKE_CXX_COMPILER_LINKER_ID "LLD")
+set(CMAKE_CXX_COMPILER_LINKER_VERSION 17.0.6)
+set(CMAKE_CXX_COMPILER_LINKER_FRONTEND_VARIANT GNU)
+set(CMAKE_CXX_COMPILER_LOADED 1)
+set(CMAKE_CXX_COMPILER_WORKS TRUE)
+set(CMAKE_CXX_COMPILER_ENV_VAR "CXX")
+set(CMAKE_CXX_COMPILER_ID_RUN 1)
+set(CMAKE_CXX_COMPILER_ABI "ELF")
+set(CMAKE_CXX_COMPILER_CLANG_RESOURCE_DIR "/opt/seekdb-deps-cache/ac032efc6b707fc0273e6b553db53011/3rd/usr/local/oceanbase/devtools/lib/clang/17")
+set(CMAKE_CXX_COMPILER_IMPORT_STD "")
+b63211897276e0a6911bb534fe77c8b0b59f31c50af1df2f108845f06ad46ebf  /opt/hipvs/lib/libcuvs_c.so
+e9a71ecc2a2f3b247ef34373866150249c028c727ae0a5ca0a0f1fecda940bf4  src/build_release/src/observer/seekdb
+4883e9894014841fc644629b4555f586f6b48770b190d39d716fd33a43e24e63  bridge/variants/official.so
+80ba8d5dfc6ffed204dff834928b6ca1062026e357460f0d7e90e3191ba4163f  bridge/variants/margin.so
+b1948da43a847f1f71513daae44fd23e534c715f23272896a93c6bfa89de441b  bridge/variants/margin.c
+cba0f7137b54cccebc45e81ab239a8ad0d34671613040a9243ca74e075417b6b  e2e_pair.py
+0aacf81a758cca3193981ed84e1f6f19579af8f731a0d788a56b4532f9b74aeb  data/uniform128/base.f32
+c7d2a03c80dd2f70d5a53990f8e88a7355934afc76a392e0b7e05b2b7a272cdd  data/uniform128/query.f32
+63346c7530c19674d881a47cda6b12c0d7332e80c542111dab898c4abf3ac560  data/uniform128/gt.i32
+81c5cbc09d03194ab7d7b8f0d83748098e7501806645b63256460525800abca3  data/uniform256/base.f32
+810068caadfc9fcf2c383611ec783928442bd1eeda5576dbee14865b1a8c973f  data/uniform256/query.f32
+069c32c139516cb623f31c4b29a5d261d9a4c433edbfdc9cce2b2d2f9dfa8d58  data/uniform256/gt.i32
+473a5dac663c07ed4b926bdc21242d774ccf0608361b8727af7eb8a1afe19976  data/uniform128/insert.tsv
+300cdaceb16e2b638541bb8e769275a1107f9d3159cafd24c8e062804745ac36  data/uniform128/queries.txt
+416d5253757e80df5e5600216e2f61d0b92452fb9a82f43630181ca73c6bea6d  data/uniform256/insert.tsv
+9cb2c53f8f956b8963105653e74c5e34fa0a37f92c957b1c2f5b754da3a802ae  data/uniform256/queries.txt

@@ -1,0 +1,41 @@
+{
+  "scope": "synthetic 250000x256 FP32, seed20261030,512 strict queries,itopk512; independent tuner batches, not official SQL end-to-end",
+  "config": {
+    "low_dim": "degree128/inter128/niter24/width32 (teammate unchanged)",
+    "high_dim": "degree160/inter160/niter20/width8"
+  },
+  "high_dim_build_seconds": [
+    10.988,
+    10.69,
+    10.657
+  ],
+  "high_dim_recall10": [
+    0.934,
+    0.9338,
+    0.9359
+  ],
+  "high_dim_recall100": [
+    0.8823,
+    0.8817,
+    0.882
+  ],
+  "batch_search_seconds": [
+    0.071,
+    0.071,
+    0.07
+  ],
+  "original_baseline_build_seconds_previous_sweep": [
+    43.175,
+    40.865,
+    42.168
+  ],
+  "conservative_cross_run_gpu_build_speedup": 3.7190571532581003,
+  "persistence_smoke": "10000x256 separate write/read processes PASS; mismatched n/dim rejected",
+  "official_score": null,
+  "limitations": [
+    "No new real SIFT measurements",
+    "No SQL end-to-end paired run",
+    "512 synthetic queries do not establish hidden-data recall",
+    "Previous 30-iteration candidate failed recall in additional repeats; withdrawn as preferred candidate"
+  ]
+}

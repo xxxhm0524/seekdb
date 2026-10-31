@@ -1,0 +1,19 @@
+{
+  "dataset": "uniform256",
+  "dim": 256,
+  "variant": "margin",
+  "binary": "seekdb",
+  "build_phase_seconds": 12.962,
+  "first_query_build_phase_seconds": 0.054,
+  "restart_ready_seconds": 3.093,
+  "restart_first_query_seconds": 0.761,
+  "deserialized_lines": 1,
+  "rebuilt_lines": 0,
+  "subset_result_mismatches": 0,
+  "subset_ordered_mismatches": 0,
+  "deleted_id_absent": true,
+  "inserted_id_found": true,
+  "vmhwm_gb": 2.41,
+  "recall10": 0.9258,
+  "recall100": 0.8746
+}
