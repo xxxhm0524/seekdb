@@ -66,6 +66,17 @@ must still be recorded.
 - No change to external FP32 semantics, external-ID mapping, SQL syntax, or
   the CPU `lib=vsag` path. All GPU work remains on hipVS/cuVS CAGRA.
 
+## Compile verification
+
+- `tools/hipvs_bridge/seekdb_cuvs_bridge.c` compiles against the fixed hipVS
+  `f96a663d0a4441d6f5344bd3ef552b71ae7b370b` C headers.
+- A Linux clang-17 tree with the frozen third-party bundle successfully built
+  `oblib_lib` (includes `ob_vsag_adaptor.cpp`) and `ob_rootserver` (includes
+  `ob_ddl_common_rs_impl.cpp`) with `OB_BUILD_CUVS=ON`. The remaining observer
+  build on that particular test host stopped on an unrelated missing
+  `sqlite/sqlite3.h` from its local deps cache; the official frozen deps
+  include it.
+
 ## Reproduction
 
 Compile exactly as the contest requires (the bridge and observer are separate
