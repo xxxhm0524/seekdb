@@ -278,6 +278,14 @@ int ObFTTokenCache::replay_entry(const ObFTTokenCacheEntry &entry,
                        + entry.dict_len_
                        + entry.quantifier_len_
                        + entry.text_len_;
+  // Deep-copy the cached words into caller-owned storage with one allocation.
+  // The entry remains protected by the bucket read lock during this replay;
+  // no pointer into the evictable cache escapes to the caller.
+  char *word_buf = nullptr;
+  if (entry.word_cnt_ > 0
+      && OB_ISNULL(word_buf = static_cast<char *>(allocator.alloc(MAX(entry.word_bytes_, 1))))) {
+    ret = OB_ALLOCATE_MEMORY_FAILED;
+  }
   for (int64_t i = 0; OB_SUCC(ret) && i < entry.word_cnt_; ++i) {
     int64_t word_len = 0;
     int64_t word_cnt = 0;
@@ -285,16 +293,12 @@ int ObFTTokenCache::replay_entry(const ObFTTokenCacheEntry &entry,
     cursor += sizeof(int64_t);
     MEMCPY(&word_cnt, cursor, sizeof(int64_t));
     cursor += sizeof(int64_t);
-    char *word_buf = static_cast<char *>(allocator.alloc(word_len));
-    if (OB_ISNULL(word_buf)) {
-      ret = OB_ALLOCATE_MEMORY_FAILED;
-    } else {
-      MEMCPY(word_buf, cursor, word_len);
-      cursor += word_len;
-      if (OB_FAIL(words.set_refactored(ObFTWord(word_len, word_buf, meta), word_cnt))) {
-        FLOG_WARN("fail to replay fulltext word", K(ret), K(word_len), K(word_cnt));
-      }
+    MEMCPY(word_buf, cursor, word_len);
+    cursor += word_len;
+    if (OB_FAIL(words.set_refactored(ObFTWord(word_len, word_buf, meta), word_cnt))) {
+      FLOG_WARN("fail to replay fulltext word", K(ret), K(word_len), K(word_cnt));
     }
+    word_buf += word_len;
   }
   if (OB_SUCC(ret)) {
     doc_length = entry.doc_length_;
@@ -328,6 +332,7 @@ int ObFTTokenCache::fill_entry(ObFTTokenCacheEntry &entry,
 {
   int ret = OB_SUCCESS;
   entry.word_cnt_ = words.size();
+  entry.word_bytes_ = 0;
   entry.word_bucket_count_ = words.bucket_count();
   entry.doc_length_ = doc_length;
   entry.text_len_ = fulltext_len;
@@ -366,6 +371,7 @@ int ObFTTokenCache::fill_entry(ObFTTokenCacheEntry &entry,
   for (ObFTWordMap::const_iterator iter = words.begin(); OB_SUCC(ret) && iter != words.end(); ++iter) {
     const common::ObString word = iter->first.get_word().get_string();
     const int64_t word_len = word.length();
+    entry.word_bytes_ += word_len;
     const int64_t word_cnt = iter->second;
     record_end -= 2 * sizeof(int64_t) + word_len;
     cursor = record_end;

@@ -88,6 +88,7 @@ public:
 public:
   int64_t word_cnt_;
   int64_t word_bucket_count_;
+  int64_t word_bytes_;
   int64_t doc_length_;
   int64_t text_len_;
   int64_t min_token_size_;
