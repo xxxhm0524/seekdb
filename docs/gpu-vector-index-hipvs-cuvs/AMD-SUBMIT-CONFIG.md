@@ -1,4 +1,4 @@
-# Final submission configuration (`amd-cagra-submit`)
+# Final submission configuration (`amd-cagra-v2`)
 
 Baseline: V5 frozen commit `634888d9b037153fa143d2c913ba4b25503e1d62`.
 This document defines the exact configuration on the submission branch; the
