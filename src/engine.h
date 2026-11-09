@@ -205,7 +205,9 @@ class Table {
   FileHandle file_;
   uint32_t page_count_ = 0;
   uint64_t next_pos_ = 0;
+  bool direct_io_ = false;
   std::unordered_map<int64_t, uint64_t> pk_pos_;
+  bool reopen_buffered();
 };
 
 struct WalRecordHeader {

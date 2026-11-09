@@ -221,6 +221,7 @@ void Table::open() {
   int flags = O_RDWR | O_CREAT;
 #ifndef _WIN32
   file_ = FileHandle::open(data_path_, flags | O_DIRECT);
+  direct_io_ = file_.valid();
   if (!file_.valid()) file_ = FileHandle::open(data_path_, flags);
 #else
   file_ = FileHandle::open(data_path_, flags);
@@ -248,6 +249,13 @@ void Table::open() {
 
 void Table::close_file() { file_.close(); }
 
+bool Table::reopen_buffered() {
+  direct_io_ = false;
+  file_.close();
+  file_ = FileHandle::open(data_path_, O_RDWR | O_CREAT);
+  return file_.valid();
+}
+
 bool Table::load_page_raw(uint32_t page_no, Page &page) {
   if (!file_.valid()) return false;
   int64_t size = file_.size();
@@ -259,7 +267,14 @@ bool Table::load_page_raw(uint32_t page_no, Page &page) {
     page.page_no = page_no;
     return true;
   }
-  if (!file_.pread_full(&page, kPageSize, offset)) return false;
+  if (!file_.pread_full(&page, kPageSize, offset)) {
+    // Some container/volume filesystems accept O_DIRECT at open but reject
+    // aligned reads.  Fall back to buffered I/O once and retry.
+    if (direct_io_ && reopen_buffered()) {
+      return file_.pread_full(&page, kPageSize, offset);
+    }
+    return false;
+  }
   return true;
 }
 
@@ -310,8 +325,14 @@ bool Table::read_row(uint64_t pos, std::vector<uint8_t> &row) {
 
 void Table::write_page_to_disk(uint32_t page_no, const Page &page) {
   uint64_t offset = static_cast<uint64_t>(page_no) * kPageSize;
-  if (!file_.pwrite_full(&page, kPageSize, offset))
-    throw_error("IO_ERROR", "failed to write table page");
+  if (!file_.pwrite_full(&page, kPageSize, offset)) {
+    if (direct_io_ && reopen_buffered()) {
+      if (!file_.pwrite_full(&page, kPageSize, offset))
+        throw_error("IO_ERROR", "failed to write table page");
+    } else {
+      throw_error("IO_ERROR", "failed to write table page");
+    }
+  }
   if (page_no >= page_count_) page_count_ = page_no + 1;
 }
 
