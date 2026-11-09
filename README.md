@@ -136,11 +136,13 @@ ROLLBACK;
 | 崩溃恢复 | `tests/regression.py`：显式事务中 kill；已提交保留、未提交不残留、重启可继续写 | PASS |
 | 向量 TopK | `tests/regression.py`：500 行 4 维随机数据，20 个过滤查询对暴力真值；索引后增删改 | PASS |
 | 大规模 TopK | `python tests/bench.py`：10,000 行 × 128 维，1,000 个 K=10 查询（一半过滤），NumPy 暴力核对 | PASS（Recall=1.0） |
-| 本地性能 | 同上，本机 2 线程 | 插入 10,000 行约 1.39 s；1,000 查询约 0.27 s（约 0.27 ms/查询） |
+| 本地性能 | 同上，本机 2 线程 | 插入 10,000 行约 1.36 s；1,000 查询约 0.26 s（约 0.26 ms/查询） |
+| Linux 构建与全量回归 | GitHub Actions `ubuntu-24.04`：`make` + 公开用例 + 回归 + Benchmark | PASS（插入 1.133 s；1,000 查询 0.346 s，Recall=1.0） |
 | 超过缓存的扫描 | `--cache-mb=1` 插入 20,000 行 × 32 维，多次 TopK 与暴力结果核对 | PASS |
 
-`Dockerfile` 需要能访问镜像仓库和 Ubuntu apt 源；本开发机没有 Docker/WSL，因此未在本机执行 `docker build`，
-但构建步骤与 `Makefile` 已在 MSYS2 实际通过。请在提测前在有 Docker 的环境执行一次构建/预检。
+`Dockerfile` 需要能访问镜像仓库和 Ubuntu apt 源；本开发机没有 Docker/WSL，因此未在本机执行 `docker build`。
+不过同一条 `make` 构建链、公开用例、回归与 Benchmark 已在 GitHub Actions 的 Ubuntu 24.04 环境全部通过。
+请在提测前在有 Docker 的环境执行一次镜像构建/平台预检。
 
 ## 6. 目录
 

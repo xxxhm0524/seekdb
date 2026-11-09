@@ -130,6 +130,14 @@
       "command": "python (20,000 行 × 32 维，--cache-mb=1，8 个过滤 TopK 与 NumPy 暴力真值核对)",
       "output": "small-cache correctness: PASS",
       "interpretation": "LRU 页缓存淘汰与磁盘回读路径保持正确。"
+    },
+    {
+      "id": "E07",
+      "origin": "tool",
+      "hypothesis": "Linux x86_64 目标应能用 Makefile 从源码构建，并在 Ubuntu 24.04 上通过公开用例、回归和性能基准。",
+      "command": "GitHub Actions ubuntu-24.04: make -j$(nproc); python3 tests/local_driver.py --binary ./minivectordb; python3 tests/regression.py --binary ./minivectordb; python3 tests/bench.py --binary ./minivectordb",
+      "output": "Build success; all cases passed; ALL REGRESSION CHECKS PASSED; insert 10000 rows: 1.133 s (8822.73 rows/s); queries 1000: 0.346 s (2888.75 qps, 0.346 ms/query); recall check: PASS",
+      "interpretation": "Linux 构建链和全部本地测试通过；Docker 镜像本身尚未在本机构建（本机无 Docker），但 Dockerfile 的构建命令与 make 链已在 Linux CI 验证。"
     }
   ],
   "retrospective": {
