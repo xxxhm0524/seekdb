@@ -1512,6 +1512,32 @@ Response Engine::exec_select(SelectStmt &stmt) {
     return resp;
   }
 
+  // Streaming path for no-ORDER-BY queries with LIMIT: avoids materializing
+  // the whole table when the dataset is larger than the page cache/memory.
+  if (stmt.order.empty() && stmt.has_limit && !tx_.active) {
+    int64_t seen = 0;
+    int64_t wanted = stmt.offset + stmt.limit;
+    if (stmt.limit == 0) return resp;
+    for (uint32_t pi = 0; pi < table.page_count(); ++pi) {
+      auto page = table.get_page(pi);
+      if (page->magic != kPageMagic) continue;
+      uint32_t n = std::min(page->nrows, page->capacity(schema.row_size));
+      for (uint32_t slot = 0; slot < n; ++slot) {
+        const uint8_t *row = table.row_data(*page, slot);
+        if (!table.row_is_valid(row)) continue;
+        bool match = true;
+        for (const auto &cond : stmt.where) {
+          if (!table.compare(row, cond)) { match = false; break; }
+        }
+        if (!match) continue;
+        if (seen >= stmt.offset) resp.rows.push_back(project_row(row));
+        ++seen;
+        if (seen >= wanted) return resp;
+      }
+    }
+    return resp;
+  }
+
   // Generic path.
   auto rows = collect_visible(table, stmt.where, true);
   struct ResultRow {
