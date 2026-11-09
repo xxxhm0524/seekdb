@@ -282,9 +282,13 @@ Options parse_options(int argc, char **argv) {
     if (take("--data-dir=", v)) opt.data_dir = v;
     else if (arg == "--data-dir" && i + 1 < argc) opt.data_dir = argv[++i];
     else if (take("--ready-marker=", v)) opt.ready_marker = v;
+    else if (arg == "--ready-marker" && i + 1 < argc) opt.ready_marker = argv[++i];
     else if (take("--output=", v)) opt.output = v;
+    else if (arg == "--output" && i + 1 < argc) opt.output = argv[++i];
     else if (take("--query-threads=", v)) opt.query_threads = std::atoi(v.c_str());
+    else if (arg == "--query-threads" && i + 1 < argc) opt.query_threads = std::atoi(argv[++i]);
     else if (take("--cache-mb=", v)) opt.cache_mb = std::atoi(v.c_str());
+    else if (arg == "--cache-mb" && i + 1 < argc) opt.cache_mb = std::atoi(argv[++i]);
     else if (take("--vector-mode=", v)) opt.ann_default = (v == "ann" || v == "approximate");
     else if (arg == "--vector-mode" && i + 1 < argc)
       opt.ann_default = (std::string(argv[++i]) == "ann" || std::string(argv[i]) == "approximate");
