@@ -137,7 +137,15 @@
       "hypothesis": "Linux x86_64 目标应能用 Makefile 从源码构建，并在 Ubuntu 24.04 上通过公开用例、回归和性能基准。",
       "command": "GitHub Actions ubuntu-24.04: make -j$(nproc); python3 tests/local_driver.py --binary ./minivectordb; python3 tests/regression.py --binary ./minivectordb; python3 tests/bench.py --binary ./minivectordb",
       "output": "Build success; all cases passed; ALL REGRESSION CHECKS PASSED; insert 10000 rows: 1.133 s (8822.73 rows/s); queries 1000: 0.346 s (2888.75 qps, 0.346 ms/query); recall check: PASS",
-      "interpretation": "Linux 构建链和全部本地测试通过；Docker 镜像本身尚未在本机构建（本机无 Docker），但 Dockerfile 的构建命令与 make 链已在 Linux CI 验证。"
+      "interpretation": "Linux 构建链和全部本地测试通过。"
+    },
+    {
+      "id": "E08",
+      "origin": "tool",
+      "hypothesis": "Dockerfile 应能从源码构建镜像，容器应能通过 stdin/stdout 跑通公开用例。",
+      "command": "GitHub Actions ubuntu-24.04: docker build -t minivectordb:test .; python3 tests/local_driver.py --binary ./docker-mvd.sh",
+      "output": "Docker build: success; container public cases: sql_crud PASS, sql_comparisons PASS, sql_ordering PASS, sql_empty PASS, vector_euclidean PASS; all cases passed",
+      "interpretation": "Dockerfile 的 Ubuntu 24.04 多阶段构建和容器内 stdin/stdout 运行均已实际验证。"
     }
   ],
   "retrospective": {
@@ -145,11 +153,10 @@
     "what_worked": "固定页布局 + 页缓存让存储路径可预测；事务叠加层把语句/事务原子性简化为内存状态机；WAL 完整页镜像让崩溃恢复只需按顺序重放已提交页。",
     "what_failed_or_cost": "最初 INSERT 忘记把主键写入行头，导致所有 SELECT 为空；第一版 DROP TABLE 没有清理页缓存，留下悬垂 owner；ORDER BY L2_DISTANCE 表达式最初未解析，后补上。",
     "tradeoffs": "为了确保 Recall=1.0，ann 模式仍使用精确扫描，没有实现 IVF/HNSW；这牺牲了潜在近似加速，但消除了召回不达标导致性能项归零的风险。",
-    "limitations": "未实现 NULL/JOIN/聚合/子查询/ALTER/主键更新；单事务叠加层驻留内存；Docker 构建未在本机执行。"
+    "limitations": "未实现 NULL/JOIN/聚合/子查询/ALTER/主键更新；单事务叠加层驻留内存；Docker 构建已通过 GitHub Actions 验证。"
   },
   "limitations": [
     "本题正式评测的 stdin/stdout 驱动细节需以平台题包为准；仓库默认给出 JSON Lines，并支持 mysql/tsv/miniob 三种兼容输出模式，可通过 MVD_OUTPUT 切换。",
-    "本机无 Docker/WSL，Dockerfile 未在本机执行 docker build；编译步骤已在 MSYS2 实测通过。",
     "学生侧技术判断证据不足：主要实现与验证由 assistant 完成，conversation.json 不伪造学生贡献。"
   ],
   "instances": [
