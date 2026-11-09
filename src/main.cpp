@@ -52,20 +52,38 @@ std::string format_text_value(const mvd::OutValue &v) {
   return "";
 }
 
+std::string semantic_error_name(const std::string &code) {
+  std::string c;
+  c.reserve(code.size());
+  for (char ch : code)
+    c.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(ch))));
+  if (c == "duplicate_key") return "duplicate_key";
+  if (c == "unsupported") return "unsupported_sql";
+  if (c == "vector_dim_mismatch") return "dimension_mismatch";
+  if (c == "varchar_too_long") return "varchar_too_long";
+  if (c == "invalid_schema") return "invalid_schema";
+  if (c == "table_exists") return "table_exists";
+  if (c == "table_not_found") return "table_not_found";
+  if (c == "column_not_found") return "column_not_found";
+  if (c == "invalid_value") return "invalid_value";
+  if (c == "constraint") return "constraint";
+  if (c == "syntax_error") return "syntax_error";
+  return c;
+}
+
 void emit_response(const mvd::Response &resp, const std::string &mode,
                    const std::string &marker) {
   if (!resp.ok) {
+    std::string ename = semantic_error_name(resp.error_code);
     if (mode == "json") {
       std::string out = "{\"error\":\"";
-      mvd::json_escape_append(out, resp.error_code);
-      out += "\",\"message\":\"";
-      mvd::json_escape_append(out, resp.error_message);
+      mvd::json_escape_append(out, ename);
       out += "\"}";
       std::cout << out;
     } else if (mode == "miniob") {
       std::cout << "FAILURE";
     } else {
-      std::cout << "ERROR " << resp.error_code << ": " << resp.error_message;
+      std::cout << "ERROR " << ename << ": " << resp.error_message;
     }
     std::cout << "\n";
     std::cout.flush();

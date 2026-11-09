@@ -32,6 +32,12 @@ def row_equal(a, b):
 
 
 def compare_case(expected, actual):
+    if "error" in expected:
+        if "error" not in actual:
+            return f"expected error {expected['error']!r}, got {actual}"
+        if actual.get("error") != expected["error"]:
+            return f"error: expected {expected['error']!r}, got {actual.get('error')!r}"
+        return None
     if "error" in actual:
         return f"unexpected error: {actual}"
     if "affected_rows" in expected:
@@ -107,31 +113,53 @@ class Engine:
 
 def run_case(binary, case_name, verbose):
     case_dir = HERE
-    test_path = os.path.join(case_dir, "cases", case_name + ".test")
-    result_path = os.path.join(case_dir, "cases", case_name + ".result")
+    manifest = json.load(open(os.path.join(case_dir, "manifest_new.json"), encoding="utf-8"))
+    entry = next(c for c in manifest["cases"] if c["id"] == case_name)
+    test_path = os.path.join(case_dir, "newcases", os.path.basename(entry.get("test", case_name + ".test")))
+    result_path = os.path.join(case_dir, "newcases", os.path.basename(entry.get("result", case_name + ".result")))
     with open(test_path, encoding="utf-8") as f:
-        statements = [ln.strip() for ln in f if ln.strip()]
+        lines = [ln.strip() for ln in f if ln.strip()]
     with open(result_path, encoding="utf-8") as f:
         expected = json.load(f)
-    if len(statements) != len(expected):
-        return [f"case {case_name}: {len(statements)} statements vs {len(expected)} expectations"]
+    if len(expected) != entry["statements"]:
+        return [f"case {case_name}: manifest statements {entry['statements']} vs {len(expected)} expectations"]
     base = tempfile.mkdtemp(prefix="mvd_")
     datadir = os.path.join(base, "data")
     os.makedirs(datadir)
     eng = Engine(binary, datadir, [])
     failures = []
+    idx = 0
     try:
-        for i, (sql, exp) in enumerate(zip(statements, expected)):
+        for raw in lines:
+            line = raw.strip()
+            if line == "--restart":
+                eng.close()
+                eng = Engine(binary, datadir, [])
+                continue
+            if line.startswith("--mode"):
+                # Directive: mode ann|exact.  Use an SQL setter so it is not counted.
+                mode = line.split()[-1]
+                eng.request("SET vector_mode = %s;" % mode)
+                continue
+            if line.startswith("--") or line.startswith("#"):
+                continue
+            if idx >= len(expected):
+                failures.append(f"{case_name}: extra statement {line!r}")
+                break
+            exp = expected[idx]
             try:
-                actual = eng.request(sql)
+                actual = eng.request(line)
             except Exception as e:
-                failures.append(f"{case_name}[{i}] {sql}: {e}")
+                failures.append(f"{case_name}[{idx}] {line}: {e}")
                 break
             err = compare_case(exp, actual)
             if err:
-                failures.append(f"{case_name}[{i}] {sql}: {err}")
+                failures.append(f"{case_name}[{idx}] {line}: {err}")
             elif verbose:
-                print(f"  ok {i}: {sql}")
+                print(f"  ok {idx}: {line}")
+            idx += 1
+        if idx != len(expected):
+            failures.append(f"{case_name}: executed {idx} statements, expected {len(expected)}")
         eng.close()
     finally:
         if verbose and failures:
@@ -140,14 +168,13 @@ def run_case(binary, case_name, verbose):
             shutil.rmtree(base, ignore_errors=True)
     return failures
 
-
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--binary", default=BINARY)
     ap.add_argument("--case", default="")
     ap.add_argument("--verbose", action="store_true")
     args = ap.parse_args()
-    manifest = json.load(open(os.path.join(HERE, "manifest.json"), encoding="utf-8"))
+    manifest = json.load(open(os.path.join(HERE, "manifest_new.json"), encoding="utf-8"))
     cases = [args.case] if args.case else [c["id"] for c in manifest["cases"]]
     all_failures = []
     for c in cases:

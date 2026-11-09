@@ -449,6 +449,7 @@ bool Table::compare(const uint8_t *row, const Condition &cond) const {
   }
   switch (cond.op) {
     case CompareOp::EQ: return cmp == 0;
+    case CompareOp::NE: return cmp != 0;
     case CompareOp::LT: return cmp < 0;
     case CompareOp::LE: return cmp <= 0;
     case CompareOp::GT: return cmp > 0;
@@ -982,10 +983,10 @@ Response Engine::exec_create_vector_index(CreateVectorIndexStmt &stmt) {
 // SET / transaction control
 // ---------------------------------------------------------------------------
 Response Engine::exec_set(SetStmt &stmt) {
-  if (stmt.name == "vector_mode") {
+  if (stmt.name == "vector_mode" || stmt.name == "search_mode") {
     if (stmt.value == "ann" || stmt.value == "approximate") ann_mode_ = true;
     else if (stmt.value == "exact") ann_mode_ = false;
-    else throw_error("INVALID_VALUE", "vector_mode must be exact or ann");
+    else throw_error("INVALID_VALUE", "search mode must be exact or ann");
     return Response{};
   }
   throw_error("UNSUPPORTED", "unsupported SET variable: " + stmt.name);
@@ -1361,6 +1362,8 @@ Response Engine::exec_select(SelectStmt &stmt) {
       if (!parse_vector_literal(item.expr.vec_text, schema.columns[ci].dim,
                                 p.query_vec))
         throw_error("INVALID_VALUE", "invalid query vector literal");
+      if (static_cast<int>(p.query_vec.size()) != schema.columns[ci].dim)
+        throw_error("VECTOR_DIM_MISMATCH", "vector dimension mismatch");
       p.name = item.alias.empty() ? "L2_DISTANCE" : item.alias;
     } else {
       throw_error("UNSUPPORTED", "unsupported select expression");
@@ -1575,11 +1578,25 @@ Response Engine::exec_select(SelectStmt &stmt) {
         std::vector<float> qv;
         if (!parse_vector_literal(okey.expr.vec_text, schema.columns[ci].dim, qv))
           throw_error("INVALID_VALUE", "invalid query vector literal");
+        if (static_cast<int>(qv.size()) != schema.columns[ci].dim)
+          throw_error("VECTOR_DIM_MISMATCH", "vector dimension mismatch");
         const uint8_t *base = vr.row + schema.col_offsets[ci];
         const float *vec = reinterpret_cast<const float *>(base);
         key.kind = OutValue::Kind::DOUBLE;
         key.d = std::sqrt(static_cast<double>(
             squared_l2(vec, qv.data(), schema.columns[ci].dim)));
+        rr.keys.push_back(std::move(key));
+        continue;
+      }
+      if (okey.ordinal > 0) {
+        size_t oi = static_cast<size_t>(okey.ordinal - 1);
+        if (oi >= rr.vals.size())
+          throw_error("COLUMN_NOT_FOUND", "ORDER BY ordinal out of range");
+        const OutValue &ov = rr.vals[oi];
+        key.kind = ov.kind;
+        key.i = ov.i;
+        key.d = ov.d;
+        key.s = ov.s;
         rr.keys.push_back(std::move(key));
         continue;
       }

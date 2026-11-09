@@ -209,7 +209,7 @@ inline bool parse_vector_literal(std::string_view text, int dim,
   }
   while (i < text.size() && std::isspace(static_cast<unsigned char>(text[i])))
     ++i;
-  return i == text.size() && static_cast<int>(out.size()) == dim;
+  return i == text.size();  // caller checks dimension
 }
 
 // ---------------------------------------------------------------------------

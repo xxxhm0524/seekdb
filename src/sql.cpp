@@ -484,16 +484,12 @@ Condition SqlParser::parse_condition() {
   c.column = expect_ident();
   if (consume_symbol('=')) {
     c.op = CompareOp::EQ;
-  } else if (peek().type == Token::Type::SYMBOL && peek().text == "<>") {
-    ++index_;
-    c.op = CompareOp::EQ;
-    // Mark as not-equal through a pseudo op? Not required; treat <> as unsupported.
-    throw_error("UNSUPPORTED", "operator <> is not supported");
-  } else if (peek().type == Token::Type::SYMBOL && peek().text == "!=") {
-    ++index_;
-    throw_error("UNSUPPORTED", "operator != is not supported");
+  } else if (consume_symbol('!')) {
+    if (!consume_symbol('=')) syntax_error("expected '=' after '!'");
+    c.op = CompareOp::NE;
   } else if (consume_symbol('<')) {
     if (consume_symbol('=')) c.op = CompareOp::LE;
+    else if (consume_symbol('>')) c.op = CompareOp::NE;
     else c.op = CompareOp::LT;
   } else if (consume_symbol('>')) {
     if (consume_symbol('=')) c.op = CompareOp::GE;
@@ -555,6 +551,9 @@ std::unique_ptr<Statement> SqlParser::parse_select() {
            lower(peek().text) == "vector_distance")) {
         key.is_distance = true;
         key.expr = parse_expr();
+      } else if (peek().type == Token::Type::NUMBER) {
+        key.ordinal = static_cast<int>(expect_int());
+        if (key.ordinal <= 0) syntax_error("ORDER BY ordinal must be positive");
       } else {
         key.name = expect_ident();
       }

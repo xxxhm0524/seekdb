@@ -23,7 +23,7 @@ COPY --from=build /src/minivectordb /app/minivectordb
 RUN mkdir -p /data
 
 # The evaluator keeps stdin open (-i) and captures stderr separately.
-ENV MVD_OUTPUT=mysql
+ENV MVD_OUTPUT=json
 VOLUME ["/data"]
 ENTRYPOINT ["/app/minivectordb"]
 CMD ["--data-dir", "/data"]

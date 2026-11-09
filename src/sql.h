@@ -67,7 +67,7 @@ struct Expr {
   std::string vec_text;     // original text (documentation)
 };
 
-enum class CompareOp : uint8_t { EQ, LT, LE, GT, GE };
+enum class CompareOp : uint8_t { EQ, NE, LT, LE, GT, GE };
 
 struct Condition {
   std::string column;
@@ -88,6 +88,7 @@ struct OrderKey {
   std::string name;  // output alias or table column
   bool desc = false;
   bool is_distance = false;
+  int ordinal = 0;  // 1-based ORDER BY ordinal, 0 if a name/expression
   Expr expr;
 };
 
