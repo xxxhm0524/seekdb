@@ -364,6 +364,13 @@ int main(int argc, char **argv) {
       for (const auto &raw : statements) {
         std::string stmt = trim(raw);
         if (stmt.empty() || only_comments_or_space(stmt)) continue;
+        std::string lower_stmt;
+        lower_stmt.reserve(stmt.size());
+        for (char c : stmt)
+          lower_stmt.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
+        if (lower_stmt == "exit" || lower_stmt == "quit" || lower_stmt == "\\q" ||
+            lower_stmt == "q;" || lower_stmt == "exit;" || lower_stmt == "quit;")
+          break;
         mvd::Response resp = engine.execute(stmt);
         emit_response(resp, opt.output, opt.ready_marker);
       }
