@@ -1506,7 +1506,18 @@ Response Engine::exec_select(SelectStmt &stmt) {
               });
     for (const auto &c : finalists) {
       std::vector<uint8_t> row;
-      if (!table.read_row(c.pos, row)) continue;
+      bool have = false;
+      if (tx_.active) {
+        const TxTable *tt = find_tx_table(table.id());
+        if (tt) {
+          auto it = tt->rows.find(c.pk);
+          if (it != tt->rows.end() && !it->second.deleted) {
+            row = it->second.row;
+            have = true;
+          }
+        }
+      }
+      if (!have && !table.read_row(c.pos, row)) continue;
       resp.rows.push_back(project_row(row.data()));
     }
     return resp;

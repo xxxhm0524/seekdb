@@ -71,6 +71,8 @@ def test_crud_and_tx(binary, failures):
     check(c.req("DELETE FROM t WHERE id=1;").get("affected_rows") == 1, "tx delete", failures)
     r = c.req("SELECT id,s FROM t ORDER BY id;")
     check(r.get("rows") == [[2, "bb"], [3, "c"]], "read own writes", failures)
+    r = c.req("SELECT id, L2_DISTANCE(v,'[0,0,1]') AS d FROM t ORDER BY d LIMIT 1;")
+    check(r.get("rows") and r["rows"][0][0] == 3, "transaction vector search sees inserted row", failures)
     check(c.req("ROLLBACK;") == {}, "rollback", failures)
     r = c.req("SELECT id,s FROM t ORDER BY id;")
     check(r.get("rows") == [[1, "a"], [2, "b"]], "rollback restores", failures)
