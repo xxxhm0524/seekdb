@@ -86,7 +86,7 @@ ROLLBACK;
 
 | 模式 | 格式 |
 | --- | --- |
-| `json`（默认） | 每条语句输出一行 JSON：`{}`、`{"affected_rows":N}`、`{"columns":[...],"rows":[[...]]}`；错误为 `{"error":"CODE","message":"..."}` |
+| `json` | 每条语句输出一行 JSON：`{}`、`{"affected_rows":N}`、`{"columns":[...],"rows":[[...]]}`；错误为 `{"error":"CODE","message":"..."}` |
 | `mysql` | 查询输出 `列名\t列名` 表头 + 制表符分隔行；DML 输出 `OK N`；DDL/事务输出 `OK`；错误为 `ERROR CODE: message` |
 | `tsv` | 查询只输出制表符分隔行；DML 输出 `OK N`；DDL/事务输出 `OK` |
 | `miniob` | 查询输出 ` | ` 分隔的表头和行；成功修改输出 `SUCCESS`；错误输出 `FAILURE` |
