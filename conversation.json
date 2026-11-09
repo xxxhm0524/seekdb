@@ -86,10 +86,10 @@
     {
       "id": "E01",
       "origin": "tool",
-      "hypothesis": "官方公开的 5 个基础用例应能全部通过。",
-      "command": "python tests/local_driver.py",
-      "output": "=== sql_crud === PASS; === sql_comparisons === PASS; === sql_ordering === PASS; === sql_empty === PASS; === vector_euclidean === PASS; all cases passed",
-      "interpretation": "公开样例覆盖建表、多行插入、比较、排序、LIMIT、空表和二维向量距离；全部与 JSON 预期逐项一致。"
+      "hypothesis": "官方公开题包 v4 的 20 个用例（95 条 SQL）应全部通过。",
+      "command": "python tests/local_driver.py（manifest_new.json：20 cases/95 statements）",
+      "output": "20 cases all PASS: sql_crud, sql_comparisons, sql_ordering, sql_empty, sql_primary_key, sql_unicode, sql_bigint, sql_unsupported, storage_restart, vector_euclidean, transaction_commit, transaction_rollback, storage_mutations, storage_multiple_tables, vector_ties_and_filter, vector_float32, vector_index_maintenance, transaction_failed_insert, transaction_autocommit_atomic, transaction_shutdown_rollback",
+      "interpretation": "公开 v4 覆盖错误语义（duplicate_key/unsupported_sql/dimension_mismatch）、--restart、--mode ann、多表持久化和向量索引维护。"
     },
     {
       "id": "E02",
@@ -162,6 +162,14 @@
       "command": "GitHub Actions ubuntu-24.04 final2: make; public; regression; bench; docker build; container public",
       "output": "all cases passed; ALL REGRESSION CHECKS PASSED; insert 10000 rows: 0.651 s; queries 1000: 0.195 s (5128.74 qps); recall check: PASS; docker image built; container all cases passed",
       "interpretation": "最终版本在 Linux 与 Docker 两条链路均通过；本机实测数据用于 README 区间。"
+    },
+    {
+      "id": "E11",
+      "origin": "tool",
+      "hypothesis": "官方题包 v4（2026-11-09 10:40 更新）应覆盖正式准入的功能边界。",
+      "command": "官方 seekdb 2026-competition-round2 9f6df2b 的 mysqltest v4：python tests/local_driver.py",
+      "output": "all 20 cases PASS; 95/95 SQL statements and expected assertions matched",
+      "interpretation": "错误名、向量维度错误、重启和 ann 模式均已按 v4 断言校正；正式用例仍需平台复测。"
     }
   ],
   "retrospective": {
