@@ -146,6 +146,14 @@
       "command": "GitHub Actions ubuntu-24.04: docker build -t minivectordb:test .; python3 tests/local_driver.py --binary ./docker-mvd.sh",
       "output": "Docker build: success; container public cases: sql_crud PASS, sql_comparisons PASS, sql_ordering PASS, sql_empty PASS, vector_euclidean PASS; all cases passed",
       "interpretation": "Dockerfile 的 Ubuntu 24.04 多阶段构建和容器内 stdin/stdout 运行均已实际验证。"
+    },
+    {
+      "id": "E09",
+      "origin": "tool",
+      "hypothesis": "最终提交版本的 Linux 构建、公开用例、回归、Benchmark 和 Docker 构建应同时通过。",
+      "command": "GitHub Actions ubuntu-24.04 final pipeline: make; public cases; regression; bench; docker build; container public cases",
+      "output": "all cases passed; ALL REGRESSION CHECKS PASSED; insert 10000 rows: 0.997 s; queries 1000: 0.299 s (3344.63 qps); recall check: PASS; Docker image built and all container public cases passed",
+      "interpretation": "最终版本在 Linux 与 Docker 两条链路上均通过；性能数据来自 Linux x86_64 runner。"
     }
   ],
   "retrospective": {

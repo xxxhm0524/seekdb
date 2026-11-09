@@ -137,7 +137,7 @@ ROLLBACK;
 | 向量 TopK | `tests/regression.py`：500 行 4 维随机数据，20 个过滤查询对暴力真值；索引后增删改 | PASS |
 | 大规模 TopK | `python tests/bench.py`：10,000 行 × 128 维，1,000 个 K=10 查询（一半过滤），NumPy 暴力核对 | PASS（Recall=1.0） |
 | 本地性能 | 同上，本机 2 线程 | 插入 10,000 行约 1.36 s；1,000 查询约 0.26 s（约 0.26 ms/查询） |
-| Linux 构建与全量回归 | GitHub Actions `ubuntu-24.04`：`make` + 公开用例 + 回归 + Benchmark | PASS（插入 1.133 s；1,000 查询 0.346 s，Recall=1.0） |
+| Linux 构建与全量回归 | GitHub Actions `ubuntu-24.04`：`make` + 公开用例 + 回归 + Benchmark | PASS（插入 0.997 s；1,000 查询 0.299 s，Recall=1.0） |
 | Docker镜像与容器运行 | GitHub Actions `ubuntu-24.04`：`docker build` + 容器内跑公开用例 | PASS（`all cases passed`） |
 | 超过缓存的扫描 | `--cache-mb=1` 插入 20,000 行 × 32 维，多次 TopK 与暴力结果核对 | PASS |
 
