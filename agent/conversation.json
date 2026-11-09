@@ -154,6 +154,14 @@
       "command": "GitHub Actions ubuntu-24.04 final pipeline: make; public cases; regression; bench; docker build; container public cases",
       "output": "all cases passed; ALL REGRESSION CHECKS PASSED; insert 10000 rows: 0.997 s; queries 1000: 0.299 s (3344.63 qps); recall check: PASS; Docker image built and all container public cases passed",
       "interpretation": "最终版本在 Linux 与 Docker 两条链路上均通过；性能数据来自 Linux x86_64 runner。"
+    },
+    {
+      "id": "E10",
+      "origin": "tool",
+      "hypothesis": "最终修正（事务内向量 TopK 使用叠加层行）后，Linux 构建、回归、Benchmark 与 Docker 仍应全部通过。",
+      "command": "GitHub Actions ubuntu-24.04 final2: make; public; regression; bench; docker build; container public",
+      "output": "all cases passed; ALL REGRESSION CHECKS PASSED; insert 10000 rows: 0.651 s; queries 1000: 0.195 s (5128.74 qps); recall check: PASS; docker image built; container all cases passed",
+      "interpretation": "最终版本在 Linux 与 Docker 两条链路均通过；本机实测数据用于 README 区间。"
     }
   ],
   "retrospective": {
