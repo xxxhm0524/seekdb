@@ -1,0 +1,171 @@
+{
+  "schema": "mvd-conversation-v1",
+  "version": "2026-competition-round2 / MiniVectorDB",
+  "rules_version": "agent-learning-evidence-v3-unbounded",
+  "synthetic": false,
+  "material_scope": {
+    "what_this_file_is": "MiniVectorDB 开发过程中实际发生的任务设定、实现、实验和验证记录。所有 command 与 output 字段都摘自本机实际执行结果，不是事后编造。",
+    "what_this_file_is_not": "本文件不包含合成学习材料，没有 synthetic 标记的条目均对应真实执行过的命令与真实读到的输出。",
+    "redaction": "未包含访问密钥、令牌或私人凭据。本机路径仅保留用于复现。",
+    "provenance_rule": "origin=student 表示用户（参赛学生）的原话；origin=assistant 表示 AI 助手的分析或操作；origin=tool 表示命令的实际输出。评分请只认可 student 条目支撑的理解。",
+    "honest_note": "本轮开发中，技术方案、代码实现、实验设计和结果分析主要由 AI 助手完成。学生侧可核验的证据集中在任务设定、交付形态和推进约束上；本文件如实反映这一分布，不把 assistant 的工作冒充学生理解，也不编造学生的技术判断。"
+  },
+  "user_prompts": [
+    {
+      "id": "P01",
+      "origin": "student",
+      "time": "2026-11-09",
+      "text": "现在oceanbase发布了新题目，请你查看并完成，环境下载在d盘",
+      "note": "任务来源与交付约束：要求查看 OceanBase 新发布的题目并完成；指定环境放在 D 盘。"
+    },
+    {
+      "id": "P02",
+      "origin": "student",
+      "time": "2026-11-09",
+      "text": "怎么样了",
+      "note": "进度询问，未提出技术判断。"
+    },
+    {
+      "id": "P03",
+      "origin": "student",
+      "time": "2026-11-09",
+      "text": "/goal 请你完成加赛题目，未完成前不要停止",
+      "note": "明确要求完成加赛题目并持续执行到完成，属于交付范围和推进约束。"
+    }
+  ],
+  "conversations": [
+    {
+      "id": "C01",
+      "origin": "student",
+      "content": "学生先提出要查看 OceanBase 新发布的题目并完成，同时指定环境在 D 盘。",
+      "student_evidence": {
+        "pointer": "/user_prompts/0/text",
+        "quote": "现在oceanbase发布了新题目，请你查看并完成，环境下载在d盘"
+      },
+      "result": "助手据此定位到 2026 数据库大赛「加赛部分」赛题一：轻量向量数据库（MiniVectorDB），并下载官方 2026-competition-round2 分支到 D:\\oceanbase\\seekdb。",
+      "note": "这是任务识别与交付约束，不是技术理解；对应独立实例 I01（0.5 分档，只有规划/约束，无学生执行结果）。"
+    },
+    {
+      "id": "C02",
+      "origin": "assistant",
+      "content": "助手分析赛题并确定实现边界：单机单进程单客户端；BIGINT/VARCHAR/VECTOR 表；INSERT/SELECT/UPDATE/DELETE；L2_DISTANCE 精确 TopK；/data 持久化；BEGIN/COMMIT/ROLLBACK；进程被杀后的恢复。",
+      "student_response": "未追加技术讨论。",
+      "note": "属于 assistant 的规划，不作为学生证据。"
+    },
+    {
+      "id": "C03",
+      "origin": "assistant",
+      "content": "助手从零实现 C++20 引擎：64 KiB 定长页、页缓存、WAL 完整页镜像、事务叠加层、AVX2/FMA 距离内核、OpenMP 并行扫描以及 stdin/stdout 服务。",
+      "student_response": "未参与实现细节。",
+      "note": "属于 assistant 的实现工作，不作为学生证据。"
+    },
+    {
+      "id": "C04",
+      "origin": "student",
+      "content": "学生询问「怎么样了」，要求助手汇报进度。",
+      "student_evidence": {
+        "pointer": "/user_prompts/1/text",
+        "quote": "怎么样了"
+      },
+      "result": "助手汇报了题目定位、代码完成度、公开用例与恢复验证进展，并继续推进剩余交付。",
+      "note": "属于过程监督，不构成技术理解证据。"
+    },
+    {
+      "id": "C05",
+      "origin": "student",
+      "content": "学生进一步要求完成加赛题目且未完成前不要停止。",
+      "student_evidence": {
+        "pointer": "/user_prompts/2/text",
+        "quote": "/goal 请你完成加赛题目，未完成前不要停止"
+      },
+      "result": "助手继续完成回归测试、性能验证、Dockerfile、README 和 Agent Prompt 材料，并准备推送代码。",
+      "note": "属于交付范围和推进约束；对应独立实例 I02（0.5 分档，只有要求，无学生验证结果）。"
+    }
+  ],
+  "experiments": [
+    {
+      "id": "E01",
+      "origin": "tool",
+      "hypothesis": "官方公开的 5 个基础用例应能全部通过。",
+      "command": "python tests/local_driver.py",
+      "output": "=== sql_crud === PASS; === sql_comparisons === PASS; === sql_ordering === PASS; === sql_empty === PASS; === vector_euclidean === PASS; all cases passed",
+      "interpretation": "公开样例覆盖建表、多行插入、比较、排序、LIMIT、空表和二维向量距离；全部与 JSON 预期逐项一致。"
+    },
+    {
+      "id": "E02",
+      "origin": "tool",
+      "hypothesis": "事务内读己之写、ROLLBACK 恢复、COMMIT 持久化和语句失败原子性应成立。",
+      "command": "python tests/regression.py",
+      "output": "ok: read own writes; ok: rollback restores; ok: commit visible; ok: duplicate insert rejected; ok: failed insert left no partial row; ok: clean restart persistence; ALL REGRESSION CHECKS PASSED",
+      "interpretation": "事务叠加层和语句回滚逻辑符合赛题 2.3 语义。"
+    },
+    {
+      "id": "E03",
+      "origin": "tool",
+      "hypothesis": "显式事务中进程被强制终止后，已提交数据保留、未提交数据不残留，恢复后可以继续写入。",
+      "command": "python tests/regression.py (test_crash)",
+      "output": "ok: crash: committed survives, uncommitted gone; ok: crash: recovery usable",
+      "interpretation": "WAL 仅在 COMMIT 记录存在时重放完整页镜像。"
+    },
+    {
+      "id": "E04",
+      "origin": "tool",
+      "hypothesis": "过滤 TopK 必须在满足 WHERE 的集合内计算，索引创建后增删改仍应正确。",
+      "command": "python tests/regression.py (test_vectors)",
+      "output": "ok: filtered exact topK matches brute force (index maintained); ok: index maintenance after insert/update/delete; ok: dim mismatch rejected; ok: NaN rejected; ok: Infinity rejected",
+      "interpretation": "精确扫描路径与暴力真值在 20 个过滤查询上一致。"
+    },
+    {
+      "id": "E05",
+      "origin": "tool",
+      "hypothesis": "公开性能负载（10,000 行 × 128 维，1,000 个 K=10 查询，一半带过滤）应返回 Recall=1.0 并可重复测量。",
+      "command": "python tests/bench.py",
+      "output": "insert 10000 rows: 1.386 s (7213.53 rows/s); queries 1000 (K=10, half filtered): 0.272 s (3676.95 qps, 0.272 ms/query); recall check: PASS",
+      "interpretation": "本机 2 线程的精确扫描版本已能覆盖公开性能负载形状，且每个返回 id 都与 NumPy 暴力真值一致。"
+    },
+    {
+      "id": "E06",
+      "origin": "tool",
+      "hypothesis": "页缓存小于数据量时仍能正确扫描（不能依赖全量载入内存）。",
+      "command": "python (20,000 行 × 32 维，--cache-mb=1，8 个过滤 TopK 与 NumPy 暴力真值核对)",
+      "output": "small-cache correctness: PASS",
+      "interpretation": "LRU 页缓存淘汰与磁盘回读路径保持正确。"
+    }
+  ],
+  "retrospective": {
+    "origin": "assistant",
+    "what_worked": "固定页布局 + 页缓存让存储路径可预测；事务叠加层把语句/事务原子性简化为内存状态机；WAL 完整页镜像让崩溃恢复只需按顺序重放已提交页。",
+    "what_failed_or_cost": "最初 INSERT 忘记把主键写入行头，导致所有 SELECT 为空；第一版 DROP TABLE 没有清理页缓存，留下悬垂 owner；ORDER BY L2_DISTANCE 表达式最初未解析，后补上。",
+    "tradeoffs": "为了确保 Recall=1.0，ann 模式仍使用精确扫描，没有实现 IVF/HNSW；这牺牲了潜在近似加速，但消除了召回不达标导致性能项归零的风险。",
+    "limitations": "未实现 NULL/JOIN/聚合/子查询/ALTER/主键更新；单事务叠加层驻留内存；Docker 构建未在本机执行。"
+  },
+  "limitations": [
+    "本题正式评测的 stdin/stdout 驱动细节需以平台题包为准；仓库默认给出 JSON Lines，并支持 mysql/tsv/miniob 三种兼容输出模式，可通过 MVD_OUTPUT 切换。",
+    "本机无 Docker/WSL，Dockerfile 未在本机执行 docker build；编译步骤已在 MSYS2 实测通过。",
+    "学生侧技术判断证据不足：主要实现与验证由 assistant 完成，conversation.json 不伪造学生贡献。"
+  ],
+  "instances": [
+    {
+      "id": "I01",
+      "dimension": "问题理解与自主拆解",
+      "score": 0.5,
+      "student_evidence": {
+        "pointer": "/user_prompts/0/text",
+        "quote": "现在oceanbase发布了新题目，请你查看并完成，环境下载在d盘"
+      },
+      "result_evidence": null,
+      "reason": "学生提出了明确的交付任务并指定环境位置，但没有给出技术分析或验证方案；按 0.5 档计（只有规划/约束，无实际结果）。"
+    },
+    {
+      "id": "I02",
+      "dimension": "取舍与反思",
+      "score": 0.5,
+      "student_evidence": {
+        "pointer": "/user_prompts/2/text",
+        "quote": "/goal 请你完成加赛题目，未完成前不要停止"
+      },
+      "result_evidence": null,
+      "reason": "学生要求不完成不停止，体现交付约束和推进取舍，但没有学生本人基于测量结果的反思；按 0.5 档计。"
+    }
+  ]
+}
