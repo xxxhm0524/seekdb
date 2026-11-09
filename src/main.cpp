@@ -265,6 +265,10 @@ Options parse_options(int argc, char **argv) {
   if (const char *env = std::getenv("MVD_QUERY_THREADS")) opt.query_threads = std::atoi(env);
   if (const char *env = std::getenv("MVD_CACHE_MB")) opt.cache_mb = std::atoi(env);
   if (const char *env = std::getenv("MVD_DATA_DIR")) opt.data_dir = env;
+  if (const char *env = std::getenv("MVD_VECTOR_MODE")) {
+    std::string m = env;
+    opt.ann_default = (m == "ann" || m == "approximate");
+  }
   for (int i = 1; i < argc; ++i) {
     std::string arg = argv[i];
     auto take = [&](const std::string &prefix, std::string &value) -> bool {
@@ -281,7 +285,14 @@ Options parse_options(int argc, char **argv) {
     else if (take("--output=", v)) opt.output = v;
     else if (take("--query-threads=", v)) opt.query_threads = std::atoi(v.c_str());
     else if (take("--cache-mb=", v)) opt.cache_mb = std::atoi(v.c_str());
-    else if (take("--vector-mode=", v)) opt.ann_default = (v == "ann");
+    else if (take("--vector-mode=", v)) opt.ann_default = (v == "ann" || v == "approximate");
+    else if (arg == "--vector-mode" && i + 1 < argc)
+      opt.ann_default = (std::string(argv[++i]) == "ann" || std::string(argv[i]) == "approximate");
+    else if (take("--mode=", v)) opt.ann_default = (v == "ann" || v == "approximate");
+    else if (arg == "--mode" && i + 1 < argc)
+      opt.ann_default = (std::string(argv[++i]) == "ann" || std::string(argv[i]) == "approximate");
+    else if (arg == "--ann") opt.ann_default = true;
+    else if (arg == "--exact") opt.ann_default = false;
     else if (arg == "--help" || arg == "-h") {
       std::fprintf(stderr,
                    "minivectordb [--data-dir=/data] [--output=json|tsv|mysql] "
