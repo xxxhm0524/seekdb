@@ -28,12 +28,24 @@ class TxSpool {
   }
   void read(uint64_t offset, uint32_t length, std::vector<uint8_t> &row) const {
     row.resize(length);
-    if (!file_.pread_full(row.data(), row.size(), offset))
-      throw_error("IO_ERROR", "cannot read transaction spool");
-    if (offset + length <= synced_)
-      file_.discard_clean_cache(offset, length);
+    if (offset < read_offset_ || offset + length > read_offset_ + read_buffer_.size()) {
+      int64_t end = file_.size();
+      if (end < 0 || offset > static_cast<uint64_t>(end) || length > static_cast<uint64_t>(end)-offset)
+        throw_error("IO_ERROR", "transaction spool row outside file");
+      size_t window = static_cast<size_t>(std::min<uint64_t>(1024*1024, static_cast<uint64_t>(end)-offset));
+      read_buffer_.resize(window);
+      if (!file_.pread_full(read_buffer_.data(), window, offset)) {
+        read_buffer_.clear();
+        throw_error("IO_ERROR", "cannot read transaction spool");
+      }
+      read_offset_ = offset;
+      if (offset + window <= synced_)
+        file_.discard_clean_cache(offset, window);
+    }
+    std::memcpy(row.data(), read_buffer_.data() + (offset-read_offset_), length);
   }
   void truncate(uint64_t end) {
+    read_buffer_.clear();  // A later append may reuse the rewound offsets.
     if (!file_.ftruncate(end) || !file_.fsync()) throw_error("IO_ERROR", "cannot rewind transaction spool");
     file_.discard_clean_cache(0, end);
     synced_ = end;
@@ -42,5 +54,7 @@ class TxSpool {
   std::string path_;
   FileHandle file_;
   uint64_t synced_ = 0;
+  mutable uint64_t read_offset_ = 0;
+  mutable std::vector<uint8_t> read_buffer_;
 };
 }  // namespace mvd

@@ -128,8 +128,8 @@ ROLLBACK;
 - 主键到槽位的映射在内存中维护，启动/恢复时扫描页头与有效记录重建。
 - 页缓存按 LRU 管理，超过 `--cache-mb` 时淘汰干净页，脏页刷盘；扫描不会把整表读入内存，支持大于内存预算的数据集。
 - 对齐页缓冲复用，额外闲置池最多 2 MiB，避免扫描、事务节点与提交镜像反复分配时造成堆碎片增长。
-- 提交镜像按页号排序；相邻脏页合并为至多 1 MiB 的写入，降低大修改与 checkpoint 的同步 I/O 次数。
-- 顺序扫描和主键索引恢复使用至多 1 MiB 的批量读取；预读不会覆盖较新的脏缓存页，读写暂存缓冲各至多 1 MiB。
+- 提交镜像按页号排序；相邻脏页合并为至多 4 MiB 的写入，降低大修改与 checkpoint 的同步 I/O 次数。
+- 顺序扫描和主键索引恢复使用至多 4 MiB 的批量读取；缓存较小时缩小批次，预读不会覆盖较新的脏缓存页，读写暂存缓冲各至多 4 MiB。
 
 ### 4.2 事务与语句原子性
 
@@ -139,6 +139,7 @@ ROLLBACK;
 - 每条语句先校验，使用只记录本语句修改行的撤销日志恢复失败语句；不再为每条语句复制整个事务。
 - 新增行及独立更新值超出预算后写入 `/data/txn.tmp`；相同列的旧补丁会被裁剪，避免保留无效历史。
   失败语句回退溢写文件的有效范围；提交、回滚和正常关闭释放该文件，异常重启丢弃未提交溢写数据。
+  提交及事务内扫描通过 1 MiB 顺序读缓存读取溢写行；回退文件时清空该缓存，避免复用偏移后读到旧内容。
 - 新增槽位的分配进度只在 COMMIT 后安装，失败语句与 ROLLBACK 不消耗基线槽位。
 - `ROLLBACK` 丢弃叠加层；`COMMIT` 先把提交涉及的页生成完整页镜像写入 WAL，`fsync` 后才安装到页缓存并返回成功。
 - 提交逐页生成镜像，只保留首 1 MiB 的镜像和后续 WAL 偏移；大提交不需要把全部修改页同时放进内存。
@@ -185,13 +186,13 @@ ROLLBACK;
 | 边界回归 | `tests/hidden_boundaries.py`，极小距离、别名、空结果错误、维度和行宽回绕、非法向量、回滚槽位、UPDATE 原子性、Unicode 错误响应、数值等距、重复列、DDL 孤立文件、float32 最大值回传、请求 id 类型 | 19 组 PASS |
 | 预读和脏页一致性 | `tests/cache_coherence.py`，1 MiB 缓存下交错更新、过滤 TopK、提交/回滚及强杀重启 | PASS |
 | 宽记录修改 I/O | `tests/mutation_io.py`，按进程读取字节计数验证无过滤修改、全页删除，并检查事务叠加和部分页保留 | 本地 PASS；不放宽容器的 60 秒请求限制 |
-| 长事务溢写 | `tests/transaction_spill.py`，1 MiB 行数据预算，包含 INSERT/UPDATE、覆盖历史裁剪、失败语句、提交/回滚/强杀 | 本地 PASS；12,000 条宽记录峰值约 11 MiB |
+| 长事务溢写 | `tests/transaction_spill.py`，1 MiB 行数据预算，包含 INSERT/UPDATE、覆盖历史裁剪、失败语句、提交/回滚/强杀 | 本地 PASS；12,000 条宽记录峰值约 15 MiB |
 | HNSW 生命周期 | `tests/ann_lifecycle.py`，显式启用图路径，验证精确/近似切换、过滤、增删改、事务与崩溃重建 | 本地 PASS |
 | 随机模型 | `tests/stress_random.py`，种子 7、42、211，各 100 轮 | PASS |
 | 原回归和扩展 | `tests/regression.py`、`tests/run_extended_tsv.py`；后者名称保留，实际走 JSONL | PASS |
 | 恢复中重复强杀 | `tests/crash_recovery_test.py 50000`，合法未提交增删改，核对所有 ID | PASS；本地观测到 2 次恢复写页后、ready 前强杀 |
 | 多表提交途中强杀 | `tests/commit_crash_boundaries.py`，包含未发 COMMIT、不同延迟、已确认 COMMIT | PASS；完整旧状态或完整新状态 |
-| 大于内存的数据文件 | `tests/resource_boundaries.py --rows 260000 --max-mb 128`，1 MiB 页缓存，2321.44 MiB 数据文件 | PASS；排序/事务 TopK 约 17.8 MiB，更新/删除峰值约 66.3 MiB（进程指标） |
+| 大于内存的数据文件 | `tests/resource_boundaries.py --rows 260000 --max-mb 128`，1 MiB 页缓存，2321.44 MiB 数据文件 | PASS；排序/事务 TopK 约 22.4 MiB，更新/删除峰值约 78.8 MiB（进程指标） |
 | exact 基准 | 10k×128d，1000 查询，种子 20261110；强杀后逐条核对持久化内容及查询距离 | 两组 Recall@10 均 1.0；写入约 1.35 s，查询约 0.272 s |
 | ann 基准 | 同规模，种子 20261111；该规模选择紧凑精确索引 | 两组 Recall@10 均 1.0；写入约 1.23 s，查询约 0.260 s |
 | Linux 和 sanitizer | `.github/workflows/minivectordb.yml`，GCC/UBSan 和回归 | 查看对应 SHA 的 Actions |

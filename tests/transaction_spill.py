@@ -60,6 +60,9 @@ def main():
             r=client.request('INSERT INTO t VALUES '+batch(args.rows+1,args.rows+5)+",(1,'dup','[0,0]')")
             assert r.get('ok') is False,r
             assert (Path(data)/'txn.tmp').stat().st_size==before,'failed statement leaked spill space'
+            sql("INSERT INTO t VALUES (%d,'rewound','[0,0]')"%(args.rows+1),affected_rows=1)
+            sql('SELECT s FROM t WHERE id=%d'%(args.rows+1),rows=[['rewound']])
+            sql('DELETE FROM t WHERE id=%d'%(args.rows+1),affected_rows=1)
             sql("UPDATE t SET s='u',v='[0,0]' WHERE id=1",affected_rows=1)
             sql('SELECT id,s,v FROM t WHERE id=1',rows=[[1,'u',[0,0]]])
             sql('COMMIT' if commit else 'ROLLBACK')

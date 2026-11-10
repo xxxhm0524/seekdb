@@ -62,7 +62,7 @@ struct alignas(4096) Page {
 // when small transaction nodes are allocated between aligned 64 KiB pages.
 std::shared_ptr<Page> make_page(const Page *source = nullptr);
 
-constexpr uint32_t kIoBatchPages = 16;
+constexpr uint32_t kIoBatchPages = 64;
 struct alignas(4096) PageIoBuffer {
   uint8_t bytes[kPageSize * kIoBatchPages];
 };

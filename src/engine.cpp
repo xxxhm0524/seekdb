@@ -281,7 +281,8 @@ void PageCache::evict_if_needed() {
   while (pages_.size() > max_pages_ && !lru_.empty()) {
     std::vector<uint64_t> victims;
     std::vector<Entry *> dirty;
-    for (auto it = lru_.rbegin(); it != lru_.rend() && victims.size() < 16; ++it) {
+    size_t batch = std::min<size_t>(kIoBatchPages, std::max<size_t>(1, max_pages_ / 2));
+    for (auto it = lru_.rbegin(); it != lru_.rend() && victims.size() < batch; ++it) {
       auto p = pages_.find(*it);
       if (p == pages_.end()) continue;
       if (p->second.page.use_count() > 1) continue;
@@ -305,7 +306,7 @@ void PageCache::write_entries(std::vector<Entry *> entries) {
   });
   for (size_t begin = 0; begin < entries.size();) {
     size_t end = begin + 1;
-    while (end < entries.size() && end - begin < 16 &&
+    while (end < entries.size() && end - begin < kIoBatchPages &&
            entries[end]->owner == entries[begin]->owner &&
            entries[end]->page_no == entries[end - 1]->page_no + 1) ++end;
     if (end == begin + 1) {
