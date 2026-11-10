@@ -76,7 +76,7 @@ ROLLBACK;
 ### 2.3 不支持项
 
 不要求且未实现：NULL、JOIN、聚合、子查询、ALTER TABLE、外键、嵌套事务、主键更新、`OR`、`IN`、`LIKE`。
-不支持的语句返回 `ERROR` 响应（JSON 模式下为 `{"error":"...","message":"..."}`），不会静默改变语义。
+不支持的语句返回 `ERROR <semantic_name>: <message>`；JSON 模式下为 `{"error":"<semantic_name>"}`，不会静默改变语义。
 
 ## 3. stdin/stdout 协议
 
@@ -91,7 +91,7 @@ ROLLBACK;
 | `tsv`（Docker 默认） | 查询只输出制表符分隔行；DML 输出 `OK N`；DDL/事务输出 `OK` |
 | `miniob` | 查询输出 ` | ` 分隔的表头和行；成功修改输出 `SUCCESS`；错误输出 `FAILURE` |
 
-Docker 默认设置 `MVD_READY_MARKER=__MVD_READY__`：启动完成后输出该标记，并在每次响应后追加该行（便于驱动分帧）。也可用 `--ready-marker=TOKEN` 指定其他标记。
+Docker 默认设置 `MVD_READY_MARKER=__MVD_READY__`：每条响应后追加该标记作为响应结束符（启动阶段不额外输出）。也可用 `--ready-marker=TOKEN` 指定其他标记。
 `--query-threads=N` 控制向量扫描线程数（默认 2），`--cache-mb=N` 控制页缓存上限（默认 64 MiB）。
 
 ## 4. 设计与验证
