@@ -72,12 +72,16 @@ void parse_vector_for_column(const std::string &text, const ColumnDef &col,
   for (const auto &part : parts) {
     char *endp = nullptr;
     errno = 0;
-    double v = std::strtod(part.c_str(), &endp);
-    if (endp == part.c_str() || endp != part.c_str() + part.size() || !std::isfinite(v))
+    float v = std::strtof(part.c_str(), &endp);
+    if (endp == part.c_str() || endp != part.c_str() + part.size())
       throw_error("INVALID_VECTOR", "expected numeric vector component");
-    if (errno == ERANGE || v > FLT_MAX || v < -FLT_MAX)
-      throw_error("VECTOR_OVERFLOW", "vector component overflows float32");
-    out.push_back(static_cast<float>(v));
+    if (!std::isfinite(v)) {
+      if (errno == ERANGE) throw_error("VECTOR_OVERFLOW", "vector component overflows float32");
+      throw_error("INVALID_VECTOR", "expected finite vector component");
+    }
+    // ERANGE also reports finite subnormals/underflow. Parse directly at
+    // float32 precision so decimal round-trips of FLT_MAX remain valid.
+    out.push_back(v);
   }
   if (static_cast<int>(out.size()) != col.dim)
     throw_error("VECTOR_DIM_MISMATCH",

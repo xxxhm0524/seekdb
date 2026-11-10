@@ -169,15 +169,15 @@ ROLLBACK;
 | --- | --- | --- |
 | JSONL 握手、关闭、公开用例 | `protocol_check/run.py`，实际目标参数由下方审计入口生成 | 握手及 20/20 公开用例 PASS |
 | 公开要求的本地覆盖 | `tests/formal_coverage.py`，类型、比较、排序、事务与恢复 | PASS；不等同正式用例 |
-| 边界回归 | `tests/hidden_boundaries.py`，极小距离、别名、空结果错误、维度和行宽回绕、非法向量、回滚槽位、UPDATE 原子性、Unicode 错误响应、数值等距、重复列、DDL 孤立文件 | 17 组 PASS |
+| 边界回归 | `tests/hidden_boundaries.py`，极小距离、别名、空结果错误、维度和行宽回绕、非法向量、回滚槽位、UPDATE 原子性、Unicode 错误响应、数值等距、重复列、DDL 孤立文件、float32 最大值回传、请求 id 类型 | 19 组 PASS |
 | 预读和脏页一致性 | `tests/cache_coherence.py`，1 MiB 缓存下交错更新、过滤 TopK、提交/回滚及强杀重启 | PASS |
 | 随机模型 | `tests/stress_random.py`，种子 7、42、211，各 100 轮 | PASS |
 | 原回归和扩展 | `tests/regression.py`、`tests/run_extended_tsv.py`；后者名称保留，实际走 JSONL | PASS |
 | 恢复中重复强杀 | `tests/crash_recovery_test.py 50000`，合法未提交增删改，核对所有 ID | PASS；本地观测到 2 次恢复写页后、ready 前强杀 |
 | 多表提交途中强杀 | `tests/commit_crash_boundaries.py`，包含未发 COMMIT、不同延迟、已确认 COMMIT | PASS；完整旧状态或完整新状态 |
 | 大于内存的数据文件 | `tests/resource_boundaries.py --rows 260000 --max-mb 128`，1 MiB 页缓存，2321.44 MiB 数据文件 | PASS；排序/事务 TopK 约 17.8 MiB，更新/删除峰值约 66.3 MiB（进程指标） |
-| exact 基准 | 10k×128d，1000 查询，种子 20261110；强杀后逐条核对持久化内容及查询距离 | 两组 Recall@10 均 1.0；写入约 1.63 s，查询约 0.305 s |
-| ann 基准 | 同规模，种子 20261111；当前使用精确扫描 | 两组 Recall@10 均 1.0；写入约 1.65 s，查询约 0.295 s |
+| exact 基准 | 10k×128d，1000 查询，种子 20261110；强杀后逐条核对持久化内容及查询距离 | 两组 Recall@10 均 1.0；写入约 1.32 s，查询约 0.342 s |
+| ann 基准 | 同规模，种子 20261111；当前使用精确扫描 | 两组 Recall@10 均 1.0；写入约 1.32 s，查询约 0.333 s |
 | Linux 和 sanitizer | `.github/workflows/minivectordb.yml`，GCC/UBSan 和回归 | 查看对应 SHA 的 Actions |
 | 实际容器资源边界 | `tests/docker_resource_boundaries.py`，256 MiB 容器、超过 2 GiB 数据文件、全表更新/删除及重启 | 查看对应 SHA 的 Actions |
 

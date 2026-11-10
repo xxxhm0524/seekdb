@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Protocol-level regressions for boundaries absent from the public samples."""
 import math
+import json
 import os
 import struct
 import sys
@@ -187,6 +188,29 @@ class Boundaries(unittest.TestCase):
     def test_schema_width_cannot_wrap_page_offsets(self):
         columns = ','.join('c%d VARCHAR(65535)' % i for i in range(16384))
         self.rejected('CREATE TABLE too_wide (id BIGINT PRIMARY KEY,'+columns+')')
+
+    def test_float32_maximum_json_roundtrip(self):
+        self.sql('CREATE TABLE t (id BIGINT PRIMARY KEY,v VECTOR(1))')
+        self.sql("INSERT INTO t VALUES (1,'[3.4028234663852886e38]')",affected_rows=1)
+        value = self.sql('SELECT v FROM t')['rows'][0][0][0]
+        # The server's nine-digit JSON spelling rounds back to finite FLT_MAX
+        # even though the decimal value is slightly above its exact magnitude.
+        self.sql("INSERT INTO t VALUES (2,'[%s]'),(3,'[%s]')" % (value,-value),affected_rows=2)
+        self.sql("SELECT id FROM t ORDER BY L2_DISTANCE(v,'[3.40282347e38]') LIMIT 3",rows=[[1],[2],[3]])
+        self.rejected("INSERT INTO t VALUES (4,'[3.4028236e38]')")
+        self.rejected("INSERT INTO t VALUES (4,'[-3.4028236e38]')")
+
+    def test_request_id_preserves_json_type_and_large_integer(self):
+        self.sql('CREATE TABLE t (id BIGINT PRIMARY KEY)')
+        for ident in (10**400,-(10**400),'中文\n🙂',True,False,None,1.25,[1,'x'],{'n':10**400}):
+            request = dict(id=ident,op='execute',sql='SELECT id FROM t',search_mode='exact')
+            self.client.p.stdin.write(json.dumps(request,ensure_ascii=False)+'\n')
+            self.client.p.stdin.flush()
+            response = json.loads(self.client.p.stdout.readline())
+            self.assertIs(type(response.get('id')),type(ident),response)
+            self.assertEqual(response['id'],ident,response)
+            self.assertIs(response.get('ok'),True,response)
+        self.sql('SELECT id FROM t',rows=[])
 
 
 if __name__ == "__main__":

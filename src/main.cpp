@@ -198,10 +198,29 @@ struct JsonCursor {
     if (pos == start) return false;
     std::string token = text.substr(start, pos - start);
     if (token == "true" || token == "false" || token == "null") return true;
-    char *end = nullptr;
-    errno = 0;
-    std::strtod(token.c_str(), &end);
-    return end != nullptr && *end == '\0' && errno != ERANGE;
+    // Validate JSON number syntax without converting IDs through double.
+    // JSON integers can be larger than DBL_MAX and must still echo unchanged.
+    size_t n = 0;
+    if (token[n] == '-') ++n;
+    if (n == token.size()) return false;
+    if (token[n] == '0') ++n;
+    else {
+      if (token[n] < '1' || token[n] > '9') return false;
+      while (n < token.size() && token[n] >= '0' && token[n] <= '9') ++n;
+    }
+    if (n < token.size() && token[n] == '.') {
+      size_t begin = ++n;
+      while (n < token.size() && token[n] >= '0' && token[n] <= '9') ++n;
+      if (n == begin) return false;
+    }
+    if (n < token.size() && (token[n] == 'e' || token[n] == 'E')) {
+      ++n;
+      if (n < token.size() && (token[n] == '+' || token[n] == '-')) ++n;
+      size_t begin = n;
+      while (n < token.size() && token[n] >= '0' && token[n] <= '9') ++n;
+      if (n == begin) return false;
+    }
+    return n == token.size();
   }
 };
 
