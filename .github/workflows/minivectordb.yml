@@ -121,6 +121,20 @@ jobs:
         id: docker_build
         run: docker build -t minivectordb:ci .
 
+      - name: Float32 model in the final locked runtime
+        run: |
+          docker build --target build -t minivectordb:compiler-ci .
+          mkdir -p protocol-results/runtime-model
+          chmod 777 protocol-results/runtime-model
+          docker run --rm --network=none --cpus=2 --memory=2g \
+            --mount "type=bind,src=$PWD/tests/float_parse_model.cpp,dst=/src/float-model.cpp,readonly" \
+            --mount "type=bind,src=$PWD/protocol-results/runtime-model,dst=/model-out" \
+            minivectordb:compiler-ci \
+            g++ -std=c++20 -O2 -Isrc float-model.cpp -o /model-out/float-model
+          docker run --rm --network=none --read-only --cap-drop=ALL --cpus=2 --memory=2g \
+            --mount "type=bind,src=$PWD/protocol-results/runtime-model,dst=/model,readonly" \
+            --entrypoint /model/float-model minivectordb:ci
+
       - name: Address and lifetime sanitizer
         run: |
           g++ -std=c++20 -O1 -g -Wall -Wextra -fopenmp \
@@ -175,8 +189,9 @@ jobs:
           mvd_reference_dir=$(mktemp -d)
           git fetch --depth=1 origin 082acdb96d847844962f85cd3e3f57e4d38db1dc
           git archive 082acdb96d847844962f85cd3e3f57e4d38db1dc \
-            Makefile Dockerfile src/main.cpp src/sql.cpp src/sql.h src/engine.cpp \
+            Makefile src/main.cpp src/sql.cpp src/sql.h src/engine.cpp \
             src/engine.h src/common.h src/ann.h src/tx_spool.h | tar -x -C "$mvd_reference_dir"
+          cp Dockerfile "$mvd_reference_dir/Dockerfile"
           docker build -t minivectordb:reference-082acdb9 "$mvd_reference_dir"
 
       - name: Paired time I/O and memory comparison

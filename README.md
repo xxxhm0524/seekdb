@@ -28,6 +28,8 @@ docker run --rm -i -v minivectordb-data:/data --cpus=2 --memory=2g minivectordb:
 ```
 
 容器以前台方式运行，只通过 stdin 接收 JSONL 请求、stdout 返回 JSONL 响应；日志只写 stderr，不监听网络端口。
+Ubuntu 基础镜像固定到摘要，构建和运行依赖使用 `20261110T160000Z` 的官方 Ubuntu 软件包快照。
+HTTPS 引导证书数据先按固定 SHA-256 校验，APT 签名和 TLS 校验保持启用；实际包版本清单保留在镜像中。
 所有持久化文件位于 `/data`。启动完成后先主动输出一行 `{"type":"ready"}`，随后逐行处理
 `execute` / `shutdown` 请求（见第 3 节）。
 
