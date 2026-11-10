@@ -33,6 +33,12 @@ jobs:
       - name: Formal requirement coverage
         run: python3 tests/formal_coverage.py
 
+      - name: Hidden boundary regressions
+        run: python3 tests/hidden_boundaries.py
+
+      - name: Bounded scan and mutation memory
+        run: python3 tests/resource_boundaries.py
+
       - name: Randomized model stress
         run: python3 tests/stress_random.py --rounds 20 --seed 7
 
@@ -40,13 +46,29 @@ jobs:
         run: python3 tests/regression.py
 
       - name: Repeated kills during recovery
-        run: python3 tests/crash_recovery_test.py 20000
+        run: python3 tests/crash_recovery_test.py 50000
+
+      - name: Kill during multi-table commit
+        run: python3 tests/commit_crash_boundaries.py
 
       - name: Install benchmark dependency
         run: python3 -m pip install --break-system-packages numpy
 
       - name: Benchmark and recall
-        run: python3 tests/bench.py --rows 10000 --queries 1000
+        run: |
+          python3 tests/bench.py --rows 10000 --queries 1000 --seed 20261110 \
+            --output protocol-results/benchmark-exact.json
+          python3 tests/bench.py --rows 10000 --queries 1000 --seed 20261111 --search-mode ann \
+            --output protocol-results/benchmark-ann.json
+
+      - name: Undefined-behavior sanitizer
+        run: |
+          g++ -std=c++20 -O1 -g -Wall -Wextra -fopenmp \
+            -fsanitize=undefined -fno-sanitize-recover=undefined \
+            src/main.cpp src/sql.cpp src/engine.cpp -o minivectordb-ubsan
+          MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/hidden_boundaries.py
+          MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/regression.py
+          MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/stress_random.py --rounds 40 --seed 211
 
       - name: Docker build
         run: docker build -t minivectordb:ci .
@@ -60,6 +82,9 @@ jobs:
         run: |
           python3 protocol_check/run.py --image minivectordb:ci \
             --output protocol-results/public-docker
+
+      - name: Docker dataset larger than formal memory budget
+        run: python3 tests/docker_resource_boundaries.py --image minivectordb:ci
 
       - name: Upload protocol reports
         if: always()

@@ -128,8 +128,11 @@ ROLLBACK;
 ### 4.2 事务与语句原子性
 
 - 显式事务维护每表的 `pk -> RowState` 叠加层；读取先查叠加层，再查基线，因此事务内可读到自己的修改。
+- 已有记录的 UPDATE 保存共享的列修改，DELETE 保存删除标记，避免为每条宽记录复制完整定长槽。
 - 每条语句先在叠加层完成校验；语句失败时丢弃本条语句的改动（显式事务恢复到语句前快照），不留部分修改。
+- 新增槽位的分配进度只在 COMMIT 后安装，失败语句与 ROLLBACK 不消耗基线槽位。
 - `ROLLBACK` 丢弃叠加层；`COMMIT` 先把提交涉及的页生成完整页镜像写入 WAL，`fsync` 后才安装到页缓存并返回成功。
+- 提交逐页生成镜像，只保留首 1 MiB 的镜像和后续 WAL 偏移；大提交不需要把全部修改页同时放进内存。
 - 未提交事务从不写数据页；崩溃后 WAL 中没有 COMMIT 记录的页镜像会被忽略。
 
 ### 4.3 WAL 与崩溃恢复
@@ -137,44 +140,49 @@ ROLLBACK;
 - `wal.log` 记录两类记录：页镜像（表 id、页号、64 KiB 页内容）和 COMMIT（txid）。
 - 每次提交：写页镜像 → 写 COMMIT → `fsync(wal)` → 返回成功；随后页缓存可延迟刷盘。
 - 启动恢复两遍扫描：第一遍收集有 COMMIT 的 txid，第二遍按 WAL 顺序重放这些页镜像（幂等），
-  然后 `fsync` 数据文件、截断 WAL。恢复途中再次被 kill 也安全。
-- 运行期 WAL 超过 32 MiB 时自动 checkpoint：先刷全部脏页并 `fsync` 数据文件，再截断 WAL；
-  长时间写入不会让日志无限增长，重启时的恢复内存也有上界。
-- 正常关闭（stdin EOF 或 SIGINT/SIGTERM）：回滚未提交事务、刷脏页、`fsync`、截断 WAL。
+  然后 `fsync` 数据文件、截断 WAL。两遍均按记录读取，不把整个 WAL 读入内存。
+- 每次提交后检查 32 MiB checkpoint 阈值：先刷全部脏页并 `fsync` 数据文件，再截断 WAL。
+  单个大事务的 WAL 可以超过阈值，其页镜像仍逐页生成、安装和恢复。
+- 正常关闭（JSON shutdown 或 stdin EOF）：回滚未提交事务、刷脏页、`fsync`、截断 WAL。
+  恢复未成功时保留 WAL；同步失败会返回错误，不继续截断恢复日志。
 
 ### 4.4 向量检索
 
 - 精确扫描：过滤谓词先判定，命中记录才计算距离；维护大小为 K 的最大堆，排序键为 `(平方距离, 主键)`。
-- AVX2/FMA 距离内核带运行期 CPU 检测，不支持 AVX2 时回退到标量实现；不会因 `-march=native` 在未知评测机报非法指令。
+- float32 存储、double 差值与平方累加，避免极小合法向量的距离下溢为 0；最大有限 float32 向量的距离也可表示。
+- AVX2 距离内核带运行期 CPU 检测，不支持 AVX2 时回退到 double 标量实现；不会因 `-march=native` 在未知评测机报非法指令。
 - OpenMP 按页切分并行扫描，线程数默认 2（可用 `--query-threads` 调整），结果合并后按 `(距离, 主键)` 输出。
 - `CREATE VECTOR INDEX` 持久化索引元数据；当前检索路径以精确扫描保证召回，索引维护不会放宽过滤与事务正确性。
 
 ## 5. 验证记录
 
-以下结果来自本机 Windows MSYS2（GCC 15.2，2 线程）和仓库内测试脚本；正式成绩以平台锁定版本为准。
+2026-11-10 重新审计并修复公开样例之外的边界。以下是 Windows MSYS2 的实际本地结果，
+不是正式 29 个用例的通过证明；Linux、sanitizer 与实际 Docker 镜像以对应 SHA 的 `minivectordb-ci` 记录为准。
 
 | 验证项 | 方法 | 结果 |
 | --- | --- | --- |
-| JSONL 握手/关闭 | `python3 protocol_check/run.py --handshake-only`（官方检查器，先等 ready 再发 shutdown） | PASS |
-| 公开用例（官方协议） | `python3 protocol_check/run.py`（`mysqltest/` 20 个用例/95 条 SQL，逐请求 JSONL） | 20/20 PASS |
-| 公开用例（本地驱动） | `python tests/local_driver.py`（同一题包，逐语句比对 columns/rows/affected_rows/error.code） | 20/20 PASS |
-| 正式要求逐项覆盖 | `python tests/formal_coverage.py`：模式/类型边界、全部比较运算、ORDER BY/LIMIT/OFFSET、事务原子性、非法向量、恢复 | ALL PASS |
-| 随机模型压力 | `python tests/stress_random.py`：400 主键随机增删改、exact/ann、过滤/不过滤、重启与强杀 | PASS（多随机种子） |
-| 事务/回滚/持久化 | `python tests/regression.py` | PASS |
-| 崩溃恢复 | `tests/regression.py`：显式事务中 kill；已提交保留、未提交不残留、重启可继续写 | PASS |
-| 恢复中重复强杀 | `python tests/crash_recovery_test.py`：50,000 行 × 32 维，WAL 重放期间再 kill 3 次 | PASS |
-| WAL 有界与 checkpoint | 30,000 行 × 128 维写入过程中 32 MiB 自动刷盘截断；重启行数与首尾主键核对 | PASS（WAL 峰值约 3.3 MiB） |
-| 向量 TopK | `tests/regression.py`：500 行 4 维随机数据，20 个过滤查询对暴力真值；索引后增删改 | PASS |
-| 大规模 TopK | `python tests/bench.py`：10,000 行 × 128 维，1,000 个 K=10 查询（一半过滤），NumPy 暴力核对 | PASS（Recall=1.0） |
-| 本地性能 | 同上，本机 2 线程 | 插入 10,000 行约 1.74 s；1,000 查询约 0.30 s（约 0.30 ms/查询） |
-| 极端 float32 距离 | ±3.4e38 合法向量：float 快速路径溢出时 double 重算，输出有限距离并按距离排序 | PASS |
-| Linux 构建与全量回归 | GitHub Actions `ubuntu-24.04`：`make` + 官方 `protocol_check` + 正式覆盖/压力/恢复测试 + Benchmark | PASS |
-| Docker 镜像与容器运行 | GitHub Actions `ubuntu-24.04`：`docker build` + 容器内跑官方 `protocol_check` 全部公开用例 | PASS（`all cases passed`） |
-| 超过缓存的扫描 | `--cache-mb=1` 插入 20,000 行 × 32 维，多次 TopK 与暴力结果核对 | PASS |
+| JSONL 握手、关闭、公开用例 | `protocol_check/run.py`，实际目标参数由下方审计入口生成 | 握手及 20/20 公开用例 PASS |
+| 公开要求的本地覆盖 | `tests/formal_coverage.py`，类型、比较、排序、事务与恢复 | PASS；不等同正式用例 |
+| 边界回归 | `tests/hidden_boundaries.py`，极小距离、别名、空结果错误、维度回绕、非法向量、回滚槽位、UPDATE 原子性 | 11 组 PASS |
+| 随机模型 | `tests/stress_random.py`，种子 7、42、211，各 100 轮 | PASS |
+| 原回归和扩展 | `tests/regression.py`、`tests/run_extended_tsv.py`；后者名称保留，实际走 JSONL | PASS |
+| 恢复中重复强杀 | `tests/crash_recovery_test.py 50000`，合法未提交增删改，核对所有 ID | PASS；本地观测到 2 次恢复写页后、ready 前强杀 |
+| 多表提交途中强杀 | `tests/commit_crash_boundaries.py`，包含未发 COMMIT、不同延迟、已确认 COMMIT | PASS；完整旧状态或完整新状态 |
+| 大于内存的数据文件 | `tests/resource_boundaries.py --rows 260000 --max-mb 128`，1 MiB 页缓存，2321.44 MiB 数据文件 | PASS；排序/事务 TopK 约 17.8 MiB，更新/删除峰值约 66.3 MiB（进程指标） |
+| exact 基准 | 10k×128d，1000 查询，种子 20261110；强杀后逐条核对持久化内容及查询距离 | 两组 Recall@10 均 1.0；写入约 1.63 s，查询约 0.305 s |
+| ann 基准 | 同规模，种子 20261111；当前使用精确扫描 | 两组 Recall@10 均 1.0；写入约 1.65 s，查询约 0.295 s |
+| Linux 和 sanitizer | `.github/workflows/minivectordb.yml`，GCC/UBSan 和回归 | 查看对应 SHA 的 Actions |
+| 实际容器资源边界 | `tests/docker_resource_boundaries.py`，256 MiB 容器、超过 2 GiB 数据文件、全表更新/删除及重启 | 查看对应 SHA 的 Actions |
 
-`protocol_check` 是官方题包自带的交互式检查器：它按正式顺序等待启动 ready、逐请求发送、检查响应
-id 类型与布尔 ok，并支持 `--restart` 和 `--mode ann`。本机没有 Docker，因此 Docker 边界由
-GitHub Actions 的 Ubuntu 24.04 runner 实际构建并运行验证。
+重跑本地审计（输出目录必须是新目录；需已构建程序与 NumPy）：
+
+```bash
+python tests/audit_suite.py --output protocol-results/audit-20261110 --large-resource
+```
+
+审计保留逐项日志和 `summary.json`。基准计时包含 JSONL 请求/响应与提交持久化，排除 SQL 文本生成及事后验证；
+不据此宣称平台综合性能或排名。Windows 传输层增加了带超时的管道读写，Linux 保留原 selectors 路径，
+公开断言规则未放宽。本机无 Docker，容器边界由 Ubuntu 24.04 Actions 构建并运行。
 
 ## 6. 目录
 
@@ -195,4 +203,5 @@ Dockerfile
 1. 行必须能放入 64 KiB 页；超宽 VARCHAR/VECTOR 建表会返回错误。
 2. 不支持 NULL、默认值、JOIN、聚合、子查询、ALTER TABLE、主键更新。
 3. 当前 ANN 模式与 exact 模式共用精确扫描（保证 Recall=1.0）；未实现 HNSW/IVF 近似加速。
-4. 单个显式事务的叠加层保存在内存；超大事务受内存限制（基准负载为每 100 行提交，不属于此情形）。
+4. 主键索引、事务记录元数据和显式事务中新增行的原始内容仍在内存中。单个超大 INSERT、很长的显式事务和无 LIMIT 的巨大响应仍受内存限制。
+5. 本地测试和 CI 覆盖公开要求的已知边界，不能证明未获得输入的正式 29 个用例全部通过。未经用户授权不做平台提测。

@@ -4,6 +4,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <cstdint>
+#include <functional>
 #include <list>
 #include <memory>
 #include <mutex>
@@ -74,15 +75,21 @@ struct Response {
   std::string error_message;
 };
 
+using RowPatch = std::vector<std::pair<int, Value>>;
+
 struct RowState {
   bool existed = false;   // existed in the base table when first touched
   bool deleted = false;
   uint64_t pos = 0;
   std::vector<uint8_t> row;
+  // UPDATE literals are shared across matching records. Existing rows retain
+  // patches instead of a full fixed-width copy of every VARCHAR/VECTOR slot.
+  std::vector<std::shared_ptr<const RowPatch>> patches;
 };
 
 struct TxTable {
   std::unordered_map<int64_t, RowState> rows;
+  uint64_t next_pos = 0;
 };
 
 struct Transaction {
@@ -99,6 +106,7 @@ struct PageImage {
   uint32_t table_id = 0;
   uint32_t page_no = 0;
   std::shared_ptr<Page> page;
+  uint64_t wal_offset = 0;
 };
 
 class Table;
@@ -147,7 +155,7 @@ class Table {
   PageCache *cache() const { return cache_; }
 
   // Opens the data file and computes the next allocation position.
-  void open();
+  void open(bool rebuild = true);
   void close_file();
 
   uint32_t page_count() const { return page_count_; }
@@ -192,12 +200,16 @@ class Table {
 
   // Encodes/decodes values in a row.
   void encode_value(uint8_t *row, int col_index, const Value &value);
+  void apply_patches(uint8_t *row, const RowState &state);
+  void materialize_state(const RowState &state, const uint8_t *base,
+                          std::vector<uint8_t> &row);
   Value decode_value(const uint8_t *row, int col_index) const;
   int column_index(const std::string &name) const;
   bool compare(const uint8_t *row, const Condition &cond) const;
 
   // Builds full page images for a transaction overlay.
-  std::vector<PageImage> build_commit_images(const TxTable &tx);
+  void build_commit_images(const TxTable &tx,
+                           const std::function<void(PageImage)> &visit);
 
  private:
   TableSchema schema_;
@@ -230,6 +242,7 @@ class Wal {
   bool append_commit(uint64_t txid);
   bool sync();
   bool truncate();
+  std::shared_ptr<Page> read_page_image(uint64_t offset);
   int64_t size() const { return file_.size(); }
   uint64_t next_txid() const { return next_txid_; }
   uint64_t allocate_txid() { return next_txid_++; }
@@ -238,40 +251,28 @@ class Wal {
   // page image in WAL order.
   template <typename ApplyFn>
   void recover(ApplyFn apply) {
-    std::string data;
-    if (!read_all(data)) return;
+    int64_t size = file_.size();
+    if (size < 0) throw_error("IO_ERROR", "cannot stat WAL");
+    std::string payload;
     std::unordered_set<uint64_t> committed;
-    size_t pos = 0;
-    while (true) {
-      WalRecordHeader h;
-      if (pos + sizeof(h) > data.size()) break;
-      std::memcpy(&h, data.data() + pos, sizeof(h));
-      if (h.magic != 0x4D564457 || h.payload_len > 1024 * 1024) break;
-      if (pos + sizeof(h) + h.payload_len > data.size()) break;
-      const uint8_t *payload = reinterpret_cast<const uint8_t *>(data.data() + pos + sizeof(h));
-      if (crc32(payload, h.payload_len) != h.crc) break;
-      if (h.type == 2) committed.insert(h.txid);
+    uint64_t pos = 0;
+    WalRecordHeader h;
+    while (read_record(pos, static_cast<uint64_t>(size), h, payload)) {
+      if (h.type == 2 && h.payload_len == 0) committed.insert(h.txid);
       if (h.txid >= next_txid_) next_txid_ = h.txid + 1;
       pos += sizeof(h) + h.payload_len;
     }
     pos = 0;
-    while (true) {
-      WalRecordHeader h;
-      if (pos + sizeof(h) > data.size()) break;
-      std::memcpy(&h, data.data() + pos, sizeof(h));
-      if (h.magic != 0x4D564457 || h.payload_len > 1024 * 1024) break;
-      if (pos + sizeof(h) + h.payload_len > data.size()) break;
-      const uint8_t *payload = reinterpret_cast<const uint8_t *>(data.data() + pos + sizeof(h));
-      if (crc32(payload, h.payload_len) != h.crc) break;
+    while (read_record(pos, static_cast<uint64_t>(size), h, payload)) {
       if (h.type == 1 && committed.count(h.txid) &&
           h.payload_len >= 12) {
         uint32_t table_id, page_no, page_size;
-        std::memcpy(&table_id, payload, 4);
-        std::memcpy(&page_no, payload + 4, 4);
-        std::memcpy(&page_size, payload + 8, 4);
+        std::memcpy(&table_id, payload.data(), 4);
+        std::memcpy(&page_no, payload.data() + 4, 4);
+        std::memcpy(&page_size, payload.data() + 8, 4);
         if (page_size == kPageSize && h.payload_len == 12 + kPageSize) {
           auto page = std::shared_ptr<Page>(new Page());
-          std::memcpy(page.get(), payload + 12, kPageSize);
+          std::memcpy(page.get(), payload.data() + 12, kPageSize);
           apply(table_id, page_no, page);
         }
       }
@@ -280,7 +281,8 @@ class Wal {
   }
 
  private:
-  bool read_all(std::string &out);
+  bool read_record(uint64_t offset, uint64_t size, WalRecordHeader &header,
+                    std::string &payload);
   FileHandle file_;
   uint64_t next_txid_ = 1;
 };
@@ -309,6 +311,7 @@ class Engine {
   std::unordered_map<std::string, uint32_t> table_ids_;
   Transaction tx_;
   bool ann_mode_ = false;
+  bool opened_ = false;
   uint32_t next_table_id_ = 1;
 
   // catalog
@@ -331,7 +334,11 @@ class Engine {
   Response exec_rollback();
 
   // transaction helpers
-  TxTable &tx_table_ref(uint32_t table_id) { return tx_.tables[table_id]; }
+  TxTable &tx_table_ref(uint32_t table_id) {
+    auto [it, inserted] = tx_.tables.try_emplace(table_id);
+    if (inserted) it->second.next_pos = tables_.at(table_id)->next_pos();
+    return it->second;
+  }
   const TxTable *find_tx_table(uint32_t table_id) const;
   void commit_transaction();
   void rollback_transaction();
@@ -351,13 +358,13 @@ class Engine {
     uint64_t pos = 0;
     bool from_overlay = false;
   };
-  std::vector<VisibleRow> collect_visible(Table &table, const std::vector<Condition> &where,
-                                          bool need_sorted_by_pos);
+  // The callback must consume the row before returning. At most one heap page
+  // is pinned, including scans that merge an active transaction's overlay.
+  void for_each_visible(Table &table, const std::vector<Condition> &where,
+                        const std::function<bool(const VisibleRow &)> &visit);
   bool row_matches(const Table &table, const uint8_t *row,
                    const std::vector<Condition> &where) const;
 
-  std::vector<VisibleRow> collect_visible_locked(Table &table,
-                                                 const std::vector<Condition> &where);
 };
 
 }  // namespace mvd

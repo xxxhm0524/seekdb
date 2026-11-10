@@ -1,106 +1,125 @@
 #!/usr/bin/env python3
-"""Small performance benchmark matching the published round2 workload:
-10,000 rows x 128 dims, 1,000 TopK queries (K=10), half with a category filter.
-Also verifies every returned id against a NumPy brute-force truth."""
+"""JSONL timing, durable content checks, and float64 TopK truth.
+
+SQL generation and correctness checks are outside timed regions.
+These development timings do not reproduce the platform's cgroup T/B/M score.
+"""
 import argparse
+from contextlib import ExitStack
 import json
 import math
 import os
-import shutil
-import subprocess
+from pathlib import Path
 import sys
 import tempfile
 import time
 
 import numpy as np
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, HERE)
-from protocol_client import Client, DEFAULT_BINARY  # noqa: E402
-
-BINARY = DEFAULT_BINARY
+sys.path.insert(0, os.path.dirname(__file__))
+from protocol_client import Client, DEFAULT_BINARY
 
 
-def make_client(binary, datadir, threads=2):
-    return Client(binary, datadir, extra=["--query-threads=%d" % threads])
+def vector_literal(vector):
+    # Nine significant digits round-trip every finite float32 value.
+    return '[' + ','.join('%.9g' % float(x) for x in vector) + ']'
 
 
 def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--binary", default=BINARY)
-    ap.add_argument("--rows", type=int, default=10000)
-    ap.add_argument("--dim", type=int, default=128)
-    ap.add_argument("--queries", type=int, default=1000)
-    ap.add_argument("--topk", type=int, default=10)
-    ap.add_argument("--seed", type=int, default=20261109)
-    args = ap.parse_args()
-
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--binary', default=DEFAULT_BINARY)
+    parser.add_argument('--rows', type=int, default=10000)
+    parser.add_argument('--dim', type=int, default=128)
+    parser.add_argument('--queries', type=int, default=1000)
+    parser.add_argument('--topk', type=int, default=10)
+    parser.add_argument('--seed', type=int, default=20261109)
+    parser.add_argument('--search-mode', choices=['exact','ann'], default='exact')
+    parser.add_argument('--output', type=Path)
+    args = parser.parse_args()
     rng = np.random.default_rng(args.seed)
-    vectors = rng.random((args.rows, args.dim), dtype=np.float32)
-    cats = np.array(["c%d" % (i % 10) for i in range(args.rows)])
-    ids = np.arange(1, args.rows + 1, dtype=np.int64)
+    vectors = rng.random((args.rows,args.dim), dtype=np.float32)
+    cats = np.array(['c%d' % (i%10) for i in range(args.rows)])
+    ids = np.arange(1,args.rows+1,dtype=np.int64)
+    batches = []
+    for start in range(0,args.rows,100):
+        stop = min(start+100,args.rows)
+        parts = ["(%d,'%s','%s')" % (ids[i],cats[i],vector_literal(vectors[i])) for i in range(start,stop)]
+        batches.append(('INSERT INTO items VALUES '+','.join(parts), stop-start))
+    query_vectors = np.random.default_rng(args.seed+1).random((args.queries,args.dim),dtype=np.float32)
+    queries = []
+    for i,query in enumerate(query_vectors):
+        cat = 'c%d' % (i%10) if i < args.queries//2 else None
+        where = " WHERE cat='%s'" % cat if cat is not None else ''
+        sql = "SELECT id,L2_DISTANCE(v,'%s') AS d FROM items%s ORDER BY d LIMIT %d" % (
+            vector_literal(query),where,args.topk)
+        queries.append((sql,cat))
+    with tempfile.TemporaryDirectory(prefix='mvdbench_') as data, ExitStack() as cleanup:
+        client = Client(args.binary,data,extra=['--query-threads=2'])
+        cleanup.callback(client.close)
+        def execute(sql):
+            response = client.request(sql,args.search_mode)
+            assert response.get('ok') is True, (sql[:120],response)
+            return response
+        execute('CREATE TABLE items (id BIGINT PRIMARY KEY,cat VARCHAR(8),v VECTOR(%d))' % args.dim)
+        before = time.perf_counter()
+        for sql,count in batches:
+            assert execute(sql).get('affected_rows') == count
+        insert_time = time.perf_counter()-before
+        client.kill()
+        client = Client(args.binary,data,extra=['--query-threads=2'])
+        cleanup.callback(client.close)
+        for start in range(0,args.rows,256):
+            stop = min(start+256,args.rows)
+            response = execute('SELECT id,cat,v FROM items WHERE id>=%d AND id<=%d ORDER BY id' % (start+1,stop))
+            assert [r[0] for r in response['rows']] == ids[start:stop].tolist(), 'durable IDs differ'
+            assert [r[1] for r in response['rows']] == cats[start:stop].tolist(), 'durable categories differ'
+            actual = np.array([r[2] for r in response['rows']],dtype=np.float32)
+            assert np.array_equal(actual,vectors[start:stop]), 'durable vectors differ'
+        execute('CREATE VECTOR INDEX vi ON items(v)')
+        for index in (0, min(args.queries-1,args.queries//2)):
+            execute(queries[index][0])
+        results = []
+        before = time.perf_counter()
+        for sql,_ in queries:
+            results.append(execute(sql)['rows'])
+        query_time = time.perf_counter()-before
+        exact_mismatches = 0
+        recall = {'filtered':[],'unfiltered':[]}
+        double_vectors = vectors.astype(np.float64)
+        for i,rows in enumerate(results):
+            _,cat = queries[i]
+            candidates = np.flatnonzero(cats==cat) if cat is not None else np.arange(args.rows)
+            differences = double_vectors[candidates]-query_vectors[i].astype(np.float64)
+            distances2 = np.einsum('ij,ij->i',differences,differences)
+            order = np.lexsort((ids[candidates],distances2))[:args.topk]
+            truth = ids[candidates][order].tolist()
+            got = [r[0] for r in rows]
+            assert len(got)==len(truth) and len(got)==len(set(got)), ('wrong count/duplicate IDs',i,got)
+            assert all(1<=ident<=args.rows for ident in got), ('invalid ID',i,got)
+            assert cat is None or all(cats[ident-1]==cat for ident in got), ('filter violation',i)
+            for ident,distance in rows:
+                expected = np.linalg.norm(double_vectors[ident-1]-query_vectors[i].astype(np.float64))
+                assert math.isclose(distance,expected,rel_tol=1e-7,abs_tol=1e-7), ('wrong distance',i,ident,distance,expected)
+            if truth:
+                recall['filtered' if cat is not None else 'unfiltered'].append(len(set(got)&set(truth))/len(truth))
+            if got != truth:
+                exact_mismatches += 1
+        mean_recall = {key:float(np.mean(value)) if value else 1.0 for key,value in recall.items()}
+        assert all(value>=0.95 for value in mean_recall.values()), mean_recall
+        if args.search_mode=='exact':
+            assert exact_mismatches==0, ('exact TopK differs',exact_mismatches)
+        client.shutdown()
+    report = dict(rows=args.rows,dim=args.dim,queries=args.queries,topk=args.topk,seed=args.seed,
+        mode=args.search_mode,insert_seconds=round(insert_time,6),query_seconds=round(query_time,6),
+        ms_per_query=round(query_time*1000/args.queries,6),recall_at_k=mean_recall,
+        exact_query_mismatches=exact_mismatches,durable_content_verified=True,
+        timing_scope='prepared SQL over JSONL; includes responses and commit fsync; excludes SQL generation and validation')
+    print(json.dumps(report,ensure_ascii=False,indent=2))
+    if args.output:
+        args.output.parent.mkdir(parents=True,exist_ok=True)
+        args.output.write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+    return 0
 
-    base = tempfile.mkdtemp(prefix="mvdbench_")
-    data = os.path.join(base, "data")
-    os.makedirs(data)
-    c = make_client(args.binary, data)
-    print(c.request("CREATE TABLE items (id BIGINT PRIMARY KEY, cat VARCHAR(8), v VECTOR(%d));" % args.dim))
 
-    t0 = time.perf_counter()
-    batch = 100
-    for start in range(0, args.rows, batch):
-        parts = []
-        for i in range(start, min(start + batch, args.rows)):
-            lit = ",".join("%.8g" % x for x in vectors[i])
-            parts.append("(%d,'%s','[%s]')" % (ids[i], cats[i], lit))
-        r = c.request("INSERT INTO items VALUES " + ",".join(parts) + ";")
-        if r.get("affected_rows") != len(parts):
-            raise RuntimeError("insert batch failed: %s" % r)
-    insert_time = time.perf_counter() - t0
-    print("insert %d rows: %.3f s (%.2f rows/s)" % (args.rows, insert_time, args.rows / insert_time))
-
-    vrng = np.random.default_rng(args.seed + 1)
-    query_vecs = vrng.random((args.queries, args.dim), dtype=np.float32)
-    use_filter = np.array([True] * (args.queries // 2) + [False] * (args.queries - args.queries // 2))
-    filter_cats = np.array(["c%d" % (i % 10) for i in range(args.queries)])
-
-    results = []
-    t0 = time.perf_counter()
-    for qi in range(args.queries):
-        q = query_vecs[qi]
-        cat = filter_cats[qi] if use_filter[qi] else None
-        lit = ",".join("%.8g" % x for x in q)
-        if cat is None:
-            sql = "SELECT id, L2_DISTANCE(v,'[%s]') AS d FROM items ORDER BY d LIMIT %d;" % (lit, args.topk)
-        else:
-            sql = ("SELECT id, L2_DISTANCE(v,'[%s]') AS d FROM items WHERE cat='%s' "
-                   "ORDER BY d LIMIT %d;" % (lit, cat, args.topk))
-        r = c.request(sql)
-        if "error" in r:
-            raise RuntimeError("query failed: %s" % r)
-        results.append([row[0] for row in r["rows"]])
-    query_time = time.perf_counter() - t0
-    failures = 0
-    for qi, got in enumerate(results):
-        q = query_vecs[qi]
-        cat = filter_cats[qi] if use_filter[qi] else None
-        mask = np.ones(args.rows, dtype=bool) if cat is None else (cats == cat)
-        idx = np.flatnonzero(mask)
-        diff = vectors[idx] - q
-        dist2 = np.einsum("ij,ij->i", diff, diff)
-        order = np.lexsort((ids[idx], dist2))[:args.topk]
-        truth = ids[idx][order].tolist()
-        if got != truth:
-            failures += 1
-            if failures <= 3:
-                print("query %d mismatch: got %s truth %s" % (qi, got, truth))
-    print("queries %d (K=%d, half filtered): %.3f s (%.2f qps, %.3f ms/query)"
-          % (args.queries, args.topk, query_time, args.queries / query_time, query_time * 1000 / args.queries))
-    print("recall check: %s" % ("PASS" if failures == 0 else "FAIL (%d)" % failures))
-    c.shutdown()
-    shutil.rmtree(base, ignore_errors=True)
-    return 0 if failures == 0 else 1
-
-
-if __name__ == "__main__":
+if __name__=='__main__':
     sys.exit(main())

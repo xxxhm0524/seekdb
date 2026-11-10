@@ -55,7 +55,14 @@ void parse_vector_for_column(const std::string &text, const ColumnDef &col,
     while (end > start && std::isspace(static_cast<unsigned char>(text[end - 1]))) --end;
     if (end == start) throw_error("INVALID_VECTOR", "expected numeric vector component");
     parts.emplace_back(text.substr(start, end - start));
-    if (i < text.size() && text[i] == ',') { ++i; continue; }
+    if (i < text.size() && text[i] == ',') {
+      ++i;
+      size_t next = i;
+      while (next < text.size() && std::isspace(static_cast<unsigned char>(text[next]))) ++next;
+      if (next >= text.size() || text[next] == ']')
+        throw_error("INVALID_VECTOR", "expected numeric vector component after comma");
+      continue;
+    }
     if (i < text.size() && text[i] == ']') { ++i; break; }
     throw_error("INVALID_VECTOR", "expected numeric vector component");
   }
@@ -241,7 +248,9 @@ void PageCache::flush_all(
       kv.second.dirty = false;
     }
   }
-  for (auto &t : tables) t.second->fsync_file();
+  for (auto &t : tables) {
+    if (!t.second->fsync_file()) throw_error("IO_ERROR", "failed to sync table file");
+  }
 }
 
 void PageCache::drop_table(uint32_t table_id) {
@@ -265,7 +274,7 @@ Table::Table(TableSchema schema, std::string data_path, PageCache *cache)
       data_path_(std::move(data_path)),
       cache_(cache) {}
 
-void Table::open() {
+void Table::open(bool rebuild) {
   int flags = O_RDWR | O_CREAT;
 #ifndef _WIN32
   file_ = FileHandle::open(data_path_, flags | O_DIRECT);
@@ -276,6 +285,9 @@ void Table::open() {
 #endif
   if (!file_.valid())
     throw_error("IO_ERROR", "cannot open table file: " + data_path_);
+  // Startup replays committed WAL before inspecting possibly interrupted page
+  // writes. Also avoid scanning every table twice during normal recovery.
+  if (!rebuild) return;
   int64_t size = file_.size();
   if (size < 0) throw_error("IO_ERROR", "cannot stat table file");
   uint32_t total_pages = static_cast<uint32_t>(size / kPageSize);
@@ -330,6 +342,8 @@ void Table::refresh_after_recovery() {
   int64_t size = file_.size();
   if (size < 0) throw_error("IO_ERROR", "cannot stat table file");
   uint32_t total_pages = static_cast<uint32_t>(size / kPageSize);
+  if (static_cast<int64_t>(total_pages) * kPageSize != size)
+    throw_error("CORRUPTION", "table file size is not page aligned after recovery");
   page_count_ = 0;
   next_pos_ = 0;
   for (int64_t p = static_cast<int64_t>(total_pages) - 1; p >= 0; --p) {
@@ -503,21 +517,35 @@ bool Table::compare(const uint8_t *row, const Condition &cond) const {
   return false;
 }
 
-std::vector<PageImage> Table::build_commit_images(const TxTable &tx) {
+void Table::apply_patches(uint8_t *row, const RowState &state) {
+  for (const auto &patch : state.patches)
+    for (const auto &change : *patch)
+      encode_value(row, change.first, change.second);
+}
+
+void Table::materialize_state(const RowState &state, const uint8_t *base,
+                              std::vector<uint8_t> &row) {
+  if (!state.row.empty()) row = state.row;
+  else if (base) row.assign(base, base + schema_.row_size);
+  else if (!read_row(state.pos, row))
+    throw_error("CORRUPTION", "transaction base row missing");
+  apply_patches(row.data(), state);
+}
+
+void Table::build_commit_images(const TxTable &tx,
+                                const std::function<void(PageImage)> &visit) {
   struct Change {
     uint64_t pos;
     bool deleted;
-    const std::vector<uint8_t> *row;
+    const RowState *state;
   };
   std::unordered_map<uint32_t, std::vector<Change>> by_page;
   for (const auto &kv : tx.rows) {
     const RowState &state = kv.second;
     if (state.deleted && !state.existed) continue;  // insert then delete: no-op
     uint32_t page_no = static_cast<uint32_t>(state.pos / schema_.rows_per_page);
-    by_page[page_no].push_back(Change{state.pos, state.deleted, &state.row});
+    by_page[page_no].push_back(Change{state.pos, state.deleted, &state});
   }
-  std::vector<PageImage> images;
-  images.reserve(by_page.size());
   for (auto &kv : by_page) {
     uint32_t page_no = kv.first;
     std::shared_ptr<Page> base;
@@ -543,7 +571,9 @@ std::vector<PageImage> Table::build_commit_images(const TxTable &tx) {
       if (ch.deleted) {
         if (slot < image->nrows) set_row_valid(dst, false);
       } else {
-        std::memcpy(dst, ch.row->data(), schema_.row_size);
+        if (!ch.state->row.empty())
+          std::memcpy(dst, ch.state->row.data(), schema_.row_size);
+        apply_patches(dst, *ch.state);
         set_row_valid(dst, true);
         if (slot + 1 > image->nrows) image->nrows = slot + 1;
         if (image->nrows > max_slots) image->nrows = max_slots;
@@ -554,9 +584,8 @@ std::vector<PageImage> Table::build_commit_images(const TxTable &tx) {
     pi.table_id = schema_.id;
     pi.page_no = page_no;
     pi.page = std::move(image);
-    images.push_back(std::move(pi));
+    visit(std::move(pi));
   }
-  return images;
 }
 
 // ---------------------------------------------------------------------------
@@ -564,30 +593,29 @@ std::vector<PageImage> Table::build_commit_images(const TxTable &tx) {
 // ---------------------------------------------------------------------------
 bool Wal::open(const std::string &path) {
   file_ = FileHandle::open(path, O_RDWR | O_CREAT | O_APPEND);
-  if (!file_.valid()) return false;
-  std::string data;
-  if (read_all(data)) {
-    size_t pos = 0;
-    while (pos + sizeof(WalRecordHeader) <= data.size()) {
-      WalRecordHeader h;
-      std::memcpy(&h, data.data() + pos, sizeof(h));
-      if (h.magic != 0x4D564457 || h.payload_len > 1024 * 1024) break;
-      if (pos + sizeof(h) + h.payload_len > data.size()) break;
-      if (h.txid >= next_txid_) next_txid_ = h.txid + 1;
-      pos += sizeof(h) + h.payload_len;
-    }
-  }
-  return true;
+  return file_.valid();
 }
 
 void Wal::close() { file_.close(); }
 
-bool Wal::read_all(std::string &out) {
-  int64_t sz = file_.size();
-  if (sz < 0) return false;
-  out.resize(static_cast<size_t>(sz));
-  if (sz == 0) return true;
-  return file_.pread_full(out.data(), out.size(), 0);
+bool Wal::read_record(uint64_t offset, uint64_t size, WalRecordHeader &h,
+                      std::string &payload) {
+  if (offset + sizeof(h) > size) return false;
+  if (!file_.pread_full(&h, sizeof(h), offset))
+    throw_error("IO_ERROR", "cannot read WAL header");
+  if (h.magic != 0x4D564457 || h.payload_len > 1024 * 1024 ||
+      offset + sizeof(h) + h.payload_len > size) return false;
+  payload.resize(h.payload_len);
+  if (!payload.empty() && !file_.pread_full(payload.data(), payload.size(), offset + sizeof(h)))
+    throw_error("IO_ERROR", "cannot read WAL record");
+  return crc32(payload.data(), payload.size()) == h.crc;
+}
+
+std::shared_ptr<Page> Wal::read_page_image(uint64_t offset) {
+  auto page = std::shared_ptr<Page>(new Page());
+  if (!file_.pread_full(page.get(), kPageSize, offset + sizeof(WalRecordHeader) + 12))
+    throw_error("IO_ERROR", "cannot read committed WAL page");
+  return page;
 }
 
 bool Wal::append_page(uint64_t txid, uint32_t table_id, uint32_t page_no,
@@ -645,7 +673,7 @@ void Engine::open() {
   make_dir(data_dir_);
   load_catalog();
   // Create/open all tables from catalog.
-  for (auto &kv : tables_) kv.second->open();
+  for (auto &kv : tables_) kv.second->open(false);
   if (!wal_.open(wal_path_))
     throw_error("IO_ERROR", "cannot open WAL");
   wal_.recover([&](uint32_t table_id, uint32_t page_no,
@@ -656,20 +684,22 @@ void Engine::open() {
   });
   for (auto &kv : tables_) {
     kv.second->refresh_after_recovery();
-    kv.second->fsync_file();
+    if (!kv.second->fsync_file()) throw_error("IO_ERROR", "failed to sync recovered table");
   }
   // WAL is fully applied and durable now.
-  wal_.truncate();
+  if (!wal_.truncate()) throw_error("IO_ERROR", "failed to truncate recovered WAL");
+  opened_ = true;
 }
 
 void Engine::shutdown() {
+  if (!opened_) { wal_.close(); return; }
   if (tx_.active) rollback_transaction();
   if (!tables_.empty()) {
     cache_.flush_all(tables_);
-    for (auto &kv : tables_) kv.second->fsync_file();
   }
-  wal_.truncate();
+  if (!wal_.truncate()) throw_error("IO_ERROR", "failed to truncate WAL at shutdown");
   wal_.close();
+  opened_ = false;
 }
 
 Table *Engine::find_table(const std::string &name) {
@@ -720,6 +750,8 @@ void Engine::compile_conditions(Table &table, std::vector<Condition> &where) {
     int idx = table.column_index(cond.column);
     if (idx < 0)
       throw_error("COLUMN_NOT_FOUND", "column not found: " + cond.column);
+    if (table.schema().columns[idx].type == ColumnType::VECTOR)
+      throw_error("UNSUPPORTED", "VECTOR columns cannot be compared in WHERE");
     cond.resolved_column = idx;
     cond.typed_value = coerce_value(table.schema(), idx, cond.value);
   }
@@ -822,12 +854,15 @@ void Engine::commit_transaction() {
   for (auto &kv : tx_.tables) {
     auto it = tables_.find(kv.first);
     if (it == tables_.end()) continue;
-    auto images = it->second->build_commit_images(kv.second);
-    for (auto &img : images) all_images.push_back(std::move(img));
-  }
-  for (auto &img : all_images) {
-    if (!wal_.append_page(txid, img.table_id, img.page_no, *img.page))
-      throw_error("IO_ERROR", "failed to write WAL page image");
+    it->second->build_commit_images(kv.second, [&](PageImage img) {
+      img.wal_offset = static_cast<uint64_t>(wal_.size());
+      if (!wal_.append_page(txid, img.table_id, img.page_no, *img.page))
+        throw_error("IO_ERROR", "failed to write WAL page image");
+      // Small batches keep their fast in-memory path. Large commits retain
+      // only WAL offsets after the first MiB, instead of pinning every page.
+      if (all_images.size() >= 16) img.page.reset();
+      all_images.push_back(std::move(img));
+    });
   }
   if (!all_images.empty()) {
     if (!wal_.append_commit(txid) || !wal_.sync())
@@ -840,12 +875,17 @@ void Engine::commit_transaction() {
   // Install images and update in-memory maps.
   for (auto &img : all_images) {
     auto it = tables_.find(img.table_id);
-    if (it != tables_.end()) cache_.install(it->second.get(), img.page_no, img.page);
+    if (it != tables_.end()) {
+      if (!img.page) img.page = wal_.read_page_image(img.wal_offset);
+      cache_.install(it->second.get(), img.page_no, img.page);
+      img.page.reset();
+    }
   }
   for (auto &kv : tx_.tables) {
     auto it = tables_.find(kv.first);
     if (it == tables_.end()) continue;
     Table &table = *it->second;
+    table.set_next_pos(kv.second.next_pos);
     for (auto &rk : kv.second.rows) {
       const RowState &state = rk.second;
       if (state.deleted) {
@@ -862,7 +902,7 @@ void Engine::commit_transaction() {
 void Engine::maybe_checkpoint() {
   if (wal_.size() < kWalCheckpointBytes) return;
   cache_.flush_all(tables_);
-  wal_.truncate();
+  if (!wal_.truncate()) throw_error("IO_ERROR", "failed to truncate checkpoint WAL");
 }
 
 void Engine::rollback_transaction() { tx_.clear(); }
@@ -1128,6 +1168,7 @@ Response Engine::exec_insert(InsertStmt &stmt) {
       // Insert after delete: reuse the existing slot.
       tx_it->second.deleted = false;
       tx_it->second.row = std::move(row);
+      tx_it->second.patches.clear();
       ++affected;
       continue;
     }
@@ -1137,7 +1178,7 @@ Response Engine::exec_insert(InsertStmt &stmt) {
     RowState state;
     state.existed = false;
     state.deleted = false;
-    state.pos = table.allocate_pos();
+    state.pos = tx_table.next_pos++;
     state.row = std::move(row);
     tx_table.rows[pk] = std::move(state);
     ++affected;
@@ -1151,11 +1192,12 @@ Response Engine::exec_insert(InsertStmt &stmt) {
 // ---------------------------------------------------------------------------
 // Visible row collection
 // ---------------------------------------------------------------------------
-std::vector<Engine::VisibleRow> Engine::collect_visible_locked(
-    Table &table, const std::vector<Condition> &where) {
-  std::vector<VisibleRow> out;
+void Engine::for_each_visible(
+    Table &table, const std::vector<Condition> &where,
+    const std::function<bool(const VisibleRow &)> &visit) {
   const TableSchema &schema = table.schema();
   const TxTable *tx_table = find_tx_table(table.id());
+  std::vector<uint8_t> materialized;
   for (uint32_t p = 0; p < table.page_count(); ++p) {
     auto page = table.get_page(p);
     if (page->magic != kPageMagic) continue;
@@ -1170,7 +1212,8 @@ std::vector<Engine::VisibleRow> Engine::collect_visible_locked(
         auto it = tx_table->rows.find(pk);
         if (it != tx_table->rows.end()) {
           if (it->second.deleted) continue;
-          use = it->second.row.data();
+          table.materialize_state(it->second, row, materialized);
+          use = materialized.data();
           overlay = true;
         }
       }
@@ -1188,43 +1231,31 @@ std::vector<Engine::VisibleRow> Engine::collect_visible_locked(
       vr.pk = pk;
       vr.pos = static_cast<uint64_t>(p) * schema.rows_per_page + slot;
       vr.from_overlay = overlay;
-      out.push_back(std::move(vr));
+      if (!visit(vr)) return;
     }
   }
   if (tx_table) {
     for (const auto &kv : tx_table->rows) {
       const RowState &state = kv.second;
       if (state.deleted || state.existed) continue;
+      table.materialize_state(state, nullptr, materialized);
       bool match = true;
       for (const auto &cond : where) {
-        if (!table.compare(state.row.data(), cond)) {
+        if (!table.compare(materialized.data(), cond)) {
           match = false;
           break;
         }
       }
       if (!match) continue;
       VisibleRow vr;
-      vr.row = state.row.data();
+      vr.row = materialized.data();
       vr.page = nullptr;
       vr.pk = kv.first;
       vr.pos = state.pos;
       vr.from_overlay = true;
-      out.push_back(std::move(vr));
+      if (!visit(vr)) return;
     }
   }
-  return out;
-}
-
-std::vector<Engine::VisibleRow> Engine::collect_visible(
-    Table &table, const std::vector<Condition> &where, bool need_sorted_by_pos) {
-  auto rows = collect_visible_locked(table, where);
-  if (need_sorted_by_pos) {
-    std::sort(rows.begin(), rows.end(), [](const VisibleRow &a, const VisibleRow &b) {
-      if (a.pos != b.pos) return a.pos < b.pos;
-      return a.pk < b.pk;
-    });
-  }
-  return rows;
 }
 
 bool Engine::row_matches(const Table &table, const uint8_t *row,
@@ -1239,59 +1270,48 @@ bool Engine::row_matches(const Table &table, const uint8_t *row,
 // Vector kernels
 // ---------------------------------------------------------------------------
 namespace {
-float squared_l2_scalar(const float *a, const float *b, int dim) {
-  float sum = 0.0f;
+double squared_l2_scalar(const float *a, const float *b, int dim) {
+  double sum = 0.0;
   for (int i = 0; i < dim; ++i) {
-    float d = a[i] - b[i];
+    double d = static_cast<double>(a[i]) - static_cast<double>(b[i]);
     sum += d * d;
   }
   return sum;
 }
 #if defined(__x86_64__) || defined(_M_X64)
-__attribute__((target("avx2,fma"))) float squared_l2_avx2(const float *a,
+__attribute__((target("avx2"))) double squared_l2_avx2(const float *a,
                                                           const float *b,
                                                           int dim) {
-  __m256 sum = _mm256_setzero_ps();
+  __m256d sum = _mm256_setzero_pd();
   int i = 0;
-  for (; i + 8 <= dim; i += 8) {
-    __m256 va = _mm256_loadu_ps(a + i);
-    __m256 vb = _mm256_loadu_ps(b + i);
-    __m256 d = _mm256_sub_ps(va, vb);
-    sum = _mm256_fmadd_ps(d, d, sum);
+  for (; i + 4 <= dim; i += 4) {
+    __m256d va = _mm256_cvtps_pd(_mm_loadu_ps(a + i));
+    __m256d vb = _mm256_cvtps_pd(_mm_loadu_ps(b + i));
+    __m256d d = _mm256_sub_pd(va, vb);
+    sum = _mm256_add_pd(sum, _mm256_mul_pd(d, d));
   }
-  float tmp[8];
-  _mm256_storeu_ps(tmp, sum);
-  float total = tmp[0] + tmp[1] + tmp[2] + tmp[3] + tmp[4] + tmp[5] +
-                tmp[6] + tmp[7];
+  double tmp[4];
+  _mm256_storeu_pd(tmp, sum);
+  double total = tmp[0] + tmp[1] + tmp[2] + tmp[3];
   for (; i < dim; ++i) {
-    float d = a[i] - b[i];
-    total += d * d;
-  }
-  return total;
-}
-#endif
-float squared_l2(const float *a, const float *b, int dim) {
-#if defined(__x86_64__) || defined(_M_X64)
-  static const bool has_avx2 =
-      __builtin_cpu_supports("avx2") && __builtin_cpu_supports("fma");
-  if (has_avx2) return squared_l2_avx2(a, b, dim);
-#endif
-  return squared_l2_scalar(a, b, dim);
-}
-
-// float accumulation is the fast path; finite float32 components can still
-// overflow the squared sum, in which case double accumulation is needed for a
-// meaningful distance and correct TopK ordering.
-double squared_l2_checked(const float *a, const float *b, int dim) {
-  float fast = squared_l2(a, b, dim);
-  if (std::isfinite(fast)) return static_cast<double>(fast);
-  double total = 0.0;
-  for (int i = 0; i < dim; ++i) {
     double d = static_cast<double>(a[i]) - static_cast<double>(b[i]);
     total += d * d;
   }
   return total;
 }
+#endif
+double squared_l2_checked(const float *a, const float *b, int dim) {
+#if defined(__x86_64__) || defined(_M_X64)
+  static const bool has_avx2 =
+      __builtin_cpu_supports("avx2");
+  if (has_avx2) return squared_l2_avx2(a, b, dim);
+#endif
+  return squared_l2_scalar(a, b, dim);
+}
+
+// Promote stored float32 values before subtraction and squaring. All finite
+// float32 distances fit in double, including subnormals whose squares would
+// silently underflow in a float accumulator.
 
 struct Candidate {
   double dist;
@@ -1400,17 +1420,13 @@ Response Engine::exec_select(SelectStmt &stmt) {
   };
   std::vector<ItemPlan> plans;
   std::vector<std::string> out_columns;
-  std::vector<ItemPlan> star_plans;
   for (const auto &item : stmt.items) {
     if (item.star) {
-      ItemPlan p;
-      p.star = true;
-      plans.push_back(p);
       for (size_t i = 0; i < schema.columns.size(); ++i) {
         ItemPlan q;
         q.column_index = static_cast<int>(i);
         q.name = schema.columns[i].name;
-        star_plans.push_back(q);
+        plans.push_back(q);
         out_columns.push_back(q.name);
       }
       continue;
@@ -1439,14 +1455,52 @@ Response Engine::exec_select(SelectStmt &stmt) {
     out_columns.push_back(p.name);
   }
 
-  // Fast path: one ascending vector-distance ordering with LIMIT.  The
-  // ordering may reference a projected distance alias or the L2_DISTANCE
-  // expression itself, even when the distance is not in the SELECT list.
-  int distance_plan = -1;
-  for (size_t i = 0; i < plans.size(); ++i) {
-    if (!plans[i].star && plans[i].is_distance) {
-      if (distance_plan < 0) distance_plan = static_cast<int>(i);
+  // Resolve ORDER BY before reading any rows, including empty tables and
+  // LIMIT 0. An alias is an exact binding, never a guessed name such as "d".
+  struct OrderPlan {
+    int output = -1;
+    int column = -1;
+    bool distance = false;
+    std::vector<float> query;
+  };
+  std::vector<OrderPlan> orders;
+  for (const auto &key : stmt.order) {
+    OrderPlan order;
+    if (key.is_distance) {
+      order.column = table.column_index(key.expr.column);
+      if (order.column < 0)
+        throw_error("COLUMN_NOT_FOUND", "ORDER BY column not found: " + key.expr.column);
+      if (schema.columns[order.column].type != ColumnType::VECTOR)
+        throw_error("INVALID_ARGUMENT", "L2_DISTANCE requires a VECTOR column");
+      order.distance = true;
+      parse_vector_for_column(key.expr.vec_text, schema.columns[order.column], order.query);
+    } else {
+      if (key.ordinal > 0) {
+        order.output = key.ordinal - 1;
+        if (static_cast<size_t>(order.output) >= plans.size())
+          throw_error("COLUMN_NOT_FOUND", "ORDER BY ordinal out of range");
+      } else {
+        for (size_t i = 0; i < plans.size(); ++i) {
+          if (lower_copy(plans[i].name) == lower_copy(key.name)) {
+            order.output = static_cast<int>(i);
+            break;
+          }
+        }
+      }
+      if (order.output >= 0) {
+        const auto &plan = plans[order.output];
+        order.distance = plan.is_distance;
+        order.column = plan.is_distance ? plan.vector_column : plan.column_index;
+        order.query = plan.query_vec;
+      } else {
+        order.column = table.column_index(key.name);
+        if (order.column < 0)
+          throw_error("COLUMN_NOT_FOUND", "ORDER BY column not found: " + key.name);
+      }
+      if (!order.distance && schema.columns[order.column].type == ColumnType::VECTOR)
+        throw_error("UNSUPPORTED", "ORDER BY VECTOR requires L2_DISTANCE");
     }
+    orders.push_back(std::move(order));
   }
   bool topk_path = false;
   int64_t topk = 0;
@@ -1454,34 +1508,10 @@ Response Engine::exec_select(SelectStmt &stmt) {
   std::vector<float> topk_query_vec;
   if (stmt.has_limit && stmt.offset == 0 && stmt.order.size() == 1 &&
       !stmt.order[0].desc) {
-    const OrderKey &ok = stmt.order[0];
-    if (ok.is_distance) {
-      int ci = table.column_index(ok.expr.column);
-      if (ci < 0)
-        throw_error("COLUMN_NOT_FOUND", "column not found: " + ok.expr.column);
-      if (schema.columns[ci].type != ColumnType::VECTOR)
-        throw_error("INVALID_ARGUMENT", "L2_DISTANCE requires a VECTOR column");
-      topk_vector_column = ci;
-      parse_vector_for_column(ok.expr.vec_text, schema.columns[ci],
-                              topk_query_vec);
+    if (orders[0].distance) {
+      topk_vector_column = orders[0].column;
+      topk_query_vec = orders[0].query;
       topk_path = true;
-    } else {
-      std::string key = lower_copy(ok.name);
-      int chosen = -1;
-      for (size_t i = 0; i < plans.size(); ++i) {
-        if (plans[i].is_distance && lower_copy(plans[i].name) == key) {
-          chosen = static_cast<int>(i);
-          break;
-        }
-      }
-      if (chosen < 0 && distance_plan >= 0 &&
-          (key == "distance" || key == "d" || key == "l2_distance"))
-        chosen = distance_plan;
-      if (chosen >= 0) {
-        topk_vector_column = plans[chosen].vector_column;
-        topk_query_vec = plans[chosen].query_vec;
-        topk_path = true;
-      }
     }
     if (topk_path) topk = stmt.limit;
   }
@@ -1530,14 +1560,14 @@ Response Engine::exec_select(SelectStmt &stmt) {
     heaps[0].k = static_cast<size_t>(topk);
 #endif
     if (tx_.active) {
-      auto rows = collect_visible_locked(table, stmt.where);
-      for (const auto &vr : rows) {
+      for_each_visible(table, stmt.where, [&](const VisibleRow &vr) {
         const uint8_t *base = vr.row + schema.col_offsets[topk_vector_column];
         const float *vec = reinterpret_cast<const float *>(base);
         double sq = squared_l2_checked(vec, topk_query_vec.data(),
                                        schema.columns[topk_vector_column].dim);
         heaps[0].push(sq, vr.pk, vr.pos);
-      }
+        return true;
+      });
     } else {
       uint32_t pages = table.page_count();
 #ifdef _OPENMP
@@ -1605,7 +1635,7 @@ Response Engine::exec_select(SelectStmt &stmt) {
         if (tt) {
           auto it = tt->rows.find(c.pk);
           if (it != tt->rows.end() && !it->second.deleted) {
-            row = it->second.row;
+            table.materialize_state(it->second, nullptr, row);
             have = true;
           }
         }
@@ -1618,34 +1648,21 @@ Response Engine::exec_select(SelectStmt &stmt) {
 
   // Streaming path for no-ORDER-BY queries with LIMIT: avoids materializing
   // the whole table when the dataset is larger than the page cache/memory.
-  if (stmt.order.empty() && stmt.has_limit && !tx_.active) {
+  if (stmt.order.empty() && stmt.has_limit) {
     int64_t seen = 0;
     int64_t wanted = (stmt.offset > std::numeric_limits<int64_t>::max() - stmt.limit)
                          ? std::numeric_limits<int64_t>::max()
                          : stmt.offset + stmt.limit;
     if (stmt.limit == 0) return resp;
-    for (uint32_t pi = 0; pi < table.page_count(); ++pi) {
-      auto page = table.get_page(pi);
-      if (page->magic != kPageMagic) continue;
-      uint32_t n = std::min(page->nrows, page->capacity(schema.row_size));
-      for (uint32_t slot = 0; slot < n; ++slot) {
-        const uint8_t *row = table.row_data(*page, slot);
-        if (!table.row_is_valid(row)) continue;
-        bool match = true;
-        for (const auto &cond : stmt.where) {
-          if (!table.compare(row, cond)) { match = false; break; }
-        }
-        if (!match) continue;
-        if (seen >= stmt.offset) resp.rows.push_back(project_row(row));
-        ++seen;
-        if (seen >= wanted) return resp;
-      }
-    }
+    for_each_visible(table, stmt.where, [&](const VisibleRow &vr) {
+      if (seen >= stmt.offset) resp.rows.push_back(project_row(vr.row));
+      ++seen;
+      return seen < wanted;
+    });
     return resp;
   }
 
   // Generic path.
-  auto rows = collect_visible(table, stmt.where, true);
   struct ResultRow {
     std::vector<OutValue> vals;
     std::vector<SortKey> keys;
@@ -1671,61 +1688,28 @@ Response Engine::exec_select(SelectStmt &stmt) {
                : stmt.offset + stmt.limit;
   }
   std::vector<ResultRow> results;
-  if (!bounded) results.reserve(rows.size());
-  for (const auto &vr : rows) {
+  for_each_visible(table, stmt.where, [&](const VisibleRow &vr) {
     ResultRow rr;
     rr.vals = project_row(vr.row);
     rr.pk = vr.pk;
     rr.pos = vr.pos;
-    for (const auto &okey : stmt.order) {
+    for (const auto &order : orders) {
       SortKey key;
-      if (okey.is_distance) {
-        int ci = table.column_index(okey.expr.column);
-        if (ci < 0)
-          throw_error("COLUMN_NOT_FOUND", "column not found: " + okey.expr.column);
-        if (schema.columns[ci].type != ColumnType::VECTOR)
-          throw_error("INVALID_ARGUMENT", "L2_DISTANCE requires a VECTOR column");
-        std::vector<float> qv;
-        parse_vector_for_column(okey.expr.vec_text, schema.columns[ci], qv);
-        const uint8_t *base = vr.row + schema.col_offsets[ci];
-        const float *vec = reinterpret_cast<const float *>(base);
-        key.kind = OutValue::Kind::DOUBLE;
-        key.d = std::sqrt(
-            squared_l2_checked(vec, qv.data(), schema.columns[ci].dim));
-        rr.keys.push_back(std::move(key));
-        continue;
-      }
-      if (okey.ordinal > 0) {
-        size_t oi = static_cast<size_t>(okey.ordinal - 1);
-        if (oi >= rr.vals.size())
-          throw_error("COLUMN_NOT_FOUND", "ORDER BY ordinal out of range");
-        const OutValue &ov = rr.vals[oi];
+      if (order.output >= 0) {
+        const OutValue &ov = rr.vals[order.output];
         key.kind = ov.kind;
         key.i = ov.i;
         key.d = ov.d;
         key.s = ov.s;
-        rr.keys.push_back(std::move(key));
-        continue;
-      }
-      std::string lower = lower_copy(okey.name);
-      bool found = false;
-      // Output column first.
-      for (size_t i = 0; i < out_columns.size(); ++i) {
-        if (lower_copy(out_columns[i]) == lower) {
-          const OutValue &ov = rr.vals[i];
-          key.kind = ov.kind;
-          key.i = ov.i;
-          key.d = ov.d;
-          key.s = ov.s;
-          found = true;
-          break;
-        }
-      }
-      if (!found) {
-        int ci = table.column_index(okey.name);
-        if (ci < 0)
-          throw_error("COLUMN_NOT_FOUND", "ORDER BY column not found: " + okey.name);
-        OutValue ov = out_value_from_row(table, vr.row, ci);
+      } else if (order.distance) {
+        int ci = order.column;
+        const uint8_t *base = vr.row + schema.col_offsets[ci];
+        const float *vec = reinterpret_cast<const float *>(base);
+        key.kind = OutValue::Kind::DOUBLE;
+        key.d = std::sqrt(
+            squared_l2_checked(vec, order.query.data(), schema.columns[ci].dim));
+      } else {
+        OutValue ov = out_value_from_row(table, vr.row, order.column);
         key.kind = ov.kind;
         key.i = ov.i;
         key.d = ov.d;
@@ -1745,7 +1729,8 @@ Response Engine::exec_select(SelectStmt &stmt) {
     } else {
       results.push_back(std::move(rr));
     }
-  }
+    return true;
+  });
   if (!stmt.order.empty())
     std::sort(results.begin(), results.end(), row_less);
   int64_t start = stmt.has_limit ? stmt.offset : 0;
@@ -1770,11 +1755,8 @@ Response Engine::exec_update(UpdateStmt &stmt) {
   const TableSchema &schema = table.schema();
   compile_conditions(table, stmt.where);
   // Resolve SET columns and typed values.
-  struct SetPlan {
-    int col;
-    Value value;
-  };
-  std::vector<SetPlan> sets;
+  auto patch = std::make_shared<RowPatch>();
+  std::vector<uint8_t> validation_row(schema.row_size, 0);
   for (auto &kv : stmt.sets) {
     int ci = table.column_index(kv.first);
     if (ci < 0)
@@ -1782,12 +1764,14 @@ Response Engine::exec_update(UpdateStmt &stmt) {
     if (ci == schema.pk_index)
       throw_error("UNSUPPORTED", "updating the primary key is not supported");
     Value v = coerce_value(schema, ci, kv.second);
-    sets.push_back(SetPlan{ci, std::move(v)});
+    // Deferred patches must be valid when UPDATE returns, including VARCHAR
+    // lengths, rather than failing at COMMIT or a later SELECT.
+    table.encode_value(validation_row.data(), ci, v);
+    patch->emplace_back(ci, std::move(v));
   }
-  auto rows = collect_visible(table, stmt.where, false);
   TxTable &tx_table = tx_table_ref(table.id());
   int64_t matched = 0;
-  for (const auto &vr : rows) {
+  for_each_visible(table, stmt.where, [&](const VisibleRow &vr) {
     RowState state;
     auto it = tx_table.rows.find(vr.pk);
     if (it != tx_table.rows.end()) {
@@ -1795,16 +1779,13 @@ Response Engine::exec_update(UpdateStmt &stmt) {
     } else {
       state.existed = true;
       state.pos = vr.pos;
-      state.row.assign(vr.row, vr.row + schema.row_size);
     }
-    std::vector<uint8_t> new_row = state.row;
-    for (const auto &sp : sets)
-      table.encode_value(new_row.data(), sp.col, sp.value);
     state.deleted = false;
-    state.row = std::move(new_row);
+    state.patches.push_back(patch);
     tx_table.rows[vr.pk] = std::move(state);
     ++matched;
-  }
+    return true;
+  });
   Response resp;
   resp.has_affected = true;
   resp.affected_rows = matched;
@@ -1813,12 +1794,10 @@ Response Engine::exec_update(UpdateStmt &stmt) {
 
 Response Engine::exec_delete(DeleteStmt &stmt) {
   Table &table = require_table(stmt.table);
-  const TableSchema &schema = table.schema();
   compile_conditions(table, stmt.where);
-  auto rows = collect_visible(table, stmt.where, false);
   TxTable &tx_table = tx_table_ref(table.id());
   int64_t matched = 0;
-  for (const auto &vr : rows) {
+  for_each_visible(table, stmt.where, [&](const VisibleRow &vr) {
     RowState state;
     auto it = tx_table.rows.find(vr.pk);
     if (it != tx_table.rows.end()) {
@@ -1826,12 +1805,14 @@ Response Engine::exec_delete(DeleteStmt &stmt) {
     } else {
       state.existed = true;
       state.pos = vr.pos;
-      state.row.assign(vr.row, vr.row + schema.row_size);
     }
     state.deleted = true;
+    state.row = {};  // A tombstone needs identity/position, not a full record.
+    state.patches.clear();
     tx_table.rows[vr.pk] = std::move(state);
     ++matched;
-  }
+    return true;
+  });
   Response resp;
   resp.has_affected = true;
   resp.affected_rows = matched;

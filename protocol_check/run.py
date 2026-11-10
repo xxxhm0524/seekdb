@@ -21,8 +21,8 @@ def within(root, relative):
 
 
 def check_case(session, case, package, config):
-    expectations = strict_json(within(package, case['result']).read_text())
-    statements = within(package, case['test']).read_text().splitlines()
+    expectations = strict_json(within(package, case['result']).read_text(encoding='utf-8'))
+    statements = within(package, case['test']).read_text(encoding='utf-8').splitlines()
     index, mode = 0, 'exact'
     for line_number, text in enumerate(statements, 1):
         sql = text.strip()
@@ -59,7 +59,7 @@ def main(argv=None):
     parser.add_argument('--config', type=Path, default=ROOT/'config.json')
     parser.add_argument('--output', type=Path, required=True, help='new directory for reports and stderr logs')
     args = parser.parse_args(argv)
-    config = strict_json(args.config.read_text())
+    config = strict_json(args.config.read_text(encoding='utf-8'))
     command = strict_json(args.command) if args.command else None
     if command is not None and (not isinstance(command, list) or not command
             or any(not isinstance(x, str) for x in command)):
@@ -69,7 +69,7 @@ def main(argv=None):
     if args.handshake_only:
         cases = [{'id': 'handshake'}]
     else:
-        manifest = strict_json((args.package/'manifest.json').read_text())
+        manifest = strict_json((args.package/'manifest.json').read_text(encoding='utf-8'))
         cases = manifest['cases']
         if args.case:
             unknown = set(args.case) - {case['id'] for case in cases}
@@ -112,11 +112,11 @@ def main(argv=None):
         row['duration_ms'] = round((time.monotonic()-before)*1000)
         results.append(row)
         print(f"{row['id']}: {row['status']} {row['message']}", flush=True)
-        (args.output/'cases.json').write_text(json.dumps(results, ensure_ascii=False, indent=2)+'\n')
+        (args.output/'cases.json').write_text(json.dumps(results, ensure_ascii=False, indent=2)+'\n', encoding='utf-8')
     passed = all(row['status']=='PASS' for row in results)
     report = dict(scope='public-protocol-check', passed=passed, cases=results,
                   note='Local diagnostic only; no performance/Agent scores or platform callbacks.')
-    (args.output/'result.json').write_text(json.dumps(report, ensure_ascii=False, indent=2)+'\n')
+    (args.output/'result.json').write_text(json.dumps(report, ensure_ascii=False, indent=2)+'\n', encoding='utf-8')
     print(f"Report: {args.output/'result.json'}")
     return 0 if passed else 1
 

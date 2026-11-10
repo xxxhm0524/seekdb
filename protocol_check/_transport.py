@@ -1,10 +1,12 @@
 """Bounded JSON-lines transport. Docker is the default submission boundary."""
 import json
 import os
+import queue
 import selectors
 import signal
 import subprocess
 import tempfile
+import threading
 import time
 import uuid
 from pathlib import Path
@@ -40,6 +42,8 @@ class Session:
         self.sequence = 0
         self.buffer = b""
         self.selector = None
+        self.reader = None
+        self.chunks = None
         self.deadline = time.monotonic() + (case_timeout or config["case_timeout"])
         self.volume_created = False
         self.job_token = job_token
@@ -71,9 +75,26 @@ class Session:
         env = dict(os.environ, VECTORDB_DATA_DIR=self.temp.name)
         self.proc = subprocess.Popen(argv, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                      stderr=self.log, start_new_session=True, env=env)
-        os.set_blocking(self.proc.stdin.fileno(), False)
-        self.selector = selectors.DefaultSelector()
-        self.selector.register(self.proc.stdout, selectors.EVENT_READ)
+        if os.name == 'nt':
+            # Windows selectors accept sockets, not subprocess pipes. Keep
+            # the same deadlines/byte limits with a bounded reader queue.
+            self.chunks = queue.Queue(maxsize=16)
+            chunks, stdout = self.chunks, self.proc.stdout
+            def pump():
+                try:
+                    while True:
+                        chunk = os.read(stdout.fileno(), 65536)
+                        chunks.put(chunk)
+                        if not chunk:
+                            break
+                except (OSError, ValueError):
+                    chunks.put(b'')
+            self.reader = threading.Thread(target=pump, daemon=True)
+            self.reader.start()
+        else:
+            os.set_blocking(self.proc.stdin.fileno(), False)
+            self.selector = selectors.DefaultSelector()
+            self.selector.register(self.proc.stdout, selectors.EVENT_READ)
         self.buffer = b""
         if ready:
             message = self.read(self.config["startup_timeout"])
@@ -90,9 +111,17 @@ class Session:
         deadline = time.monotonic() + self.remaining(timeout)
         while b"\n" not in self.buffer:
             left = deadline - time.monotonic()
-            if left <= 0 or not self.selector.select(left):
+            if left <= 0:
                 raise TimeoutError("JSON response timeout")
-            chunk = os.read(self.proc.stdout.fileno(), 65536)
+            if self.chunks is not None:
+                try:
+                    chunk = self.chunks.get(timeout=left)
+                except queue.Empty:
+                    raise TimeoutError("JSON response timeout") from None
+            else:
+                if not self.selector.select(left):
+                    raise TimeoutError("JSON response timeout")
+                chunk = os.read(self.proc.stdout.fileno(), 65536)
             if not chunk:
                 raise ProtocolError("database exited before response")
             self.buffer += chunk
@@ -108,10 +137,30 @@ class Session:
         return value
 
     def send(self, request):
-        if self.buffer or self.selector.select(0):
+        pending = (not self.chunks.empty() if self.chunks is not None
+                   else self.selector.select(0))
+        if self.buffer or pending:
             raise ProtocolError("unsolicited or duplicate response")
         data = memoryview((json.dumps(request, ensure_ascii=False, allow_nan=False) + "\n").encode())
         deadline = time.monotonic() + self.remaining(self.config["request_timeout"])
+        if self.chunks is not None:
+            done = queue.Queue(maxsize=1)
+            stdin = self.proc.stdin
+            def write_request():
+                try:
+                    stdin.write(data)
+                    stdin.flush()
+                    done.put(None)
+                except (OSError, ValueError) as exc:
+                    done.put(exc)
+            threading.Thread(target=write_request, daemon=True).start()
+            try:
+                error = done.get(timeout=max(0, deadline-time.monotonic()))
+            except queue.Empty:
+                raise TimeoutError("request write timeout") from None
+            if error is not None:
+                raise ProtocolError("request write failed: " + str(error)) from error
+            return
         with selectors.DefaultSelector() as writer:
             writer.register(self.proc.stdin, selectors.EVENT_WRITE)
             while data:
@@ -141,7 +190,20 @@ class Session:
             raise ProtocolError("shutdown failed")
         self.proc.stdin.close()
         self.proc.wait(timeout=self.remaining(self.config["request_timeout"]))
-        extra = self.buffer + self.proc.stdout.read(self.config["max_response_bytes"])
+        extra = self.buffer
+        if self.chunks is None:
+            extra += self.proc.stdout.read(self.config["max_response_bytes"])
+        else:
+            while True:
+                try:
+                    chunk = self.chunks.get(timeout=self.remaining(self.config['request_timeout']))
+                except queue.Empty:
+                    raise TimeoutError('stdout did not close after shutdown') from None
+                if not chunk:
+                    break
+                extra += chunk
+                if len(extra) > self.config['max_response_bytes']:
+                    raise ProtocolError('response exceeds byte limit')
         if extra or self.proc.returncode:
             raise ProtocolError("extra stdout or nonzero exit after shutdown")
         self.stop()
@@ -152,12 +214,27 @@ class Session:
             self.docker("rm", "--force", "--volumes", self.name, check=False)
         if self.proc is not None:
             if self.proc.poll() is None:
-                os.killpg(self.proc.pid, signal.SIGKILL)
+                if os.name == 'nt':
+                    self.proc.kill()
+                else:
+                    os.killpg(self.proc.pid, signal.SIGKILL)
             self.proc.wait(timeout=10)
+            if self.reader:
+                # Drain before joining: an offending process may have filled
+                # the bounded queue with unsolicited output.
+                until = time.monotonic() + 10
+                while self.reader.is_alive() and time.monotonic() < until:
+                    try:
+                        self.chunks.get(timeout=0.05)
+                    except queue.Empty:
+                        pass
+                    self.reader.join(timeout=0.01)
+                self.reader = None
             for stream in (self.proc.stdin, self.proc.stdout):
                 if not stream.closed:
                     stream.close()
             self.proc = None
+        self.chunks = None
         if self.selector:
             self.selector.close()
             self.selector = None

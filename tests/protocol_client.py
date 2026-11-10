@@ -83,12 +83,16 @@ class Client:
             extra = self.p.stdout.read()
             if extra:
                 raise ProtocolError("extra stdout after shutdown: %r" % extra[:200])
+        for stream in (self.p.stdin, self.p.stdout, self.p.stderr):
+            stream.close()
         self.p = None
 
     def kill(self):
         if self.p is not None:
             self.p.kill()
             self.p.wait()
+            for stream in (self.p.stdin, self.p.stdout, self.p.stderr):
+                stream.close()
             self.p = None
 
     def close(self):

@@ -305,11 +305,11 @@ std::unique_ptr<Statement> SqlParser::parse_create_table() {
       ColumnDef col;
       col.name = expect_ident();
       std::string type = lower(expect_ident());
-      int32_t size = 0;
+      int64_t size = 0;
       if (type == "varchar" || type == "char" || type == "text") {
         col.type = ColumnType::VARCHAR;
         if (consume_symbol('(')) {
-          size = static_cast<int32_t>(expect_int());
+          size = expect_int();
           expect_symbol(')');
         } else if (type == "text") {
           size = 65535;
@@ -318,15 +318,16 @@ std::unique_ptr<Statement> SqlParser::parse_create_table() {
         }
         if (size <= 0 || size > 65535)
           throw_error("INVALID_SCHEMA", "VARCHAR length out of range");
-        col.max_chars = size;
+        col.max_chars = static_cast<int32_t>(size);
       } else if (type == "vector") {
         col.type = ColumnType::VECTOR;
         if (!consume_symbol('('))
           syntax_error("VECTOR requires a dimension");
-        col.dim = static_cast<int32_t>(expect_int());
+        int64_t dim = expect_int();
         expect_symbol(')');
-        if (col.dim <= 0 || col.dim > 16384)
+        if (dim <= 0 || dim > 16384)
           throw_error("INVALID_SCHEMA", "VECTOR dimension out of range");
+        col.dim = static_cast<int32_t>(dim);
       } else if (type == "bigint" || type == "int" || type == "integer") {
         col.type = ColumnType::BIGINT;
       } else {
@@ -555,8 +556,10 @@ std::unique_ptr<Statement> SqlParser::parse_select() {
         key.is_distance = true;
         key.expr = parse_expr();
       } else if (peek().type == Token::Type::NUMBER) {
-        key.ordinal = static_cast<int>(expect_int());
-        if (key.ordinal <= 0) syntax_error("ORDER BY ordinal must be positive");
+        int64_t ordinal = expect_int();
+        if (ordinal <= 0 || ordinal > std::numeric_limits<int>::max())
+          syntax_error("ORDER BY ordinal out of range");
+        key.ordinal = static_cast<int>(ordinal);
       } else {
         key.name = expect_ident();
       }
