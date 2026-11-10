@@ -2,7 +2,7 @@
   "schema": "mvd-conversation-v2",
   "rules_version": "agent-learning-evidence-v3-unbounded",
   "synthetic": false,
-  "generated_at_utc": "2026-11-10T22:16:19.032954+00:00",
+  "generated_at_utc": "2026-11-10T23:19:39.350521+00:00",
   "material_scope": {
     "purpose": "选录可核验的真实可见对话、必要上下文和实际结果；没有替学生编写预测、解释或复盘。",
     "sources": "本线程用户消息 ID 与助手可见回复、用户提供的失败截图；逐项标明源码版本或快照的本地/CI 日志，包含开发迭代历史。",
@@ -492,6 +492,70 @@
       },
       "output": "{\n  \"compatibility\": {\n    \"reference\": {\n      \"logical_bytes\": 12332240,\n      \"page_records\": 188,\n      \"commits\": 100,\n      \"record_sha256\": \"1b75de42e6693424641af9e538a67e445a4650668fd85c4cbe4ad56b68cb17e2\",\n      \"allocated_bytes\": null,\n      \"recovered_rows\": 10000\n    },\n    \"candidate\": {\n      \"logical_bytes\": 12332240,\n      \"page_records\": 188,\n      \"commits\": 100,\n      \"record_sha256\": \"1b75de42e6693424641af9e538a67e445a4650668fd85c4cbe4ad56b68cb17e2\",\n      \"allocated_bytes\": null,\n      \"recovered_rows\": 10000\n    },\n    \"passed\": true,\n    \"byte_equivalent_records\": true,\n    \"shortened_tail_recovery\": true\n  },\n  \"native_audit\": [\n    {\n      \"name\": \"handshake\",\n      \"exit_code\": 0,\n      \"seconds\": 0.124\n    },\n    {\n      \"name\": \"public\",\n      \"exit_code\": 0,\n      \"seconds\": 1.336\n    },\n    {\n      \"name\": \"extended\",\n      \"exit_code\": 0,\n      \"seconds\": 0.153\n    },\n    {\n      \"name\": \"requirements\",\n      \"exit_code\": 0,\n      \"seconds\": 0.376\n    },\n    {\n      \"name\": \"hidden-boundaries\",\n      \"exit_code\": 0,\n      \"seconds\": 1.262\n    },\n    {\n      \"name\": \"vector-precision\",\n      \"exit_code\": 0,\n      \"seconds\": 0.782\n    },\n    {\n      \"name\": \"indexed-vector-precision\",\n      \"exit_code\": 0,\n      \"seconds\": 0.963\n    },\n    {\n      \"name\": \"float-parser\",\n      \"exit_code\": 0,\n      \"seconds\": 1.411\n    },\n    {\n      \"name\": \"heap-rejection\",\n      \"exit_code\": 0,\n      \"seconds\": 8.797\n    },\n    {\n      \"name\": \"filter-cache\",\n      \"exit_code\": 0,\n      \"seconds\": 0.444\n    },\n    {\n      \"name\": \"material-boundaries\",\n      \"exit_code\": 0,\n      \"seconds\": 0.111\n    },\n    {\n      \"name\": \"material\",\n      \"exit_code\": 0,\n      \"seconds\": 0.081\n    },\n    {\n      \"name\": \"resource\",\n      \"exit_code\": 0,\n      \"seconds\": 1.776\n    },\n    {\n      \"name\": \"mutation-io\",\n      \"exit_code\": 0,\n      \"seconds\": 0.717\n    },\n    {\n      \"name\": \"primary-key-projection\",\n      \"exit_code\": 0,\n      \"seconds\": 0.513\n    },\n    {\n      \"name\": \"spool-read\",\n      \"exit_code\": 0,\n      \"seconds\": 0.357\n    },\n    {\n      \"name\": \"page-churn\",\n      \"exit_code\": 0,\n      \"seconds\": 1.531\n    },\n    {\n      \"name\": \"cache-coherence\",\n      \"exit_code\": 0,\n      \"seconds\": 1.241\n    },\n    {\n      \"name\": \"transaction-spill\",\n      \"exit_code\": 0,\n      \"seconds\": 2.628\n    },\n    {\n      \"name\": \"ann-lifecycle\",\n      \"exit_code\": 0,\n      \"seconds\": 2.307\n    },\n    {\n      \"name\": \"ann-numeric-range\",\n      \"exit_code\": 0,\n      \"seconds\": 3.492\n    },\n    {\n      \"name\": \"ann-index-deadline\",\n      \"exit_code\": 0,\n      \"seconds\": 48.736\n    },\n    {\n      \"name\": \"regression\",\n      \"exit_code\": 0,\n      \"seconds\": 0.375\n    },\n    {\n      \"name\": \"recovery\",\n      \"exit_code\": 0,\n      \"seconds\": 1.583\n    },\n    {\n      \"name\": \"commit-crash\",\n      \"exit_code\": 0,\n      \"seconds\": 1.535\n    },\n    {\n      \"name\": \"stress-7\",\n      \"exit_code\": 0,\n      \"seconds\": 2.514\n    },\n    {\n      \"name\": \"stress-42\",\n      \"exit_code\": 0,\n      \"seconds\": 2.623\n    },\n    {\n      \"name\": \"stress-211\",\n      \"exit_code\": 0,\n      \"seconds\": 2.425\n    },\n    {\n      \"name\": \"bench-exact\",\n      \"exit_code\": 0,\n      \"seconds\": 6.338\n    },\n    {\n      \"name\": \"bench-ann\",\n      \"exit_code\": 0,\n      \"seconds\": 6.403\n    },\n    {\n      \"name\": \"resource-2g\",\n      \"exit_code\": 0,\n      \"seconds\": 27.112\n    }\n  ]\n}",
       "interpretation_by_assistant": "两版各写入 10,000 行，独立 zlib 校验记录，两方向强杀后均完整恢复主键、类别及 float32 向量。去掉最后一条 COMMIT 和其页镜像的零尾后，恢复此前的事务，后续追加和再次强杀恢复也通过。31 项原生审计通过。材料生成时 Linux 稀疏写入与资源对照待 CI，实验和分析均由助手执行。"
+    },
+    {
+      "id": "hnsw-build-stage-profile",
+      "role": "tool",
+      "execution_status": "executed",
+      "designed_and_executed_by": "assistant_and_tools",
+      "title": "50k×128d HNSW 建图阶段计时",
+      "command": "protocol-results/ann-build-profile.exe 50000",
+      "source": {
+        "kind": "native_graph_build_measurement",
+        "reference_sha": "1996a1b422aa989a4b5c9d32c067225ca2d225f2",
+        "files": [
+          "ann-build-profile-1996.json"
+        ],
+        "source_state": "working-tree graph changes measured before commit"
+      },
+      "output": "{\n  \"rows\": 50000,\n  \"dim\": 128,\n  \"build_seconds\": 18.8348,\n  \"distance_calls\": 563825207,\n  \"phases\": [\n    {\n      \"name\": \"upper_greedy\",\n      \"seconds\": 0.153841,\n      \"distance_calls\": 6324305,\n      \"invocations\": 49999\n    },\n    {\n      \"name\": \"layer_search\",\n      \"seconds\": 16.8811,\n      \"distance_calls\": 439797047,\n      \"invocations\": 51633\n    },\n    {\n      \"name\": \"outgoing_selection\",\n      \"seconds\": 0.732897,\n      \"distance_calls\": 45907601,\n      \"invocations\": 51633\n    },\n    {\n      \"name\": \"reverse_updates\",\n      \"seconds\": 1.02962,\n      \"distance_calls\": 71796254,\n      \"invocations\": 51633\n    }\n  ]\n}",
+      "interpretation_by_assistant": "该本地样本约 18.83 秒。层内搜索占约 89.6% 的总时间，并执行约 4.40 亿次距离计算。后续原型优先处理层内候选筛选和堆更新。测量与分析由助手完成。"
+    },
+    {
+      "id": "hnsw-build-prototype-tradeoffs",
+      "role": "tool",
+      "execution_status": "executed",
+      "designed_and_executed_by": "assistant_and_tools",
+      "title": "同数据配对比较建图优化原型",
+      "command": "编译并运行 protocol-results/ann_build_*_probe.cpp 对照程序",
+      "source": {
+        "kind": "native_graph_build_measurement",
+        "reference_sha": "1996a1b422aa989a4b5c9d32c067225ca2d225f2",
+        "files": [
+          "ann-build-screen-20k.jsonl",
+          "ann-build-heap-20k.jsonl",
+          "ann-build-prepared-20k.jsonl",
+          "ann-build-combined-50k.jsonl",
+          "ann-build-quantized-50k.jsonl",
+          "ann-build-tuned-50k.jsonl",
+          "ann-build-production-50k.jsonl",
+          "ann-build-production-mixed.jsonl"
+        ],
+        "source_state": "working-tree graph changes measured before commit"
+      },
+      "output": "{\n  \"screen-20k\": {\n    \"file\": \"ann-build-screen-20k.jsonl\",\n    \"median_seconds\": {\n      \"reference\": 4.9004369,\n      \"candidate\": 4.5774591\n    },\n    \"change_percent\": -6.591,\n    \"identical_graph_and_hits_rounds\": 3\n  },\n  \"heap-20k\": {\n    \"file\": \"ann-build-heap-20k.jsonl\",\n    \"median_seconds\": {\n      \"reference\": 5.0333252,\n      \"candidate\": 4.7740697\n    },\n    \"change_percent\": -5.151,\n    \"identical_graph_and_hits_rounds\": 3\n  },\n  \"prepared-20k\": {\n    \"file\": \"ann-build-prepared-20k.jsonl\",\n    \"median_seconds\": {\n      \"reference\": 5.0441707,\n      \"candidate\": 5.1435783\n    },\n    \"change_percent\": 1.971,\n    \"identical_graph_and_hits_rounds\": 3\n  },\n  \"combined-50k\": {\n    \"file\": \"ann-build-combined-50k.jsonl\",\n    \"median_seconds\": {\n      \"reference\": 19.045692799999998,\n      \"candidate\": 16.89644225\n    },\n    \"change_percent\": -11.285,\n    \"identical_graph_and_hits_rounds\": 2\n  },\n  \"quantized-50k\": {\n    \"file\": \"ann-build-quantized-50k.jsonl\",\n    \"median_seconds\": {\n      \"reference\": 19.59293255,\n      \"candidate\": 18.42798495\n    },\n    \"change_percent\": -5.946,\n    \"identical_graph_and_hits_rounds\": 2\n  },\n  \"tuned-50k\": {\n    \"file\": \"ann-build-tuned-50k.jsonl\",\n    \"median_seconds\": {\n      \"reference\": 19.26459665,\n      \"candidate\": 16.6178621\n    },\n    \"change_percent\": -13.739,\n    \"identical_graph_and_hits_rounds\": 2\n  },\n  \"production-50k\": {\n    \"file\": \"ann-build-production-50k.jsonl\",\n    \"median_seconds\": {\n      \"reference\": 19.05694795,\n      \"candidate\": 17.545351\n    },\n    \"change_percent\": -7.932,\n    \"identical_graph_and_hits_rounds\": 2\n  },\n  \"production-mixed\": {\n    \"file\": \"ann-build-production-mixed.jsonl\",\n    \"median_seconds\": {\n      \"reference\": 2.4262387,\n      \"candidate\": 2.3856503\n    },\n    \"change_percent\": -1.673,\n    \"identical_graph_and_hits_rounds\": 1\n  }\n}",
+      "interpretation_by_assistant": "预转换查询向量在 20k 样本略慢。整数下界原型需要额外编码存储，在 50k 样本约快 5.9%。选用带数值范围检查的浮点保守筛选，结合堆顶直接替换和复用已排序结果。精确距离仍由 float64 内核计算。所有记录中的邻接表与查询命中逐项一致。"
+    },
+    {
+      "id": "hnsw-build-implemented-validation",
+      "role": "tool",
+      "execution_status": "executed",
+      "designed_and_executed_by": "assistant_and_tools",
+      "title": "实际实现的建图对照、数值和回归验证",
+      "command": "python tests/paired_query_compare.py --reference-binary <validated 1996 binary> --candidate-binary <working tree binary> --output protocol-results/ann-build-native-paired-50k.json",
+      "source": {
+        "kind": "native_graph_build_measurement",
+        "reference_sha": "1996a1b422aa989a4b5c9d32c067225ca2d225f2",
+        "files": [
+          "ann-build-native-paired-50k.json",
+          "ann-build-production-mixed.jsonl",
+          "audit-ann-build-20261111/heap-rejection.log",
+          "audit-ann-build-20261111/summary.json"
+        ],
+        "source_state": "working-tree graph changes measured before commit"
+      },
+      "output": "{\n  \"protocol_pair\": {\n    \"passed\": true,\n    \"official_score\": false,\n    \"rows\": 50000,\n    \"dim\": 128,\n    \"queries\": 300,\n    \"seed\": 20261112,\n    \"scope\": \"prepared independent sessions, sequential alternating query rounds; no resource score\",\n    \"preparations\": {\n      \"reference\": {\n        \"index_seconds\": 18.879971399961505,\n        \"image\": null,\n        \"binary_sha256\": \"886fbe3ed11ca28bb1dacbb874535cf7337a5833dcab97f99ba2c7a0c501e983\"\n      },\n      \"candidate\": {\n        \"index_seconds\": 16.9384269999573,\n        \"image\": null,\n        \"binary_sha256\": \"e42df0a757648f3695b88fe7a89a93237a4f7e097e97d08613c19d4fc9ccded6\"\n      }\n    },\n    \"rounds\": [\n      {\n        \"reference\": {\n          \"seconds\": 0.32974879996618256,\n          \"filtered_seconds\": 0.1032437999965623,\n          \"unfiltered_seconds\": 0.22650499996962026,\n          \"recall_at_10\": {\n            \"filtered\": 1.0,\n            \"unfiltered\": 0.9806666666666668\n          }\n        },\n        \"candidate\": {\n          \"seconds\": 0.26407529995776713,\n          \"filtered_seconds\": 0.0731180000002496,\n          \"unfiltered_seconds\": 0.19095729995751753,\n          \"recall_at_10\": {\n            \"filtered\": 1.0,\n            \"unfiltered\": 0.9806666666666668\n          }\n        },\n        \"all_results_identical\": true\n      },\n      {\n        \"candidate\": {\n          \"seconds\": 0.27335829997900873,\n          \"filtered_seconds\": 0.07900229998631403,\n          \"unfiltered_seconds\": 0.1943559999926947,\n          \"recall_at_10\": {\n            \"filtered\": 1.0,\n            \"unfiltered\": 0.9806666666666668\n          }\n        },\n        \"reference\": {\n          \"seconds\": 0.27762110001640394,\n          \"filtered_seconds\": 0.07863390003331006,\n          \"unfiltered_seconds\": 0.1989871999830939,\n          \"recall_at_10\": {\n            \"filtered\": 1.0,\n            \"unfiltered\": 0.9806666666666668\n          }\n        },\n        \"all_results_identical\": true\n      },\n      {\n        \"reference\": {\n          \"seconds\": 0.2664104000432417,\n          \"filtered_seconds\": 0.07976580003742129,\n          \"unfiltered_seconds\": 0.1866446000058204,\n          \"recall_at_10\": {\n            \"filtered\": 1.0,\n            \"unfiltered\": 0.9806666666666668\n          }\n        },\n        \"candidate\": {\n          \"seconds\": 0.28045399999246,\n          \"filtered_seconds\": 0.08378769998671487,\n          \"unfiltered_seconds\": 0.19666630000574514,\n          \"recall_at_10\": {\n            \"filtered\": 1.0,\n            \"unfiltered\": 0.9806666666666668\n          }\n        },\n        \"all_results_identical\": true\n      }\n    ],\n    \"medians\": {\n      \"reference\": {\n        \"seconds\": 0.27762110001640394,\n        \"filtered_seconds\": 0.07976580003742129,\n        \"unfiltered_seconds\": 0.1989871999830939\n      },\n      \"candidate\": {\n        \"seconds\": 0.27335829997900873,\n        \"filtered_seconds\": 0.07900229998631403,\n        \"unfiltered_seconds\": 0.1943559999926947\n      }\n    }\n  },\n  \"numerical_model\": {\n    \"passed\": true,\n    \"checks\": 464,\n    \"graph_screen_checks\": 140,\n    \"oracle\": \"precise numeric order and primary keys; includes merge and ULP boundary\"\n  },\n  \"native_audit\": [\n    {\n      \"name\": \"handshake\",\n      \"exit_code\": 0,\n      \"seconds\": 0.133\n    },\n    {\n      \"name\": \"public\",\n      \"exit_code\": 0,\n      \"seconds\": 1.299\n    },\n    {\n      \"name\": \"extended\",\n      \"exit_code\": 0,\n      \"seconds\": 0.16\n    },\n    {\n      \"name\": \"requirements\",\n      \"exit_code\": 0,\n      \"seconds\": 0.363\n    },\n    {\n      \"name\": \"hidden-boundaries\",\n      \"exit_code\": 0,\n      \"seconds\": 1.133\n    },\n    {\n      \"name\": \"vector-precision\",\n      \"exit_code\": 0,\n      \"seconds\": 0.776\n    },\n    {\n      \"name\": \"indexed-vector-precision\",\n      \"exit_code\": 0,\n      \"seconds\": 1.019\n    },\n    {\n      \"name\": \"float-parser\",\n      \"exit_code\": 0,\n      \"seconds\": 1.39\n    },\n    {\n      \"name\": \"heap-rejection\",\n      \"exit_code\": 0,\n      \"seconds\": 9.194\n    },\n    {\n      \"name\": \"filter-cache\",\n      \"exit_code\": 0,\n      \"seconds\": 0.457\n    },\n    {\n      \"name\": \"material-boundaries\",\n      \"exit_code\": 0,\n      \"seconds\": 0.111\n    },\n    {\n      \"name\": \"material\",\n      \"exit_code\": 0,\n      \"seconds\": 0.085\n    },\n    {\n      \"name\": \"resource\",\n      \"exit_code\": 0,\n      \"seconds\": 1.922\n    },\n    {\n      \"name\": \"mutation-io\",\n      \"exit_code\": 0,\n      \"seconds\": 0.68\n    },\n    {\n      \"name\": \"primary-key-projection\",\n      \"exit_code\": 0,\n      \"seconds\": 0.516\n    },\n    {\n      \"name\": \"spool-read\",\n      \"exit_code\": 0,\n      \"seconds\": 0.367\n    },\n    {\n      \"name\": \"page-churn\",\n      \"exit_code\": 0,\n      \"seconds\": 1.355\n    },\n    {\n      \"name\": \"cache-coherence\",\n      \"exit_code\": 0,\n      \"seconds\": 1.175\n    },\n    {\n      \"name\": \"transaction-spill\",\n      \"exit_code\": 0,\n      \"seconds\": 2.648\n    },\n    {\n      \"name\": \"ann-lifecycle\",\n      \"exit_code\": 0,\n      \"seconds\": 2.251\n    },\n    {\n      \"name\": \"ann-numeric-range\",\n      \"exit_code\": 0,\n      \"seconds\": 3.523\n    },\n    {\n      \"name\": \"ann-index-deadline\",\n      \"exit_code\": 0,\n      \"seconds\": 47.386\n    },\n    {\n      \"name\": \"regression\",\n      \"exit_code\": 0,\n      \"seconds\": 0.383\n    },\n    {\n      \"name\": \"recovery\",\n      \"exit_code\": 0,\n      \"seconds\": 1.578\n    },\n    {\n      \"name\": \"commit-crash\",\n      \"exit_code\": 0,\n      \"seconds\": 1.515\n    },\n    {\n      \"name\": \"stress-7\",\n      \"exit_code\": 0,\n      \"seconds\": 2.473\n    },\n    {\n      \"name\": \"stress-42\",\n      \"exit_code\": 0,\n      \"seconds\": 2.413\n    },\n    {\n      \"name\": \"stress-211\",\n      \"exit_code\": 0,\n      \"seconds\": 2.76\n    },\n    {\n      \"name\": \"bench-exact\",\n      \"exit_code\": 0,\n      \"seconds\": 6.34\n    },\n    {\n      \"name\": \"bench-ann\",\n      \"exit_code\": 0,\n      \"seconds\": 6.226\n    },\n    {\n      \"name\": \"resource-2g\",\n      \"exit_code\": 0,\n      \"seconds\": 26.978\n    }\n  ]\n}",
+      "interpretation_by_assistant": "真实 JSONL 的 50k×128d 建图从 18.880 秒降到 16.938 秒。三轮查询结果逐条一致。另用包含超出筛选范围坐标的 129 维数据做旧版逐节点对照，并在插入、更新和删除后核对邻接表与命中。140 项数值筛选检查和 31 项原生审计通过。此处只记录已执行的本地工作，材料生成时 Linux 容器结果待 CI。"
     }
   ],
   "evidence_index": [
@@ -547,6 +611,10 @@
         {
           "pointer": "/experiments/16/output",
           "quote": "\"all_hits_identical\":true"
+        },
+        {
+          "pointer": "/experiments/23/output",
+          "quote": "\"all_results_identical\": true"
         }
       ],
       "boundary": "用户提出当前实现的限制；后续源码与实验由助手完成，此快照未收录用户对对照结果的后续解释。"

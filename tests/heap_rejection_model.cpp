@@ -8,6 +8,37 @@
 struct Record { double estimate; long double truth; int64_t pk; };
 static size_t checks=0;
 
+size_t check_graph_screen() {
+  const auto screen = mvd::graph_build_screen();
+  if (!screen) return 0;
+
+  const float samples[] = {
+      0, -0.0f, 0x1p-32f, std::nextafter(0x1p-32f, 1.0f), -0x1p-32f,
+      1, std::nextafter(1.0f, 2.0f), -1, 0x1p48f, -0x1p48f};
+  std::mt19937 random(20261113);
+  std::uniform_int_distribution<size_t> choose(0, std::size(samples) - 1);
+  size_t checked = 0;
+  for (int dim : {64, 65, 95, 127, 128, 129, 16384}) {
+    std::vector<float> a(static_cast<size_t>(dim)), b(a.size());
+    const double margin = 1 + (dim + 8) * 0x1p-22;
+    for (int trial = 0; trial < 12; ++trial) {
+      for (int i = 0; i < dim; ++i) {
+        a[i] = samples[choose(random)];
+        b[i] = trial % 3 ? samples[choose(random)] : a[i];
+      }
+      const double exact = mvd::squared_l2_checked(a.data(), b.data(), dim);
+      const float equal_limit = static_cast<float>(exact * margin);
+      if (screen(a.data(), b.data(), dim, equal_limit))
+        throw std::runtime_error("graph screening rejected an equal distance");
+      if (exact > 0 &&
+          !screen(a.data(), b.data(), dim, static_cast<float>(exact * 0.5 * margin)))
+        throw std::runtime_error("graph screening failed to reject a distant candidate");
+      checked += exact > 0 ? 2 : 1;
+    }
+  }
+  return checked;
+}
+
 void check(const std::vector<Record> &records,const std::vector<size_t> &order,size_t k,uint64_t ulps,bool merge) {
   auto initialize=[&](mvd::CandidateHeap &heap) {
     heap.k=k;heap.uncertainty_ulps=ulps;
@@ -69,7 +100,9 @@ int main() {
     std::vector<Record> boundary={{base,center,100},{value(33),value(33),200},
         {value(32),center-std::ldexp(1.0L,-60),0},{value(31),center-std::ldexp(1.0L,-59),1}};
     for(bool merge: {false,true})check(boundary,{0,1,2,3},1,32,merge);
+    const size_t graph_checks = check_graph_screen();
     std::cout<<"{\"passed\":true,\"checks\":"<<checks
+      <<",\"graph_screen_checks\":"<<graph_checks
       <<",\"oracle\":\"precise numeric order and primary keys; includes merge and ULP boundary\"}\n";
     return 0;
   } catch(const std::exception &error) {

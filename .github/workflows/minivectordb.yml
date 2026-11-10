@@ -230,6 +230,13 @@ jobs:
             src/engine.h src/common.h src/ann.h src/tx_spool.h | tar -x -C "$mvd_previous_dir"
           cp Dockerfile "$mvd_previous_dir/Dockerfile"
           docker build -t minivectordb:reference-e20904eb "$mvd_previous_dir"
+          mvd_graph_dir=$(mktemp -d)
+          git fetch --depth=1 origin 1996a1b422aa989a4b5c9d32c067225ca2d225f2
+          git archive 1996a1b422aa989a4b5c9d32c067225ca2d225f2 \
+            Makefile src/main.cpp src/sql.cpp src/sql.h src/engine.cpp \
+            src/engine.h src/common.h src/ann.h src/tx_spool.h | tar -x -C "$mvd_graph_dir"
+          cp Dockerfile "$mvd_graph_dir/Dockerfile"
+          docker build -t minivectordb:reference-1996a1b4 "$mvd_graph_dir"
 
       - name: WAL records and bidirectional recovery
         if: always() && steps.reference_build.outcome == 'success'
@@ -250,15 +257,15 @@ jobs:
         if: always() && steps.reference_build.outcome == 'success'
         run: |
           python3 tests/docker_score_compare.py \
-            --reference-image minivectordb:reference-e20904eb --candidate-image minivectordb:ci \
-            --reference-sha e20904ebbf5f6044f0b1cd2093362911e82063ab --drop-caches \
-            --output protocol-results/paired-score-comparison-e209.json
+            --reference-image minivectordb:reference-1996a1b4 --candidate-image minivectordb:ci \
+            --reference-sha 1996a1b422aa989a4b5c9d32c067225ca2d225f2 --drop-caches \
+            --output protocol-results/paired-score-comparison-1996.json
 
       - name: Paired prepared queries on a larger collection
         if: always() && steps.reference_build.outcome == 'success'
         run: |
           python3 tests/paired_query_compare.py \
-            --reference-image minivectordb:reference-e20904eb --candidate-image minivectordb:ci \
+            --reference-image minivectordb:reference-1996a1b4 --candidate-image minivectordb:ci \
             --output protocol-results/paired-queries-docker-50k.json
 
       - name: Upload protocol reports

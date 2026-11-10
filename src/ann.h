@@ -14,6 +14,7 @@ namespace mvd {
 class VectorIndex {
  public:
   using Distance = double (*)(const float *, const float *, int);
+  using DistanceScreen = bool (*)(const float *, const float *, int, float);
   struct Node {
     int64_t pk;
     uint64_t pos;
@@ -30,10 +31,12 @@ class VectorIndex {
   };
   VectorIndex(int dimension, uint32_t vector_offset,
       const std::vector<ColumnDef> &definitions, const std::vector<uint32_t> &offsets,
-      Distance distance, size_t expected, size_t minimum_rows, bool allow_graph = true)
+      Distance distance, size_t expected, size_t minimum_rows, bool allow_graph = true,
+      DistanceScreen build_screen = nullptr)
       : dim_(dimension), vector_offset_(vector_offset), distance_(distance),
         graph_(allow_graph && dimension >= 32 && expected >= minimum_rows),
         minimum_rows_(minimum_rows), allow_graph_(allow_graph) {
+    if (graph_ && dim_ >= 64 && dim_ <= 16384) build_screen_ = build_screen;
     columns_.resize(definitions.size());
     bytes_per_node_ = static_cast<size_t>(dim_) * 4 + (graph_ ? 384 : 96) + 8;
     for (size_t i = 0; i < definitions.size(); ++i) {
@@ -160,6 +163,7 @@ class VectorIndex {
     auto found = ids_.find(pk);
     if (found != ids_.end()) {
       clear_filter_cache();
+      has_tombstones_ = true;
       nodes_[found->second].active = false; ids_.erase(found);
     }
   }
@@ -177,6 +181,15 @@ class VectorIndex {
     int level = graph_ ? random_level() : 0;
     nodes_.push_back(Node{pk, pos, true, {}});
     if (graph_) nodes_.back().links.resize(static_cast<size_t>(level + 1));
+    if (build_screen_) {
+      for (int i = 0; i < dim_; ++i) {
+        float magnitude = std::fabs(input[i]);
+        if (magnitude != 0 && !(magnitude >= 0x1p-32f && magnitude <= 0x1p48f)) {
+          build_screen_ = nullptr;
+          break;
+        }
+      }
+    }
     vectors_.insert(vectors_.end(), input, input + dim_);
     visited_.push_back(0);
     attributes(id, row, true);
@@ -187,8 +200,8 @@ class VectorIndex {
     uint32_t entry = entry_;
     for (int layer = max_level_; layer > level; --layer) entry = greedy(input, entry, layer);
     for (int layer = std::min(level, max_level_); layer >= 0; --layer) {
-      auto candidates = layer_search(input, entry, 256, layer);
-      auto selected = select(input, candidates, 32, id);
+      auto candidates = layer_search<true>(input, entry, 256, layer);
+      auto selected = select(candidates, 32, id);
       nodes_[id].links[layer] = selected;
       for (uint32_t neighbor : selected) {
         auto &links = nodes_[neighbor].links[layer];
@@ -198,8 +211,11 @@ class VectorIndex {
         // calculation. A bounded slack window amortizes that work.
         if (links.size() > maximum + (layer == 0 ? 16 : 8)) {
           std::vector<Hit> choices;
+          choices.reserve(links.size());
           for (uint32_t other : links) choices.push_back({distance_(vector(neighbor), vector(other), dim_), other});
-          links = select(vector(neighbor), choices, maximum, neighbor);
+          std::sort(choices.begin(), choices.end(),
+                    [this](const Hit &a, const Hit &b) { return less(a, b); });
+          links = select(choices, maximum, neighbor);
         }
       }
       if (!candidates.empty()) entry = candidates.front().node;
@@ -248,19 +264,31 @@ class VectorIndex {
     } while (changed);
     return best.node;
   }
+  template <bool Build = false>
   std::vector<Hit> layer_search(const float *query, uint32_t entry, size_t ef, int layer) {
     auto &visited = visited_;
     auto &stamp = stamp_;
     if (++stamp == 0) { std::fill(visited.begin(), visited.end(), 0); ++stamp; }
     auto minimum = [this](const Hit &a, const Hit &b) { return less(b, a); };
     auto maximum = [this](const Hit &a, const Hit &b) { return less(a, b); };
-    std::priority_queue<Hit, std::vector<Hit>, decltype(minimum)> candidates(minimum);
-    std::priority_queue<Hit, std::vector<Hit>, decltype(maximum)> best(maximum);
+    std::vector<Hit> pending;
+    pending.reserve(std::min(ef * 2, nodes_.size()));
+    std::priority_queue<Hit, std::vector<Hit>, decltype(minimum)> candidates(minimum, std::move(pending));
+    std::vector<Hit> best;
+    best.reserve(std::min(ef + 1, nodes_.size()));
     Hit start{distance_(query, vector(entry), dim_), entry};
-    candidates.push(start); best.push(start); visited[entry] = stamp;
+    candidates.push(start); best.push_back(start); visited[entry] = stamp;
+    const DistanceScreen screen = Build ? build_screen_ : nullptr;
+    float rejection_limit = std::numeric_limits<float>::infinity();
+    // In-range nonzero coordinates are multiples of 2^-55. Nonzero
+    // differences and squares stay normal in float32, and the sum fits for
+    // dim <= 16384. Each sum path has at most dim+8 roundings including
+    // subtraction and squaring. Four float32 roundoff units per operation
+    // cover both evaluations and rounding the relaxed cutoff back to float.
+    const double margin = 1 + (dim_ + 8) * 0x1p-22;
     while (!candidates.empty()) {
       Hit current = candidates.top(); candidates.pop();
-      if (best.size() >= ef && current.distance > best.top().distance) break;
+      if (best.size() >= ef && current.distance > best.front().distance) break;
       if (static_cast<size_t>(layer) >= nodes_[current.node].links.size()) continue;
       const auto &links = nodes_[current.node].links[layer];
       for (size_t edge = 0; edge < links.size(); ++edge) {
@@ -277,22 +305,53 @@ class VectorIndex {
         uint32_t next = links[edge];
         if (visited[next] == stamp) continue;
         visited[next] = stamp;
+        if (screen && best.size() == ef && screen(query, vector(next), dim_, rejection_limit))
+          continue;
         Hit candidate{distance_(query, vector(next), dim_), next};
-        if (best.size() < ef || less(candidate, best.top())) {
-          candidates.push(candidate); best.push(candidate);
-          if (best.size() > ef) best.pop();
+        if (best.size() < ef || less(candidate, best.front())) {
+          candidates.push(candidate);
+          // A deleted node can tie its replacement on both distance and PK.
+          // Keep the original push/pop sequence whenever such ties are possible.
+          if (best.size() < ef || has_tombstones_) {
+            best.push_back(candidate);
+            std::push_heap(best.begin(), best.end(), maximum);
+            if (best.size() > ef) {
+              std::pop_heap(best.begin(), best.end(), maximum);
+              best.pop_back();
+            }
+          } else {
+            size_t hole = 0;
+            for (size_t child = 1; child < best.size(); child = hole * 2 + 1) {
+              if (child + 1 < best.size() && less(best[child], best[child + 1])) ++child;
+              if (!less(candidate, best[child])) break;
+              best[hole] = best[child];
+              hole = child;
+            }
+            best[hole] = candidate;
+          }
+          if (screen && best.size() == ef)
+            rejection_limit = static_cast<float>(best.front().distance * margin);
         }
       }
     }
+    if (!has_tombstones_) {
+      std::sort_heap(best.begin(), best.end(), maximum);
+      return best;
+    }
     std::vector<Hit> result;
-    while (!best.empty()) { result.push_back(best.top()); best.pop(); }
+    result.reserve(best.size());
+    while (!best.empty()) {
+      result.push_back(best.front());
+      std::pop_heap(best.begin(), best.end(), maximum);
+      best.pop_back();
+    }
     std::sort(result.begin(), result.end(), maximum);
     return result;
   }
-  std::vector<uint32_t> select(const float *query, std::vector<Hit> candidates,
+  std::vector<uint32_t> select(const std::vector<Hit> &candidates,
                                size_t maximum, uint32_t self) const {
-    std::sort(candidates.begin(), candidates.end(), [this](const Hit &a,const Hit &b){return less(a,b);});
     std::vector<uint32_t> result;
+    result.reserve(maximum);
     for (const auto &candidate : candidates) {
       if (candidate.node == self || !nodes_[candidate.node].active) continue;
       bool diverse = true;
@@ -306,7 +365,6 @@ class VectorIndex {
       if (candidate.node != self && nodes_[candidate.node].active &&
           std::find(result.begin(), result.end(), candidate.node) == result.end()) result.push_back(candidate.node);
     }
-    (void)query;
     return result;
   }
   void attributes(uint32_t id, const uint8_t *row, bool append) {
@@ -328,6 +386,8 @@ class VectorIndex {
   bool graph_;
   size_t minimum_rows_;
   bool allow_graph_;
+  bool has_tombstones_ = false;
+  DistanceScreen build_screen_ = nullptr;
   size_t bytes_per_node_ = 0;
   std::vector<Node> nodes_;
   std::vector<float> vectors_;
