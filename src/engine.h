@@ -230,6 +230,7 @@ class Wal {
   bool append_commit(uint64_t txid);
   bool sync();
   bool truncate();
+  int64_t size() const { return file_.size(); }
   uint64_t next_txid() const { return next_txid_; }
   uint64_t allocate_txid() { return next_txid_++; }
 
@@ -334,6 +335,7 @@ class Engine {
   const TxTable *find_tx_table(uint32_t table_id) const;
   void commit_transaction();
   void rollback_transaction();
+  void maybe_checkpoint();
 
   // values
   Value coerce_value(const TableSchema &schema, int col_index, const Value &v);

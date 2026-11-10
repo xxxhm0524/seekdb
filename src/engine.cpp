@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <limits>
 #include <queue>
 #include <sstream>
 #include <thread>
@@ -27,6 +28,12 @@ std::string lower_copy(std::string s) {
     c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
   return s;
 }
+
+// Keep the crash-recovery log bounded so a long write workload does not grow
+// WAL on disk and in memory without limit.  Checkpointing flushes every
+// committed dirty page and fsyncs table files before truncating the log; a
+// crash at any point leaves either the old log or durable data files.
+constexpr int64_t kWalCheckpointBytes = 32 * 1024 * 1024;
 
 // Parses a vector literal with detailed error classification matching the
 // task package's semantic error names.
@@ -849,6 +856,13 @@ void Engine::commit_transaction() {
     }
   }
   tx_.clear();
+  maybe_checkpoint();
+}
+
+void Engine::maybe_checkpoint() {
+  if (wal_.size() < kWalCheckpointBytes) return;
+  cache_.flush_all(tables_);
+  wal_.truncate();
 }
 
 void Engine::rollback_transaction() { tx_.clear(); }
@@ -1265,8 +1279,22 @@ float squared_l2(const float *a, const float *b, int dim) {
   return squared_l2_scalar(a, b, dim);
 }
 
+// float accumulation is the fast path; finite float32 components can still
+// overflow the squared sum, in which case double accumulation is needed for a
+// meaningful distance and correct TopK ordering.
+double squared_l2_checked(const float *a, const float *b, int dim) {
+  float fast = squared_l2(a, b, dim);
+  if (std::isfinite(fast)) return static_cast<double>(fast);
+  double total = 0.0;
+  for (int i = 0; i < dim; ++i) {
+    double d = static_cast<double>(a[i]) - static_cast<double>(b[i]);
+    total += d * d;
+  }
+  return total;
+}
+
 struct Candidate {
-  float dist;
+  double dist;
   int64_t pk;
   uint64_t pos;
 };
@@ -1278,7 +1306,7 @@ bool candidate_worse(const Candidate &a, const Candidate &b) {
 struct CandidateHeap {
   std::vector<Candidate> data;
   size_t k = 10;
-  void push(float dist, int64_t pk, uint64_t pos) {
+  void push(double dist, int64_t pk, uint64_t pos) {
     if (data.size() < k) {
       data.push_back({dist, pk, pos});
       std::push_heap(data.begin(), data.end(), candidate_worse);
@@ -1411,28 +1439,51 @@ Response Engine::exec_select(SelectStmt &stmt) {
     out_columns.push_back(p.name);
   }
 
-  // Fast path: one distance expression ordered ascending with LIMIT.
+  // Fast path: one ascending vector-distance ordering with LIMIT.  The
+  // ordering may reference a projected distance alias or the L2_DISTANCE
+  // expression itself, even when the distance is not in the SELECT list.
   int distance_plan = -1;
-  for (size_t i = 0; i < plans.size(); ++i)
-    if (!plans[i].star && plans[i].is_distance) distance_plan = static_cast<int>(i);
+  for (size_t i = 0; i < plans.size(); ++i) {
+    if (!plans[i].star && plans[i].is_distance) {
+      if (distance_plan < 0) distance_plan = static_cast<int>(i);
+    }
+  }
   bool topk_path = false;
   int64_t topk = 0;
-  if (distance_plan >= 0 && stmt.has_limit && stmt.offset == 0 &&
-      stmt.order.size() == 1 && !stmt.order[0].desc) {
+  int topk_vector_column = -1;
+  std::vector<float> topk_query_vec;
+  if (stmt.has_limit && stmt.offset == 0 && stmt.order.size() == 1 &&
+      !stmt.order[0].desc) {
     const OrderKey &ok = stmt.order[0];
-    bool matches = false;
     if (ok.is_distance) {
       int ci = table.column_index(ok.expr.column);
-      matches = (ci == plans[distance_plan].vector_column);
+      if (ci < 0)
+        throw_error("COLUMN_NOT_FOUND", "column not found: " + ok.expr.column);
+      if (schema.columns[ci].type != ColumnType::VECTOR)
+        throw_error("INVALID_ARGUMENT", "L2_DISTANCE requires a VECTOR column");
+      topk_vector_column = ci;
+      parse_vector_for_column(ok.expr.vec_text, schema.columns[ci],
+                              topk_query_vec);
+      topk_path = true;
     } else {
       std::string key = lower_copy(ok.name);
-      matches = (key == lower_copy(plans[distance_plan].name) ||
-                 key == "distance" || key == "d" || key == "l2_distance");
+      int chosen = -1;
+      for (size_t i = 0; i < plans.size(); ++i) {
+        if (plans[i].is_distance && lower_copy(plans[i].name) == key) {
+          chosen = static_cast<int>(i);
+          break;
+        }
+      }
+      if (chosen < 0 && distance_plan >= 0 &&
+          (key == "distance" || key == "d" || key == "l2_distance"))
+        chosen = distance_plan;
+      if (chosen >= 0) {
+        topk_vector_column = plans[chosen].vector_column;
+        topk_query_vec = plans[chosen].query_vec;
+        topk_path = true;
+      }
     }
-    if (matches) {
-      topk_path = true;
-      topk = stmt.limit;
-    }
+    if (topk_path) topk = stmt.limit;
   }
 
   Response resp;
@@ -1449,11 +1500,11 @@ Response Engine::exec_select(SelectStmt &stmt) {
       } else if (p.is_distance) {
         const uint8_t *base = row + schema.col_offsets[p.vector_column];
         const float *vec = reinterpret_cast<const float *>(base);
-        float sq = squared_l2(vec, p.query_vec.data(),
-                              schema.columns[p.vector_column].dim);
+        double sq = squared_l2_checked(vec, p.query_vec.data(),
+                                       schema.columns[p.vector_column].dim);
         OutValue ov;
         ov.kind = OutValue::Kind::DOUBLE;
-        ov.d = std::sqrt(static_cast<double>(sq));
+        ov.d = std::sqrt(sq);
         vals.push_back(std::move(ov));
       } else {
         vals.push_back(out_value_from_row(table, row, p.column_index));
@@ -1481,10 +1532,10 @@ Response Engine::exec_select(SelectStmt &stmt) {
     if (tx_.active) {
       auto rows = collect_visible_locked(table, stmt.where);
       for (const auto &vr : rows) {
-        const uint8_t *base = vr.row + schema.col_offsets[plans[distance_plan].vector_column];
+        const uint8_t *base = vr.row + schema.col_offsets[topk_vector_column];
         const float *vec = reinterpret_cast<const float *>(base);
-        float sq = squared_l2(vec, plans[distance_plan].query_vec.data(),
-                              schema.columns[plans[distance_plan].vector_column].dim);
+        double sq = squared_l2_checked(vec, topk_query_vec.data(),
+                                       schema.columns[topk_vector_column].dim);
         heaps[0].push(sq, vr.pk, vr.pos);
       }
     } else {
@@ -1507,10 +1558,10 @@ Response Engine::exec_select(SelectStmt &stmt) {
               if (!table.compare(row, cond)) { match = false; break; }
             }
             if (!match) continue;
-            const uint8_t *base = row + schema.col_offsets[plans[distance_plan].vector_column];
+            const uint8_t *base = row + schema.col_offsets[topk_vector_column];
             const float *vec = reinterpret_cast<const float *>(base);
-            float sq = squared_l2(vec, plans[distance_plan].query_vec.data(),
-                                  schema.columns[plans[distance_plan].vector_column].dim);
+            double sq = squared_l2_checked(vec, topk_query_vec.data(),
+                                           schema.columns[topk_vector_column].dim);
             int64_t pk = table.row_id(row);
             heap.push(sq, pk, static_cast<uint64_t>(pi) * schema.rows_per_page + slot);
           }
@@ -1529,10 +1580,10 @@ Response Engine::exec_select(SelectStmt &stmt) {
             if (!table.compare(row, cond)) { match = false; break; }
           }
           if (!match) continue;
-          const uint8_t *base = row + schema.col_offsets[plans[distance_plan].vector_column];
+          const uint8_t *base = row + schema.col_offsets[topk_vector_column];
           const float *vec = reinterpret_cast<const float *>(base);
-          float sq = squared_l2(vec, plans[distance_plan].query_vec.data(),
-                                schema.columns[plans[distance_plan].vector_column].dim);
+          double sq = squared_l2_checked(vec, topk_query_vec.data(),
+                                         schema.columns[topk_vector_column].dim);
           int64_t pk = table.row_id(row);
           heaps[0].push(sq, pk, static_cast<uint64_t>(pi) * schema.rows_per_page + slot);
         }
@@ -1569,7 +1620,9 @@ Response Engine::exec_select(SelectStmt &stmt) {
   // the whole table when the dataset is larger than the page cache/memory.
   if (stmt.order.empty() && stmt.has_limit && !tx_.active) {
     int64_t seen = 0;
-    int64_t wanted = stmt.offset + stmt.limit;
+    int64_t wanted = (stmt.offset > std::numeric_limits<int64_t>::max() - stmt.limit)
+                         ? std::numeric_limits<int64_t>::max()
+                         : stmt.offset + stmt.limit;
     if (stmt.limit == 0) return resp;
     for (uint32_t pi = 0; pi < table.page_count(); ++pi) {
       auto page = table.get_page(pi);
@@ -1599,8 +1652,26 @@ Response Engine::exec_select(SelectStmt &stmt) {
     int64_t pk;
     uint64_t pos;
   };
+  std::vector<bool> desc;
+  for (const auto &o : stmt.order) desc.push_back(o.desc);
+  auto row_less = [&](const ResultRow &a, const ResultRow &b) {
+    for (size_t i = 0; i < desc.size(); ++i) {
+      int cmp = compare_sort_keys(a.keys[i], b.keys[i]);
+      if (cmp != 0) return desc[i] ? cmp > 0 : cmp < 0;
+    }
+    // Ties are resolved by primary key ascending.
+    return a.pk < b.pk;
+  };
+  if (stmt.has_limit && stmt.limit == 0) return resp;
+  bool bounded = stmt.has_limit && !stmt.order.empty() && stmt.limit > 0;
+  int64_t need = 0;
+  if (bounded) {
+    need = (stmt.offset > std::numeric_limits<int64_t>::max() - stmt.limit)
+               ? std::numeric_limits<int64_t>::max()
+               : stmt.offset + stmt.limit;
+  }
   std::vector<ResultRow> results;
-  results.reserve(rows.size());
+  if (!bounded) results.reserve(rows.size());
   for (const auto &vr : rows) {
     ResultRow rr;
     rr.vals = project_row(vr.row);
@@ -1619,8 +1690,8 @@ Response Engine::exec_select(SelectStmt &stmt) {
         const uint8_t *base = vr.row + schema.col_offsets[ci];
         const float *vec = reinterpret_cast<const float *>(base);
         key.kind = OutValue::Kind::DOUBLE;
-        key.d = std::sqrt(static_cast<double>(
-            squared_l2(vec, qv.data(), schema.columns[ci].dim)));
+        key.d = std::sqrt(
+            squared_l2_checked(vec, qv.data(), schema.columns[ci].dim));
         rr.keys.push_back(std::move(key));
         continue;
       }
@@ -1662,24 +1733,27 @@ Response Engine::exec_select(SelectStmt &stmt) {
       }
       rr.keys.push_back(std::move(key));
     }
-    results.push_back(std::move(rr));
+    if (bounded) {
+      if (static_cast<int64_t>(results.size()) < need) {
+        results.push_back(std::move(rr));
+        std::push_heap(results.begin(), results.end(), row_less);
+      } else if (row_less(rr, results.front())) {
+        std::pop_heap(results.begin(), results.end(), row_less);
+        results.back() = std::move(rr);
+        std::push_heap(results.begin(), results.end(), row_less);
+      }
+    } else {
+      results.push_back(std::move(rr));
+    }
   }
-  if (!stmt.order.empty()) {
-    std::vector<bool> desc;
-    for (const auto &o : stmt.order) desc.push_back(o.desc);
-    std::sort(results.begin(), results.end(),
-              [&](const ResultRow &a, const ResultRow &b) {
-                for (size_t i = 0; i < desc.size(); ++i) {
-                  int cmp = compare_sort_keys(a.keys[i], b.keys[i]);
-                  if (cmp != 0) return desc[i] ? cmp > 0 : cmp < 0;
-                }
-                // Ties are resolved by primary key ascending.
-                return a.pk < b.pk;
-              });
-  }
+  if (!stmt.order.empty())
+    std::sort(results.begin(), results.end(), row_less);
   int64_t start = stmt.has_limit ? stmt.offset : 0;
-  int64_t end = stmt.has_limit ? stmt.offset + stmt.limit
-                               : static_cast<int64_t>(results.size());
+  int64_t end = stmt.has_limit
+                    ? ((stmt.offset > std::numeric_limits<int64_t>::max() - stmt.limit)
+                           ? std::numeric_limits<int64_t>::max()
+                           : stmt.offset + stmt.limit)
+                    : static_cast<int64_t>(results.size());
   if (start < 0) start = 0;
   if (end > static_cast<int64_t>(results.size()))
     end = static_cast<int64_t>(results.size());

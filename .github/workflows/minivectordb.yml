@@ -30,14 +30,23 @@ jobs:
       - name: Extended semantics
         run: python3 tests/run_extended_tsv.py
 
+      - name: Formal requirement coverage
+        run: python3 tests/formal_coverage.py
+
+      - name: Randomized model stress
+        run: python3 tests/stress_random.py --rounds 20 --seed 7
+
       - name: Regression and crash recovery
         run: python3 tests/regression.py
+
+      - name: Repeated kills during recovery
+        run: python3 tests/crash_recovery_test.py 20000
 
       - name: Install benchmark dependency
         run: python3 -m pip install --break-system-packages numpy
 
       - name: Benchmark and recall
-        run: python3 tests/bench.py --rows 3000 --queries 300
+        run: python3 tests/bench.py --rows 10000 --queries 1000
 
       - name: Docker build
         run: docker build -t minivectordb:ci .

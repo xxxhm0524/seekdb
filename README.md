@@ -138,6 +138,8 @@ ROLLBACK;
 - 每次提交：写页镜像 → 写 COMMIT → `fsync(wal)` → 返回成功；随后页缓存可延迟刷盘。
 - 启动恢复两遍扫描：第一遍收集有 COMMIT 的 txid，第二遍按 WAL 顺序重放这些页镜像（幂等），
   然后 `fsync` 数据文件、截断 WAL。恢复途中再次被 kill 也安全。
+- 运行期 WAL 超过 32 MiB 时自动 checkpoint：先刷全部脏页并 `fsync` 数据文件，再截断 WAL；
+  长时间写入不会让日志无限增长，重启时的恢复内存也有上界。
 - 正常关闭（stdin EOF 或 SIGINT/SIGTERM）：回滚未提交事务、刷脏页、`fsync`、截断 WAL。
 
 ### 4.4 向量检索
@@ -156,12 +158,17 @@ ROLLBACK;
 | JSONL 握手/关闭 | `python3 protocol_check/run.py --handshake-only`（官方检查器，先等 ready 再发 shutdown） | PASS |
 | 公开用例（官方协议） | `python3 protocol_check/run.py`（`mysqltest/` 20 个用例/95 条 SQL，逐请求 JSONL） | 20/20 PASS |
 | 公开用例（本地驱动） | `python tests/local_driver.py`（同一题包，逐语句比对 columns/rows/affected_rows/error.code） | 20/20 PASS |
+| 正式要求逐项覆盖 | `python tests/formal_coverage.py`：模式/类型边界、全部比较运算、ORDER BY/LIMIT/OFFSET、事务原子性、非法向量、恢复 | ALL PASS |
+| 随机模型压力 | `python tests/stress_random.py`：400 主键随机增删改、exact/ann、过滤/不过滤、重启与强杀 | PASS（多随机种子） |
 | 事务/回滚/持久化 | `python tests/regression.py` | PASS |
 | 崩溃恢复 | `tests/regression.py`：显式事务中 kill；已提交保留、未提交不残留、重启可继续写 | PASS |
+| 恢复中重复强杀 | `python tests/crash_recovery_test.py`：50,000 行 × 32 维，WAL 重放期间再 kill 3 次 | PASS |
+| WAL 有界与 checkpoint | 30,000 行 × 128 维写入过程中 32 MiB 自动刷盘截断；重启行数与首尾主键核对 | PASS（WAL 峰值约 3.3 MiB） |
 | 向量 TopK | `tests/regression.py`：500 行 4 维随机数据，20 个过滤查询对暴力真值；索引后增删改 | PASS |
 | 大规模 TopK | `python tests/bench.py`：10,000 行 × 128 维，1,000 个 K=10 查询（一半过滤），NumPy 暴力核对 | PASS（Recall=1.0） |
-| 本地性能 | 同上，本机 2 线程 | 插入 10,000 行约 1.76 s；1,000 查询约 0.32 s（约 0.32 ms/查询） |
-| Linux 构建与全量回归 | GitHub Actions `ubuntu-24.04`：`make` + 官方 `protocol_check` + 回归 + Benchmark | PASS |
+| 本地性能 | 同上，本机 2 线程 | 插入 10,000 行约 1.74 s；1,000 查询约 0.30 s（约 0.30 ms/查询） |
+| 极端 float32 距离 | ±3.4e38 合法向量：float 快速路径溢出时 double 重算，输出有限距离并按距离排序 | PASS |
+| Linux 构建与全量回归 | GitHub Actions `ubuntu-24.04`：`make` + 官方 `protocol_check` + 正式覆盖/压力/恢复测试 + Benchmark | PASS |
 | Docker 镜像与容器运行 | GitHub Actions `ubuntu-24.04`：`docker build` + 容器内跑官方 `protocol_check` 全部公开用例 | PASS（`all cases passed`） |
 | 超过缓存的扫描 | `--cache-mb=1` 插入 20,000 行 × 32 维，多次 TopK 与暴力结果核对 | PASS |
 
