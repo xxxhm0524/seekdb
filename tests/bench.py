@@ -80,8 +80,10 @@ def main(client_factory=Client):
             execute(queries[index][0])
         results = []
         before = time.perf_counter()
-        for sql,_ in queries:
+        filtered_time = 0.0
+        for query_index,(sql,_) in enumerate(queries):
             results.append(execute(sql)['rows'])
+            if query_index+1==args.queries//2: filtered_time=time.perf_counter()-before
         query_time = time.perf_counter()-before
         exact_mismatches = 0
         recall = {'filtered':[],'unfiltered':[]}
@@ -112,6 +114,7 @@ def main(client_factory=Client):
         client.shutdown()
     report = dict(rows=args.rows,dim=args.dim,queries=args.queries,topk=args.topk,seed=args.seed,
         mode=args.search_mode,insert_seconds=round(insert_time,6),query_seconds=round(query_time,6),
+        filtered_seconds=round(filtered_time,6),unfiltered_seconds=round(query_time-filtered_time,6),
         ms_per_query=round(query_time*1000/args.queries,6),recall_at_k=mean_recall,
         exact_query_mismatches=exact_mismatches,durable_content_verified=True,
         timing_scope='prepared SQL over JSONL; includes responses and commit fsync; excludes SQL generation and validation')

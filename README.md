@@ -69,8 +69,9 @@ ROLLBACK;
 - 支持 `=`、`<`、`<=`、`>`、`>=`、`AND`、`ORDER BY`（多列、升降序）、`LIMIT` / `OFFSET`。
 - `L2_DISTANCE` 返回欧氏距离（不是平方距离）。精确 TopK 在满足 `WHERE` 的记录集合内计算；
   距离相同按主键升序；结果不足 K 条时返回全部。
-- `CREATE VECTOR INDEX name ON table(vector_column)` 可用；本实现使用自研页式堆和精确扫描，
-  索引元数据会持久化，索引创建后增删改查始终以当前可见记录为准（不依赖过期的索引副本）。
+- `CREATE VECTOR INDEX name ON table(vector_column)` 构建自研 HNSW 与紧凑向量/属性缓存。
+  exact 模式始终精确；ann 模式根据规模、过滤条件和预算选择图搜索或精确索引路径。
+  提交后维护索引，回滚不修改已提交索引，重启从恢复后的记录重建。
 - 未显式 `BEGIN` 时，成功的修改语句自动提交。
 - JSON 协议中查询结果里的 VECTOR 列以 JSON 数组输出（如 `[1.0,2.0]`）。
 
@@ -109,12 +110,14 @@ ROLLBACK;
 - 查询返回 `columns` + `rows`（空结果也返回列名）；BIGINT 为 JSON 整数，VECTOR 为 JSON 数组。
 - INSERT/UPDATE/DELETE 返回实际 `affected_rows`；DDL 与事务控制返回仅 `id` + `ok:true`。
 - 每条响应一行并立即 flush；stdout 不输出日志、提示符或空行，调试信息只写 stderr。
-- 请求中的 `search_mode`（`exact` / `ann`）按请求生效，本实现两种模式均使用精确扫描保证召回。
+- 请求中的 `search_mode`（`exact` / `ann`）按请求生效；ann 支持 HNSW，事务内查询使用当前事务可见记录精确计算。
 - `shutdown` 先回滚未提交事务、刷盘并清理，再返回 `{"id":N,"ok":true}` 并以 0 退出。
 - 进程被强杀后，已提交事务由 WAL 恢复；未提交改动不会部分生效。
 
 `--query-threads=N` 控制向量扫描线程数（默认 2），`--cache-mb=N` 控制页缓存上限（默认 64 MiB），
 `--data-dir=/data`（或环境变量 `VECTORDB_DATA_DIR`）指定数据目录。
+`--tx-memory-mb=N` 控制事务行数据与更新值的驻留预算（默认 8 MiB）；
+`--ann-min-rows=N` 控制图搜索启用规模（默认 40,000，亦需维度至少 32）。
 
 ## 4. 设计与验证
 
@@ -132,7 +135,9 @@ ROLLBACK;
 
 - 显式事务维护每表的 `pk -> RowState` 叠加层；读取先查叠加层，再查基线，因此事务内可读到自己的修改。
 - 已有记录的 UPDATE 保存共享的列修改，DELETE 保存删除标记，避免为每条宽记录复制完整定长槽。
-- 每条语句先在叠加层完成校验；语句失败时丢弃本条语句的改动（显式事务恢复到语句前快照），不留部分修改。
+- 每条语句先校验，使用只记录本语句修改行的撤销日志恢复失败语句；不再为每条语句复制整个事务。
+- 新增行及独立更新值超出预算后写入 `/data/txn.tmp`；相同列的旧补丁会被裁剪，避免保留无效历史。
+  失败语句回退溢写文件的有效范围；提交、回滚和正常关闭释放该文件，异常重启丢弃未提交溢写数据。
 - 新增槽位的分配进度只在 COMMIT 后安装，失败语句与 ROLLBACK 不消耗基线槽位。
 - `ROLLBACK` 丢弃叠加层；`COMMIT` 先把提交涉及的页生成完整页镜像写入 WAL，`fsync` 后才安装到页缓存并返回成功。
 - 提交逐页生成镜像，只保留首 1 MiB 的镜像和后续 WAL 偏移；大提交不需要把全部修改页同时放进内存。
@@ -158,7 +163,13 @@ ROLLBACK;
 - AVX2 距离内核带运行期 CPU 检测，不支持 AVX2 时回退到 double 标量实现；不会因 `-march=native` 在未知评测机报非法指令。
 - 候选距离落入保守 ULP 误差带时，用补偿 long double 累加重新比较，防止等距向量因分量顺序不同排错；普通排序路径也使用补偿距离作为排序键。
 - OpenMP 按页切分并行扫描，线程数默认 2（可用 `--query-threads` 调整），结果合并后按 `(距离, 主键)` 输出。
-- `CREATE VECTOR INDEX` 持久化索引元数据；当前检索路径以精确扫描保证召回，索引维护不会放宽过滤与事务正确性。
+- 自研 HNSW 使用分层图和邻居多样性筛选（M=32、构建 ef=256、搜索 ef 至少 384）。
+  图内使用 float32 快速候选距离，返回前按存储后的 float32 向量重新精确计算和排序。
+- 小集合、低维、过滤查询使用紧凑向量/属性缓存精确计算；不适合缓存的过滤或超预算集合使用页式扫描。
+  已缓存的投影直接返回，避免逐条回读宽记录。密集等距结果回退精确索引，保持主键并列规则。
+- 索引总预算按保守估计限制为 128 MiB；提交维护当前值，删除标记累计后重建，恢复重建完成后才发送 ready。
+  大批量提交使派生索引失效，下一次检索或重启重建；事务内读取自身修改不依赖旧图。
+- 算法参考：[HNSW 原论文](https://arxiv.org/abs/1603.09320)，未调用任何现成向量索引库。
 
 ## 5. 验证记录
 
@@ -171,13 +182,15 @@ ROLLBACK;
 | 公开要求的本地覆盖 | `tests/formal_coverage.py`，类型、比较、排序、事务与恢复 | PASS；不等同正式用例 |
 | 边界回归 | `tests/hidden_boundaries.py`，极小距离、别名、空结果错误、维度和行宽回绕、非法向量、回滚槽位、UPDATE 原子性、Unicode 错误响应、数值等距、重复列、DDL 孤立文件、float32 最大值回传、请求 id 类型 | 19 组 PASS |
 | 预读和脏页一致性 | `tests/cache_coherence.py`，1 MiB 缓存下交错更新、过滤 TopK、提交/回滚及强杀重启 | PASS |
+| 长事务溢写 | `tests/transaction_spill.py`，1 MiB 行数据预算，包含 INSERT/UPDATE、覆盖历史裁剪、失败语句、提交/回滚/强杀 | 本地 PASS；12,000 条宽记录峰值约 11 MiB |
+| HNSW 生命周期 | `tests/ann_lifecycle.py`，显式启用图路径，验证精确/近似切换、过滤、增删改、事务与崩溃重建 | 本地 PASS |
 | 随机模型 | `tests/stress_random.py`，种子 7、42、211，各 100 轮 | PASS |
 | 原回归和扩展 | `tests/regression.py`、`tests/run_extended_tsv.py`；后者名称保留，实际走 JSONL | PASS |
 | 恢复中重复强杀 | `tests/crash_recovery_test.py 50000`，合法未提交增删改，核对所有 ID | PASS；本地观测到 2 次恢复写页后、ready 前强杀 |
 | 多表提交途中强杀 | `tests/commit_crash_boundaries.py`，包含未发 COMMIT、不同延迟、已确认 COMMIT | PASS；完整旧状态或完整新状态 |
 | 大于内存的数据文件 | `tests/resource_boundaries.py --rows 260000 --max-mb 128`，1 MiB 页缓存，2321.44 MiB 数据文件 | PASS；排序/事务 TopK 约 17.8 MiB，更新/删除峰值约 66.3 MiB（进程指标） |
-| exact 基准 | 10k×128d，1000 查询，种子 20261110；强杀后逐条核对持久化内容及查询距离 | 两组 Recall@10 均 1.0；写入约 1.32 s，查询约 0.342 s |
-| ann 基准 | 同规模，种子 20261111；当前使用精确扫描 | 两组 Recall@10 均 1.0；写入约 1.32 s，查询约 0.333 s |
+| exact 基准 | 10k×128d，1000 查询，种子 20261110；强杀后逐条核对持久化内容及查询距离 | 两组 Recall@10 均 1.0；写入约 1.35 s，查询约 0.272 s |
+| ann 基准 | 同规模，种子 20261111；该规模选择紧凑精确索引 | 两组 Recall@10 均 1.0；写入约 1.23 s，查询约 0.260 s |
 | Linux 和 sanitizer | `.github/workflows/minivectordb.yml`，GCC/UBSan 和回归 | 查看对应 SHA 的 Actions |
 | 实际容器资源边界 | `tests/docker_resource_boundaries.py`，256 MiB 容器、超过 2 GiB 数据文件、全表更新/删除及重启 | 查看对应 SHA 的 Actions |
 
@@ -209,6 +222,6 @@ Dockerfile
 
 1. 行必须能放入 64 KiB 页；超宽 VARCHAR/VECTOR 建表会返回错误。
 2. 不支持 NULL、默认值、JOIN、聚合、子查询、ALTER TABLE、主键更新。
-3. 当前 ANN 模式与 exact 模式共用精确扫描（保证 Recall=1.0）；未实现 HNSW/IVF 近似加速。
-4. 主键索引、事务记录元数据和显式事务中新增行的原始内容仍在内存中。单个超大 INSERT、很长的显式事务和无 LIMIT 的巨大响应仍受内存限制。
+3. ANN 会近似检索，也会选择精确缓存或扫描；其召回率须由实际数据验证，不能据此宣称平台排名。
+4. 行数据和更新值可溢写，但主键索引、事务行定位/撤销元数据仍与记录数有关；单条巨大 SQL 的解析和无 LIMIT 的巨大响应仍受内存限制。
 5. 本地测试和 CI 覆盖公开要求的已知边界，不能证明未获得输入的正式 29 个用例全部通过。未经用户授权不做平台提测。

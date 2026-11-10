@@ -15,6 +15,7 @@
 
 #include "common.h"
 #include "sql.h"
+#include "tx_spool.h"
 
 namespace mvd {
 
@@ -92,6 +93,14 @@ struct RowState {
   bool deleted = false;
   uint64_t pos = 0;
   std::vector<uint8_t> row;
+  std::shared_ptr<TxSpool> spool;
+  uint64_t spool_offset = 0;
+  uint32_t spool_size = 0;
+  bool has_raw_row() const { return !row.empty() || spool_size != 0; }
+  void read_raw(std::vector<uint8_t> &output) const {
+    if (!row.empty()) output = row;
+    else if (spool_size) spool->read(spool_offset, spool_size, output);
+  }
   // UPDATE literals are shared across matching records. Existing rows retain
   // patches instead of a full fixed-width copy of every VARCHAR/VECTOR slot.
   std::vector<std::shared_ptr<const RowPatch>> patches;
@@ -103,11 +112,29 @@ struct TxTable {
 };
 
 struct Transaction {
+  struct PatchBudget { size_t bytes = 0; };
   bool active = false;
   std::unordered_map<uint32_t, TxTable> tables;
+  std::shared_ptr<TxSpool> spool;
+  size_t resident_payload = 0;
+  std::vector<uint8_t> encode_buffer;
+  std::shared_ptr<PatchBudget> patch_budget = std::make_shared<PatchBudget>();
+  std::shared_ptr<const RowPatch> track_patch(RowPatch patch) {
+    size_t bytes = sizeof(RowPatch) + patch.capacity()*sizeof(RowPatch::value_type);
+    for (const auto &change:patch) bytes += change.second.s.capacity()+change.second.vec.capacity()*sizeof(float);
+    auto owned=std::make_unique<RowPatch>(std::move(patch));
+    auto budget=patch_budget;
+    budget->bytes+=bytes;
+    return std::shared_ptr<const RowPatch>(owned.release(),[budget,bytes](const RowPatch *value){
+      delete value;budget->bytes-=bytes;
+    });
+  }
   void clear() {
     active = false;
     tables.clear();
+    spool.reset();
+    resident_payload = 0;
+    std::vector<uint8_t>().swap(encode_buffer);
   }
 };
 
@@ -120,6 +147,7 @@ struct PageImage {
 };
 
 class Table;
+class VectorIndex;
 
 class PageCache {
  public:
@@ -160,6 +188,7 @@ class PageCache {
 class Table {
  public:
   Table(TableSchema schema, std::string data_path, PageCache *cache);
+  ~Table();
 
   const TableSchema &schema() const { return schema_; }
   TableSchema &schema() { return schema_; }
@@ -228,6 +257,10 @@ class Table {
                            const std::function<void(PageImage)> &visit);
 
  private:
+  friend class Engine;
+  std::unique_ptr<VectorIndex> vector_search_;
+  size_t vector_search_bytes_ = 0;
+  bool vector_search_unavailable_ = false;
   TableSchema schema_;
   std::string data_path_;
   PageCache *cache_ = nullptr;
@@ -308,7 +341,8 @@ class Wal {
 
 class Engine {
  public:
-  Engine(std::string data_dir, size_t cache_pages = 1024);
+  Engine(std::string data_dir, size_t cache_pages = 1024, size_t tx_memory = 8*1024*1024,
+          size_t ann_min_rows = 40000);
   ~Engine();
 
   void open();
@@ -329,9 +363,28 @@ class Engine {
   std::unordered_map<uint32_t, std::unique_ptr<Table>> tables_;
   std::unordered_map<std::string, uint32_t> table_ids_;
   Transaction tx_;
+  size_t tx_memory_;
+  size_t ann_min_rows_;
+  struct UndoRow { uint32_t table; int64_t pk; bool existed; RowState before; };
+  struct UndoTable { bool existed; uint64_t next_pos; };
+  struct StatementUndo {
+    std::vector<UndoRow> rows;
+    std::unordered_map<uint32_t, UndoTable> tables;
+    bool had_spool = false;
+    uint64_t spool_end = 0;
+  };
+  StatementUndo *statement_undo_ = nullptr;
+  void store_row(Table &table, TxTable &changes, int64_t pk, RowState state);
+  void spill_row(RowState &state);
+  void spill_state(Table &table, RowState &state);
+  void rollback_statement(StatementUndo &undo);
   bool ann_mode_ = false;
   bool opened_ = false;
   uint32_t next_table_id_ = 1;
+  size_t vector_search_bytes_ = 0;
+  void rebuild_vector_index(Table &table);
+  void update_vector_index(Table &table, const TxTable &changes);
+  void drop_vector_index(Table &table);
 
   // catalog
   void load_catalog();
@@ -353,11 +406,7 @@ class Engine {
   Response exec_rollback();
 
   // transaction helpers
-  TxTable &tx_table_ref(uint32_t table_id) {
-    auto [it, inserted] = tx_.tables.try_emplace(table_id);
-    if (inserted) it->second.next_pos = tables_.at(table_id)->next_pos();
-    return it->second;
-  }
+  TxTable &tx_table_ref(uint32_t table_id);
   const TxTable *find_tx_table(uint32_t table_id) const;
   void commit_transaction();
   void rollback_transaction();

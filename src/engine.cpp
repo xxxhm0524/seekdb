@@ -1,4 +1,5 @@
 #include "engine.h"
+#include "ann.h"
 
 #include <algorithm>
 #include <cctype>
@@ -20,6 +21,9 @@
 namespace mvd {
 
 namespace {
+double squared_l2_checked(const float *a, const float *b, int dim);
+double squared_l2_approximate(const float *a, const float *b, int dim);
+constexpr size_t kVectorIndexBudget = 128 * 1024 * 1024;
 uint32_t align_up(uint32_t value, uint32_t alignment) {
   return (value + alignment - 1) / alignment * alignment;
 }
@@ -352,6 +356,7 @@ Table::Table(TableSchema schema, std::string data_path, PageCache *cache)
     : schema_(std::move(schema)),
       data_path_(std::move(data_path)),
       cache_(cache) {}
+Table::~Table() = default;
 
 void Table::open(bool rebuild, bool fresh) {
   int flags = O_RDWR | O_CREAT | (fresh ? O_TRUNC : 0);
@@ -631,7 +636,7 @@ void Table::apply_patches(uint8_t *row, const RowState &state) {
 
 void Table::materialize_state(const RowState &state, const uint8_t *base,
                               std::vector<uint8_t> &row) {
-  if (!state.row.empty()) row = state.row;
+  if (state.has_raw_row()) state.read_raw(row);
   else if (base) row.assign(base, base + schema_.row_size);
   else if (!read_row(state.pos, row))
     throw_error("CORRUPTION", "transaction base row missing");
@@ -656,6 +661,7 @@ void Table::build_commit_images(const TxTable &tx,
   ordered_pages.reserve(by_page.size());
   for (const auto &kv : by_page) ordered_pages.push_back(kv.first);
   std::sort(ordered_pages.begin(), ordered_pages.end());
+  std::vector<uint8_t> spilled_row;
   for (uint32_t page_no : ordered_pages) {
     auto &changes = by_page.at(page_no);
     std::shared_ptr<Page> base;
@@ -681,8 +687,10 @@ void Table::build_commit_images(const TxTable &tx,
       if (ch.deleted) {
         if (slot < image->nrows) set_row_valid(dst, false);
       } else {
-        if (!ch.state->row.empty())
-          std::memcpy(dst, ch.state->row.data(), schema_.row_size);
+        if (ch.state->has_raw_row()) {
+          ch.state->read_raw(spilled_row);
+          std::memcpy(dst, spilled_row.data(), schema_.row_size);
+        }
         apply_patches(dst, *ch.state);
         set_row_valid(dst, true);
         if (slot + 1 > image->nrows) image->nrows = slot + 1;
@@ -766,11 +774,11 @@ bool Wal::truncate() {
 // ---------------------------------------------------------------------------
 // Engine basic helpers
 // ---------------------------------------------------------------------------
-Engine::Engine(std::string data_dir, size_t cache_pages)
+Engine::Engine(std::string data_dir, size_t cache_pages, size_t tx_memory, size_t ann_min_rows)
     : data_dir_(std::move(data_dir)),
       catalog_path_(data_dir_ + "/catalog.dat"),
       wal_path_(data_dir_ + "/wal.log"),
-      cache_(cache_pages) {}
+      cache_(cache_pages), tx_memory_(tx_memory), ann_min_rows_(ann_min_rows) {}
 
 Engine::~Engine() {
   try {
@@ -781,6 +789,7 @@ Engine::~Engine() {
 
 void Engine::open() {
   make_dir(data_dir_);
+  std::remove((data_dir_ + "/txn.tmp").c_str());
   load_catalog();
   // Create/open all tables from catalog.
   for (auto &kv : tables_) kv.second->open(false);
@@ -798,6 +807,8 @@ void Engine::open() {
   }
   // WAL is fully applied and durable now.
   if (!wal_.truncate()) throw_error("IO_ERROR", "failed to truncate recovered WAL");
+  for (auto &entry : tables_)
+    if (entry.second->schema().vector_index_created) rebuild_vector_index(*entry.second);
   opened_ = true;
 }
 
@@ -1024,6 +1035,7 @@ void Engine::commit_transaction() {
         table.put_pk(rk.first, state.pos);
       }
     }
+    update_vector_index(table, kv.second);
   }
   tx_.clear();
   maybe_checkpoint();
@@ -1036,6 +1048,84 @@ void Engine::maybe_checkpoint() {
 }
 
 void Engine::rollback_transaction() { tx_.clear(); }
+
+TxTable &Engine::tx_table_ref(uint32_t table_id) {
+  auto old = tx_.tables.find(table_id);
+  if (statement_undo_ && !statement_undo_->tables.count(table_id))
+    statement_undo_->tables.emplace(table_id, UndoTable{old != tx_.tables.end(),
+        old == tx_.tables.end() ? 0 : old->second.next_pos});
+  auto [entry, inserted] = tx_.tables.try_emplace(table_id);
+  if (inserted) entry->second.next_pos = tables_.at(table_id)->next_pos();
+  return entry->second;
+}
+
+void Engine::spill_row(RowState &state) {
+  if (state.row.empty()) return;
+  uint32_t length = static_cast<uint32_t>(state.row.size());
+  uint64_t offset = tx_.spool->append(state.row);
+  state.spool = tx_.spool;
+  state.spool_offset = offset;
+  state.spool_size = length;
+  tx_.encode_buffer.swap(state.row);
+  std::vector<uint8_t>().swap(state.row);
+}
+
+void Engine::spill_state(Table &table, RowState &state) {
+  if (state.deleted) return;
+  if (!state.patches.empty()) {
+    std::vector<uint8_t> materialized;
+    materialized.swap(tx_.encode_buffer);
+    table.materialize_state(state,nullptr,materialized);
+    state.row=std::move(materialized);
+    state.spool.reset();state.spool_size=0;
+    state.patches.clear();
+  }
+  spill_row(state);
+}
+
+void Engine::store_row(Table &table, TxTable &changes, int64_t pk, RowState state) {
+  auto old = changes.rows.find(pk);
+  if (statement_undo_)
+    statement_undo_->rows.push_back(UndoRow{table.id(), pk, old != changes.rows.end(),
+        old == changes.rows.end() ? RowState{} : old->second});
+  size_t previous = old == changes.rows.end() ? 0 : old->second.row.size();
+  if (!tx_.spool && tx_.resident_payload - previous + state.row.size() + tx_.patch_budget->bytes > tx_memory_) {
+    tx_.spool = std::make_shared<TxSpool>(data_dir_ + "/txn.tmp");
+    for (auto &entry : tx_.tables) for (auto &row : entry.second.rows) {
+      size_t bytes = row.second.row.size();
+      spill_state(*tables_.at(entry.first),row.second);
+      tx_.resident_payload -= bytes;
+    }
+    previous = 0;
+  }
+  if (tx_.spool) spill_state(table,state);
+  tx_.resident_payload = tx_.resident_payload - previous + state.row.size();
+  changes.rows[pk] = std::move(state);
+}
+
+void Engine::rollback_statement(StatementUndo &undo) {
+  for (auto it = undo.rows.rbegin(); it != undo.rows.rend(); ++it) {
+    auto &rows = tx_.tables.at(it->table).rows;
+    if (it->existed) rows[it->pk] = std::move(it->before);
+    else rows.erase(it->pk);
+  }
+  for (const auto &entry : undo.tables) {
+    if (entry.second.existed) tx_.tables.at(entry.first).next_pos = entry.second.next_pos;
+    else tx_.tables.erase(entry.first);
+  }
+  if (tx_.spool && !undo.had_spool) {
+    // Keep migrated earlier work on disk. Reifying wide UPDATE rows could
+    // otherwise expand a small patch budget into an entire table in RAM.
+    uint64_t retained=0;
+    for (const auto &entry:tx_.tables) for (const auto &row:entry.second.rows)
+      if (row.second.spool_size) retained=std::max(retained,row.second.spool_offset+row.second.spool_size);
+    if (retained) tx_.spool->truncate(retained);
+    else tx_.spool.reset();
+  } else if (tx_.spool) tx_.spool->truncate(undo.spool_end);
+  tx_.resident_payload = 0;
+  for (const auto &entry : tx_.tables) for (const auto &row : entry.second.rows)
+    tx_.resident_payload += row.second.row.size();
+}
 
 const TxTable *Engine::find_tx_table(uint32_t table_id) const {
   auto it = tx_.tables.find(table_id);
@@ -1064,15 +1154,21 @@ Response Engine::execute(const std::string &sql) {
       tx_.clear();
       tx_.active = true;
     }
-    Transaction backup;
-    if (!autocommit) backup = tx_;
+    StatementUndo undo;
+    if (!autocommit) {
+      undo.had_spool = static_cast<bool>(tx_.spool);
+      if (tx_.spool) undo.spool_end = tx_.spool->size();
+      statement_undo_ = &undo;
+    }
     try {
       Response r = fn();
+      statement_undo_ = nullptr;
       if (autocommit) commit_transaction();
       return r;
     } catch (...) {
+      statement_undo_ = nullptr;
       if (autocommit) tx_.clear();
-      else tx_ = std::move(backup);
+      else rollback_statement(undo);
       throw;
     }
   };
@@ -1181,6 +1277,7 @@ Response Engine::exec_drop_table(DropTableStmt &stmt) {
   uint32_t id = table->id();
   std::string path = table->data_path();
   std::string lower = lower_copy(table->name());
+  drop_vector_index(*table);
   cache_.drop_table(id);
   tables_.erase(id);
   table_ids_.erase(lower);
@@ -1204,6 +1301,7 @@ Response Engine::exec_create_vector_index(CreateVectorIndexStmt &stmt) {
     throw_error("INVALID_ARGUMENT", "vector index requires a VECTOR column");
   table.schema().vector_index_created = true;
   save_catalog();
+  rebuild_vector_index(table);
   return Response{};
 }
 
@@ -1271,7 +1369,9 @@ Response Engine::exec_insert(InsertStmt &stmt) {
   for (const auto &values : stmt.rows) {
     if (values.size() != target_cols.size())
       throw_error("INVALID_VALUE", "column count does not match values");
-    std::vector<uint8_t> row(schema.row_size, 0);
+    std::vector<uint8_t> row;
+    if (tx_.spool) row.swap(tx_.encode_buffer);
+    row.assign(schema.row_size,0);
     table.set_row_valid(row.data(), true);
     // Validate/encode every provided value.  Missing columns stay zero; we
     // require every column to be provided except when a column list is used
@@ -1302,9 +1402,12 @@ Response Engine::exec_insert(InsertStmt &stmt) {
       if (!tx_it->second.deleted)
         throw_error("DUPLICATE_KEY", "duplicate primary key: " + std::to_string(pk));
       // Insert after delete: reuse the existing slot.
-      tx_it->second.deleted = false;
-      tx_it->second.row = std::move(row);
-      tx_it->second.patches.clear();
+      RowState state = tx_it->second;
+      state.deleted = false;
+      state.row = std::move(row);
+      state.spool.reset(); state.spool_size = 0;
+      state.patches.clear();
+      store_row(table, tx_table, pk, std::move(state));
       ++affected;
       continue;
     }
@@ -1316,7 +1419,7 @@ Response Engine::exec_insert(InsertStmt &stmt) {
     state.deleted = false;
     state.pos = tx_table.next_pos++;
     state.row = std::move(row);
-    tx_table.rows[pk] = std::move(state);
+    store_row(table, tx_table, pk, std::move(state));
     ++affected;
   }
   Response resp;
@@ -1334,6 +1437,28 @@ void Engine::for_each_visible(
   const TableSchema &schema = table.schema();
   const TxTable *tx_table = find_tx_table(table.id());
   std::vector<uint8_t> materialized;
+  for (const auto &condition : where) {
+    if (condition.resolved_column != schema.pk_index || condition.op != CompareOp::EQ) continue;
+    int64_t pk = condition.typed_value.i;
+    uint64_t pos = 0;
+    bool overlay = false;
+    if (tx_table) {
+      auto entry = tx_table->rows.find(pk);
+      if (entry != tx_table->rows.end()) {
+        if (entry->second.deleted) return;
+        table.materialize_state(entry->second, nullptr, materialized);
+        pos = entry->second.pos;
+        overlay = true;
+      }
+    }
+    if (!overlay && (!table.find_pk(pk, pos) || !table.read_row(pos, materialized))) return;
+    if (row_matches(table, materialized.data(), where)) {
+      VisibleRow row;
+      row.row = materialized.data(); row.pk = pk; row.pos = pos; row.from_overlay = overlay;
+      visit(row);
+    }
+    return;
+  }
   for (uint32_t p = 0; p < table.page_count(); ++p) {
     auto page = table.get_page(p);
     if (page->magic != kPageMagic) continue;
@@ -1371,8 +1496,14 @@ void Engine::for_each_visible(
     }
   }
   if (tx_table) {
-    for (const auto &kv : tx_table->rows) {
-      const RowState &state = kv.second;
+    std::vector<std::pair<int64_t, const RowState *>> inserted;
+    for (const auto &entry : tx_table->rows)
+      if (!entry.second.deleted && !entry.second.existed) inserted.emplace_back(entry.first, &entry.second);
+    if (tx_.spool) std::sort(inserted.begin(), inserted.end(), [](const auto &a, const auto &b) {
+      return a.second->pos < b.second->pos;
+    });
+    for (const auto &entry : inserted) {
+      const RowState &state = *entry.second;
       if (state.deleted || state.existed) continue;
       table.materialize_state(state, nullptr, materialized);
       bool match = true;
@@ -1386,7 +1517,7 @@ void Engine::for_each_visible(
       VisibleRow vr;
       vr.row = materialized.data();
       vr.page = nullptr;
-      vr.pk = kv.first;
+      vr.pk = entry.first;
       vr.pos = state.pos;
       vr.from_overlay = true;
       if (!visit(vr)) return;
@@ -1443,6 +1574,32 @@ double squared_l2_checked(const float *a, const float *b, int dim) {
   if (has_avx2) return squared_l2_avx2(a, b, dim);
 #endif
   return squared_l2_scalar(a, b, dim);
+}
+
+#if defined(__x86_64__) || defined(_M_X64)
+__attribute__((target("avx2,fma"))) float squared_l2_float_avx(const float *a,const float *b,int dim) {
+  __m256 sum=_mm256_setzero_ps();
+  int i=0;
+  for (;i+8<=dim;i+=8) {
+    __m256 difference=_mm256_sub_ps(_mm256_loadu_ps(a+i),_mm256_loadu_ps(b+i));
+    sum=_mm256_fmadd_ps(difference,difference,sum);
+  }
+  float lanes[8];_mm256_storeu_ps(lanes,sum);
+  float total=0;
+  for (float lane:lanes) total+=lane;
+  for (;i<dim;++i) {float d=a[i]-b[i];total+=d*d;}
+  return total;
+}
+#endif
+double squared_l2_approximate(const float *a,const float *b,int dim) {
+  float total=0;
+#if defined(__x86_64__) || defined(_M_X64)
+  static const bool fast=__builtin_cpu_supports("avx2")&&__builtin_cpu_supports("fma");
+  if (fast) total=squared_l2_float_avx(a,b,dim);
+  else
+#endif
+    for (int i=0;i<dim;++i) {float d=a[i]-b[i];total+=d*d;}
+  return total>0&&std::isfinite(total) ? static_cast<double>(total) : squared_l2_checked(a,b,dim);
 }
 
 // Promote stored float32 values before subtraction and squaring. All finite
@@ -1513,6 +1670,94 @@ struct CandidateHeap {
   }
 };
 }  // namespace
+
+void Engine::drop_vector_index(Table &table) {
+  vector_search_bytes_ -= table.vector_search_bytes_;
+  table.vector_search_bytes_ = 0;
+  table.vector_search_.reset();
+}
+
+void Engine::rebuild_vector_index(Table &table) {
+  drop_vector_index(table);
+  table.vector_search_unavailable_ = false;
+  const auto &schema = table.schema();
+  if (!schema.vector_index_created || schema.vector_index < 0 || tx_.active) return;
+  try {
+    auto index = std::make_unique<VectorIndex>(schema.columns[schema.vector_index].dim,
+        schema.col_offsets[schema.vector_index], schema.columns, schema.col_offsets,
+        squared_l2_approximate, table.row_count(), ann_min_rows_);
+    size_t charge = index->estimate(table.row_count());
+    if (charge > kVectorIndexBudget - vector_search_bytes_) {
+      index = std::make_unique<VectorIndex>(schema.columns[schema.vector_index].dim,
+          schema.col_offsets[schema.vector_index], schema.columns, schema.col_offsets,
+          squared_l2_approximate, table.row_count(), ann_min_rows_, false);
+      charge=index->estimate(table.row_count());
+    }
+    if (charge > kVectorIndexBudget - vector_search_bytes_) {
+      table.vector_search_unavailable_ = true;
+      return;
+    }
+    index->reserve(table.row_count());
+    for_each_visible(table, {}, [&](const VisibleRow &row) {
+      index->upsert(row.pk, row.pos, row.row);
+      return true;
+    });
+    table.vector_search_bytes_ = charge;
+    vector_search_bytes_ += charge;
+    table.vector_search_ = std::move(index);
+  } catch (const std::bad_alloc &) {
+    table.vector_search_unavailable_ = true;
+  }
+}
+
+void Engine::update_vector_index(Table &table, const TxTable &changes) {
+  auto *index = table.vector_search_.get();
+  if (!index) return;
+  if (changes.rows.size()>4096) {
+    bool rebuild=false;
+    for (const auto &entry:changes.rows) {
+      const auto &state=entry.second;
+      rebuild=rebuild||state.deleted||state.has_raw_row();
+      for (const auto &patch:state.patches) for (const auto &change:*patch)
+        rebuild=rebuild||change.first==table.schema().vector_index||index->relevant_column(change.first);
+      if (rebuild) break;
+    }
+    if (rebuild) {
+      drop_vector_index(table);
+      table.vector_search_unavailable_=false;
+      return;
+    }
+  }
+  try {
+    for (const auto &entry : changes.rows) {
+      const RowState &state = entry.second;
+      if (state.deleted) { index->erase(entry.first); continue; }
+      bool relevant = state.has_raw_row();
+      for (const auto &patch : state.patches)
+        for (const auto &change : *patch)
+          relevant = relevant || change.first == table.schema().vector_index || index->relevant_column(change.first);
+      if (!relevant) continue;
+      size_t charge = index->estimate(index->count() + 1);
+      if (charge > kVectorIndexBudget - vector_search_bytes_ + table.vector_search_bytes_) {
+        drop_vector_index(table);
+        table.vector_search_unavailable_ = true;
+        return;
+      }
+      std::vector<uint8_t> row;
+      if (!table.read_row(state.pos, row)) throw_error("CORRUPTION", "committed index row missing");
+      index->upsert(entry.first, state.pos, row.data());
+      vector_search_bytes_ = vector_search_bytes_ - table.vector_search_bytes_ + charge;
+      table.vector_search_bytes_ = charge;
+    }
+    if (index->needs_compaction()) {
+      drop_vector_index(table);
+      table.vector_search_unavailable_ = false;  // Rebuild after the transaction has cleared.
+    }
+  } catch (const std::bad_alloc &) {
+    drop_vector_index(table);
+    table.vector_search_unavailable_ = true;
+  }
+}
 
 std::string Engine::format_vector(const float *v, int dim) const {
   std::string out = "[";
@@ -1731,6 +1976,9 @@ Response Engine::exec_select(SelectStmt &stmt) {
       return table.read_row(candidate.pos, row);
     };
     auto refine = [&](const Candidate &candidate) {
+      uint32_t cached=0;
+      if (!tx_.active && table.vector_search_ && table.vector_search_->find(candidate.pk,cached))
+        return squared_l2_precise(table.vector_search_->vector(cached),topk_query_vec.data(),schema.columns[topk_vector_column].dim);
       std::vector<uint8_t> row;
       if (!load_candidate(candidate, row))
         throw_error("CORRUPTION", "TopK candidate row missing");
@@ -1754,7 +2002,51 @@ Response Engine::exec_select(SelectStmt &stmt) {
       heap.uncertainty_ulps = 16 * (static_cast<uint64_t>(schema.columns[topk_vector_column].dim) + 1);
       heap.refine = refine;
     }
-    if (tx_.active) {
+    if (!tx_.active && table.schema().vector_index_created && !table.vector_search_ &&
+        !table.vector_search_unavailable_) rebuild_vector_index(table);
+    auto *index = table.vector_search_.get();
+    if (!tx_.active && index && index->supports(stmt.where)) {
+      bool approximate = false;
+      if (ann_mode_ && stmt.where.empty() && index->approximate_available(static_cast<size_t>(topk))) {
+        auto hits=index->search(topk_query_vec.data(),static_cast<size_t>(topk));
+        for (auto &hit:hits) hit.distance=squared_l2_checked(index->vector(hit.node),topk_query_vec.data(),schema.columns[topk_vector_column].dim);
+        std::sort(hits.begin(),hits.end(),[&](const auto&a,const auto&b){
+          return a.distance!=b.distance ? a.distance<b.distance : index->node(a.node).pk<index->node(b.node).pk;
+        });
+        hits.erase(std::remove_if(hits.begin(), hits.end(), [&](const VectorIndex::Hit &hit) {
+          return !index->node(hit.node).active;
+        }), hits.end());
+        // Dense ties need all eligible IDs to enforce the canonical PK order.
+        if (hits.size() > static_cast<size_t>(topk)) {
+          uint64_t first, second;
+          std::memcpy(&first, &hits[static_cast<size_t>(topk)-1].distance, 8);
+          std::memcpy(&second, &hits[static_cast<size_t>(topk)].distance, 8);
+          uint64_t gap = first > second ? first-second : second-first;
+          approximate = gap > heaps[0].uncertainty_ulps;
+        }
+        if (approximate) for (const auto &hit : hits) {
+          const auto &node = index->node(hit.node);
+          heaps[0].push(hit.distance, node.pk, node.pos);
+        }
+      }
+      if (!approximate) {
+#ifdef _OPENMP
+#pragma omp parallel for num_threads(thread_count) schedule(static)
+#endif
+        for (int64_t i = 0; i < static_cast<int64_t>(index->count()); ++i) {
+          uint32_t id = static_cast<uint32_t>(i);
+          if (!index->matches(id, stmt.where)) continue;
+          int tid = 0;
+#ifdef _OPENMP
+          tid = omp_get_thread_num();
+#endif
+          const auto &node = index->node(id);
+          heaps[static_cast<size_t>(tid)].push(squared_l2_checked(index->vector(id),
+              topk_query_vec.data(), schema.columns[topk_vector_column].dim), node.pk, node.pos);
+        }
+        for (size_t t = 1; t < heaps.size(); ++t) heaps[0].merge(heaps[t]);
+      }
+    } else if (tx_.active) {
       for_each_visible(table, stmt.where, [&](const VisibleRow &vr) {
         const uint8_t *base = vr.row + schema.col_offsets[topk_vector_column];
         const float *vec = reinterpret_cast<const float *>(base);
@@ -1820,6 +2112,30 @@ Response Engine::exec_select(SelectStmt &stmt) {
     std::sort(finalists.begin(), finalists.end(),
               [&](const Candidate &a, const Candidate &b) { return heaps[0].less(a, b); });
     for (const auto &c : finalists) {
+      uint32_t cached=0;
+      bool covered=!tx_.active&&index&&index->find(c.pk,cached);
+      for (const auto &plan:plans)
+        covered=covered&&(plan.is_distance||plan.column_index==schema.vector_index||index->relevant_column(plan.column_index));
+      if (covered) {
+        std::vector<OutValue> values;
+        for (const auto &plan:plans) {
+          OutValue value;
+          if (plan.is_distance) {
+            value.kind=OutValue::Kind::DOUBLE;
+            value.d=std::sqrt(squared_l2_checked(index->vector(cached),plan.query_vec.data(),schema.columns[plan.vector_column].dim));
+          } else if (plan.column_index==schema.vector_index) {
+            value.kind=OutValue::Kind::VECTOR;
+            value.vec.assign(index->vector(cached),index->vector(cached)+schema.columns[plan.column_index].dim);
+          } else if (schema.columns[plan.column_index].type==ColumnType::BIGINT) {
+            value.kind=OutValue::Kind::INT;value.i=index->integer(cached,plan.column_index);
+          } else {
+            value.kind=OutValue::Kind::STRING;value.s=index->string(cached,plan.column_index);
+          }
+          values.push_back(std::move(value));
+        }
+        resp.rows.push_back(std::move(values));
+        continue;
+      }
       std::vector<uint8_t> row;
       if (!load_candidate(c, row)) continue;
       resp.rows.push_back(project_row(row.data()));
@@ -1948,6 +2264,7 @@ Response Engine::exec_update(UpdateStmt &stmt) {
     table.encode_value(validation_row.data(), ci, v);
     patch->emplace_back(ci, std::move(v));
   }
+  auto tracked_patch=tx_.track_patch(std::move(*patch));
   TxTable &tx_table = tx_table_ref(table.id());
   int64_t matched = 0;
   for_each_visible(table, stmt.where, [&](const VisibleRow &vr) {
@@ -1960,8 +2277,22 @@ Response Engine::exec_update(UpdateStmt &stmt) {
       state.pos = vr.pos;
     }
     state.deleted = false;
-    state.patches.push_back(patch);
-    tx_table.rows[vr.pk] = std::move(state);
+    state.patches.push_back(tracked_patch);
+    if (state.patches.size()>1) {
+      std::vector<int> covered;
+      std::vector<std::shared_ptr<const RowPatch>> kept;
+      for (auto candidate=state.patches.rbegin();candidate!=state.patches.rend();++candidate) {
+        bool needed=false;
+        for (const auto &change:**candidate)
+          needed=needed||std::find(covered.begin(),covered.end(),change.first)==covered.end();
+        if (!needed) continue;
+        kept.push_back(*candidate);
+        for (const auto &change:**candidate)
+          if (std::find(covered.begin(),covered.end(),change.first)==covered.end()) covered.push_back(change.first);
+      }
+      std::reverse(kept.begin(),kept.end());state.patches=std::move(kept);
+    }
+    store_row(table, tx_table, vr.pk, std::move(state));
     ++matched;
     return true;
   });
@@ -1987,8 +2318,9 @@ Response Engine::exec_delete(DeleteStmt &stmt) {
     }
     state.deleted = true;
     state.row = {};  // A tombstone needs identity/position, not a full record.
+    state.spool.reset(); state.spool_size = 0;
     state.patches.clear();
-    tx_table.rows[vr.pk] = std::move(state);
+    store_row(table, tx_table, vr.pk, std::move(state));
     ++matched;
     return true;
   });

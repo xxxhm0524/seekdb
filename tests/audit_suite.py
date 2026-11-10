@@ -29,6 +29,8 @@ def main():
         ('vector-precision',['tests/vector_precision_model.py']),
         ('resource',['tests/resource_boundaries.py']),
         ('cache-coherence',['tests/cache_coherence.py']),
+        ('transaction-spill',['tests/transaction_spill.py']),
+        ('ann-lifecycle',['tests/ann_lifecycle.py']),
         ('regression',['tests/regression.py']),
         ('recovery',['tests/crash_recovery_test.py','50000']),
         ('commit-crash',['tests/commit_crash_boundaries.py']),

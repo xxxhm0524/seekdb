@@ -407,7 +407,7 @@ class FileHandle {
 
   // Only call after syncing the corresponding writes. Clean WAL cache pages
   // are redundant with our bounded buffers and count toward cgroup memory.
-  void discard_clean_cache(uint64_t offset, uint64_t length) {
+  void discard_clean_cache(uint64_t offset, uint64_t length) const {
 #ifdef __linux__
     long page_bytes = ::sysconf(_SC_PAGESIZE);
     if (page_bytes <= 0) return;

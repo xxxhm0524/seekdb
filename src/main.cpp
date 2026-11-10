@@ -395,6 +395,8 @@ struct Options {
   std::string data_dir = "/data";
   int query_threads = 2;
   int cache_mb = 64;
+  int tx_memory_mb = 8;
+  int ann_min_rows = 40000;
   bool ann_default = false;
 };
 
@@ -405,6 +407,8 @@ Options parse_options(int argc, char **argv) {
   else if (const char *env = std::getenv("MVDB_DATA_DIR")) opt.data_dir = env;
   if (const char *env = std::getenv("MVD_QUERY_THREADS")) opt.query_threads = std::atoi(env);
   if (const char *env = std::getenv("MVD_CACHE_MB")) opt.cache_mb = std::atoi(env);
+  if (const char *env = std::getenv("MVD_TX_MEMORY_MB")) opt.tx_memory_mb = std::atoi(env);
+  if (const char *env = std::getenv("MVD_ANN_MIN_ROWS")) opt.ann_min_rows = std::atoi(env);
   if (const char *env = std::getenv("MVD_VECTOR_MODE")) {
     std::string m = env;
     opt.ann_default = (m == "ann" || m == "approximate");
@@ -425,6 +429,10 @@ Options parse_options(int argc, char **argv) {
     else if (arg == "--query-threads" && i + 1 < argc) opt.query_threads = std::atoi(argv[++i]);
     else if (take("--cache-mb=", v)) opt.cache_mb = std::atoi(v.c_str());
     else if (arg == "--cache-mb" && i + 1 < argc) opt.cache_mb = std::atoi(argv[++i]);
+    else if (take("--tx-memory-mb=", v)) opt.tx_memory_mb = std::atoi(v.c_str());
+    else if (arg == "--tx-memory-mb" && i + 1 < argc) opt.tx_memory_mb = std::atoi(argv[++i]);
+    else if (take("--ann-min-rows=", v)) opt.ann_min_rows = std::atoi(v.c_str());
+    else if (arg == "--ann-min-rows" && i + 1 < argc) opt.ann_min_rows = std::atoi(argv[++i]);
     else if (take("--vector-mode=", v)) opt.ann_default = (v == "ann" || v == "approximate");
     else if (arg == "--vector-mode" && i + 1 < argc) {
       opt.ann_default = (std::string(argv[i + 1]) == "ann" ||
@@ -443,7 +451,7 @@ Options parse_options(int argc, char **argv) {
     } else if (arg == "--help" || arg == "-h") {
       std::fprintf(stderr,
                    "minivectordb [--data-dir=/data] [--query-threads=N] "
-                   "[--cache-mb=N] [--vector-mode=exact|ann]\n");
+                   "[--cache-mb=N] [--tx-memory-mb=N] [--ann-min-rows=N] [--vector-mode=exact|ann]\n");
       std::exit(0);
     }
   }
@@ -451,6 +459,8 @@ Options parse_options(int argc, char **argv) {
   // JSONL judge protocol.
   if (opt.query_threads < 1) opt.query_threads = 1;
   if (opt.cache_mb < 1) opt.cache_mb = 1;
+  if (opt.tx_memory_mb < 1) opt.tx_memory_mb = 1;
+  if (opt.ann_min_rows < 1) opt.ann_min_rows = 1;
   return opt;
 }
 
@@ -468,7 +478,8 @@ int main(int argc, char **argv) {
     size_t cache_pages =
         static_cast<size_t>(opt.cache_mb) * 1024 * 1024 / mvd::kPageSize;
     if (cache_pages < 8) cache_pages = 8;
-    mvd::Engine engine(opt.data_dir, cache_pages);
+    mvd::Engine engine(opt.data_dir, cache_pages, static_cast<size_t>(opt.tx_memory_mb)*1024*1024,
+        static_cast<size_t>(opt.ann_min_rows));
     engine.open();
     if (opt.ann_default) engine.set_ann_mode(true);
 
