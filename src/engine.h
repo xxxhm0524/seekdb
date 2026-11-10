@@ -56,10 +56,11 @@ struct alignas(4096) Page {
 };
 
 struct OutValue {
-  enum class Kind { INT, DOUBLE, STRING } kind = Kind::INT;
+  enum class Kind { INT, DOUBLE, STRING, VECTOR } kind = Kind::INT;
   int64_t i = 0;
   double d = 0;
   std::string s;
+  std::vector<float> vec;
 };
 
 struct Response {

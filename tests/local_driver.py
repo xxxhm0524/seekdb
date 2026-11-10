@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
-"""Local MiniVectorDB test driver for the public round2 samples (JSON protocol)."""
+"""Local driver for the public MiniVectorDB package (JSONL judge protocol)."""
 import argparse
 import json
 import math
 import os
 import shutil
-import subprocess
 import sys
 import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-BINARY = os.path.join(os.path.dirname(HERE), "minivectordb")
-if not os.path.exists(BINARY):
-    BINARY = os.path.join(os.path.dirname(HERE), "minivectordb.exe")
+ROOT = os.path.dirname(HERE)
+sys.path.insert(0, HERE)
+from protocol_client import Client, DEFAULT_BINARY  # noqa: E402
 
 
 def close_enough(a, b):
@@ -22,45 +21,45 @@ def close_enough(a, b):
         if isinstance(a, int) and isinstance(b, int):
             return a == b
         return math.isclose(float(a), float(b), rel_tol=1e-5, abs_tol=1e-5)
-    return a == b
+    return type(a) is type(b) and a == b
 
 
 def row_equal(a, b):
-    if len(a) != len(b):
-        return False
-    return all(close_enough(x, y) for x, y in zip(a, b))
+    return len(a) == len(b) and all(close_enough(x, y) for x, y in zip(a, b))
 
 
-def compare_case(expected, actual):
+def compare_case(expected, response):
     if "error" in expected:
-        if "error" not in actual:
-            return f"expected error {expected['error']!r}, got {actual}"
-        if actual.get("error") != expected["error"]:
-            return f"error: expected {expected['error']!r}, got {actual.get('error')!r}"
+        if response.get("ok") is not False:
+            return f"expected error {expected['error']!r}, got {response}"
+        code = response.get("error", {}).get("code")
+        if not isinstance(code, str) or not code:
+            return f"missing error.code: {response}"
+        if code != expected["error"]:
+            return f"error: expected {expected['error']!r}, got {code!r}"
         return None
-    if "error" in actual:
-        return f"unexpected error: {actual}"
+    if response.get("ok") is not True:
+        return f"unexpected error: {response}"
     if "affected_rows" in expected:
-        if actual.get("affected_rows") != expected["affected_rows"]:
-            return f"affected_rows: expected {expected['affected_rows']}, got {actual.get('affected_rows')}"
+        if response.get("affected_rows") != expected["affected_rows"]:
+            return (f"affected_rows: expected {expected['affected_rows']}, "
+                    f"got {response.get('affected_rows')}")
     if "columns" in expected:
-        if actual.get("columns") != expected["columns"]:
-            return f"columns: expected {expected['columns']}, got {actual.get('columns')}"
+        if response.get("columns") != expected["columns"]:
+            return f"columns: expected {expected['columns']}, got {response.get('columns')}"
         erows = expected.get("rows", [])
-        arows = actual.get("rows", [])
+        arows = response.get("rows", [])
         if expected.get("unordered"):
             if len(erows) != len(arows):
                 return f"row count: expected {len(erows)}, got {len(arows)}"
-            used = [False] * len(arows)
+            remaining = list(arows)
             for er in erows:
-                found = False
-                for i, ar in enumerate(arows):
-                    if not used[i] and row_equal(er, ar):
-                        used[i] = True
-                        found = True
-                        break
-                if not found:
+                index = next((i for i, ar in enumerate(remaining) if row_equal(er, ar)), None)
+                if index is None:
                     return f"row not found: {er}; actual={arows}"
+                remaining.pop(index)
+            if remaining:
+                return f"unexpected rows: {remaining}"
         else:
             if len(erows) != len(arows):
                 return f"row count: expected {len(erows)}, got {len(arows)}"
@@ -70,119 +69,89 @@ def compare_case(expected, actual):
     return None
 
 
-class Engine:
-    def __init__(self, binary, datadir, args):
-        self.p = subprocess.Popen(
-            [binary, "--data-dir=" + datadir, "--output=json"] + args,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            encoding="utf-8",
-            bufsize=1,
-        )
-
-    def request(self, sql, timeout=None):
-        if self.p.poll() is not None:
-            raise RuntimeError("engine exited: " + self.p.stderr.read())
-        self.p.stdin.write(sql + "\n")
-        self.p.stdin.flush()
-        line = self.p.stdout.readline()
-        if not line:
-            raise RuntimeError("engine closed stdout; stderr=" + self.p.stderr.read())
-        try:
-            return json.loads(line)
-        except json.JSONDecodeError as e:
-            raise RuntimeError(f"bad JSON response {line!r}: {e}")
-
-    def close(self):
-        try:
-            self.p.stdin.close()
-        except Exception:
-            pass
-        try:
-            self.p.wait(timeout=10)
-        except subprocess.TimeoutExpired:
-            self.p.kill()
-            self.p.wait()
-
-    def kill(self):
-        self.p.kill()
-        self.p.wait()
+def load_manifest(path):
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
 
 
-def run_case(binary, case_name, verbose):
-    case_dir = HERE
-    manifest = json.load(open(os.path.join(case_dir, "manifest_new.json"), encoding="utf-8"))
+def run_case(binary, case_name, verbose, package=None):
+    package = package or os.path.join(ROOT, "mysqltest")
+    manifest = load_manifest(os.path.join(package, "manifest.json"))
     entry = next(c for c in manifest["cases"] if c["id"] == case_name)
-    test_path = os.path.join(case_dir, "newcases", os.path.basename(entry.get("test", case_name + ".test")))
-    result_path = os.path.join(case_dir, "newcases", os.path.basename(entry.get("result", case_name + ".result")))
+    test_path = os.path.join(package, entry["test"])
+    result_path = os.path.join(package, entry["result"])
     with open(test_path, encoding="utf-8") as f:
         lines = [ln.strip() for ln in f if ln.strip()]
     with open(result_path, encoding="utf-8") as f:
         expected = json.load(f)
     if len(expected) != entry["statements"]:
         return [f"case {case_name}: manifest statements {entry['statements']} vs {len(expected)} expectations"]
+
     base = tempfile.mkdtemp(prefix="mvd_")
     datadir = os.path.join(base, "data")
     os.makedirs(datadir)
-    eng = Engine(binary, datadir, [])
+    client = Client(binary, datadir)
     failures = []
-    idx = 0
+    idx, mode = 0, "exact"
     try:
-        for raw in lines:
-            line = raw.strip()
+        for line_number, line in enumerate(lines, 1):
+            if line.startswith("#") or not line:
+                continue
             if line == "--restart":
-                eng.close()
-                eng = Engine(binary, datadir, [])
+                client.shutdown()
+                client = Client(binary, datadir)
                 continue
-            if line.startswith("--mode"):
-                # Directive: mode ann|exact.  Use an SQL setter so it is not counted.
-                mode = line.split()[-1]
-                eng.request("SET vector_mode = %s;" % mode)
+            if line in ("--mode exact", "--mode ann"):
+                mode = line.split()[1]
                 continue
-            if line.startswith("--") or line.startswith("#"):
-                continue
+            if line.startswith("--"):
+                failures.append(f"{case_name}: unsupported directive {line!r}")
+                break
             if idx >= len(expected):
                 failures.append(f"{case_name}: extra statement {line!r}")
                 break
-            exp = expected[idx]
             try:
-                actual = eng.request(line)
-            except Exception as e:
-                failures.append(f"{case_name}[{idx}] {line}: {e}")
+                response = client.request(line, mode)
+            except Exception as exc:
+                failures.append(f"{case_name}[{idx}] {line}: {exc}")
                 break
-            err = compare_case(exp, actual)
-            if err:
-                failures.append(f"{case_name}[{idx}] {line}: {err}")
+            error = compare_case(expected[idx], response)
+            if error:
+                failures.append(f"{case_name}[{idx}] line {line_number} {line}: {error}")
             elif verbose:
                 print(f"  ok {idx}: {line}")
             idx += 1
         if idx != len(expected):
             failures.append(f"{case_name}: executed {idx} statements, expected {len(expected)}")
-        eng.close()
+        client.shutdown()
     finally:
+        try:
+            client.close()
+        except Exception:
+            pass
         if verbose and failures:
             print(f"  data dir kept: {datadir}")
         else:
             shutil.rmtree(base, ignore_errors=True)
     return failures
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--binary", default=BINARY)
-    ap.add_argument("--case", default="")
-    ap.add_argument("--verbose", action="store_true")
-    args = ap.parse_args()
-    manifest = json.load(open(os.path.join(HERE, "manifest_new.json"), encoding="utf-8"))
+
+def main(argv=None):
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--binary", default=DEFAULT_BINARY)
+    parser.add_argument("--case", default="")
+    parser.add_argument("--package", default=os.path.join(ROOT, "mysqltest"))
+    parser.add_argument("--verbose", action="store_true")
+    args = parser.parse_args(argv)
+    manifest = load_manifest(os.path.join(args.package, "manifest.json"))
     cases = [args.case] if args.case else [c["id"] for c in manifest["cases"]]
     all_failures = []
-    for c in cases:
-        print(f"=== {c} ===")
-        failures = run_case(args.binary, c, args.verbose)
+    for case_name in cases:
+        print(f"=== {case_name} ===")
+        failures = run_case(args.binary, case_name, args.verbose, args.package)
         all_failures.extend(failures)
-        for f in failures:
-            print("FAIL:", f)
+        for failure in failures:
+            print("FAIL:", failure)
         if not failures:
             print("PASS")
     if all_failures:

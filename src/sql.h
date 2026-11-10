@@ -117,11 +117,13 @@ struct CreateTableStmt : Statement {
   std::string table;
   std::vector<ColumnDef> columns;
   std::string primary_key;  // column name
+  bool if_not_exists = false;
 };
 
 struct DropTableStmt : Statement {
   DropTableStmt() { kind = Kind::DROP_TABLE; }
   std::string table;
+  bool if_exists = false;
 };
 
 struct CreateVectorIndexStmt : Statement {
@@ -129,6 +131,7 @@ struct CreateVectorIndexStmt : Statement {
   std::string index_name;
   std::string table;
   std::string column;
+  bool if_not_exists = false;
 };
 
 struct InsertStmt : Statement {

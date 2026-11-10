@@ -203,8 +203,9 @@ std::unique_ptr<Statement> SqlParser::parse() {
       if (!consume_keyword("index")) syntax_error("expected INDEX");
       auto s = std::make_unique<CreateVectorIndexStmt>();
       if (accept_keyword("if")) {
-        accept_keyword("not");
-        accept_keyword("exists");
+        if (!consume_keyword("not")) syntax_error("expected NOT");
+        if (!consume_keyword("exists")) syntax_error("expected EXISTS");
+        s->if_not_exists = true;
       }
       s->index_name = expect_ident();
       if (!consume_keyword("on")) syntax_error("expected ON");
@@ -222,7 +223,8 @@ std::unique_ptr<Statement> SqlParser::parse() {
     if (!consume_keyword("table")) syntax_error("expected TABLE after DROP");
     auto s = std::make_unique<DropTableStmt>();
     if (accept_keyword("if")) {
-      accept_keyword("exists");
+      if (!consume_keyword("exists")) syntax_error("expected EXISTS");
+      s->if_exists = true;
     }
     s->table = expect_ident();
     stmt = std::move(s);
@@ -276,11 +278,12 @@ std::unique_ptr<Statement> SqlParser::parse() {
 std::unique_ptr<Statement> SqlParser::parse_create_table() {
   consume_keyword("create");
   if (!consume_keyword("table")) syntax_error("expected TABLE");
+  auto stmt = std::make_unique<CreateTableStmt>();
   if (accept_keyword("if")) {
     if (!consume_keyword("not")) syntax_error("expected NOT");
     if (!consume_keyword("exists")) syntax_error("expected EXISTS");
+    stmt->if_not_exists = true;
   }
-  auto stmt = std::make_unique<CreateTableStmt>();
   stmt->table = expect_ident();
   expect_symbol('(');
   size_t start_index = index_;

@@ -947,8 +947,10 @@ Response Engine::execute(const std::string &sql) {
 // ---------------------------------------------------------------------------
 Response Engine::exec_create_table(CreateTableStmt &stmt) {
   std::string lower = lower_copy(stmt.table);
-  if (table_ids_.count(lower))
+  if (table_ids_.count(lower)) {
+    if (stmt.if_not_exists) return Response{};
     throw_error("TABLE_EXISTS", "table already exists: " + stmt.table);
+  }
   TableSchema schema;
   schema.id = next_table_id_++;
   schema.name = stmt.table;
@@ -986,7 +988,10 @@ Response Engine::exec_create_table(CreateTableStmt &stmt) {
 
 Response Engine::exec_drop_table(DropTableStmt &stmt) {
   Table *table = find_table(stmt.table);
-  if (!table) throw_error("TABLE_NOT_FOUND", "table not found: " + stmt.table);
+  if (!table) {
+    if (stmt.if_exists) return Response{};
+    throw_error("TABLE_NOT_FOUND", "table not found: " + stmt.table);
+  }
   uint32_t id = table->id();
   std::string path = table->data_path();
   std::string lower = lower_copy(table->name());
@@ -1319,8 +1324,9 @@ OutValue Engine::out_value_from_row(const Table &table, const uint8_t *row,
     out.s.assign(reinterpret_cast<const char *>(base + 4), len);
   } else {
     const float *fv = reinterpret_cast<const float *>(base);
-    out.kind = OutValue::Kind::STRING;
-    out.s = format_vector(fv, col.dim);
+    out.kind = OutValue::Kind::VECTOR;
+    out.vec.assign(fv, fv + col.dim);
+    out.s = format_vector(fv, col.dim);  // textual form for ORDER BY fallback
   }
   return out;
 }

@@ -170,17 +170,25 @@
       "command": "官方 seekdb 2026-competition-round2 9f6df2b 的 mysqltest v4：python tests/local_driver.py",
       "output": "all 20 cases PASS; 95/95 SQL statements and expected assertions matched",
       "interpretation": "错误名、向量维度错误、重启和 ann 模式均已按 v4 断言校正；正式用例仍需平台复测。"
+    },
+    {
+      "id": "E12",
+      "origin": "tool",
+      "hypothesis": "官方 2026-11-10 在 origin/2026-competition-round2 新增的 STDIO_PROTOCOL.md 与 protocol_check 可能揭示正式判题器使用 JSONL 握手协议，而不是纯 SQL + tsv；应先核对协议再提测。",
+      "command": "git fetch origin 2026-competition-round2（f4d4e266）；阅读 STDIO_PROTOCOL.md、protocol_check/_transport.py、_assertions.py；重写 src/main.cpp 的 stdin/stdout 层；运行官方 protocol_check 与本地用例",
+      "output": "启动精确输出 {\"type\":\"ready\"}；逐行处理 execute/shutdown 请求；响应原样回传 id（保持整数类型）、ok 为布尔值，查询含 columns/rows，DML 含 affected_rows，错误含 error.code；本地公开用例 20/20、扩展语义与回归全部通过；Docker 边界由 CI 的 protocol_check 验证",
+      "interpretation": "此前四次平台提测均显示 成功 0 / 失败 1，最可能的原因就是协议层不匹配：旧实现按纯 SQL 行读取 stdin 并输出 tsv，而正式判题器发送 JSONL 请求并先等待 ready。协议对齐后，公开断言与边界语义全部通过。"
     }
   ],
   "retrospective": {
     "origin": "assistant",
     "what_worked": "固定页布局 + 页缓存让存储路径可预测；事务叠加层把语句/事务原子性简化为内存状态机；WAL 完整页镜像让崩溃恢复只需按顺序重放已提交页。",
-    "what_failed_or_cost": "最初 INSERT 忘记把主键写入行头，导致所有 SELECT 为空；第一版 DROP TABLE 没有清理页缓存，留下悬垂 owner；ORDER BY L2_DISTANCE 表达式最初未解析，后补上。",
+    "what_failed_or_cost": "最初 INSERT 忘记把主键写入行头，导致所有 SELECT 为空；第一版 DROP TABLE 没有清理页缓存，留下悬垂 owner；ORDER BY L2_DISTANCE 表达式最初未解析，后补上；最大的教训是早期按题包文件推断通信格式为纯 SQL/tsv，直到官方补充 STDIO_PROTOCOL.md 才确认正式判题器使用 JSONL 握手协议，导致此前提测全部失败。",
     "tradeoffs": "为了确保 Recall=1.0，ann 模式仍使用精确扫描，没有实现 IVF/HNSW；这牺牲了潜在近似加速，但消除了召回不达标导致性能项归零的风险。",
     "limitations": "未实现 NULL/JOIN/聚合/子查询/ALTER/主键更新；单事务叠加层驻留内存；Docker 构建已通过 GitHub Actions 验证。"
   },
   "limitations": [
-    "本题正式评测的 stdin/stdout 驱动细节需以平台题包为准；仓库 Docker 默认使用 tsv + __MVD_READY__ 标记，并支持 json/mysql/miniob 兼容输出，可通过 MVD_OUTPUT 切换。",
+    "正式评测协议以官方 STDIO_PROTOCOL.md 为准：程序启动后主动输出一行 {\"type\":\"ready\"}，随后逐行处理 execute/shutdown JSONL 请求；响应原样回传请求 id（保持 JSON 类型）并使用布尔 ok，查询返回 columns/rows，DML 返回 affected_rows，错误返回 error.code。仓库已按该协议实现，并通过官方 protocol_check 的全部公开用例；旧的 tsv/MVD_OUTPUT 说明已移除。",
     "学生侧技术判断证据不足：主要实现与验证由 assistant 完成，conversation.json 不伪造学生贡献。"
   ],
   "instances": [

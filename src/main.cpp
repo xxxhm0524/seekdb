@@ -1,4 +1,7 @@
+#include <cerrno>
+#include <cmath>
 #include <csignal>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -10,11 +13,6 @@
 #include <omp.h>
 #endif
 
-#ifndef _WIN32
-#include <poll.h>
-#include <unistd.h>
-#endif
-
 #include "common.h"
 #include "engine.h"
 
@@ -23,40 +21,6 @@ namespace {
 volatile std::sig_atomic_t g_shutdown = 0;
 
 void handle_signal(int) { g_shutdown = 1; }
-
-std::string format_json_value(const mvd::OutValue &v) {
-  switch (v.kind) {
-    case mvd::OutValue::Kind::INT:
-      return std::to_string(v.i);
-    case mvd::OutValue::Kind::DOUBLE: {
-      char buf[64];
-      std::snprintf(buf, sizeof(buf), "%.6f", v.d);
-      return std::string(buf);
-    }
-    case mvd::OutValue::Kind::STRING: {
-      std::string s = "\"";
-      mvd::json_escape_append(s, v.s);
-      s.push_back('"');
-      return s;
-    }
-  }
-  return "null";
-}
-
-std::string format_text_value(const mvd::OutValue &v) {
-  switch (v.kind) {
-    case mvd::OutValue::Kind::INT:
-      return std::to_string(v.i);
-    case mvd::OutValue::Kind::DOUBLE: {
-      char buf[64];
-      std::snprintf(buf, sizeof(buf), "%.6f", v.d);
-      return std::string(buf);
-    }
-    case mvd::OutValue::Kind::STRING:
-      return v.s;
-  }
-  return "";
-}
 
 std::string semantic_error_name(const std::string &code) {
   std::string c;
@@ -79,56 +43,300 @@ std::string semantic_error_name(const std::string &code) {
   return c;
 }
 
-void emit_response(const mvd::Response &resp, const std::string &mode,
-                   const std::string &marker) {
-  if (!resp.ok) {
-    std::string ename = semantic_error_name(resp.error_code);
-    if (mode == "json") {
-      std::string out = "{\"error\":\"";
-      mvd::json_escape_append(out, ename);
-      out += "\"}";
-      std::cout << out;
-    } else if (mode == "miniob") {
-      std::cout << "FAILURE";
-    } else {
-      std::cout << "ERROR " << ename << ": " << resp.error_message;
-    }
-    std::cout << "\n";
-    std::cout.flush();
-    if (!marker.empty()) {
-      std::cout << marker << "\n";
-      std::cout.flush();
-    }
-    return;
+// ---------------------------------------------------------------------------
+// Minimal JSON reader for one request object per line.
+// ---------------------------------------------------------------------------
+
+void append_utf8(std::string &out, uint32_t cp) {
+  if (cp <= 0x7F) {
+    out.push_back(static_cast<char>(cp));
+  } else if (cp <= 0x7FF) {
+    out.push_back(static_cast<char>(0xC0 | (cp >> 6)));
+    out.push_back(static_cast<char>(0x80 | (cp & 0x3F)));
+  } else if (cp <= 0xFFFF) {
+    out.push_back(static_cast<char>(0xE0 | (cp >> 12)));
+    out.push_back(static_cast<char>(0x80 | ((cp >> 6) & 0x3F)));
+    out.push_back(static_cast<char>(0x80 | (cp & 0x3F)));
+  } else {
+    out.push_back(static_cast<char>(0xF0 | (cp >> 18)));
+    out.push_back(static_cast<char>(0x80 | ((cp >> 12) & 0x3F)));
+    out.push_back(static_cast<char>(0x80 | ((cp >> 6) & 0x3F)));
+    out.push_back(static_cast<char>(0x80 | (cp & 0x3F)));
   }
-  if (mode == "miniob") {
-    if (resp.is_query) {
-      for (size_t c = 0; c < resp.columns.size(); ++c) {
-        if (c) std::cout << " | ";
-        std::cout << resp.columns[c];
-      }
-      std::cout << '\n';
-      for (const auto &row : resp.rows) {
-        for (size_t c = 0; c < row.size(); ++c) {
-          if (c) std::cout << " | ";
-          std::cout << format_text_value(row[c]);
+}
+
+struct JsonCursor {
+  const std::string &text;
+  size_t pos = 0;
+
+  void skip_ws() {
+    while (pos < text.size()) {
+      char c = text[pos];
+      if (c == ' ' || c == '\t' || c == '\r' || c == '\n')
+        ++pos;
+      else
+        break;
+    }
+  }
+
+  bool take(char expected) {
+    skip_ws();
+    if (pos < text.size() && text[pos] == expected) {
+      ++pos;
+      return true;
+    }
+    return false;
+  }
+
+  bool parse_hex4(uint32_t &value) {
+    if (pos + 4 > text.size()) return false;
+    value = 0;
+    for (int i = 0; i < 4; ++i) {
+      char c = text[pos++];
+      value <<= 4;
+      if (c >= '0' && c <= '9') value |= static_cast<uint32_t>(c - '0');
+      else if (c >= 'a' && c <= 'f') value |= static_cast<uint32_t>(c - 'a' + 10);
+      else if (c >= 'A' && c <= 'F') value |= static_cast<uint32_t>(c - 'A' + 10);
+      else return false;
+    }
+    return true;
+  }
+
+  bool parse_string(std::string &out) {
+    skip_ws();
+    if (pos >= text.size() || text[pos] != '"') return false;
+    ++pos;
+    out.clear();
+    while (pos < text.size()) {
+      unsigned char c = static_cast<unsigned char>(text[pos++]);
+      if (c == '"') return true;
+      if (c == '\\') {
+        if (pos >= text.size()) return false;
+        char e = text[pos++];
+        switch (e) {
+          case '"': out.push_back('"'); break;
+          case '\\': out.push_back('\\'); break;
+          case '/': out.push_back('/'); break;
+          case 'b': out.push_back('\b'); break;
+          case 'f': out.push_back('\f'); break;
+          case 'n': out.push_back('\n'); break;
+          case 'r': out.push_back('\r'); break;
+          case 't': out.push_back('\t'); break;
+          case 'u': {
+            uint32_t cp = 0;
+            if (!parse_hex4(cp)) return false;
+            if (cp >= 0xD800 && cp <= 0xDBFF) {
+              if (pos + 1 >= text.size() || text[pos] != '\\' || text[pos + 1] != 'u')
+                return false;
+              pos += 2;
+              uint32_t low = 0;
+              if (!parse_hex4(low)) return false;
+              if (low < 0xDC00 || low > 0xDFFF) return false;
+              cp = 0x10000 + ((cp - 0xD800) << 10) + (low - 0xDC00);
+            } else if (cp >= 0xDC00 && cp <= 0xDFFF) {
+              return false;
+            }
+            append_utf8(out, cp);
+            break;
+          }
+          default:
+            return false;
         }
-        std::cout << '\n';
+      } else {
+        if (c < 0x20) return false;
+        out.push_back(static_cast<char>(c));
+      }
+    }
+    return false;
+  }
+
+  bool skip_value() {
+    skip_ws();
+    if (pos >= text.size()) return false;
+    char c = text[pos];
+    if (c == '"') {
+      std::string ignored;
+      return parse_string(ignored);
+    }
+    if (c == '{' || c == '[') {
+      char open = c;
+      char close = (c == '{') ? '}' : ']';
+      ++pos;
+      skip_ws();
+      if (pos < text.size() && text[pos] == close) {
+        ++pos;
+        return true;
+      }
+      while (true) {
+        if (open == '{') {
+          std::string key;
+          if (!parse_string(key)) return false;
+          if (!take(':')) return false;
+        }
+        if (!skip_value()) return false;
+        skip_ws();
+        if (pos < text.size() && text[pos] == ',') {
+          ++pos;
+          continue;
+        }
+        if (pos < text.size() && text[pos] == close) {
+          ++pos;
+          return true;
+        }
+        return false;
+      }
+    }
+    // Number, true, false, null.
+    size_t start = pos;
+    while (pos < text.size()) {
+      char ch = text[pos];
+      if (ch == ',' || ch == '}' || ch == ']' || ch == ' ' || ch == '\t' ||
+          ch == '\r' || ch == '\n')
+        break;
+      ++pos;
+    }
+    if (pos == start) return false;
+    std::string token = text.substr(start, pos - start);
+    if (token == "true" || token == "false" || token == "null") return true;
+    char *end = nullptr;
+    errno = 0;
+    std::strtod(token.c_str(), &end);
+    return end != nullptr && *end == '\0' && errno != ERANGE;
+  }
+};
+
+struct JsonRequest {
+  std::string id_raw = "null";
+  std::string op;
+  std::string sql;
+  std::string search_mode;
+};
+
+bool parse_request(const std::string &line, JsonRequest &req, std::string &error) {
+  JsonCursor c{line};
+  c.skip_ws();
+  if (!c.take('{')) {
+    error = "request must be a JSON object";
+    return false;
+  }
+  c.skip_ws();
+  if (c.pos < line.size() && line[c.pos] == '}') {
+    ++c.pos;
+    c.skip_ws();
+    if (c.pos == line.size()) {
+      error = "empty request object";
+      return false;
+    }
+  }
+  while (true) {
+    std::string key;
+    if (!c.parse_string(key)) {
+      error = "invalid object key";
+      return false;
+    }
+    if (!c.take(':')) {
+      error = "missing ':' after key";
+      return false;
+    }
+    c.skip_ws();
+    if (key == "id") {
+      size_t start = c.pos;
+      if (!c.skip_value()) {
+        error = "invalid id value";
+        return false;
+      }
+      req.id_raw = line.substr(start, c.pos - start);
+    } else if (key == "op") {
+      if (!c.parse_string(req.op)) {
+        error = "invalid op value";
+        return false;
+      }
+    } else if (key == "sql") {
+      if (!c.parse_string(req.sql)) {
+        error = "invalid sql value";
+        return false;
+      }
+    } else if (key == "search_mode") {
+      if (!c.parse_string(req.search_mode)) {
+        error = "invalid search_mode value";
+        return false;
       }
     } else {
-      std::cout << "SUCCESS\n";
+      if (!c.skip_value()) {
+        error = "invalid field value";
+        return false;
+      }
     }
-    std::cout.flush();
-    if (!marker.empty()) {
-      std::cout << marker << "\n";
-      std::cout.flush();
+    c.skip_ws();
+    if (c.pos < line.size() && line[c.pos] == ',') {
+      ++c.pos;
+      continue;
     }
-    return;
+    if (c.pos < line.size() && line[c.pos] == '}') {
+      ++c.pos;
+      break;
+    }
+    error = "malformed request object";
+    return false;
   }
-  if (mode == "json") {
-    std::string out;
+  c.skip_ws();
+  if (c.pos != line.size()) {
+    error = "trailing characters after request object";
+    return false;
+  }
+  return true;
+}
+
+// ---------------------------------------------------------------------------
+// JSON response emission
+// ---------------------------------------------------------------------------
+
+std::string format_json_value(const mvd::OutValue &v) {
+  switch (v.kind) {
+    case mvd::OutValue::Kind::INT:
+      return std::to_string(v.i);
+    case mvd::OutValue::Kind::DOUBLE: {
+      if (!std::isfinite(v.d)) return "0";
+      char buf[64];
+      std::snprintf(buf, sizeof(buf), "%.9g", v.d);
+      return std::string(buf);
+    }
+    case mvd::OutValue::Kind::VECTOR: {
+      std::string out = "[";
+      char buf[64];
+      for (size_t i = 0; i < v.vec.size(); ++i) {
+        if (i) out.push_back(',');
+        float f = v.vec[i];
+        if (!std::isfinite(f)) f = 0.0f;
+        std::snprintf(buf, sizeof(buf), "%.9g", static_cast<double>(f));
+        out += buf;
+      }
+      out.push_back(']');
+      return out;
+    }
+    case mvd::OutValue::Kind::STRING: {
+      std::string s = "\"";
+      mvd::json_escape_append(s, v.s);
+      s.push_back('"');
+      return s;
+    }
+  }
+  return "null";
+}
+
+void emit_json_response(const mvd::Response &resp, const std::string &id_raw) {
+  std::string out = "{\"id\":";
+  out += id_raw.empty() ? "null" : id_raw;
+  if (!resp.ok) {
+    out += ",\"ok\":false,\"error\":{\"code\":\"";
+    mvd::json_escape_append(out, semantic_error_name(resp.error_code));
+    out += "\",\"message\":\"";
+    mvd::json_escape_append(out, resp.error_message);
+    out += "\"}}";
+  } else {
+    out += ",\"ok\":true";
     if (resp.is_query) {
-      out = "{\"columns\":[";
+      out += ",\"columns\":[";
       for (size_t i = 0; i < resp.columns.size(); ++i) {
         if (i) out.push_back(',');
         out.push_back('"');
@@ -145,140 +353,27 @@ void emit_response(const mvd::Response &resp, const std::string &mode,
         }
         out.push_back(']');
       }
-      out += "]}";
+      out += "]";
     } else if (resp.has_affected) {
-      out = "{\"affected_rows\":" + std::to_string(resp.affected_rows) + "}";
-    } else {
-      out = "{}";
+      out += ",\"affected_rows\":" + std::to_string(resp.affected_rows);
     }
-    std::cout << out;
-  } else if (mode == "mysql") {
-    if (resp.is_query) {
-      for (size_t c = 0; c < resp.columns.size(); ++c) {
-        if (c) std::cout << '\t';
-        std::cout << resp.columns[c];
-      }
-      std::cout << '\n';
-      for (const auto &row : resp.rows) {
-        for (size_t c = 0; c < row.size(); ++c) {
-          if (c) std::cout << '\t';
-          std::cout << format_text_value(row[c]);
-        }
-        std::cout << '\n';
-      }
-    } else if (resp.has_affected) {
-      std::cout << "OK " << resp.affected_rows;
-    } else {
-      std::cout << "OK";
-    }
-  } else {  // tsv (mysqltest-like)
-    if (resp.is_query) {
-      for (const auto &row : resp.rows) {
-        for (size_t c = 0; c < row.size(); ++c) {
-          if (c) std::cout << '\t';
-          std::cout << format_text_value(row[c]);
-        }
-        std::cout << '\n';
-      }
-    } else if (resp.has_affected) {
-      std::cout << "OK " << resp.affected_rows << "\n";
-    } else {
-      std::cout << "OK\n";
-    }
+    out += "}";
   }
-  if (mode != "tsv") std::cout << "\n";
+  std::cout << out << '\n';
   std::cout.flush();
-  if (!marker.empty()) {
-    std::cout << marker << "\n";
-    std::cout.flush();
-  }
 }
 
-// Split complete statements terminated by ';' outside quotes/comments.
-void extract_statements(const std::string &buffer, std::vector<std::string> &out,
-                        std::string &rest) {
-  size_t start = 0;
-  size_t i = 0;
-  enum State { NORMAL, SQUOTE, DQUOTE, BACKTICK, LINE_COMMENT, BLOCK_COMMENT } state = NORMAL;
-  while (i < buffer.size()) {
-    char c = buffer[i];
-    char n = (i + 1 < buffer.size()) ? buffer[i + 1] : '\0';
-    switch (state) {
-      case NORMAL:
-        if (c == '\'') state = SQUOTE;
-        else if (c == '"') state = DQUOTE;
-        else if (c == '`') state = BACKTICK;
-        else if (c == '-' && n == '-') { state = LINE_COMMENT; ++i; }
-        else if (c == '#') state = LINE_COMMENT;
-        else if (c == '/' && n == '*') { state = BLOCK_COMMENT; ++i; }
-        else if (c == ';') {
-          out.push_back(buffer.substr(start, i - start + 1));
-          start = i + 1;
-        }
-        break;
-      case SQUOTE:
-        if (c == '\\' && i + 1 < buffer.size()) ++i;
-        else if (c == '\'') {
-          if (n == '\'') ++i;
-          else state = NORMAL;
-        }
-        break;
-      case DQUOTE:
-        if (c == '\\' && i + 1 < buffer.size()) ++i;
-        else if (c == '"') {
-          if (n == '"') ++i;
-          else state = NORMAL;
-        }
-        break;
-      case BACKTICK:
-        if (c == '`') state = NORMAL;
-        break;
-      case LINE_COMMENT:
-        if (c == '\n') state = NORMAL;
-        break;
-      case BLOCK_COMMENT:
-        if (c == '*' && n == '/') { state = NORMAL; ++i; }
-        break;
-    }
-    ++i;
-  }
-  rest = buffer.substr(start);
-}
-
-std::string trim(const std::string &s) {
-  size_t b = 0, e = s.size();
-  while (b < e && std::isspace(static_cast<unsigned char>(s[b]))) ++b;
-  while (e > b && std::isspace(static_cast<unsigned char>(s[e - 1]))) --e;
-  return s.substr(b, e - b);
-}
-
-bool only_comments_or_space(const std::string &s) {
-  // A cheap check used to skip empty/comment-only statements.
-  bool in_line_comment = false;
-  bool in_block = false;
-  for (size_t i = 0; i < s.size(); ++i) {
-    char c = s[i];
-    char n = (i + 1 < s.size()) ? s[i + 1] : '\0';
-    if (in_line_comment) {
-      if (c == '\n') in_line_comment = false;
-      continue;
-    }
-    if (in_block) {
-      if (c == '*' && n == '/') { in_block = false; ++i; }
-      continue;
-    }
-    if (c == '-' && n == '-') { in_line_comment = true; ++i; continue; }
-    if (c == '#') { in_line_comment = true; continue; }
-    if (c == '/' && n == '*') { in_block = true; ++i; continue; }
-    if (!std::isspace(static_cast<unsigned char>(c)) && c != ';') return false;
-  }
-  return true;
+void emit_error(const std::string &id_raw, const std::string &code,
+                const std::string &message) {
+  mvd::Response resp;
+  resp.ok = false;
+  resp.error_code = code;
+  resp.error_message = message;
+  emit_json_response(resp, id_raw);
 }
 
 struct Options {
   std::string data_dir = "/data";
-  std::string ready_marker;
-  std::string output = "json";
   int query_threads = 2;
   int cache_mb = 64;
   bool ann_default = false;
@@ -286,14 +381,11 @@ struct Options {
 
 Options parse_options(int argc, char **argv) {
   Options opt;
-  if (const char *env = std::getenv("MVD_OUTPUT")) opt.output = env;
-  else if (const char *env = std::getenv("MVDB_FORMAT")) opt.output = env;
-  if (const char *env = std::getenv("MVD_READY_MARKER")) opt.ready_marker = env;
-  else if (const char *env = std::getenv("MVDB_READY_LINE")) opt.ready_marker = env;
+  if (const char *env = std::getenv("VECTORDB_DATA_DIR")) opt.data_dir = env;
+  else if (const char *env = std::getenv("MVD_DATA_DIR")) opt.data_dir = env;
+  else if (const char *env = std::getenv("MVDB_DATA_DIR")) opt.data_dir = env;
   if (const char *env = std::getenv("MVD_QUERY_THREADS")) opt.query_threads = std::atoi(env);
   if (const char *env = std::getenv("MVD_CACHE_MB")) opt.cache_mb = std::atoi(env);
-  if (const char *env = std::getenv("MVD_DATA_DIR")) opt.data_dir = env;
-  else if (const char *env = std::getenv("MVDB_DATA_DIR")) opt.data_dir = env;
   if (const char *env = std::getenv("MVD_VECTOR_MODE")) {
     std::string m = env;
     opt.ann_default = (m == "ann" || m == "approximate");
@@ -310,34 +402,34 @@ Options parse_options(int argc, char **argv) {
     std::string v;
     if (take("--data-dir=", v)) opt.data_dir = v;
     else if (arg == "--data-dir" && i + 1 < argc) opt.data_dir = argv[++i];
-    else if (take("--ready-marker=", v)) opt.ready_marker = v;
-    else if (arg == "--ready-marker" && i + 1 < argc) opt.ready_marker = argv[++i];
-    else if (take("--ready-line=", v)) opt.ready_marker = v;
-    else if (arg == "--ready-line" && i + 1 < argc) opt.ready_marker = argv[++i];
-    else if (take("--format=", v)) opt.output = v;
-    else if (arg == "--format" && i + 1 < argc) opt.output = argv[++i];
-    else if (take("--output=", v)) opt.output = v;
-    else if (arg == "--output" && i + 1 < argc) opt.output = argv[++i];
     else if (take("--query-threads=", v)) opt.query_threads = std::atoi(v.c_str());
     else if (arg == "--query-threads" && i + 1 < argc) opt.query_threads = std::atoi(argv[++i]);
     else if (take("--cache-mb=", v)) opt.cache_mb = std::atoi(v.c_str());
     else if (arg == "--cache-mb" && i + 1 < argc) opt.cache_mb = std::atoi(argv[++i]);
     else if (take("--vector-mode=", v)) opt.ann_default = (v == "ann" || v == "approximate");
-    else if (arg == "--vector-mode" && i + 1 < argc)
-      opt.ann_default = (std::string(argv[++i]) == "ann" || std::string(argv[i]) == "approximate");
-    else if (take("--mode=", v)) opt.ann_default = (v == "ann" || v == "approximate");
-    else if (arg == "--mode" && i + 1 < argc)
-      opt.ann_default = (std::string(argv[++i]) == "ann" || std::string(argv[i]) == "approximate");
-    else if (arg == "--ann") opt.ann_default = true;
-    else if (arg == "--exact") opt.ann_default = false;
-    else if (arg == "--help" || arg == "-h") {
+    else if (arg == "--vector-mode" && i + 1 < argc) {
+      opt.ann_default = (std::string(argv[i + 1]) == "ann" ||
+                         std::string(argv[i + 1]) == "approximate");
+      ++i;
+    } else if (take("--mode=", v)) {
+      opt.ann_default = (v == "ann" || v == "approximate");
+    } else if (arg == "--mode" && i + 1 < argc) {
+      opt.ann_default = (std::string(argv[i + 1]) == "ann" ||
+                         std::string(argv[i + 1]) == "approximate");
+      ++i;
+    } else if (arg == "--ann") {
+      opt.ann_default = true;
+    } else if (arg == "--exact") {
+      opt.ann_default = false;
+    } else if (arg == "--help" || arg == "-h") {
       std::fprintf(stderr,
-                   "minivectordb [--data-dir=/data] [--output=json|tsv|mysql] "
-                   "[--ready-marker=TOKEN] [--query-threads=N] [--cache-mb=N] "
-                   "[--vector-mode=exact|ann]\n");
+                   "minivectordb [--data-dir=/data] [--query-threads=N] "
+                   "[--cache-mb=N] [--vector-mode=exact|ann]\n");
       std::exit(0);
     }
   }
+  // Older output-format flags are accepted but ignored: stdout is always the
+  // JSONL judge protocol.
   if (opt.query_threads < 1) opt.query_threads = 1;
   if (opt.cache_mb < 1) opt.cache_mb = 1;
   return opt;
@@ -354,66 +446,47 @@ int main(int argc, char **argv) {
   std::signal(SIGTERM, handle_signal);
 
   try {
-    size_t cache_pages = static_cast<size_t>(opt.cache_mb) * 1024 * 1024 / mvd::kPageSize;
+    size_t cache_pages =
+        static_cast<size_t>(opt.cache_mb) * 1024 * 1024 / mvd::kPageSize;
     if (cache_pages < 8) cache_pages = 8;
     mvd::Engine engine(opt.data_dir, cache_pages);
     engine.open();
     if (opt.ann_default) engine.set_ann_mode(true);
-    std::fprintf(stderr, "minivectordb: ready\n");
-    std::fflush(stderr);
-    // --ready-marker is a per-response terminator; do not print it before the first statement.
 
-    std::string buffer;
-    std::vector<std::string> statements;
-    std::string rest;
-    while (!g_shutdown) {
-      std::string line;
-      bool got = false;
-#ifndef _WIN32
-      struct pollfd pfd;
-      pfd.fd = STDIN_FILENO;
-      pfd.events = POLLIN;
-      int pr = ::poll(&pfd, 1, 200);
-      if (pr > 0 && (pfd.revents & (POLLIN | POLLHUP))) {
-        if (!std::getline(std::cin, line)) break;
-        got = true;
-      } else if (pr < 0 && errno != EINTR) {
-        break;
+    // The judge waits for this exact object before sending any request.
+    std::cout << "{\"type\":\"ready\"}\n";
+    std::cout.flush();
+
+    std::string line;
+    while (!g_shutdown && std::getline(std::cin, line)) {
+      if (!line.empty() && line.back() == '\r') line.pop_back();
+      if (line.empty()) continue;  // no response is defined for blank lines
+
+      JsonRequest req;
+      std::string parse_error;
+      if (!parse_request(line, req, parse_error)) {
+        emit_error("null", "invalid_request", parse_error);
+        continue;
       }
-#else
-      if (!std::getline(std::cin, line)) break;
-      got = true;
-#endif
-      if (got) {
-        buffer += line;
-        buffer.push_back('\n');
+      if (req.op == "shutdown") {
+        engine.shutdown();
+        std::string out = "{\"id\":" + req.id_raw + ",\"ok\":true}\n";
+        std::cout << out;
+        std::cout.flush();
+        return 0;
       }
-      statements.clear();
-      extract_statements(buffer, statements, rest);
-      buffer = rest;
-      for (const auto &raw : statements) {
-        std::string stmt = trim(raw);
-        if (stmt.empty() || only_comments_or_space(stmt)) continue;
-        std::string lower_stmt;
-        lower_stmt.reserve(stmt.size());
-        for (char c : stmt)
-          lower_stmt.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
-        if (lower_stmt == "exit" || lower_stmt == "quit" || lower_stmt == "\\q" ||
-            lower_stmt == "q;" || lower_stmt == "exit;" || lower_stmt == "quit;")
-          break;
-        mvd::Response resp = engine.execute(stmt);
-        emit_response(resp, opt.output, opt.ready_marker);
+      if (req.op != "execute") {
+        emit_error(req.id_raw, "unsupported_op", "unsupported operation");
+        continue;
       }
-      if (!got) {
-        // EOF: execute any trailing statement without a semicolon.
-        std::string stmt = trim(buffer);
-        if (!stmt.empty() && !only_comments_or_space(stmt)) {
-          mvd::Response resp = engine.execute(stmt);
-          emit_response(resp, opt.output, opt.ready_marker);
-        }
-        break;
-      }
+      if (!req.search_mode.empty())
+        engine.set_ann_mode(req.search_mode == "ann" ||
+                            req.search_mode == "approximate");
+
+      mvd::Response resp = engine.execute(req.sql);
+      emit_json_response(resp, req.id_raw);
     }
+
     engine.shutdown();
     return 0;
   } catch (const mvd::DbError &e) {

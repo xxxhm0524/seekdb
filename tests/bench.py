@@ -15,30 +15,14 @@ import time
 import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-BINARY = os.path.join(os.path.dirname(HERE), "minivectordb")
-if not os.path.exists(BINARY):
-    BINARY = os.path.join(os.path.dirname(HERE), "minivectordb.exe")
+sys.path.insert(0, HERE)
+from protocol_client import Client, DEFAULT_BINARY  # noqa: E402
+
+BINARY = DEFAULT_BINARY
 
 
-class Client:
-    def __init__(self, binary, datadir, threads=2):
-        self.p = subprocess.Popen(
-            [binary, "--data-dir=" + datadir, "--output=json",
-             "--query-threads=%d" % threads],
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            text=True, encoding="utf-8", bufsize=1)
-
-    def req(self, sql):
-        self.p.stdin.write(sql + "\n")
-        self.p.stdin.flush()
-        line = self.p.stdout.readline()
-        if not line:
-            raise RuntimeError("no response; stderr=" + self.p.stderr.read())
-        return json.loads(line)
-
-    def close(self):
-        self.p.stdin.close()
-        self.p.wait(timeout=30)
+def make_client(binary, datadir, threads=2):
+    return Client(binary, datadir, extra=["--query-threads=%d" % threads])
 
 
 def main():
@@ -59,8 +43,8 @@ def main():
     base = tempfile.mkdtemp(prefix="mvdbench_")
     data = os.path.join(base, "data")
     os.makedirs(data)
-    c = Client(args.binary, data)
-    print(c.req("CREATE TABLE items (id BIGINT PRIMARY KEY, cat VARCHAR(8), v VECTOR(%d));" % args.dim))
+    c = make_client(args.binary, data)
+    print(c.request("CREATE TABLE items (id BIGINT PRIMARY KEY, cat VARCHAR(8), v VECTOR(%d));" % args.dim))
 
     t0 = time.perf_counter()
     batch = 100
@@ -69,7 +53,7 @@ def main():
         for i in range(start, min(start + batch, args.rows)):
             lit = ",".join("%.8g" % x for x in vectors[i])
             parts.append("(%d,'%s','[%s]')" % (ids[i], cats[i], lit))
-        r = c.req("INSERT INTO items VALUES " + ",".join(parts) + ";")
+        r = c.request("INSERT INTO items VALUES " + ",".join(parts) + ";")
         if r.get("affected_rows") != len(parts):
             raise RuntimeError("insert batch failed: %s" % r)
     insert_time = time.perf_counter() - t0
@@ -91,7 +75,7 @@ def main():
         else:
             sql = ("SELECT id, L2_DISTANCE(v,'[%s]') AS d FROM items WHERE cat='%s' "
                    "ORDER BY d LIMIT %d;" % (lit, cat, args.topk))
-        r = c.req(sql)
+        r = c.request(sql)
         if "error" in r:
             raise RuntimeError("query failed: %s" % r)
         results.append([row[0] for row in r["rows"]])
@@ -113,7 +97,7 @@ def main():
     print("queries %d (K=%d, half filtered): %.3f s (%.2f qps, %.3f ms/query)"
           % (args.queries, args.topk, query_time, args.queries / query_time, query_time * 1000 / args.queries))
     print("recall check: %s" % ("PASS" if failures == 0 else "FAIL (%d)" % failures))
-    c.close()
+    c.shutdown()
     shutil.rmtree(base, ignore_errors=True)
     return 0 if failures == 0 else 1
 

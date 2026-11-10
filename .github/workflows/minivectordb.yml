@@ -1,0 +1,58 @@
+name: minivectordb-ci
+
+on:
+  push:
+    branches: [2026-competition-round2]
+  workflow_dispatch:
+
+jobs:
+  protocol-and-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        run: make -j"$(nproc)"
+
+      - name: Handshake (local process)
+        run: |
+          python3 protocol_check/run.py \
+            --command "[\"$PWD/minivectordb\",\"--data-dir\",\"{data_dir}\"]" \
+            --handshake-only --output protocol-results/handshake-local
+
+      - name: Public cases (local process)
+        run: |
+          python3 protocol_check/run.py \
+            --command "[\"$PWD/minivectordb\",\"--data-dir\",\"{data_dir}\"]" \
+            --output protocol-results/public-local
+
+      - name: Extended semantics
+        run: python3 tests/run_extended_tsv.py
+
+      - name: Regression and crash recovery
+        run: python3 tests/regression.py
+
+      - name: Benchmark and recall
+        run: python3 tests/bench.py --rows 3000 --queries 300
+
+      - name: Docker build
+        run: docker build -t minivectordb:ci .
+
+      - name: Docker handshake
+        run: |
+          python3 protocol_check/run.py --image minivectordb:ci \
+            --handshake-only --output protocol-results/handshake-docker
+
+      - name: Docker public cases
+        run: |
+          python3 protocol_check/run.py --image minivectordb:ci \
+            --output protocol-results/public-docker
+
+      - name: Upload protocol reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: protocol-results
+          path: protocol-results
+          if-no-files-found: ignore
