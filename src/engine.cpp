@@ -664,20 +664,26 @@ void Table::build_commit_images(const TxTable &tx,
   std::vector<uint8_t> spilled_row;
   for (uint32_t page_no : ordered_pages) {
     auto &changes = by_page.at(page_no);
+    std::sort(changes.begin(), changes.end(),
+              [](const Change &a, const Change &b) { return a.pos < b.pos; });
+    // Complete raw replacements and tombstones do not depend on old bytes.
+    // Verify coverage of every slot before omitting the old-page read.
+    bool replaces_page = changes.size() == schema_.rows_per_page;
+    for (size_t i = 0; replaces_page && i < changes.size(); ++i)
+      replaces_page = changes[i].pos == static_cast<uint64_t>(page_no) * schema_.rows_per_page + i &&
+          (changes[i].deleted || changes[i].state->has_raw_row());
     std::shared_ptr<Page> base;
-    if (page_no < page_count_) {
+    if (page_no < page_count_ && !replaces_page) {
       base = cache_->get(this, page_no);
     } else {
       base = make_page();
       base->magic = kPageMagic;
-      base->nrows = 0;
+      base->nrows = replaces_page ? schema_.rows_per_page : 0;
       base->page_no = page_no;
     }
     auto image = make_page(base.get());
     image->page_no = page_no;
     image->magic = kPageMagic;
-    std::sort(changes.begin(), changes.end(),
-              [](const Change &a, const Change &b) { return a.pos < b.pos; });
     uint32_t max_slots = image->capacity(schema_.row_size);
     for (const Change &ch : changes) {
       uint32_t slot = static_cast<uint32_t>(ch.pos % schema_.rows_per_page);
@@ -1525,6 +1531,43 @@ void Engine::for_each_visible(
   }
 }
 
+void Engine::for_each_mutation_key(
+    Table &table, const std::vector<Condition> &where,
+    const std::function<void(int64_t, uint64_t)> &visit) {
+  if (!where.empty()) {
+    for_each_visible(table, where, [&](const VisibleRow &row) {
+      visit(row.pk, row.pos);
+      return true;
+    });
+    return;
+  }
+  // An unfiltered mutation only needs row identity. The committed PK map and
+  // transaction overlay already contain that information; don't scan wide
+  // records merely to rediscover it. Snapshot keys before callbacks mutate
+  // the overlay, and keep any required spool reads in physical order.
+  const TxTable *changes = find_tx_table(table.id());
+  std::vector<std::pair<int64_t, uint64_t>> keys;
+  keys.reserve(table.row_count());
+  for (const auto &entry : table.pk_pos_) {
+    uint64_t pos = entry.second;
+    if (changes) {
+      auto changed = changes->rows.find(entry.first);
+      if (changed != changes->rows.end()) {
+        if (changed->second.deleted) continue;
+        pos = changed->second.pos;
+      }
+    }
+    keys.emplace_back(entry.first, pos);
+  }
+  if (changes) for (const auto &entry : changes->rows)
+    if (!entry.second.deleted && !entry.second.existed)
+      keys.emplace_back(entry.first, entry.second.pos);
+  std::sort(keys.begin(), keys.end(), [](const auto &a, const auto &b) {
+    return a.second < b.second;
+  });
+  for (const auto &entry : keys) visit(entry.first, entry.second);
+}
+
 bool Engine::row_matches(const Table &table, const uint8_t *row,
                          const std::vector<Condition> &where) const {
   for (const auto &cond : where) {
@@ -2267,14 +2310,14 @@ Response Engine::exec_update(UpdateStmt &stmt) {
   auto tracked_patch=tx_.track_patch(std::move(*patch));
   TxTable &tx_table = tx_table_ref(table.id());
   int64_t matched = 0;
-  for_each_visible(table, stmt.where, [&](const VisibleRow &vr) {
+  for_each_mutation_key(table, stmt.where, [&](int64_t pk, uint64_t pos) {
     RowState state;
-    auto it = tx_table.rows.find(vr.pk);
+    auto it = tx_table.rows.find(pk);
     if (it != tx_table.rows.end()) {
       state = it->second;
     } else {
       state.existed = true;
-      state.pos = vr.pos;
+      state.pos = pos;
     }
     state.deleted = false;
     state.patches.push_back(tracked_patch);
@@ -2292,9 +2335,8 @@ Response Engine::exec_update(UpdateStmt &stmt) {
       }
       std::reverse(kept.begin(),kept.end());state.patches=std::move(kept);
     }
-    store_row(table, tx_table, vr.pk, std::move(state));
+    store_row(table, tx_table, pk, std::move(state));
     ++matched;
-    return true;
   });
   Response resp;
   resp.has_affected = true;
@@ -2307,22 +2349,21 @@ Response Engine::exec_delete(DeleteStmt &stmt) {
   compile_conditions(table, stmt.where);
   TxTable &tx_table = tx_table_ref(table.id());
   int64_t matched = 0;
-  for_each_visible(table, stmt.where, [&](const VisibleRow &vr) {
+  for_each_mutation_key(table, stmt.where, [&](int64_t pk, uint64_t pos) {
     RowState state;
-    auto it = tx_table.rows.find(vr.pk);
+    auto it = tx_table.rows.find(pk);
     if (it != tx_table.rows.end()) {
       state = it->second;
     } else {
       state.existed = true;
-      state.pos = vr.pos;
+      state.pos = pos;
     }
     state.deleted = true;
     std::vector<uint8_t>().swap(state.row);  // Tombstones retain no raw capacity.
     state.spool.reset(); state.spool_size = 0;
     state.patches.clear();
-    store_row(table, tx_table, vr.pk, std::move(state));
+    store_row(table, tx_table, pk, std::move(state));
     ++matched;
-    return true;
   });
   Response resp;
   resp.has_affected = true;

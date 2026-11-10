@@ -28,6 +28,7 @@ def main():
         ('hidden-boundaries',['tests/hidden_boundaries.py']),
         ('vector-precision',['tests/vector_precision_model.py']),
         ('resource',['tests/resource_boundaries.py']),
+        ('mutation-io',['tests/mutation_io.py']),
         ('cache-coherence',['tests/cache_coherence.py']),
         ('transaction-spill',['tests/transaction_spill.py']),
         ('ann-lifecycle',['tests/ann_lifecycle.py']),

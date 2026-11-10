@@ -430,6 +430,8 @@ class Engine {
   // is pinned, including scans that merge an active transaction's overlay.
   void for_each_visible(Table &table, const std::vector<Condition> &where,
                         const std::function<bool(const VisibleRow &)> &visit);
+  void for_each_mutation_key(Table &table, const std::vector<Condition> &where,
+                            const std::function<void(int64_t, uint64_t)> &visit);
   bool row_matches(const Table &table, const uint8_t *row,
                    const std::vector<Condition> &where) const;
 

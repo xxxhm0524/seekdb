@@ -42,6 +42,9 @@ jobs:
       - name: Bounded scan and mutation memory
         run: python3 tests/resource_boundaries.py
 
+      - name: Bounded wide-row mutation I/O
+        run: python3 tests/mutation_io.py
+
       - name: Transaction payload spill and statement rollback
         run: python3 tests/transaction_spill.py
 
@@ -85,6 +88,7 @@ jobs:
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/vector_precision_model.py --seeds 7
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/transaction_spill.py --rows 2000
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/ann_lifecycle.py
+          MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/mutation_io.py
 
       - name: Docker build
         id: docker_build
@@ -98,6 +102,7 @@ jobs:
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/hidden_boundaries.py
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/ann_lifecycle.py
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/commit_crash_boundaries.py
+          MVD_BIN="$PWD/minivectordb-asan" python3 tests/mutation_io.py
 
       - name: Docker handshake
         run: |
@@ -113,6 +118,7 @@ jobs:
         run: python3 tests/docker_resource_boundaries.py --image minivectordb:ci
 
       - name: Docker transaction larger than formal memory budget
+        if: always() && steps.docker_build.outcome == 'success'
         run: python3 tests/docker_transaction_spill.py --image minivectordb:ci
 
       - name: Docker durable benchmark and recall
@@ -128,6 +134,8 @@ jobs:
         run: |
           python3 tests/docker_bench.py --image minivectordb:ci --rows 50000 --queries 300 \
             --seed 20261112 --search-mode ann --output protocol-results/benchmark-docker-hnsw-50k.json
+          python3 tests/docker_bench.py --image minivectordb:ci --rows 50000 --queries 300 \
+            --seed 20261112 --search-mode exact --output protocol-results/benchmark-docker-exact-50k.json
 
       - name: Upload protocol reports
         if: always()
