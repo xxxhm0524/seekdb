@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Commit >2 GiB of uncommitted rows inside the actual 256 MiB container."""
+"""Commit >2 GiB of rows, optionally effective UTF-8 text, in 256 MiB."""
 import argparse,json
 from pathlib import Path
 import sys,time
@@ -11,13 +11,20 @@ def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--image',required=True)
     parser.add_argument('--rows',type=int,default=270000)
+    parser.add_argument('--long-unicode',action='store_true')
     args=parser.parse_args()
-    output=ROOT/'protocol-results/docker-transaction-spill.json'
+    suffix='-long-text' if args.long_unicode else ''
+    output=ROOT/('protocol-results/docker-transaction-spill'+suffix+'.json')
     output.parent.mkdir(parents=True,exist_ok=True)
     config=json.loads((ROOT/'protocol_check/config.json').read_text(encoding='utf-8'))
     config['memory']='256m'
     session=Session(config,output.with_suffix('.stderr.log'),image=args.image)
     stages=[]
+    text_a='\U0001f600'*2048 if args.long_unicode else 'x'
+    text_b='\U0001f603'*2048 if args.long_unicode else 'x'
+    user_text_bytes=args.rows*len(text_a.encode('utf-8'))
+    if args.long_unicode:
+        assert user_text_bytes>2*2**30,('effective text must exceed formal 2 GiB',user_text_bytes)
     def sql(text,**fields):
         r=session.request(text)
         assert r.get('ok') is True,(text[:160],r)
@@ -32,7 +39,7 @@ def main():
         row=dict(stage=stage,memory_peak_bytes=peak,**values);stages.append(row)
         print(json.dumps(row),flush=True)
     def batch(start,stop):
-        return ','.join("(%d,'x','[%d,0]')"%(i,i%10) for i in range(start,stop))
+        return ','.join("(%d,'%s','[%d,0]')"%(i,text_a if i%2 else text_b,i%10) for i in range(start,stop))
     try:
         session.start()
         sql('CREATE TABLE t(id BIGINT PRIMARY KEY,s VARCHAR(2048),v VECTOR(2))')
@@ -43,7 +50,8 @@ def main():
             sql('INSERT INTO t VALUES '+batch(start,stop),affected_rows=stop-start)
         assert exists()
         payload=size();assert payload>2*2**30,('spilled payload below formal budget',payload)
-        record('uncommitted load',payload_bytes=payload,seconds=round(time.perf_counter()-before,3))
+        record('uncommitted load',payload_bytes=payload,user_text_bytes=user_text_bytes,
+            long_unicode=args.long_unicode,seconds=round(time.perf_counter()-before,3))
         bad=session.request('INSERT INTO t VALUES '+batch(args.rows+1,args.rows+5)+",(1,'dup','[0,0]')")
         assert bad.get('ok') is False,bad
         assert size()==payload,'failed statement leaked spill bytes'
@@ -55,8 +63,18 @@ def main():
         assert not exists()
         session.crash();session.start()
         sql('SELECT id,s FROM t WHERE id=1',rows=[[1,'updated']])
-        sql('SELECT id,s FROM t WHERE id=%d'%args.rows,rows=[[args.rows,'x']])
-        sql("DELETE FROM t WHERE s='x'",affected_rows=args.rows-1)
+        for ident in (2,args.rows//2,args.rows):
+            expected=text_a if ident%2 else text_b
+            sql('SELECT id,s FROM t WHERE id=%d'%ident,rows=[[ident,expected]])
+        if args.long_unicode:
+            before=time.perf_counter()
+            sql("DELETE FROM t WHERE s='%s'"%text_a,affected_rows=(args.rows+1)//2-1)
+            record('first long-text group deleted',seconds=round(time.perf_counter()-before,3))
+            before=time.perf_counter()
+            sql("DELETE FROM t WHERE s='%s'"%text_b,affected_rows=args.rows//2)
+            record('second long-text group deleted',seconds=round(time.perf_counter()-before,3))
+        else:
+            sql("DELETE FROM t WHERE s='x'",affected_rows=args.rows-1)
         sql('SELECT id FROM t',rows=[[1]])
         # Abandoned uncommitted spill is discarded on startup.
         sql('BEGIN')

@@ -166,6 +166,10 @@ jobs:
         if: always() && steps.docker_build.outcome == 'success'
         run: python3 tests/docker_transaction_spill.py --image minivectordb:ci
 
+      - name: Docker effective UTF-8 payload larger than 2 GiB
+        if: always() && steps.docker_build.outcome == 'success'
+        run: python3 tests/docker_transaction_spill.py --image minivectordb:ci --long-unicode
+
       - name: Docker durable benchmark and recall
         if: always() && steps.docker_build.outcome == 'success'
         run: |
