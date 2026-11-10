@@ -86,6 +86,13 @@ jobs:
       - name: Docker dataset larger than formal memory budget
         run: python3 tests/docker_resource_boundaries.py --image minivectordb:ci
 
+      - name: Docker durable benchmark and recall
+        run: |
+          python3 tests/docker_bench.py --image minivectordb:ci --seed 20261110 \
+            --output protocol-results/benchmark-docker-exact.json
+          python3 tests/docker_bench.py --image minivectordb:ci --seed 20261111 --search-mode ann \
+            --output protocol-results/benchmark-docker-ann.json
+
       - name: Upload protocol reports
         if: always()
         uses: actions/upload-artifact@v4

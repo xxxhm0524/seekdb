@@ -25,7 +25,7 @@ def vector_literal(vector):
     return '[' + ','.join('%.9g' % float(x) for x in vector) + ']'
 
 
-def main():
+def main(client_factory=Client):
     parser = argparse.ArgumentParser()
     parser.add_argument('--binary', default=DEFAULT_BINARY)
     parser.add_argument('--rows', type=int, default=10000)
@@ -54,7 +54,7 @@ def main():
             vector_literal(query),where,args.topk)
         queries.append((sql,cat))
     with tempfile.TemporaryDirectory(prefix='mvdbench_') as data, ExitStack() as cleanup:
-        client = Client(args.binary,data,extra=['--query-threads=2'])
+        client = client_factory(args.binary,data,extra=['--query-threads=2'])
         cleanup.callback(client.close)
         def execute(sql):
             response = client.request(sql,args.search_mode)
@@ -65,9 +65,9 @@ def main():
         for sql,count in batches:
             assert execute(sql).get('affected_rows') == count
         insert_time = time.perf_counter()-before
+        write_resources = client.resource_snapshot() if hasattr(client,'resource_snapshot') else None
         client.kill()
-        client = Client(args.binary,data,extra=['--query-threads=2'])
-        cleanup.callback(client.close)
+        client.start()
         for start in range(0,args.rows,256):
             stop = min(start+256,args.rows)
             response = execute('SELECT id,cat,v FROM items WHERE id>=%d AND id<=%d ORDER BY id' % (start+1,stop))
@@ -108,12 +108,16 @@ def main():
         assert all(value>=0.95 for value in mean_recall.values()), mean_recall
         if args.search_mode=='exact':
             assert exact_mismatches==0, ('exact TopK differs',exact_mismatches)
+        query_resources = client.resource_snapshot() if hasattr(client,'resource_snapshot') else None
         client.shutdown()
     report = dict(rows=args.rows,dim=args.dim,queries=args.queries,topk=args.topk,seed=args.seed,
         mode=args.search_mode,insert_seconds=round(insert_time,6),query_seconds=round(query_time,6),
         ms_per_query=round(query_time*1000/args.queries,6),recall_at_k=mean_recall,
         exact_query_mismatches=exact_mismatches,durable_content_verified=True,
         timing_scope='prepared SQL over JSONL; includes responses and commit fsync; excludes SQL generation and validation')
+    if write_resources is not None:
+        report['docker_resources'] = dict(write=write_resources,query=query_resources,
+            scope='diagnostic container peaks and raw io.stat; query setup includes durable-content checks; not official scoring')
     print(json.dumps(report,ensure_ascii=False,indent=2))
     if args.output:
         args.output.parent.mkdir(parents=True,exist_ok=True)
