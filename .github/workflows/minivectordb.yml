@@ -33,6 +33,9 @@ jobs:
       - name: Regression and crash recovery
         run: python3 tests/regression.py
 
+      - name: Install benchmark dependency
+        run: python3 -m pip install --break-system-packages numpy
+
       - name: Benchmark and recall
         run: python3 tests/bench.py --rows 3000 --queries 300
 
