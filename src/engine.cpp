@@ -96,7 +96,7 @@ void parse_vector_for_column(const std::string &text, const ColumnDef &col,
 namespace {
 class PagePool {
  public:
-  PagePool() { spare_.reserve(32); }
+  PagePool() { spare_.reserve(kIoBatchPages); }
   ~PagePool() { for (Page *page : spare_) delete page; }
   Page *take() {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -107,8 +107,9 @@ class PagePool {
   }
   void put(Page *page) {
     std::lock_guard<std::mutex> lock(mutex_);
-    // At most 2 MiB remains in the pool, independently of table size.
-    if (spare_.size() < 32) spare_.push_back(page);
+    // Retain a complete I/O batch. A smaller pool frees aligned pages between
+    // small cache entries on every scan, fragmenting the allocator's heap.
+    if (spare_.size() < kIoBatchPages) spare_.push_back(page);
     else delete page;
   }
  private:

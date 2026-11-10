@@ -48,6 +48,9 @@ jobs:
       - name: Bounded random spool reads
         run: python3 tests/spool_read_boundaries.py
 
+      - name: Repeated wide scan allocation
+        run: python3 tests/page_pool_churn.py
+
       - name: Transaction payload spill and statement rollback
         run: python3 tests/transaction_spill.py
 
