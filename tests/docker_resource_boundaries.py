@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 """Exercise >2 GiB of heap files inside a 256 MiB, read-only Docker runtime."""
 import argparse
+from collections import deque
+import http.client
 import json
 from pathlib import Path
 import subprocess
+import socket
 import sys
 import tempfile
+import threading
 import time
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -45,6 +49,44 @@ def main():
             stages.append(row)
             args.output.write_text(json.dumps(dict(passed=False,stages=stages),indent=2)+'\n',encoding='utf-8')
             print(json.dumps(row),flush=True)
+        def profiled_sql(label,text,**fields):
+            # Read daemon-side cgroup stats without adding a monitoring
+            # process to the constrained database container.
+            if not Path('/var/run/docker.sock').exists():
+                return sql(text,**fields)
+            samples = deque(maxlen=8)
+            peak = {}
+            stop = threading.Event()
+            def observe():
+                while not stop.is_set():
+                    try:
+                        with socket.socket(socket.AF_UNIX,socket.SOCK_STREAM) as connection:
+                            connection.settimeout(5)
+                            connection.connect('/var/run/docker.sock')
+                            connection.sendall(('GET /containers/%s/stats?stream=false HTTP/1.1\r\n'
+                                'Host: localhost\r\nConnection: close\r\n\r\n' % session.name).encode())
+                            response = http.client.HTTPResponse(connection)
+                            response.begin()
+                            data = json.load(response).get('memory_stats',{})
+                        detail = data.get('stats',{})
+                        sample = dict(usage=data.get('usage',0),limit=data.get('limit',0),
+                            counters={k:detail[k] for k in ('anon','file','file_dirty','file_writeback',
+                                'kernel','slab','rss','cache') if k in detail})
+                        samples.append(sample)
+                        if sample['usage'] > peak.get('usage',-1):
+                            peak.clear(); peak.update(sample)
+                    except Exception:
+                        break
+                    stop.wait(0.2)
+            observer = threading.Thread(target=observe,daemon=True)
+            observer.start()
+            try:
+                return sql(text,**fields)
+            finally:
+                stop.set(); observer.join(timeout=6)
+                row = dict(stage=label+' memory profile',peak=peak,last_samples=list(samples))
+                stages.append(row)
+                print(json.dumps(row),flush=True)
         try:
             session.start()
             sql('CREATE TABLE t (id BIGINT PRIMARY KEY,s VARCHAR(2048),v VECTOR(2))')
@@ -66,7 +108,7 @@ def main():
             sql('ROLLBACK')
             record('scans and transaction TopK')
             start_time = time.perf_counter()
-            sql("UPDATE t SET s='changed'",affected_rows=args.rows)
+            profiled_sql('UPDATE',"UPDATE t SET s='changed'",affected_rows=args.rows)
             record('whole-table update',seconds=round(time.perf_counter()-start_time,3))
             session.crash()
             session.start()
@@ -74,7 +116,8 @@ def main():
             sql('SELECT id,s FROM t WHERE id=%d' % (args.rows-1),rows=[[args.rows-1,'changed']])
             sql('SELECT id FROM t ORDER BY id DESC LIMIT 1',rows=[[args.rows-1]])
             start_time = time.perf_counter()
-            sql('DELETE FROM t',affected_rows=args.rows)
+            # After crash/restart this also verifies every UPDATE result.
+            profiled_sql('DELETE',"DELETE FROM t WHERE s='changed'",affected_rows=args.rows)
             sql('SELECT id FROM t',rows=[])
             record('whole-table delete',seconds=round(time.perf_counter()-start_time,3))
             session.shutdown()

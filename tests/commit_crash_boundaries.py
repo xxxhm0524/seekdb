@@ -13,9 +13,9 @@ from protocol_client import Client
 
 
 def main():
-    rows = 1600
+    rows = 5000  # Cross the 8 MiB WAL sync window in one multi-table commit.
     verdicts = {'old': 0, 'new': 0, 'acknowledged': 0}
-    for delay in (-1, 0, 0.0002, 0.001, 0.003, 0.008, None):
+    for delay in (-1, 0, 0.001, 0.008, 0.02, 'wal-prefix', None):
         with tempfile.TemporaryDirectory(prefix='mvd-commit-') as data:
             client = Client(datadir=data, extra=['--cache-mb=1'])
             def sql(text, **fields):
@@ -47,8 +47,15 @@ def main():
                     if delay is None:
                         reader.join(timeout=10)
                         assert not reader.is_alive(), 'COMMIT response timeout'
+                    elif delay == 'wal-prefix':
+                        deadline = time.monotonic()+10
+                        wal = os.path.join(data,'wal.log')
+                        while os.path.getsize(wal) <= 8*2**20 and answers.empty():
+                            assert time.monotonic()<deadline, 'WAL prefix timeout'
+                            time.sleep(0.0002)
                     else:
                         time.sleep(delay)
+                wal_bytes = os.path.getsize(os.path.join(data,'wal.log'))
                 # Closing streams waits for the reader, so kill/wait first.
                 client.p.kill()
                 client.p.wait()
@@ -74,7 +81,8 @@ def main():
                 verdicts[state] += 1
                 verdicts['acknowledged'] += acknowledged
                 sql("INSERT INTO a VALUES (99999,'after','[0,0]')", affected_rows=1)
-                print(json.dumps(dict(delay=delay, acknowledged=acknowledged, recovered=state)), flush=True)
+                print(json.dumps(dict(delay=delay, acknowledged=acknowledged,
+                    wal_bytes_before_kill=wal_bytes,recovered=state)), flush=True)
             finally:
                 client.close()
     assert verdicts['old'] and verdicts['new'], verdicts

@@ -90,7 +90,9 @@ def main():
         peak = peak_bytes(client.p.pid)
         print(json.dumps(dict(check='whole-table UPDATE', peak_mb=round(peak/2**20,2))), flush=True)
         assert peak <= args.max_mb*2**20, 'UPDATE retains complete copies of wide rows'
-        sql('DELETE FROM t', affected_rows=args.rows)
+        # Count every updated value, rather than checking just the first/last
+        # rows and then deleting by identity alone.
+        sql("DELETE FROM t WHERE s='changed'", affected_rows=args.rows)
         sql('SELECT id FROM t', rows=[])
         peak = peak_bytes(client.p.pid)
         print(json.dumps(dict(check='whole-table DELETE', peak_mb=round(peak/2**20,2))), flush=True)

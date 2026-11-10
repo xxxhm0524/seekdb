@@ -253,6 +253,9 @@ class Wal {
                    const Page &page);
   bool append_commit(uint64_t txid);
   bool sync();
+  void discard_clean_cache(uint64_t offset, uint64_t length) {
+    file_.discard_clean_cache(offset, length);
+  }
   bool truncate();
   std::shared_ptr<Page> read_page_image(uint64_t offset);
   int64_t size() const { return file_.size(); }

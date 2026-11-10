@@ -405,6 +405,24 @@ class FileHandle {
 #endif
   }
 
+  // Only call after syncing the corresponding writes. Clean WAL cache pages
+  // are redundant with our bounded buffers and count toward cgroup memory.
+  void discard_clean_cache(uint64_t offset, uint64_t length) {
+#ifdef __linux__
+    long page_bytes = ::sysconf(_SC_PAGESIZE);
+    if (page_bytes <= 0) return;
+    uint64_t alignment = static_cast<uint64_t>(page_bytes);
+    uint64_t begin = offset / alignment * alignment;
+    uint64_t end = (offset + length) / alignment * alignment;
+    if (end > begin)
+      (void)::posix_fadvise(fd_, static_cast<off_t>(begin),
+                            static_cast<off_t>(end - begin), POSIX_FADV_DONTNEED);
+#else
+    (void)offset;
+    (void)length;
+#endif
+  }
+
   bool ftruncate(uint64_t size) {
     if (fd_ < 0) return false;
 #ifdef _WIN32

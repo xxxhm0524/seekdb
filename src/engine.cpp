@@ -34,6 +34,7 @@ std::string lower_copy(std::string s) {
 // committed dirty page and fsyncs table files before truncating the log; a
 // crash at any point leaves either the old log or durable data files.
 constexpr int64_t kWalCheckpointBytes = 32 * 1024 * 1024;
+constexpr uint64_t kWalWriteWindow = 8 * 1024 * 1024;
 
 // Parses a vector literal with detailed error classification matching the
 // task package's semantic error names.
@@ -919,6 +920,7 @@ void Engine::save_catalog() {
 void Engine::commit_transaction() {
   if (!tx_.active) return;
   uint64_t txid = wal_.allocate_txid();
+  uint64_t sync_offset = static_cast<uint64_t>(wal_.size());
   std::vector<PageImage> all_images;
   for (auto &kv : tx_.tables) {
     auto it = tables_.find(kv.first);
@@ -927,6 +929,14 @@ void Engine::commit_transaction() {
       img.wal_offset = static_cast<uint64_t>(wal_.size());
       if (!wal_.append_page(txid, img.table_id, img.page_no, *img.page))
         throw_error("IO_ERROR", "failed to write WAL page image");
+      uint64_t written = static_cast<uint64_t>(wal_.size());
+      if (written - sync_offset >= kWalWriteWindow) {
+        // Persisting an uncommitted prefix is safe: recovery still requires
+        // the COMMIT record. Bound dirty kernel cache as well as user buffers.
+        if (!wal_.sync()) throw_error("IO_ERROR", "failed to sync WAL prefix");
+        wal_.discard_clean_cache(sync_offset, written - sync_offset);
+        sync_offset = written;
+      }
       // Small batches keep their fast in-memory path. Large commits retain
       // only WAL offsets after the first MiB, instead of pinning every page.
       if (all_images.size() >= 16) img.page.reset();
@@ -941,15 +951,26 @@ void Engine::commit_transaction() {
     if (!wal_.append_commit(txid) || !wal_.sync())
       throw_error("IO_ERROR", "failed to commit WAL");
   }
+  uint64_t committed_end = static_cast<uint64_t>(wal_.size());
+  wal_.discard_clean_cache(sync_offset, committed_end - sync_offset);
   // Install images and update in-memory maps.
+  uint64_t replay_offset = 0;
   for (auto &img : all_images) {
     auto it = tables_.find(img.table_id);
     if (it != tables_.end()) {
-      if (!img.page) img.page = wal_.read_page_image(img.wal_offset);
+      if (!img.page) {
+        img.page = wal_.read_page_image(img.wal_offset);
+        uint64_t consumed = img.wal_offset + sizeof(WalRecordHeader) + 12 + kPageSize;
+        if (consumed - replay_offset >= kWalWriteWindow) {
+          wal_.discard_clean_cache(replay_offset, consumed - replay_offset);
+          replay_offset = consumed;
+        }
+      }
       cache_.install(it->second.get(), img.page_no, img.page);
       img.page.reset();
     }
   }
+  wal_.discard_clean_cache(replay_offset, committed_end - replay_offset);
   for (auto &kv : tx_.tables) {
     auto it = tables_.find(kv.first);
     if (it == tables_.end()) continue;
