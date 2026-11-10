@@ -298,7 +298,7 @@ class Wal {
   }
   bool truncate();
   std::shared_ptr<Page> read_page_image(uint64_t offset);
-  int64_t size() const { return file_.size(); }
+  int64_t size() const { return end_offset_; }
   uint64_t next_txid() const { return next_txid_; }
   uint64_t allocate_txid() { return next_txid_++; }
 
@@ -339,6 +339,9 @@ class Wal {
   bool read_record(uint64_t offset, uint64_t size, WalRecordHeader &header,
                     std::string &payload);
   FileHandle file_;
+  // The next record begins after the full logical image. A zero suffix may
+  // remain beyond the physical end of the file until the next record is written.
+  int64_t end_offset_ = 0;
   uint64_t next_txid_ = 1;
 };
 

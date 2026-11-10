@@ -739,8 +739,13 @@ void Table::build_commit_images(const TxTable &tx,
 // WAL
 // ---------------------------------------------------------------------------
 bool Wal::open(const std::string &path) {
-  file_ = FileHandle::open(path, O_RDWR | O_CREAT | O_APPEND);
-  return file_.valid();
+  int flags = O_RDWR | O_CREAT;
+#ifndef __linux__
+  flags |= O_APPEND;
+#endif
+  file_ = FileHandle::open(path, flags);
+  end_offset_ = file_.size();
+  return end_offset_ >= 0;
 }
 
 void Wal::close() { file_.close(); }
@@ -767,37 +772,82 @@ std::shared_ptr<Page> Wal::read_page_image(uint64_t offset) {
 
 bool Wal::append_page(uint64_t txid, uint32_t table_id, uint32_t page_no,
                       const Page &page) {
-  std::string payload;
-  payload.reserve(12 + kPageSize);
-  payload.append(reinterpret_cast<const char *>(&table_id), 4);
-  payload.append(reinterpret_cast<const char *>(&page_no), 4);
-  uint32_t ps = kPageSize;
-  payload.append(reinterpret_cast<const char *>(&ps), 4);
-  payload.append(reinterpret_cast<const char *>(&page), kPageSize);
-  WalRecordHeader h;
+  if (!file_.valid()) return false;
+  uint32_t metadata[] = {table_id, page_no, kPageSize};
+  WalRecordHeader h{};
   h.type = 1;
-  h.payload_len = static_cast<uint32_t>(payload.size());
+  h.payload_len = sizeof(metadata) + kPageSize;
   h.txid = txid;
-  h.crc = crc32(payload.data(), payload.size());
-  if (!file_.append(&h, sizeof(h))) return false;
-  if (!file_.append(payload.data(), payload.size())) return false;
+  h.crc = crc32_update(crc32(metadata, sizeof(metadata)), &page, kPageSize);
+  const int64_t record_bytes = sizeof(h) + h.payload_len;
+  if (end_offset_ > std::numeric_limits<int64_t>::max() - record_bytes) return false;
+
+#ifdef __linux__
+  // A later positioned write fills the gap with logical zeros. Only skip a
+  // suffix when it contains a whole aligned block of zero bytes.
+  static constexpr std::array<uint8_t, 4096> zeros{};
+  const auto *bytes = reinterpret_cast<const uint8_t *>(&page);
+  const size_t tail = static_cast<uint64_t>(end_offset_ + record_bytes) % zeros.size();
+  const size_t aligned_end = kPageSize - tail;
+  size_t page_bytes = kPageSize;
+  if (std::memcmp(bytes + aligned_end, zeros.data(), tail) == 0) {
+    size_t prefix = aligned_end;
+    while (prefix >= zeros.size() &&
+           std::memcmp(bytes + prefix - zeros.size(), zeros.data(), zeros.size()) == 0)
+      prefix -= zeros.size();
+    if (prefix < aligned_end) page_bytes = prefix;
+  }
+  iovec buffers[] = {
+      {&h, sizeof(h)}, {metadata, sizeof(metadata)},
+      {const_cast<Page *>(&page), page_bytes}};
+  bool written = file_.pwritev_full(buffers, 3, end_offset_);
+#else
+  std::array<uint8_t, sizeof(h) + sizeof(metadata)> prefix;
+  std::memcpy(prefix.data(), &h, sizeof(h));
+  std::memcpy(prefix.data() + sizeof(h), metadata, sizeof(metadata));
+  bool written = file_.append(prefix.data(), prefix.size()) && file_.append(&page, kPageSize);
+#endif
+  if (!written) {
+    // A partial record can invalidate the tail for recovery.
+    close();
+    return false;
+  }
+  end_offset_ += record_bytes;
   return true;
 }
 
 bool Wal::append_commit(uint64_t txid) {
-  WalRecordHeader h;
+  WalRecordHeader h{};
   h.type = 2;
   h.payload_len = 0;
   h.txid = txid;
   h.crc = crc32(nullptr, 0);
-  return file_.append(&h, sizeof(h));
+  if (!file_.valid() ||
+      end_offset_ > std::numeric_limits<int64_t>::max() - static_cast<int64_t>(sizeof(h)))
+    return false;
+#ifdef __linux__
+  bool written = file_.pwrite_full(&h, sizeof(h), end_offset_);
+#else
+  bool written = file_.append(&h, sizeof(h));
+#endif
+  if (!written) {
+    close();
+    return false;
+  }
+  end_offset_ += sizeof(h);
+  return true;
 }
 
-bool Wal::sync() { return file_.fsync(); }
+bool Wal::sync() {
+  if (file_.fsync()) return true;
+  close();
+  return false;
+}
 
 bool Wal::truncate() {
   if (!file_.ftruncate(0)) return false;
-  return file_.fsync();
+  end_offset_ = 0;
+  return sync();
 }
 
 // ---------------------------------------------------------------------------

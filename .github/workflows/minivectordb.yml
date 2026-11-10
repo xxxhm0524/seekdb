@@ -224,12 +224,19 @@ jobs:
           cp Dockerfile "$mvd_reference_dir/Dockerfile"
           docker build -t minivectordb:reference-082acdb9 "$mvd_reference_dir"
           mvd_previous_dir=$(mktemp -d)
-          git fetch --depth=1 origin a240841658c9b37c59f373bf810397a0d1ee4ebe
-          git archive a240841658c9b37c59f373bf810397a0d1ee4ebe \
+          git fetch --depth=1 origin e20904ebbf5f6044f0b1cd2093362911e82063ab
+          git archive e20904ebbf5f6044f0b1cd2093362911e82063ab \
             Makefile src/main.cpp src/sql.cpp src/sql.h src/engine.cpp \
             src/engine.h src/common.h src/ann.h src/tx_spool.h | tar -x -C "$mvd_previous_dir"
           cp Dockerfile "$mvd_previous_dir/Dockerfile"
-          docker build -t minivectordb:reference-a2408416 "$mvd_previous_dir"
+          docker build -t minivectordb:reference-e20904eb "$mvd_previous_dir"
+
+      - name: WAL records and bidirectional recovery
+        if: always() && steps.reference_build.outcome == 'success'
+        run: |
+          python3 tests/wal_compatibility.py \
+            --reference-image minivectordb:reference-e20904eb --candidate-image minivectordb:ci \
+            --output protocol-results/wal-compatibility-docker.json
 
       - name: Paired time I/O and memory comparison
         if: always() && steps.reference_build.outcome == 'success'
@@ -243,15 +250,15 @@ jobs:
         if: always() && steps.reference_build.outcome == 'success'
         run: |
           python3 tests/docker_score_compare.py \
-            --reference-image minivectordb:reference-a2408416 --candidate-image minivectordb:ci \
-            --reference-sha a240841658c9b37c59f373bf810397a0d1ee4ebe --drop-caches \
-            --output protocol-results/paired-score-comparison-a240.json
+            --reference-image minivectordb:reference-e20904eb --candidate-image minivectordb:ci \
+            --reference-sha e20904ebbf5f6044f0b1cd2093362911e82063ab --drop-caches \
+            --output protocol-results/paired-score-comparison-e209.json
 
       - name: Paired prepared queries on a larger collection
         if: always() && steps.reference_build.outcome == 'success'
         run: |
           python3 tests/paired_query_compare.py \
-            --reference-image minivectordb:reference-a2408416 --candidate-image minivectordb:ci \
+            --reference-image minivectordb:reference-e20904eb --candidate-image minivectordb:ci \
             --output protocol-results/paired-queries-docker-50k.json
 
       - name: Upload protocol reports
