@@ -5,6 +5,7 @@
 #include <cctype>
 #include <cerrno>
 #include <cfloat>
+#include <charconv>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -28,6 +29,9 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#ifdef __linux__
+#include <sys/uio.h>
+#endif
 #endif
 
 namespace mvd {
@@ -155,17 +159,37 @@ inline bool parse_int64(std::string_view text, int64_t &out) {
   return true;
 }
 
-inline bool parse_float32(std::string_view text, float &out) {
-  if (text.empty()) return false;
+enum class Float32Parse { VALID, INVALID, OVERFLOW };
+
+inline Float32Parse parse_float32_value(std::string_view text, float &out) {
+  if (text.empty()) return Float32Parse::INVALID;
+  const char *begin = text.data(), *end = begin + text.size();
+  if (*begin == '+') {
+    ++begin;
+    if (begin == end || *begin == '+' || *begin == '-') return Float32Parse::INVALID;
+  }
+  float value = 0;
+  auto parsed = std::from_chars(begin, end, value, std::chars_format::general);
+  if (parsed.ec == std::errc{} && parsed.ptr == end) {
+    if (!std::isfinite(value)) return Float32Parse::INVALID;
+    out = value;
+    return Float32Parse::VALID;
+  }
+  // Preserve strtof semantics for underflow, finite boundary rounding, hex
+  // forms, and diagnostics. Ordinary decimal inputs avoid a temporary string.
   std::string tmp(text);
   errno = 0;
-  char *end = nullptr;
-  float v = std::strtof(tmp.c_str(), &end);
-  if (end == tmp.c_str() || end != tmp.c_str() + tmp.size()) return false;
-  if (!std::isfinite(v)) return false;
-  if (v > FLT_MAX || v < -FLT_MAX) return false;
+  char *tail = nullptr;
+  float v = std::strtof(tmp.c_str(), &tail);
+  if (tail == tmp.c_str() || tail != tmp.c_str() + tmp.size()) return Float32Parse::INVALID;
+  if (!std::isfinite(v))
+    return errno == ERANGE ? Float32Parse::OVERFLOW : Float32Parse::INVALID;
   out = v;
-  return true;
+  return Float32Parse::VALID;
+}
+
+inline bool parse_float32(std::string_view text, float &out) {
+  return parse_float32_value(text, out) == Float32Parse::VALID;
 }
 
 // Parses a vector literal of the form "[1, 2.5, -3e-2]" (brackets required).
@@ -377,6 +401,33 @@ class FileHandle {
     return true;
 #endif
   }
+
+#ifdef __linux__
+  bool pwritev_full(const iovec *vectors, int count, uint64_t offset) {
+    std::vector<iovec> pending(vectors, vectors+count);
+    size_t first = 0;
+    while (first < pending.size()) {
+      ssize_t written = ::pwritev(fd_, pending.data()+first,
+          static_cast<int>(pending.size()-first), static_cast<off_t>(offset));
+      if (written < 0) {
+        if (errno == EINTR) continue;
+        return false;
+      }
+      if (written == 0) return false;
+      offset += static_cast<uint64_t>(written);
+      size_t used = static_cast<size_t>(written);
+      while (first < pending.size() && used >= pending[first].iov_len) {
+        used -= pending[first].iov_len;
+        ++first;
+      }
+      if (first < pending.size() && used) {
+        pending[first].iov_base = static_cast<uint8_t *>(pending[first].iov_base)+used;
+        pending[first].iov_len -= used;
+      }
+    }
+    return true;
+  }
+#endif
 
   bool append(const void *buf, size_t len) {
     const uint8_t *p = static_cast<const uint8_t *>(buf);

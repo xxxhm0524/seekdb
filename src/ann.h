@@ -35,7 +35,7 @@ class VectorIndex {
         graph_(allow_graph && dimension >= 32 && expected >= minimum_rows),
         minimum_rows_(minimum_rows), allow_graph_(allow_graph) {
     columns_.resize(definitions.size());
-    bytes_per_node_ = static_cast<size_t>(dim_) * 4 + (graph_ ? 384 : 96);
+    bytes_per_node_ = static_cast<size_t>(dim_) * 4 + (graph_ ? 384 : 96) + 8;
     for (size_t i = 0; i < definitions.size(); ++i) {
       auto &column = columns_[i];
       column.type = definitions[i].type;
@@ -60,7 +60,7 @@ class VectorIndex {
     }
   }
   size_t estimate(size_t nodes) const {
-    return nodes * bytes_per_node_ * 2 + columns_.capacity()*sizeof(Column) + 1024;
+    return nodes * bytes_per_node_ * 2 + columns_.capacity()*sizeof(Column) + 8192;
   }
   size_t count() const { return nodes_.size(); }
   size_t live() const { return ids_.size(); }
@@ -104,11 +104,67 @@ class VectorIndex {
     }
     return true;
   }
+  const std::vector<uint32_t> *matching_nodes(const std::vector<Condition> &where) {
+    if (where.empty() || nodes_.empty()) return nullptr;
+    // Charge a bounded predicate cache to the index budget. Only row IDs are
+    // cached: distances and TopK are still evaluated for every query.
+    size_t budget = std::min<size_t>(4*1024*1024, nodes_.size()*8);
+    try {
+      std::string key;
+      for (const auto &condition : where) {
+        const auto &column = columns_[condition.resolved_column];
+        size_t extra = column.type == ColumnType::BIGINT ? 8 : 4+condition.typed_value.s.size();
+        if (extra > 4096 || key.size()+5+extra > 4096) return nullptr;
+        int32_t resolved = condition.resolved_column;
+        key.append(reinterpret_cast<const char *>(&resolved), sizeof(resolved));
+        key.push_back(static_cast<char>(condition.op));
+        if (column.type == ColumnType::BIGINT) {
+          key.append(reinterpret_cast<const char *>(&condition.typed_value.i), 8);
+        } else {
+          uint32_t length = static_cast<uint32_t>(condition.typed_value.s.size());
+          key.append(reinterpret_cast<const char *>(&length), sizeof(length));
+          key.append(condition.typed_value.s);
+        }
+      }
+      for (auto &entry : filter_cache_) if (entry.key == key) {
+        entry.age = ++filter_age_;
+        return &entry.ids;
+      }
+      FilterEntry entry;
+      entry.key = std::move(key);
+      entry.ids.reserve(std::min<size_t>(64, nodes_.size()));
+      auto charge = [&] { return sizeof(FilterEntry)+entry.key.capacity()+1+entry.ids.capacity()*4; };
+      if (charge() > budget) return nullptr;
+      for (uint32_t id = 0; id < nodes_.size(); ++id) if (matches(id, where)) {
+        entry.ids.push_back(id);
+        if (charge() > budget) return nullptr;
+      }
+      entry.charge = charge();
+      while (!filter_cache_.empty() && (filter_cache_.size() >= 64 || filter_bytes_+entry.charge > budget)) {
+        auto oldest = std::min_element(filter_cache_.begin(), filter_cache_.end(),
+            [](const auto &a, const auto &b) { return a.age < b.age; });
+        filter_bytes_ -= oldest->charge;
+        filter_cache_.erase(oldest);
+      }
+      if (filter_cache_.capacity() == 0) filter_cache_.reserve(64);
+      entry.age = ++filter_age_;
+      filter_bytes_ += entry.charge;
+      filter_cache_.push_back(std::move(entry));
+      return &filter_cache_.back().ids;
+    } catch (const std::bad_alloc &) {
+      clear_filter_cache();
+      return nullptr;
+    }
+  }
   void erase(int64_t pk) {
     auto found = ids_.find(pk);
-    if (found != ids_.end()) { nodes_[found->second].active = false; ids_.erase(found); }
+    if (found != ids_.end()) {
+      clear_filter_cache();
+      nodes_[found->second].active = false; ids_.erase(found);
+    }
   }
   void upsert(int64_t pk, uint64_t pos, const uint8_t *row) {
+    clear_filter_cache();
     const float *input = reinterpret_cast<const float *>(row + vector_offset_);
     auto found = ids_.find(pk);
     if (found != ids_.end() && std::equal(input, input + dim_, vector(found->second))) {
@@ -160,6 +216,16 @@ class VectorIndex {
     return layer_search(query, entry, std::max<size_t>(384, k * 8), 0);
   }
  private:
+  struct FilterEntry {
+    std::string key;
+    std::vector<uint32_t> ids;
+    uint64_t age = 0;
+    size_t charge = 0;
+  };
+  void clear_filter_cache() {
+    filter_cache_.clear();
+    filter_bytes_ = 0;
+  }
   bool less(const Hit &a, const Hit &b) const {
     if (a.distance != b.distance) return a.distance < b.distance;
     return nodes_[a.node].pk < nodes_[b.node].pk;
@@ -259,5 +325,8 @@ class VectorIndex {
   uint32_t stamp_ = 0, entry_ = 0;
   int max_level_ = -1;
   uint64_t random_ = 0x9E3779B97F4A7C15ULL;
+  std::vector<FilterEntry> filter_cache_;
+  size_t filter_bytes_ = 0;
+  uint64_t filter_age_ = 0;
 };
 }  // namespace mvd

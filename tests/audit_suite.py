@@ -27,6 +27,8 @@ def main():
         ('requirements',['tests/formal_coverage.py']),
         ('hidden-boundaries',['tests/hidden_boundaries.py']),
         ('vector-precision',['tests/vector_precision_model.py']),
+        ('float-parser',['tests/float_parse_model.py']),
+        ('filter-cache',['tests/filter_cache_model.py']),
         ('resource',['tests/resource_boundaries.py']),
         ('mutation-io',['tests/mutation_io.py']),
         ('spool-read',['tests/spool_read_boundaries.py']),

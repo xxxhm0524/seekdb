@@ -39,6 +39,12 @@ jobs:
       - name: Wide-exponent distance permutations
         run: python3 tests/vector_precision_model.py
 
+      - name: Float32 conversion differential model
+        run: python3 tests/float_parse_model.py
+
+      - name: Filtered candidate cache model
+        run: python3 tests/filter_cache_model.py
+
       - name: Bounded scan and mutation memory
         run: python3 tests/resource_boundaries.py
 
@@ -96,6 +102,7 @@ jobs:
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/ann_lifecycle.py
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/mutation_io.py
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/spool_read_boundaries.py
+          MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/filter_cache_model.py
 
       - name: Docker build
         id: docker_build
@@ -111,6 +118,7 @@ jobs:
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/commit_crash_boundaries.py
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/mutation_io.py
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/spool_read_boundaries.py
+          MVD_BIN="$PWD/minivectordb-asan" python3 tests/filter_cache_model.py
 
       - name: Docker handshake
         run: |
@@ -144,6 +152,25 @@ jobs:
             --seed 20261112 --search-mode ann --output protocol-results/benchmark-docker-hnsw-50k.json
           python3 tests/docker_bench.py --image minivectordb:ci --rows 50000 --queries 300 \
             --seed 20261112 --search-mode exact --output protocol-results/benchmark-docker-exact-50k.json
+
+      - name: Build source reference for paired resource comparison
+        id: reference_build
+        if: always() && steps.docker_build.outcome == 'success'
+        run: |
+          mvd_reference_dir=$(mktemp -d)
+          git fetch --depth=1 origin 082acdb96d847844962f85cd3e3f57e4d38db1dc
+          git archive 082acdb96d847844962f85cd3e3f57e4d38db1dc \
+            Makefile Dockerfile src/main.cpp src/sql.cpp src/sql.h src/engine.cpp \
+            src/engine.h src/common.h src/ann.h src/tx_spool.h | tar -x -C "$mvd_reference_dir"
+          docker build -t minivectordb:reference-082acdb9 "$mvd_reference_dir"
+
+      - name: Paired time I/O and memory comparison
+        if: always() && steps.reference_build.outcome == 'success'
+        run: |
+          python3 tests/docker_score_compare.py \
+            --reference-image minivectordb:reference-082acdb9 --candidate-image minivectordb:ci \
+            --reference-sha 082acdb96d847844962f85cd3e3f57e4d38db1dc --drop-caches \
+            --output protocol-results/paired-score-comparison.json
 
       - name: Upload protocol reports
         if: always()

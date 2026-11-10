@@ -215,6 +215,9 @@ class Table {
   bool read_row(uint64_t pos, std::vector<uint8_t> &row);
   void write_page_to_disk(uint32_t page_no, const Page &page);
   void write_pages_to_disk(uint32_t first_page, const void *pages, uint32_t count);
+#ifdef __linux__
+  void write_scattered_pages(uint32_t first_page, const Page *const *pages, uint32_t count);
+#endif
   void flush_all_dirty();
   bool fsync_file();
 

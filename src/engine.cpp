@@ -2,6 +2,7 @@
 #include "ann.h"
 
 #include <algorithm>
+#include <array>
 #include <cctype>
 #include <chrono>
 #include <cmath>
@@ -45,12 +46,14 @@ constexpr uint64_t kWalWriteWindow = 8 * 1024 * 1024;
 void parse_vector_for_column(const std::string &text, const ColumnDef &col,
                              std::vector<float> &out) {
   out.clear();
+  out.reserve(static_cast<size_t>(col.dim));
   size_t i = 0;
   while (i < text.size() && std::isspace(static_cast<unsigned char>(text[i]))) ++i;
   if (i >= text.size() || text[i] != '[')
     throw_error("INVALID_VECTOR", "expected numeric vector component");
   ++i;
-  std::vector<std::string> parts;
+  std::vector<std::string_view> parts;
+  parts.reserve(static_cast<size_t>(col.dim));
   while (true) {
     while (i < text.size() && std::isspace(static_cast<unsigned char>(text[i]))) ++i;
     if (i < text.size() && text[i] == ']') { ++i; break; }
@@ -59,7 +62,7 @@ void parse_vector_for_column(const std::string &text, const ColumnDef &col,
     size_t end = i;
     while (end > start && std::isspace(static_cast<unsigned char>(text[end - 1]))) --end;
     if (end == start) throw_error("INVALID_VECTOR", "expected numeric vector component");
-    parts.emplace_back(text.substr(start, end - start));
+    parts.emplace_back(text.data()+start, end-start);
     if (i < text.size() && text[i] == ',') {
       ++i;
       size_t next = i;
@@ -74,17 +77,12 @@ void parse_vector_for_column(const std::string &text, const ColumnDef &col,
   while (i < text.size() && std::isspace(static_cast<unsigned char>(text[i]))) ++i;
   if (i != text.size()) throw_error("INVALID_VECTOR", "expected numeric vector component");
   for (const auto &part : parts) {
-    char *endp = nullptr;
-    errno = 0;
-    float v = std::strtof(part.c_str(), &endp);
-    if (endp == part.c_str() || endp != part.c_str() + part.size())
+    float v = 0;
+    Float32Parse status = parse_float32_value(part, v);
+    if (status == Float32Parse::INVALID)
       throw_error("INVALID_VECTOR", "expected numeric vector component");
-    if (!std::isfinite(v)) {
-      if (errno == ERANGE) throw_error("VECTOR_OVERFLOW", "vector component overflows float32");
-      throw_error("INVALID_VECTOR", "expected finite vector component");
-    }
-    // ERANGE also reports finite subnormals/underflow. Parse directly at
-    // float32 precision so decimal round-trips of FLT_MAX remain valid.
+    if (status == Float32Parse::OVERFLOW)
+      throw_error("VECTOR_OVERFLOW", "vector component overflows float32");
     out.push_back(v);
   }
   if (static_cast<int>(out.size()) != col.dim)
@@ -313,12 +311,19 @@ void PageCache::write_entries(std::vector<Entry *> entries) {
     if (end == begin + 1) {
       entries[begin]->owner->write_page_to_disk(entries[begin]->page_no, *entries[begin]->page);
     } else {
+#ifdef __linux__
+      std::array<const Page *, kIoBatchPages> pages;
+      for (size_t i = begin; i < end; ++i) pages[i-begin] = entries[i]->page.get();
+      entries[begin]->owner->write_scattered_pages(entries[begin]->page_no,
+          pages.data(), static_cast<uint32_t>(end-begin));
+#else
       if (!write_buffer_) write_buffer_ = std::make_unique<PageIoBuffer>();
       for (size_t i = begin; i < end; ++i)
         std::memcpy(write_buffer_->bytes + (i - begin) * kPageSize,
                     entries[i]->page.get(), kPageSize);
       entries[begin]->owner->write_pages_to_disk(entries[begin]->page_no,
           write_buffer_->bytes, static_cast<uint32_t>(end - begin));
+#endif
     }
     for (size_t i = begin; i < end; ++i) entries[i]->dirty = false;
     begin = end;
@@ -496,6 +501,23 @@ bool Table::read_row(uint64_t pos, std::vector<uint8_t> &row) {
 void Table::write_page_to_disk(uint32_t page_no, const Page &page) {
   write_pages_to_disk(page_no, &page, 1);
 }
+
+#ifdef __linux__
+void Table::write_scattered_pages(uint32_t first, const Page *const *pages, uint32_t count) {
+  std::vector<iovec> vectors(count);
+  for (size_t i = 0; i < count; ++i) {
+    vectors[i].iov_base = const_cast<Page *>(pages[i]);
+    vectors[i].iov_len = kPageSize;
+  }
+  uint64_t offset = static_cast<uint64_t>(first)*kPageSize;
+  if (!file_.pwritev_full(vectors.data(), static_cast<int>(count), offset)) {
+    if (!direct_io_ || !reopen_buffered() ||
+        !file_.pwritev_full(vectors.data(), static_cast<int>(count), offset))
+      throw_error("IO_ERROR", "failed to write table page batch");
+  }
+  if (first+count > page_count_) page_count_ = first+count;
+}
+#endif
 
 void Table::write_pages_to_disk(uint32_t page_no, const void *pages, uint32_t count) {
   uint64_t offset = static_cast<uint64_t>(page_no) * kPageSize;
@@ -1594,8 +1616,26 @@ double squared_l2_scalar(const float *a, const float *b, int dim) {
 __attribute__((target("avx2"))) double squared_l2_avx2(const float *a,
                                                           const float *b,
                                                           int dim) {
-  __m256d sum = _mm256_setzero_pd();
+  __m256d sum0 = _mm256_setzero_pd();
+  __m256d sum1 = _mm256_setzero_pd();
+  __m256d sum2 = _mm256_setzero_pd();
+  __m256d sum3 = _mm256_setzero_pd();
   int i = 0;
+  for (; i + 16 <= dim; i += 16) {
+    __m256d d0 = _mm256_sub_pd(_mm256_cvtps_pd(_mm_loadu_ps(a+i)),
+                               _mm256_cvtps_pd(_mm_loadu_ps(b+i)));
+    __m256d d1 = _mm256_sub_pd(_mm256_cvtps_pd(_mm_loadu_ps(a+i+4)),
+                               _mm256_cvtps_pd(_mm_loadu_ps(b+i+4)));
+    __m256d d2 = _mm256_sub_pd(_mm256_cvtps_pd(_mm_loadu_ps(a+i+8)),
+                               _mm256_cvtps_pd(_mm_loadu_ps(b+i+8)));
+    __m256d d3 = _mm256_sub_pd(_mm256_cvtps_pd(_mm_loadu_ps(a+i+12)),
+                               _mm256_cvtps_pd(_mm_loadu_ps(b+i+12)));
+    sum0 = _mm256_add_pd(sum0, _mm256_mul_pd(d0, d0));
+    sum1 = _mm256_add_pd(sum1, _mm256_mul_pd(d1, d1));
+    sum2 = _mm256_add_pd(sum2, _mm256_mul_pd(d2, d2));
+    sum3 = _mm256_add_pd(sum3, _mm256_mul_pd(d3, d3));
+  }
+  __m256d sum = _mm256_add_pd(_mm256_add_pd(sum0, sum1), _mm256_add_pd(sum2, sum3));
   for (; i + 4 <= dim; i += 4) {
     __m256d va = _mm256_cvtps_pd(_mm_loadu_ps(a + i));
     __m256d vb = _mm256_cvtps_pd(_mm_loadu_ps(b + i));
@@ -2075,12 +2115,14 @@ Response Engine::exec_select(SelectStmt &stmt) {
         }
       }
       if (!approximate) {
+        const auto *matching = index->matching_nodes(stmt.where);
+        size_t scan_count = matching ? matching->size() : index->count();
 #ifdef _OPENMP
 #pragma omp parallel for num_threads(thread_count) schedule(static)
 #endif
-        for (int64_t i = 0; i < static_cast<int64_t>(index->count()); ++i) {
-          uint32_t id = static_cast<uint32_t>(i);
-          if (!index->matches(id, stmt.where)) continue;
+        for (int64_t i = 0; i < static_cast<int64_t>(scan_count); ++i) {
+          uint32_t id = matching ? (*matching)[static_cast<size_t>(i)] : static_cast<uint32_t>(i);
+          if (!matching && !index->matches(id, stmt.where)) continue;
           int tid = 0;
 #ifdef _OPENMP
           tid = omp_get_thread_num();
