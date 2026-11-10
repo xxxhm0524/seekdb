@@ -71,6 +71,7 @@ jobs:
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/stress_random.py --rounds 40 --seed 211
 
       - name: Docker build
+        id: docker_build
         run: docker build -t minivectordb:ci .
 
       - name: Docker handshake
@@ -87,6 +88,7 @@ jobs:
         run: python3 tests/docker_resource_boundaries.py --image minivectordb:ci
 
       - name: Docker durable benchmark and recall
+        if: always() && steps.docker_build.outcome == 'success'
         run: |
           python3 tests/docker_bench.py --image minivectordb:ci --seed 20261110 \
             --output protocol-results/benchmark-docker-exact.json

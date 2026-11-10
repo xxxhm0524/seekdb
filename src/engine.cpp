@@ -256,33 +256,58 @@ void PageCache::install(Table *table, uint32_t page_no,
 
 void PageCache::evict_if_needed() {
   while (pages_.size() > max_pages_ && !lru_.empty()) {
-    bool evicted = false;
-    for (auto it = lru_.rbegin(); it != lru_.rend(); ++it) {
+    std::vector<uint64_t> victims;
+    std::vector<Entry *> dirty;
+    for (auto it = lru_.rbegin(); it != lru_.rend() && victims.size() < 16; ++it) {
       auto p = pages_.find(*it);
       if (p == pages_.end()) continue;
       if (p->second.page.use_count() > 1) continue;
-      if (p->second.dirty && p->second.owner) {
-        p->second.owner->write_page_to_disk(p->second.page_no,
-                                            *p->second.page);
-      }
-      lru_.erase(std::next(it).base());
-      pages_.erase(p);
-      evicted = true;
-      break;
+      victims.push_back(*it);
+      if (p->second.dirty && p->second.owner) dirty.push_back(&p->second);
     }
-    if (!evicted) break;  // all pages are pinned; allow temporary overshoot
+    if (victims.empty()) break;  // all pages are pinned
+    write_entries(std::move(dirty));
+    for (uint64_t victim : victims) {
+      auto p = pages_.find(victim);
+      lru_.erase(p->second.lru_it);
+      pages_.erase(p);
+    }
+  }
+}
+
+void PageCache::write_entries(std::vector<Entry *> entries) {
+  std::sort(entries.begin(), entries.end(), [](const Entry *a, const Entry *b) {
+    if (a->owner->id() != b->owner->id()) return a->owner->id() < b->owner->id();
+    return a->page_no < b->page_no;
+  });
+  for (size_t begin = 0; begin < entries.size();) {
+    size_t end = begin + 1;
+    while (end < entries.size() && end - begin < 16 &&
+           entries[end]->owner == entries[begin]->owner &&
+           entries[end]->page_no == entries[end - 1]->page_no + 1) ++end;
+    if (end == begin + 1) {
+      entries[begin]->owner->write_page_to_disk(entries[begin]->page_no, *entries[begin]->page);
+    } else {
+      if (!write_buffer_) write_buffer_ = std::make_unique<WriteBuffer>();
+      for (size_t i = begin; i < end; ++i)
+        std::memcpy(write_buffer_->bytes + (i - begin) * kPageSize,
+                    entries[i]->page.get(), kPageSize);
+      entries[begin]->owner->write_pages_to_disk(entries[begin]->page_no,
+          write_buffer_->bytes, static_cast<uint32_t>(end - begin));
+    }
+    for (size_t i = begin; i < end; ++i) entries[i]->dirty = false;
+    begin = end;
   }
 }
 
 void PageCache::flush_all(
     const std::unordered_map<uint32_t, std::unique_ptr<Table>> &tables) {
   std::lock_guard<std::mutex> lock(mutex_);
+  std::vector<Entry *> dirty;
   for (auto &kv : pages_) {
-    if (kv.second.dirty && kv.second.owner) {
-      kv.second.owner->write_page_to_disk(kv.second.page_no, *kv.second.page);
-      kv.second.dirty = false;
-    }
+    if (kv.second.dirty && kv.second.owner) dirty.push_back(&kv.second);
   }
+  write_entries(std::move(dirty));
   for (auto &t : tables) {
     if (!t.second->fsync_file()) throw_error("IO_ERROR", "failed to sync table file");
   }
@@ -421,16 +446,21 @@ bool Table::read_row(uint64_t pos, std::vector<uint8_t> &row) {
 }
 
 void Table::write_page_to_disk(uint32_t page_no, const Page &page) {
+  write_pages_to_disk(page_no, &page, 1);
+}
+
+void Table::write_pages_to_disk(uint32_t page_no, const void *pages, uint32_t count) {
   uint64_t offset = static_cast<uint64_t>(page_no) * kPageSize;
-  if (!file_.pwrite_full(&page, kPageSize, offset)) {
+  size_t bytes = static_cast<size_t>(count) * kPageSize;
+  if (!file_.pwrite_full(pages, bytes, offset)) {
     if (direct_io_ && reopen_buffered()) {
-      if (!file_.pwrite_full(&page, kPageSize, offset))
+      if (!file_.pwrite_full(pages, bytes, offset))
         throw_error("IO_ERROR", "failed to write table page");
     } else {
       throw_error("IO_ERROR", "failed to write table page");
     }
   }
-  if (page_no >= page_count_) page_count_ = page_no + 1;
+  if (page_no + count > page_count_) page_count_ = page_no + count;
 }
 
 void Table::flush_all_dirty() {}
@@ -581,8 +611,12 @@ void Table::build_commit_images(const TxTable &tx,
     uint32_t page_no = static_cast<uint32_t>(state.pos / schema_.rows_per_page);
     by_page[page_no].push_back(Change{state.pos, state.deleted, &state});
   }
-  for (auto &kv : by_page) {
-    uint32_t page_no = kv.first;
+  std::vector<uint32_t> ordered_pages;
+  ordered_pages.reserve(by_page.size());
+  for (const auto &kv : by_page) ordered_pages.push_back(kv.first);
+  std::sort(ordered_pages.begin(), ordered_pages.end());
+  for (uint32_t page_no : ordered_pages) {
+    auto &changes = by_page.at(page_no);
     std::shared_ptr<Page> base;
     if (page_no < page_count_) {
       base = cache_->get(this, page_no);
@@ -595,10 +629,10 @@ void Table::build_commit_images(const TxTable &tx,
     auto image = make_page(base.get());
     image->page_no = page_no;
     image->magic = kPageMagic;
-    std::sort(kv.second.begin(), kv.second.end(),
+    std::sort(changes.begin(), changes.end(),
               [](const Change &a, const Change &b) { return a.pos < b.pos; });
     uint32_t max_slots = image->capacity(schema_.row_size);
-    for (const Change &ch : kv.second) {
+    for (const Change &ch : changes) {
       uint32_t slot = static_cast<uint32_t>(ch.pos % schema_.rows_per_page);
       if (slot >= max_slots)
         throw_error("CORRUPTION", "row slot outside page capacity");

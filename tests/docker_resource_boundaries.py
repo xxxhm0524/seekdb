@@ -84,6 +84,16 @@ def main():
             sql('SELECT id FROM t',rows=[[1]])
             session.shutdown()
         except Exception as error:
+            if session.proc is not None and session.proc.poll() is None:
+                try:
+                    record('failure snapshot')
+                    wal_size = session.docker('exec',session.name,'stat','-c','%s','/data/wal.log',check=False)
+                    extra = session.docker('exec',session.name,'cat',
+                        '/proc/1/io','/sys/fs/cgroup/memory.stat',check=False)
+                    print('RESOURCE FAILURE IO:',json.dumps(dict(wal_size=wal_size.stdout.decode(errors='replace'),
+                        counters=extra.stdout.decode(errors='replace'))),flush=True)
+                except Exception:
+                    pass
             state = session.docker('inspect','--format','{{json .State}}',session.name,check=False)
             failure = dict(passed=False,error=str(error),docker_state=state.stdout.decode(errors='replace'),stages=stages)
             args.output.write_text(json.dumps(failure,indent=2)+'\n',encoding='utf-8')

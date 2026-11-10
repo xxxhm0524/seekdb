@@ -141,6 +141,12 @@ class PageCache {
   }
   void touch(std::unordered_map<uint64_t, Entry>::iterator it);
   void evict_if_needed();
+  void write_entries(std::vector<Entry *> entries);
+
+  struct alignas(4096) WriteBuffer {
+    uint8_t bytes[kPageSize * 16];
+  };
+  std::unique_ptr<WriteBuffer> write_buffer_;
 
   size_t max_pages_;
   mutable std::mutex mutex_;
@@ -175,6 +181,7 @@ class Table {
   void refresh_after_recovery();
   bool read_row(uint64_t pos, std::vector<uint8_t> &row);
   void write_page_to_disk(uint32_t page_no, const Page &page);
+  void write_pages_to_disk(uint32_t first_page, const void *pages, uint32_t count);
   void flush_all_dirty();
   bool fsync_file();
 
