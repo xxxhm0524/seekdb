@@ -346,10 +346,7 @@ int main(int argc, char **argv) {
     if (opt.ann_default) engine.set_ann_mode(true);
     std::fprintf(stderr, "minivectordb: ready\n");
     std::fflush(stderr);
-    if (!opt.ready_marker.empty()) {
-      std::cout << opt.ready_marker << "\n";
-      std::cout.flush();
-    }
+    // --ready-marker is a per-response terminator; do not print it before the first statement.
 
     std::string buffer;
     std::vector<std::string> statements;
