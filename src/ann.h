@@ -262,7 +262,19 @@ class VectorIndex {
       Hit current = candidates.top(); candidates.pop();
       if (best.size() >= ef && current.distance > best.top().distance) break;
       if (static_cast<size_t>(layer) >= nodes_[current.node].links.size()) continue;
-      for (uint32_t next : nodes_[current.node].links[layer]) {
+      const auto &links = nodes_[current.node].links[layer];
+      for (size_t edge = 0; edge < links.size(); ++edge) {
+#if defined(__GNUC__) || defined(__clang__)
+        // These unvisited neighbors will be scored later in this same loop.
+        if (edge + 4 < links.size()) {
+          uint32_t ahead = links[edge + 4];
+          if (visited[ahead] != stamp) {
+            __builtin_prefetch(vector(ahead), 0, 1);
+            __builtin_prefetch(vector(ahead) + dim_ / 2, 0, 1);
+          }
+        }
+#endif
+        uint32_t next = links[edge];
         if (visited[next] == stamp) continue;
         visited[next] = stamp;
         Hit candidate{distance_(query, vector(next), dim_), next};

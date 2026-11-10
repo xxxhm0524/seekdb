@@ -29,6 +29,7 @@ def main():
         ('vector-precision',['tests/vector_precision_model.py']),
         ('indexed-vector-precision',['tests/vector_precision_model.py','--indexed']),
         ('float-parser',['tests/float_parse_model.py']),
+        ('heap-rejection',['tests/heap_rejection_model.py']),
         ('filter-cache',['tests/filter_cache_model.py']),
         ('material-boundaries',['tests/test_agent_material.py']),
         ('material',['tests/validate_agent_material.py','--path','agent/conversation.json',

@@ -50,6 +50,9 @@ jobs:
       - name: Float32 conversion differential model
         run: python3 tests/float_parse_model.py
 
+      - name: TopK rejection boundary numeric model
+        run: python3 tests/heap_rejection_model.py
+
       - name: Filtered candidate cache model
         run: python3 tests/filter_cache_model.py
 
@@ -120,6 +123,7 @@ jobs:
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/spool_read_boundaries.py
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/filter_cache_model.py
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/primary_key_projection.py
+          python3 tests/heap_rejection_model.py --sanitize undefined
 
       - name: Docker build
         id: docker_build
@@ -164,6 +168,7 @@ jobs:
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/filter_cache_model.py
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/primary_key_projection.py
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/vector_precision_model.py --seeds 7 --indexed
+          python3 tests/heap_rejection_model.py --sanitize address
 
       - name: Docker handshake
         run: |
@@ -218,6 +223,13 @@ jobs:
             src/engine.h src/common.h src/ann.h src/tx_spool.h | tar -x -C "$mvd_reference_dir"
           cp Dockerfile "$mvd_reference_dir/Dockerfile"
           docker build -t minivectordb:reference-082acdb9 "$mvd_reference_dir"
+          mvd_previous_dir=$(mktemp -d)
+          git fetch --depth=1 origin a240841658c9b37c59f373bf810397a0d1ee4ebe
+          git archive a240841658c9b37c59f373bf810397a0d1ee4ebe \
+            Makefile src/main.cpp src/sql.cpp src/sql.h src/engine.cpp \
+            src/engine.h src/common.h src/ann.h src/tx_spool.h | tar -x -C "$mvd_previous_dir"
+          cp Dockerfile "$mvd_previous_dir/Dockerfile"
+          docker build -t minivectordb:reference-a2408416 "$mvd_previous_dir"
 
       - name: Paired time I/O and memory comparison
         if: always() && steps.reference_build.outcome == 'success'
@@ -226,6 +238,21 @@ jobs:
             --reference-image minivectordb:reference-082acdb9 --candidate-image minivectordb:ci \
             --reference-sha 082acdb96d847844962f85cd3e3f57e4d38db1dc --drop-caches \
             --output protocol-results/paired-score-comparison.json
+
+      - name: Paired resource comparison with immediate predecessor
+        if: always() && steps.reference_build.outcome == 'success'
+        run: |
+          python3 tests/docker_score_compare.py \
+            --reference-image minivectordb:reference-a2408416 --candidate-image minivectordb:ci \
+            --reference-sha a240841658c9b37c59f373bf810397a0d1ee4ebe --drop-caches \
+            --output protocol-results/paired-score-comparison-a240.json
+
+      - name: Paired prepared queries on a larger collection
+        if: always() && steps.reference_build.outcome == 'success'
+        run: |
+          python3 tests/paired_query_compare.py \
+            --reference-image minivectordb:reference-a2408416 --candidate-image minivectordb:ci \
+            --output protocol-results/paired-queries-docker-50k.json
 
       - name: Upload protocol reports
         if: always()
