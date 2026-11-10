@@ -97,7 +97,9 @@ jobs:
             --output protocol-results/benchmark-ann.json
 
       - name: ANN mutations and crash rebuild
-        run: python3 tests/ann_lifecycle.py
+        run: |
+          python3 tests/ann_lifecycle.py
+          python3 tests/ann_numeric_range.py
 
       - name: Undefined-behavior sanitizer
         run: |
@@ -112,6 +114,7 @@ jobs:
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/vector_precision_model.py --seeds 7 --indexed
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/transaction_spill.py --rows 2000
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/ann_lifecycle.py
+          MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/ann_numeric_range.py
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/mutation_io.py
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/spool_read_boundaries.py
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/filter_cache_model.py
@@ -120,6 +123,17 @@ jobs:
       - name: Docker build
         id: docker_build
         run: docker build -t minivectordb:ci .
+
+      - name: Export locked package versions
+        run: |
+          docker run --rm --network=none --read-only --cap-drop=ALL \
+            --entrypoint /bin/cat minivectordb:ci /runtime-packages.txt \
+            > protocol-results/locked-runtime-packages.txt
+          docker run --rm --network=none --read-only --cap-drop=ALL \
+            --entrypoint /bin/cat minivectordb:ci /app/build-packages.txt \
+            > protocol-results/locked-build-packages.txt
+          docker image inspect --format '{{.Id}}' minivectordb:ci \
+            > protocol-results/locked-image-id.txt
 
       - name: Float32 model in the final locked runtime
         run: |
@@ -142,6 +156,7 @@ jobs:
             src/main.cpp src/sql.cpp src/engine.cpp -o minivectordb-asan
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/hidden_boundaries.py
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/ann_lifecycle.py
+          MVD_BIN="$PWD/minivectordb-asan" python3 tests/ann_numeric_range.py
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/commit_crash_boundaries.py
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/mutation_io.py
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/spool_read_boundaries.py

@@ -41,6 +41,7 @@ def main():
         ('cache-coherence',['tests/cache_coherence.py']),
         ('transaction-spill',['tests/transaction_spill.py']),
         ('ann-lifecycle',['tests/ann_lifecycle.py']),
+        ('ann-numeric-range',['tests/ann_numeric_range.py']),
         ('regression',['tests/regression.py']),
         ('recovery',['tests/crash_recovery_test.py','50000']),
         ('commit-crash',['tests/commit_crash_boundaries.py']),

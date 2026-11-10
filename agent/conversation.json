@@ -2,13 +2,13 @@
   "schema": "mvd-conversation-v2",
   "rules_version": "agent-learning-evidence-v3-unbounded",
   "synthetic": false,
-  "generated_at_utc": "2026-11-10T17:58:10.062075+00:00",
+  "generated_at_utc": "2026-11-10T19:49:43.039146+00:00",
   "material_scope": {
     "purpose": "选录可核验的真实可见对话、必要上下文和实际结果；没有替学生编写预测、解释或复盘。",
-    "sources": "本线程用户消息 ID 与助手可见回复；当前源码版本的本地日志和 GitHub Actions 运行日志。",
+    "sources": "本线程用户消息 ID 与助手可见回复、用户提供的失败截图；逐项标明源码版本或快照的本地/CI 日志，包含开发迭代历史。",
     "source_thread_id": "01a1c4bd-6408-73c1-995e-f344d41a3258",
     "coverage": "覆盖本线程从接手任务到用户要求完整完成两问的相关问题链；省略重复进度、账号、登录、权限流程及内部分析。",
-    "redaction": "账号、密码、令牌已替换；日志的本机根目录替换为 $REPO，数值和状态保留。",
+    "redaction": "账号、密码、令牌已替换；日志的本机根目录替换为 $REPO，数值和状态保留；截图只转录判断所需的可见文字。",
     "role_boundary": "交接文本不自动证明用户本人已理解；代码、方案、实验设计和多数结果分析由助手完成。",
     "legacy_treatment": "旧文件的自评分、未在当前可见原始消息定位的历史引语、将助手转述标成学生原话的内容不纳入本次学生证据；原文件已另行留存。",
     "legacy_sha256": "c103c9f13dce2415d0163fcd4ca4b1c939979891457ddd212d1ee4862990b8ae",
@@ -210,7 +210,7 @@
         "file": "31_Docker transaction larger than formal memory budget.txt",
         "engine_sha": "7a4bb363312750a072e7c37160e137ffeb74f178"
       },
-      "interpretation_by_assistant": "未提交装载与 COMMIT 峰值分开记录。行数据可溢写；主键、行定位和撤销元数据仍随行数增加，不能推断任意规模都安全。"
+      "interpretation_by_assistant": "未提交装载与 COMMIT 峰值分开记录。此处 payload_bytes 是定长行槽的溢写量，字符串值较短；另有实际 UTF-8 文本量超过 2 GiB 的补充测试。行数据可溢写；主键、行定位和撤销元数据仍随行数增加，不能推断任意规模都安全。"
     },
     {
       "id": "ann-50k-ann",
@@ -294,6 +294,53 @@
         "engine_source_sha256": "027b0d1f122617020bc7026cfc758511f9cabd34c85219b0b72d2bf45847e284"
       },
       "interpretation_by_assistant": "覆盖主键在最后一列、别名、BIGINT 极值、OFFSET、溢写事务的可见性和其他列回退。这里测量进程读取字节，不等同于官方 cgroup 物理 I/O 指标。学生未参与该试验设计，未倒签成学生实验。"
+    },
+    {
+      "id": "user-platform-failure-image",
+      "role": "tool",
+      "execution_status": "executed",
+      "designed_and_executed_by": "user_supplied_image_assistant_observation",
+      "title": "用户提供的正式准入失败截图",
+      "command": "view_image(user-provided image)",
+      "source": {
+        "kind": "user_provided_image",
+        "attachment": "codex-clipboard-c51b67c7-3e62-40ee-ad7c-3cfeba084cf6.png",
+        "sha256": "b9f02b91c244647cc15c67c26225d3dc45f2b34bbd78cb136f38347c1852f719"
+      },
+      "output": "MySQL 正式用例：未通过；此项为准入条件，不计排名分。\n性能原始分：MySQL 正式用例未通过，不计本项。\nAgent Prompt 原始分：MySQL 正式用例未通过，不计本项。\n截图中的分数及所得分栏均显示破折号。",
+      "interpretation_by_assistant": "这是用户主动提供的旧失败结果，由助手核对并转录；不是本轮新提交，也不是助手替用户运行的新正式评测。截图未显示 SHA、任务号、具体 SQL 或失败类别，不能由此推断根因或两次失败的逐次详情。"
+    },
+    {
+      "id": "ann-numeric-range",
+      "role": "tool",
+      "execution_status": "executed",
+      "designed_and_executed_by": "assistant_and_tools",
+      "title": "强制 HNSW 图路径的 float32 数值范围与密集等距",
+      "command": "python tests/ann_numeric_range.py",
+      "source": {
+        "kind": "native_model_output",
+        "file": "ann-numeric-range.json",
+        "engine_source_tree": "7594498da0cadea607554e4c9cc935af83b43c6a",
+        "test_source_sha256": "4af10b2b8ebcf58399441f083eb14f5354e2ea06e558e5dc21e336b18d5da0d9"
+      },
+      "output": "{\n  \"passed\": true,\n  \"graph_threshold\": 2048,\n  \"dimensions\": 64,\n  \"scales\": [\n    {\n      \"exponent\": -135,\n      \"recall_at_10\": {\n        \"filtered\": 1.0,\n        \"unfiltered\": 1.0\n      }\n    },\n    {\n      \"exponent\": 0,\n      \"recall_at_10\": {\n        \"filtered\": 1.0,\n        \"unfiltered\": 1.0\n      }\n    },\n    {\n      \"exponent\": 110,\n      \"recall_at_10\": {\n        \"filtered\": 1.0,\n        \"unfiltered\": 1.0\n      }\n    }\n  ],\n  \"dense_ties\": \"canonical primary keys in both modes\"\n}\n",
+      "interpretation_by_assistant": "2048 行、64 维，强制图路径。2^-135、1、2^110 三种尺度的有过滤与无过滤平均 Recall@10 均为 1.0，极小、极大值的距离保持有限并符合独立 float64 模型；密集等距时 exact/ann 均按主键排序。试验由助手设计和执行，不能直接当成学生理解证据。"
+    },
+    {
+      "id": "large-transaction-effective-utf8",
+      "role": "tool",
+      "execution_status": "executed",
+      "designed_and_executed_by": "assistant_and_tools",
+      "title": "256 MiB 容器中实际 UTF-8 文本超过 2 GiB 的显式事务",
+      "command": "python3 tests/docker_transaction_spill.py --image minivectordb:ci --long-unicode",
+      "source": {
+        "kind": "github_actions_log",
+        "run_id": 42886273324,
+        "file": "35_Docker effective UTF-8 payload larger than 2 GiB.txt",
+        "engine_sha": "7d755b3d556b803d9b11ba711b320f68768c0568"
+      },
+      "output": "{\"stage\": \"uncommitted load\", \"memory_peak_bytes\": 51781632, \"payload_bytes\": 2229120000, \"user_text_bytes\": 2211840000, \"long_unicode\": true, \"seconds\": 69.624}\n{\"stage\": \"large commit\", \"memory_peak_bytes\": 268435456, \"seconds\": 23.684}\n{\"stage\": \"first long-text group deleted\", \"memory_peak_bytes\": 164114432, \"seconds\": 30.638}\n{\"stage\": \"second long-text group deleted\", \"memory_peak_bytes\": 164667392, \"seconds\": 30.64}\nDocker long transaction spill: PASS",
+      "interpretation_by_assistant": "270,000 行有效文本共 2,211,840,000 字节，不以短字符串的定长槽占用代替文本量。验证了失败插入的语句原子性、事务内修改、提交后强杀恢复、完整 Unicode 字符串回读、两组长文本过滤删除及未提交溢写清理。69.624 秒是 2700 批请求合计装载时间；单条提交 23.684 秒，两条删除分别为 30.638/30.640 秒，未放宽 60 秒请求和 600 秒用例期限。COMMIT 的 256 MiB cgroup 峰值包含文件页缓存，不能当成进程 RSS。试验由助手设计执行，仍不代表任意行数或正式 29 例已通过。"
     }
   ],
   "evidence_index": [
@@ -310,6 +357,10 @@
         }
       ],
       "result_evidence": [
+        {
+          "pointer": "/experiments/10/output",
+          "quote": "未通过；此项为准入条件，不计排名分"
+        },
         {
           "pointer": "/experiments/0/output",
           "quote": "sql_crud: PASS"
@@ -353,6 +404,10 @@
         {
           "pointer": "/experiments/4/output",
           "quote": "{\"stage\": \"large commit\", \"memory_peak_bytes\": 268435456, \"seconds\": 23.707}"
+        },
+        {
+          "pointer": "/experiments/12/output",
+          "quote": "\"user_text_bytes\": 2211840000"
         }
       ],
       "boundary": "该消息还提出了事务驻留问题，引用与 ANN 部分互不重叠；溢写设计与工具操作的执行者为助手。"

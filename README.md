@@ -202,6 +202,7 @@ ROLLBACK;
 | 批量预读分配 | `tests/page_pool_churn.py`，8 MiB 页缓存反复扫描宽表，约束分配器内存增长 | 查看对应 SHA 的审计和 Actions |
 | 长事务溢写 | `tests/transaction_spill.py`，1 MiB 行数据预算，包含 INSERT/UPDATE、覆盖历史裁剪、失败语句、提交/回滚/强杀 | 本地 PASS；12,000 条宽记录峰值约 15 MiB |
 | HNSW 生命周期 | `tests/ann_lifecycle.py`，显式启用图路径，验证精确/近似切换、过滤、增删改、事务与崩溃重建 | 本地 PASS |
+| HNSW 数值范围 | `tests/ann_numeric_range.py`，强制图路径，覆盖 2⁻¹³⁵、1、2¹¹⁰ 尺度及密集等距主键排序 | 本地两组 Recall@10 均为 1.0；Linux 与 sanitizer 以对应 SHA 的 CI 为准 |
 | 随机模型 | `tests/stress_random.py`，种子 7、42、211，各 100 轮 | PASS |
 | 原回归和扩展 | `tests/regression.py`、`tests/run_extended_tsv.py`；后者名称保留，实际走 JSONL | PASS |
 | 恢复中重复强杀 | `tests/crash_recovery_test.py 50000`，合法未提交增删改，核对所有 ID | PASS；本地观测到 2 次恢复写页后、ready 前强杀 |
@@ -211,6 +212,7 @@ ROLLBACK;
 | ann 基准 | 同规模，种子 20261111；该规模选择紧凑精确索引 | 两组 Recall@10 均 1.0；写入约 1.23 s，查询约 0.260 s |
 | Linux 和 sanitizer | `.github/workflows/minivectordb.yml`，GCC/UBSan 和回归 | 查看对应 SHA 的 Actions |
 | 实际容器资源边界 | `tests/docker_resource_boundaries.py`，256 MiB 容器、超过 2 GiB 数据文件、全表更新/删除及重启 | 查看对应 SHA 的 Actions |
+| 有效文本大事务 | `tests/docker_transaction_spill.py --image <镜像> --long-unicode`，256 MiB 容器内输入超过 2 GiB 的有效 UTF-8 文本，检查失败语句、提交、强杀恢复、长文本过滤与未提交清理 | 查看对应 SHA 的 Actions；不以定长槽占用代替有效文本量 |
 
 重跑本地审计（输出目录必须是新目录；需已构建程序与 NumPy）：
 
