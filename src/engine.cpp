@@ -23,7 +23,6 @@ namespace mvd {
 
 namespace {
 double squared_l2_checked(const float *a, const float *b, int dim);
-double squared_l2_approximate(const float *a, const float *b, int dim);
 constexpr size_t kVectorIndexBudget = 128 * 1024 * 1024;
 uint32_t align_up(uint32_t value, uint32_t alignment) {
   return (value + alignment - 1) / alignment * alignment;
@@ -1661,32 +1660,6 @@ double squared_l2_checked(const float *a, const float *b, int dim) {
   return squared_l2_scalar(a, b, dim);
 }
 
-#if defined(__x86_64__) || defined(_M_X64)
-__attribute__((target("avx2,fma"))) float squared_l2_float_avx(const float *a,const float *b,int dim) {
-  __m256 sum=_mm256_setzero_ps();
-  int i=0;
-  for (;i+8<=dim;i+=8) {
-    __m256 difference=_mm256_sub_ps(_mm256_loadu_ps(a+i),_mm256_loadu_ps(b+i));
-    sum=_mm256_fmadd_ps(difference,difference,sum);
-  }
-  float lanes[8];_mm256_storeu_ps(lanes,sum);
-  float total=0;
-  for (float lane:lanes) total+=lane;
-  for (;i<dim;++i) {float d=a[i]-b[i];total+=d*d;}
-  return total;
-}
-#endif
-double squared_l2_approximate(const float *a,const float *b,int dim) {
-  float total=0;
-#if defined(__x86_64__) || defined(_M_X64)
-  static const bool fast=__builtin_cpu_supports("avx2")&&__builtin_cpu_supports("fma");
-  if (fast) total=squared_l2_float_avx(a,b,dim);
-  else
-#endif
-    for (int i=0;i<dim;++i) {float d=a[i]-b[i];total+=d*d;}
-  return total>0&&std::isfinite(total) ? static_cast<double>(total) : squared_l2_checked(a,b,dim);
-}
-
 // Promote stored float32 values before subtraction and squaring. All finite
 // float32 distances fit in double, including subnormals whose squares would
 // silently underflow in a float accumulator.
@@ -1768,14 +1741,17 @@ void Engine::rebuild_vector_index(Table &table) {
   const auto &schema = table.schema();
   if (!schema.vector_index_created || schema.vector_index < 0 || tx_.active) return;
   try {
+    // Finite float32 vectors can have squared distances in float's subnormal
+    // range, where float FMA becomes both lossy and slow. Share the established
+    // double kernel with exact scans for graph construction and traversal.
     auto index = std::make_unique<VectorIndex>(schema.columns[schema.vector_index].dim,
         schema.col_offsets[schema.vector_index], schema.columns, schema.col_offsets,
-        squared_l2_approximate, table.row_count(), ann_min_rows_);
+        squared_l2_checked, table.row_count(), ann_min_rows_);
     size_t charge = index->estimate(table.row_count());
     if (charge > kVectorIndexBudget - vector_search_bytes_) {
       index = std::make_unique<VectorIndex>(schema.columns[schema.vector_index].dim,
           schema.col_offsets[schema.vector_index], schema.columns, schema.col_offsets,
-          squared_l2_approximate, table.row_count(), ann_min_rows_, false);
+          squared_l2_checked, table.row_count(), ann_min_rows_, false);
       charge=index->estimate(table.row_count());
     }
     if (charge > kVectorIndexBudget - vector_search_bytes_) {

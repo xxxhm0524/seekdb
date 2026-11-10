@@ -30,7 +30,7 @@ def main():
                 assert response.get(key) == value, (text[:180], response)
             return response
 
-        for exponent in (-135, 0, 110):
+        for exponent in (-135, -75, 0, 110):
             scale = 2.0 ** exponent
             matrix = (rng.uniform(-1, 1, (count, dimension)) * scale).astype(np.float32)
             stored = matrix.astype(np.float64)

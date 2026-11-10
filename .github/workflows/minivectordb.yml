@@ -100,6 +100,7 @@ jobs:
         run: |
           python3 tests/ann_lifecycle.py
           python3 tests/ann_numeric_range.py
+          python3 tests/ann_index_deadline.py --output protocol-results/ann-index-deadline-local.json
 
       - name: Undefined-behavior sanitizer
         run: |
@@ -173,6 +174,11 @@ jobs:
         run: |
           python3 protocol_check/run.py --image minivectordb:ci \
             --output protocol-results/public-docker
+
+      - name: Docker graph index numeric deadline
+        run: |
+          python3 tests/ann_index_deadline.py --image minivectordb:ci \
+            --output protocol-results/ann-index-deadline-docker.json
 
       - name: Docker dataset larger than formal memory budget
         run: python3 tests/docker_resource_boundaries.py --image minivectordb:ci

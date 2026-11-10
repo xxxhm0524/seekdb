@@ -172,7 +172,7 @@ ROLLBACK;
 - 候选距离落入保守 ULP 误差带时，用补偿 long double 累加重新比较，防止等距向量因分量顺序不同排错；普通排序路径也使用补偿距离作为排序键。
 - OpenMP 按页切分并行扫描，线程数默认 2（可用 `--query-threads` 调整），结果合并后按 `(距离, 主键)` 输出。
 - 自研 HNSW 使用分层图和邻居多样性筛选（M=32、构建 ef=256、搜索 ef 至少 384）。
-  图内使用 float32 快速候选距离，返回前按存储后的 float32 向量重新精确计算和排序。
+  图构建、遍历与精确扫描共用 double 累加内核，避免合法小幅 float32 向量的平方距离落入 float 下溢慢路径；返回前重新精确计算和排序。
   反向邻接保留有界余量后批量筛选（第 0 层最多 80 条、上层最多 40 条），减少重复构建工作。
 - 小集合、低维、过滤查询使用紧凑向量/属性缓存精确计算；不适合缓存的过滤或超预算集合使用页式扫描。
   已缓存的投影直接返回，避免逐条回读宽记录。密集等距结果回退精确索引，保持主键并列规则。
@@ -202,7 +202,8 @@ ROLLBACK;
 | 批量预读分配 | `tests/page_pool_churn.py`，8 MiB 页缓存反复扫描宽表，约束分配器内存增长 | 查看对应 SHA 的审计和 Actions |
 | 长事务溢写 | `tests/transaction_spill.py`，1 MiB 行数据预算，包含 INSERT/UPDATE、覆盖历史裁剪、失败语句、提交/回滚/强杀 | 本地 PASS；12,000 条宽记录峰值约 15 MiB |
 | HNSW 生命周期 | `tests/ann_lifecycle.py`，显式启用图路径，验证精确/近似切换、过滤、增删改、事务与崩溃重建 | 本地 PASS |
-| HNSW 数值范围 | `tests/ann_numeric_range.py`，强制图路径，覆盖 2⁻¹³⁵、1、2¹¹⁰ 尺度及密集等距主键排序 | 本地两组 Recall@10 均为 1.0；Linux 与 sanitizer 以对应 SHA 的 CI 为准 |
+| HNSW 数值范围 | `tests/ann_numeric_range.py`，强制图路径，覆盖 2⁻¹³⁵、2⁻⁷⁵、1、2¹¹⁰ 尺度及密集等距主键排序 | Linux 与 sanitizer 以对应 SHA 的 CI 为准 |
+| 图索引数值耗时边界 | `tests/ann_index_deadline.py`，50k×64d 对比 2⁻⁷⁵ 与正常量纲，保留 60 秒请求期限，核对召回、距离及强杀后的启动重建 | 查看对应 SHA 的本地日志与 Actions |
 | 随机模型 | `tests/stress_random.py`，种子 7、42、211，各 100 轮 | PASS |
 | 原回归和扩展 | `tests/regression.py`、`tests/run_extended_tsv.py`；后者名称保留，实际走 JSONL | PASS |
 | 恢复中重复强杀 | `tests/crash_recovery_test.py 50000`，合法未提交增删改，核对所有 ID | PASS；本地观测到 2 次恢复写页后、ready 前强杀 |

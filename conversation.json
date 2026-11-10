@@ -2,7 +2,7 @@
   "schema": "mvd-conversation-v2",
   "rules_version": "agent-learning-evidence-v3-unbounded",
   "synthetic": false,
-  "generated_at_utc": "2026-11-10T19:49:43.039146+00:00",
+  "generated_at_utc": "2026-11-10T20:18:03.039407+00:00",
   "material_scope": {
     "purpose": "选录可核验的真实可见对话、必要上下文和实际结果；没有替学生编写预测、解释或复盘。",
     "sources": "本线程用户消息 ID 与助手可见回复、用户提供的失败截图；逐项标明源码版本或快照的本地/CI 日志，包含开发迭代历史。",
@@ -341,6 +341,40 @@
       },
       "output": "{\"stage\": \"uncommitted load\", \"memory_peak_bytes\": 51781632, \"payload_bytes\": 2229120000, \"user_text_bytes\": 2211840000, \"long_unicode\": true, \"seconds\": 69.624}\n{\"stage\": \"large commit\", \"memory_peak_bytes\": 268435456, \"seconds\": 23.684}\n{\"stage\": \"first long-text group deleted\", \"memory_peak_bytes\": 164114432, \"seconds\": 30.638}\n{\"stage\": \"second long-text group deleted\", \"memory_peak_bytes\": 164667392, \"seconds\": 30.64}\nDocker long transaction spill: PASS",
       "interpretation_by_assistant": "270,000 行有效文本共 2,211,840,000 字节，不以短字符串的定长槽占用代替文本量。验证了失败插入的语句原子性、事务内修改、提交后强杀恢复、完整 Unicode 字符串回读、两组长文本过滤删除及未提交溢写清理。69.624 秒是 2700 批请求合计装载时间；单条提交 23.684 秒，两条删除分别为 30.638/30.640 秒，未放宽 60 秒请求和 600 秒用例期限。COMMIT 的 256 MiB cgroup 峰值包含文件页缓存，不能当成进程 RSS。试验由助手设计执行，仍不代表任意行数或正式 29 例已通过。"
+    },
+    {
+      "id": "ann-subnormal-index-deadline-fix",
+      "role": "tool",
+      "execution_status": "executed",
+      "designed_and_executed_by": "assistant_and_tools",
+      "title": "合法小幅向量使图索引构建超时：反例、对照、修复与复测",
+      "command": "python tests/ann_index_deadline.py; python tests/audit_suite.py --output <new audit directory> --large-resource",
+      "source": {
+        "kind": "native_before_after_logs",
+        "before_engine_sha": "7a7be6a3ffce720bbac6c86904ad07567e5deb45",
+        "after_source_state": "uncommitted graph-distance fix based on that SHA",
+        "after_engine_source_sha256": "e8fd56c6a6fbbbbd4ab9193e4aec62c65c12b61b7d9fe2d8cd28d4ef6ed9669c",
+        "before_file": "ann-index-regression-before.json",
+        "after_file": "audit-ann-underflow-20261111-0412/ann-index-deadline.json"
+      },
+      "output": "BEFORE: actual 60-second JSONL deadline on the old engine\n{\n  \"passed\": false,\n  \"rows\": 50000,\n  \"dimensions\": 64,\n  \"request_timeout_seconds\": 60,\n  \"stages\": [\n    {\n      \"exponent\": -75,\n      \"stage\": \"load\",\n      \"seconds\": 5.707587199984118\n    }\n  ],\n  \"total_seconds\": 65.79849650000688,\n  \"stage\": \"CREATE VECTOR INDEX\",\n  \"exponent\": -75,\n  \"error\": \"TimeoutError: JSON response timeout\",\n  \"failed_stage_seconds\": 60.009315700037405\n}\nNORMAL-SCALE CONTROL BEFORE FIX\n{\n  \"passed\": true,\n  \"exponent\": 0,\n  \"rows\": 50000,\n  \"dimensions\": 64,\n  \"request_timeout_seconds\": 60,\n  \"steps\": [\n    {\n      \"stage\": \"load\",\n      \"seconds\": 4.798840000003111\n    },\n    {\n      \"stage\": \"index\",\n      \"seconds\": 11.508616899955086\n    }\n  ],\n  \"total_seconds\": 16.681342200026847,\n  \"stage\": \"ANN recall\",\n  \"mean_recall_at_10\": 1.0\n}\nDISTANCE KERNEL MICROBENCHMARK BEFORE FIX\n{\"exponent\":0,\"kernel\":\"float\",\"seconds\":0.0073093999999999998,\"checksum\":59730392.456054688}\n{\"exponent\":0,\"kernel\":\"double\",\"seconds\":0.0098008999999999995,\"checksum\":59730391.133238815}\n{\"exponent\":-75,\"kernel\":\"float\",\"seconds\":0.43828040000000001,\"checksum\":2.5223372357846707e-38}\n{\"exponent\":-75,\"kernel\":\"double\",\"seconds\":0.0098139999999999998,\"checksum\":4.1850052684264111e-38}\nAFTER: full native audit, same deadline plus crash/startup rebuild\n{\n  \"passed\": true,\n  \"rows\": 50000,\n  \"dimensions\": 64,\n  \"request_timeout_seconds\": 60,\n  \"stages\": [\n    {\n      \"exponent\": -75,\n      \"stage\": \"load\",\n      \"seconds\": 5.582358099985868\n    },\n    {\n      \"exponent\": -75,\n      \"stage\": \"index\",\n      \"seconds\": 12.273030299984384\n    },\n    {\n      \"exponent\": -75,\n      \"stage\": \"recall\",\n      \"mean_recall_at_10\": 1.0\n    },\n    {\n      \"exponent\": -75,\n      \"stage\": \"crash recovery and rebuilt-index exact query\",\n      \"seconds\": 12.34240729996236\n    },\n    {\n      \"exponent\": 0,\n      \"stage\": \"load\",\n      \"seconds\": 4.965334400010761\n    },\n    {\n      \"exponent\": 0,\n      \"stage\": \"index\",\n      \"seconds\": 12.571659300010651\n    },\n    {\n      \"exponent\": 0,\n      \"stage\": \"recall\",\n      \"mean_recall_at_10\": 1.0\n    }\n  ],\n  \"total_seconds\": 48.427206100022886,\n  \"stage\": \"ANN recall\",\n  \"exponent\": 0\n}",
+      "interpretation_by_assistant": "50k×64d、2^-75 量纲向量全部合法。旧版本在 CREATE VECTOR INDEX 的 60.009 秒超时，正常量纲对照约 11.509 秒。微基准中 float 内核在下溢区间约 0.438 秒，double 约 0.0098 秒；内部图评分有明显量化误差，不能据此声称旧版输出距离也错误。图构建和遍历改为共用既有 double 内核，原生完整审计中建索引约 12.273 秒，强杀后重建及校验约 12.342 秒，20 条无过滤查询平均 Recall@10=1.0。正常量纲约 12.572 秒，单轮开销对照不作稳定性结论。未放宽 60 秒请求或 120 秒启动期限。反例、假设和修复由助手提出执行，学生没有独立解释该机制；此处不得给学生倒签贡献。材料生成时，该源码修改尚待对应提交的 Linux/Docker CI。"
+    },
+    {
+      "id": "native-audit-after-graph-distance-fix",
+      "role": "tool",
+      "execution_status": "executed",
+      "designed_and_executed_by": "assistant_and_tools",
+      "title": "图距离修复后的完整原生回归与全零向量补查",
+      "command": "python tests/audit_suite.py --output <new audit directory> --large-resource; separate all-zero matrix diagnostic",
+      "source": {
+        "kind": "native_audit_and_diagnostic",
+        "audit_directory": "audit-ann-underflow-20261111-0412",
+        "engine_source_sha256": "e8fd56c6a6fbbbbd4ab9193e4aec62c65c12b61b7d9fe2d8cd28d4ef6ed9669c",
+        "zero_diagnostic": "ann_identical_zero_probe.py; matrix fixture replaced with zeros"
+      },
+      "output": "{\n  \"audit_checks\": [\n    {\n      \"name\": \"handshake\",\n      \"exit_code\": 0,\n      \"seconds\": 0.125\n    },\n    {\n      \"name\": \"public\",\n      \"exit_code\": 0,\n      \"seconds\": 1.306\n    },\n    {\n      \"name\": \"extended\",\n      \"exit_code\": 0,\n      \"seconds\": 0.154\n    },\n    {\n      \"name\": \"requirements\",\n      \"exit_code\": 0,\n      \"seconds\": 0.373\n    },\n    {\n      \"name\": \"hidden-boundaries\",\n      \"exit_code\": 0,\n      \"seconds\": 1.155\n    },\n    {\n      \"name\": \"vector-precision\",\n      \"exit_code\": 0,\n      \"seconds\": 0.796\n    },\n    {\n      \"name\": \"indexed-vector-precision\",\n      \"exit_code\": 0,\n      \"seconds\": 0.969\n    },\n    {\n      \"name\": \"float-parser\",\n      \"exit_code\": 0,\n      \"seconds\": 1.364\n    },\n    {\n      \"name\": \"filter-cache\",\n      \"exit_code\": 0,\n      \"seconds\": 0.445\n    },\n    {\n      \"name\": \"material-boundaries\",\n      \"exit_code\": 0,\n      \"seconds\": 0.111\n    },\n    {\n      \"name\": \"material\",\n      \"exit_code\": 0,\n      \"seconds\": 0.079\n    },\n    {\n      \"name\": \"resource\",\n      \"exit_code\": 0,\n      \"seconds\": 2.624\n    },\n    {\n      \"name\": \"mutation-io\",\n      \"exit_code\": 0,\n      \"seconds\": 0.799\n    },\n    {\n      \"name\": \"primary-key-projection\",\n      \"exit_code\": 0,\n      \"seconds\": 0.599\n    },\n    {\n      \"name\": \"spool-read\",\n      \"exit_code\": 0,\n      \"seconds\": 0.413\n    },\n    {\n      \"name\": \"page-churn\",\n      \"exit_code\": 0,\n      \"seconds\": 1.707\n    },\n    {\n      \"name\": \"cache-coherence\",\n      \"exit_code\": 0,\n      \"seconds\": 1.326\n    },\n    {\n      \"name\": \"transaction-spill\",\n      \"exit_code\": 0,\n      \"seconds\": 2.931\n    },\n    {\n      \"name\": \"ann-lifecycle\",\n      \"exit_code\": 0,\n      \"seconds\": 2.219\n    },\n    {\n      \"name\": \"ann-numeric-range\",\n      \"exit_code\": 0,\n      \"seconds\": 3.408\n    },\n    {\n      \"name\": \"ann-index-deadline\",\n      \"exit_code\": 0,\n      \"seconds\": 48.667\n    },\n    {\n      \"name\": \"regression\",\n      \"exit_code\": 0,\n      \"seconds\": 0.571\n    },\n    {\n      \"name\": \"recovery\",\n      \"exit_code\": 0,\n      \"seconds\": 1.64\n    },\n    {\n      \"name\": \"commit-crash\",\n      \"exit_code\": 0,\n      \"seconds\": 1.583\n    },\n    {\n      \"name\": \"stress-7\",\n      \"exit_code\": 0,\n      \"seconds\": 2.655\n    },\n    {\n      \"name\": \"stress-42\",\n      \"exit_code\": 0,\n      \"seconds\": 2.445\n    },\n    {\n      \"name\": \"stress-211\",\n      \"exit_code\": 0,\n      \"seconds\": 2.46\n    },\n    {\n      \"name\": \"bench-exact\",\n      \"exit_code\": 0,\n      \"seconds\": 6.488\n    },\n    {\n      \"name\": \"bench-ann\",\n      \"exit_code\": 0,\n      \"seconds\": 6.461\n    },\n    {\n      \"name\": \"resource-2g\",\n      \"exit_code\": 0,\n      \"seconds\": 35.169\n    }\n  ],\n  \"identical_zero_50k\": {\n    \"passed\": true,\n    \"rows\": 50000,\n    \"dimensions\": 64,\n    \"request_timeout_seconds\": 60,\n    \"stages\": [\n      {\n        \"exponent\": 0,\n        \"stage\": \"load\",\n        \"seconds\": 2.1450867999810725\n      },\n      {\n        \"exponent\": 0,\n        \"stage\": \"index\",\n        \"seconds\": 1.662888800026849\n      },\n      {\n        \"exponent\": 0,\n        \"stage\": \"recall\",\n        \"mean_recall_at_10\": 1.0\n      }\n    ],\n    \"total_seconds\": 4.158893799991347,\n    \"stage\": \"ANN recall\",\n    \"exponent\": 0\n  }\n}",
+      "interpretation_by_assistant": "30 项独立本地审计均通过，包含公开 20 例、精度/过滤、失败语句、事务、强杀恢复、随机模型、基准及超过 2 GiB 文件。此数量不是正式用例数。另以 50k×64d 全零向量核对密集完全相同记录的图构建和主键并列；建索引约 1.663 秒，召回 1.0。它是助手执行的补充诊断，不是正式评测或学生设计的实验。"
     }
   ],
   "evidence_index": [
@@ -384,6 +418,14 @@
         {
           "pointer": "/experiments/6/output",
           "quote": "\"query_seconds\": 0.374853,"
+        },
+        {
+          "pointer": "/experiments/13/output",
+          "quote": "\"error\": \"TimeoutError: JSON response timeout\""
+        },
+        {
+          "pointer": "/experiments/13/output",
+          "quote": "\"seconds\": 12.273030299984384"
         }
       ],
       "boundary": "用户提出当前实现的限制；后续源码与实验由助手完成，此快照未收录用户对对照结果的后续解释。"
@@ -430,9 +472,9 @@
   ],
   "retrospective": {
     "origin": "assistant",
-    "implementation": "目前支持 HNSW 与紧凑精确缓存。默认 10k×128d 选择精确缓存；不能据算法名称推断实际加速。 后续加入无过滤且只投影、排序主键的可见定位路径，其他字段、过滤和排序仍读实际行。",
+    "implementation": "目前支持 HNSW 与紧凑精确缓存。默认 10k×128d 选择精确缓存；不能据算法名称推断实际加速。 后续加入无过滤且只投影、排序主键的可见定位路径，其他字段、过滤和排序仍读实际行。 本轮反例发现图内 float 平方距离在下溢区域使建索引超时，现复用 double 内核；默认 10k 紧凑精确路径保持相同计算方式。",
     "transaction": "行数据及独立更新值超过预算可溢写；事务元数据及巨大单条 SQL/结果仍受内存约束。",
-    "verification": "本地与 CI 验证覆盖已知边界；没有实际正式准入结果，不能把 CI 全绿改写成正式 29/29。",
+    "verification": "原生审计与公开要求已知边界均通过；此前 CI 全绿仍未覆盖新找到的下溢耗时反例。修复须再通过对应 SHA 的容器检查，没有实际正式准入结果，不能改写成正式 29/29。",
     "student_interpretation": "本次已向用户提出基于真实三轮数据的判断问题；尚未收到回答，未代填。"
   },
   "limitations": [
