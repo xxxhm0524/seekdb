@@ -84,6 +84,41 @@ void parse_vector_for_column(const std::string &text, const ColumnDef &col,
 }
 }  // namespace
 
+namespace {
+class PagePool {
+ public:
+  PagePool() { spare_.reserve(32); }
+  ~PagePool() { for (Page *page : spare_) delete page; }
+  Page *take() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (spare_.empty()) return new Page();
+    Page *page = spare_.back();
+    spare_.pop_back();
+    return page;
+  }
+  void put(Page *page) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    // At most 2 MiB remains in the pool, independently of table size.
+    if (spare_.size() < 32) spare_.push_back(page);
+    else delete page;
+  }
+ private:
+  std::mutex mutex_;
+  std::vector<Page *> spare_;
+};
+PagePool &page_pool() {
+  static PagePool pool;
+  return pool;
+}
+}  // namespace
+
+std::shared_ptr<Page> make_page(const Page *source) {
+  Page *page = page_pool().take();
+  if (source) *page = *source;
+  else *page = Page();
+  return std::shared_ptr<Page>(page, [](Page *released) { page_pool().put(released); });
+}
+
 // ---------------------------------------------------------------------------
 // Schema layout
 // ---------------------------------------------------------------------------
@@ -177,7 +212,7 @@ std::shared_ptr<Page> PageCache::get(Table *table, uint32_t page_no) {
     touch(it);
     return it->second.page;
   }
-  auto page = std::shared_ptr<Page>(new Page());
+  auto page = make_page();
   if (!table->load_page_raw(page_no, *page)) {
     page->magic = kPageMagic;
     page->nrows = 0;
@@ -552,12 +587,12 @@ void Table::build_commit_images(const TxTable &tx,
     if (page_no < page_count_) {
       base = cache_->get(this, page_no);
     } else {
-      base = std::shared_ptr<Page>(new Page());
+      base = make_page();
       base->magic = kPageMagic;
       base->nrows = 0;
       base->page_no = page_no;
     }
-    auto image = std::shared_ptr<Page>(new Page(*base));
+    auto image = make_page(base.get());
     image->page_no = page_no;
     image->magic = kPageMagic;
     std::sort(kv.second.begin(), kv.second.end(),
@@ -612,7 +647,7 @@ bool Wal::read_record(uint64_t offset, uint64_t size, WalRecordHeader &h,
 }
 
 std::shared_ptr<Page> Wal::read_page_image(uint64_t offset) {
-  auto page = std::shared_ptr<Page>(new Page());
+  auto page = make_page();
   if (!file_.pread_full(page.get(), kPageSize, offset + sizeof(WalRecordHeader) + 12))
     throw_error("IO_ERROR", "cannot read committed WAL page");
   return page;

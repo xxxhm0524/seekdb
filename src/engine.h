@@ -56,6 +56,11 @@ struct alignas(4096) Page {
   }
 };
 
+// Reuse aligned page buffers across cache eviction, WAL replay and commits.
+// Returning them to the general allocator on every scan can fragment its heap
+// when small transaction nodes are allocated between aligned 64 KiB pages.
+std::shared_ptr<Page> make_page(const Page *source = nullptr);
+
 struct OutValue {
   enum class Kind { INT, DOUBLE, STRING, VECTOR } kind = Kind::INT;
   int64_t i = 0;
@@ -271,7 +276,7 @@ class Wal {
         std::memcpy(&page_no, payload.data() + 4, 4);
         std::memcpy(&page_size, payload.data() + 8, 4);
         if (page_size == kPageSize && h.payload_len == 12 + kPageSize) {
-          auto page = std::shared_ptr<Page>(new Page());
+          auto page = make_page();
           std::memcpy(page.get(), payload.data() + 12, kPageSize);
           apply(table_id, page_no, page);
         }
