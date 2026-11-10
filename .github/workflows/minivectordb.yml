@@ -90,6 +90,15 @@ jobs:
         id: docker_build
         run: docker build -t minivectordb:ci .
 
+      - name: Address and lifetime sanitizer
+        run: |
+          g++ -std=c++20 -O1 -g -Wall -Wextra -fopenmp \
+            -fsanitize=address,undefined -fno-sanitize-recover=undefined -fno-omit-frame-pointer \
+            src/main.cpp src/sql.cpp src/engine.cpp -o minivectordb-asan
+          MVD_BIN="$PWD/minivectordb-asan" python3 tests/hidden_boundaries.py
+          MVD_BIN="$PWD/minivectordb-asan" python3 tests/ann_lifecycle.py
+          MVD_BIN="$PWD/minivectordb-asan" python3 tests/commit_crash_boundaries.py
+
       - name: Docker handshake
         run: |
           python3 protocol_check/run.py --image minivectordb:ci \

@@ -26,6 +26,7 @@ def main():
             self.session = Session(config,args.log_dir/(uuid.uuid4().hex+'.stderr.log'),image=args.image)
             self.active = False
             self.closed = False
+            self.failed = False
             self.start()
 
         def start(self):
@@ -33,7 +34,11 @@ def main():
             self.active = True
 
         def request(self,sql,mode='exact'):
-            return self.session.request(sql,mode)
+            try:
+                return self.session.request(sql,mode)
+            except Exception:
+                self.failed=True
+                raise
 
         def kill(self):
             self.session.crash()
@@ -52,7 +57,7 @@ def main():
         def close(self):
             if not self.closed:
                 try:
-                    self.shutdown()
+                    if not self.failed:self.shutdown()
                 finally:
                     self.session.close()
                     self.closed = True

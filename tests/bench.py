@@ -75,7 +75,9 @@ def main(client_factory=Client):
             assert [r[1] for r in response['rows']] == cats[start:stop].tolist(), 'durable categories differ'
             actual = np.array([r[2] for r in response['rows']],dtype=np.float32)
             assert np.array_equal(actual,vectors[start:stop]), 'durable vectors differ'
+        index_before=time.perf_counter()
         execute('CREATE VECTOR INDEX vi ON items(v)')
+        index_prepare_time=time.perf_counter()-index_before
         for index in (0, min(args.queries-1,args.queries//2)):
             execute(queries[index][0])
         results = []
@@ -114,6 +116,7 @@ def main(client_factory=Client):
         client.shutdown()
     report = dict(rows=args.rows,dim=args.dim,queries=args.queries,topk=args.topk,seed=args.seed,
         mode=args.search_mode,insert_seconds=round(insert_time,6),query_seconds=round(query_time,6),
+        index_prepare_seconds=round(index_prepare_time,6),
         filtered_seconds=round(filtered_time,6),unfiltered_seconds=round(query_time-filtered_time,6),
         ms_per_query=round(query_time*1000/args.queries,6),recall_at_k=mean_recall,
         exact_query_mismatches=exact_mismatches,durable_content_verified=True,

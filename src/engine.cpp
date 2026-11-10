@@ -2317,7 +2317,7 @@ Response Engine::exec_delete(DeleteStmt &stmt) {
       state.pos = vr.pos;
     }
     state.deleted = true;
-    state.row = {};  // A tombstone needs identity/position, not a full record.
+    std::vector<uint8_t>().swap(state.row);  // Tombstones retain no raw capacity.
     state.spool.reset(); state.spool_size = 0;
     state.patches.clear();
     store_row(table, tx_table, vr.pk, std::move(state));

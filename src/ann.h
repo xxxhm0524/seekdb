@@ -59,7 +59,9 @@ class VectorIndex {
       else column.strings.reserve(expected);
     }
   }
-  size_t estimate(size_t nodes) const { return nodes * bytes_per_node_ * 2 + 1024; }
+  size_t estimate(size_t nodes) const {
+    return nodes * bytes_per_node_ * 2 + columns_.capacity()*sizeof(Column) + 1024;
+  }
   size_t count() const { return nodes_.size(); }
   size_t live() const { return ids_.size(); }
   bool needs_compaction() const { return count() > live() + std::max<size_t>(256, live()/3) ||
@@ -136,7 +138,9 @@ class VectorIndex {
         auto &links = nodes_[neighbor].links[layer];
         links.push_back(id);
         size_t maximum = layer == 0 ? 64 : 32;
-        if (links.size() > maximum) {
+        // Re-pruning on every incoming edge repeats the expensive diversity
+        // calculation. A bounded slack window amortizes that work.
+        if (links.size() > maximum + (layer == 0 ? 16 : 8)) {
           std::vector<Hit> choices;
           for (uint32_t other : links) choices.push_back({distance_(vector(neighbor), vector(other), dim_), other});
           links = select(vector(neighbor), choices, maximum, neighbor);

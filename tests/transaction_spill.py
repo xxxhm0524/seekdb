@@ -28,6 +28,14 @@ def main():
             return r
         def batch(start,stop):
             return ','.join("(%d,'x','[%d,0]')"%(i,i%10) for i in range(start,stop))
+        sql('CREATE TABLE churn(id BIGINT PRIMARY KEY,s VARCHAR(2048))')
+        sql('BEGIN')
+        before_churn=peak_bytes(client.p.pid)
+        for start in range(1,5001,100):
+            sql('INSERT INTO churn VALUES '+','.join("(%d,'x')"%i for i in range(start,start+100)),affected_rows=100)
+            sql('DELETE FROM churn WHERE id>=%d AND id<%d'%(start,start+100),affected_rows=100)
+        assert peak_bytes(client.p.pid)-before_churn<16*2**20,'deleted raw capacity retained in tombstones'
+        sql('ROLLBACK');sql('DROP TABLE churn')
         sql('CREATE TABLE t(id BIGINT PRIMARY KEY,s VARCHAR(2048),v VECTOR(2))')
         sql('BEGIN')
         sql('INSERT INTO t VALUES '+batch(1,101),affected_rows=100)

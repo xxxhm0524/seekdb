@@ -24,7 +24,7 @@ def main():
             ids=np.array(sorted(vectors),dtype=np.int64)
             matrix=np.array([vectors[int(i)] for i in ids],dtype=np.float64)
             cats=np.array([categories[int(i)] for i in ids])
-            recalls=[]
+            recalls={False:[],True:[]}
             for index in range(20):
                 q=rng.random(128,dtype=np.float32)
                 category='a' if index%2 else None
@@ -43,8 +43,8 @@ def main():
                         expected=np.linalg.norm(vectors[ident].astype(np.float64)-q.astype(np.float64))
                         assert np.isclose(distance,expected,rtol=1e-7,atol=1e-7)
                     if mode=='exact':assert got==truth
-                    else:recalls.append(len(set(got)&set(truth))/len(truth))
-            assert np.mean(recalls)>=0.95,recalls
+                    else:recalls[bool(category)].append(len(set(got)&set(truth))/len(truth))
+            assert all(np.mean(group)>=0.95 for group in recalls.values()),recalls
             # Unsupported cached attributes must still filter before TopK.
             rows=sql("SELECT id FROM t WHERE content='absent' ORDER BY L2_DISTANCE(v,'%s') LIMIT 10"%vector_literal(q),'ann')['rows']
             assert rows==[],rows
