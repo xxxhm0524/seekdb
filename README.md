@@ -156,6 +156,7 @@ ROLLBACK;
 - 精确扫描：过滤谓词先判定，命中记录才计算距离；维护大小为 K 的最大堆，排序键为 `(平方距离, 主键)`。
 - float32 存储、double 差值与平方累加，避免极小合法向量的距离下溢为 0；最大有限 float32 向量的距离也可表示。
 - AVX2 距离内核带运行期 CPU 检测，不支持 AVX2 时回退到 double 标量实现；不会因 `-march=native` 在未知评测机报非法指令。
+- 候选距离落入保守 ULP 误差带时，用补偿 long double 累加重新比较，防止等距向量因分量顺序不同排错；普通排序路径也使用补偿距离作为排序键。
 - OpenMP 按页切分并行扫描，线程数默认 2（可用 `--query-threads` 调整），结果合并后按 `(距离, 主键)` 输出。
 - `CREATE VECTOR INDEX` 持久化索引元数据；当前检索路径以精确扫描保证召回，索引维护不会放宽过滤与事务正确性。
 
@@ -168,7 +169,8 @@ ROLLBACK;
 | --- | --- | --- |
 | JSONL 握手、关闭、公开用例 | `protocol_check/run.py`，实际目标参数由下方审计入口生成 | 握手及 20/20 公开用例 PASS |
 | 公开要求的本地覆盖 | `tests/formal_coverage.py`，类型、比较、排序、事务与恢复 | PASS；不等同正式用例 |
-| 边界回归 | `tests/hidden_boundaries.py`，极小距离、别名、空结果错误、维度回绕、非法向量、回滚槽位、UPDATE 原子性、Unicode 错误响应 | 12 组 PASS |
+| 边界回归 | `tests/hidden_boundaries.py`，极小距离、别名、空结果错误、维度和行宽回绕、非法向量、回滚槽位、UPDATE 原子性、Unicode 错误响应、数值等距、重复列、DDL 孤立文件 | 17 组 PASS |
+| 预读和脏页一致性 | `tests/cache_coherence.py`，1 MiB 缓存下交错更新、过滤 TopK、提交/回滚及强杀重启 | PASS |
 | 随机模型 | `tests/stress_random.py`，种子 7、42、211，各 100 轮 | PASS |
 | 原回归和扩展 | `tests/regression.py`、`tests/run_extended_tsv.py`；后者名称保留，实际走 JSONL | PASS |
 | 恢复中重复强杀 | `tests/crash_recovery_test.py 50000`，合法未提交增删改，核对所有 ID | PASS；本地观测到 2 次恢复写页后、ready 前强杀 |

@@ -73,7 +73,7 @@ void parse_vector_for_column(const std::string &text, const ColumnDef &col,
     char *endp = nullptr;
     errno = 0;
     double v = std::strtod(part.c_str(), &endp);
-    if (endp == part.c_str() || *endp != '\0' || !std::isfinite(v))
+    if (endp == part.c_str() || endp != part.c_str() + part.size() || !std::isfinite(v))
       throw_error("INVALID_VECTOR", "expected numeric vector component");
     if (errno == ERANGE || v > FLT_MAX || v < -FLT_MAX)
       throw_error("VECTOR_OVERFLOW", "vector component overflows float32");
@@ -182,6 +182,10 @@ void build_row_layout(TableSchema &schema) {
         offset += static_cast<uint32_t>(col.dim) * 4;
         break;
     }
+    // Reject as soon as a row exceeds one page, before a very large column
+    // list can wrap the uint32 layout offset back to a small valid-looking row.
+    if (offset > kPageSize - kPageHeaderSize)
+      throw_error("INVALID_SCHEMA", "row is too large for a page");
   }
   schema.row_size = align_up(offset, 64);
   schema.page_size = kPageSize;
@@ -345,8 +349,8 @@ Table::Table(TableSchema schema, std::string data_path, PageCache *cache)
       data_path_(std::move(data_path)),
       cache_(cache) {}
 
-void Table::open(bool rebuild) {
-  int flags = O_RDWR | O_CREAT;
+void Table::open(bool rebuild, bool fresh) {
+  int flags = O_RDWR | O_CREAT | (fresh ? O_TRUNC : 0);
 #ifndef _WIN32
   file_ = FileHandle::open(data_path_, flags | O_DIRECT);
   direct_io_ = file_.valid();
@@ -1142,7 +1146,9 @@ Response Engine::exec_create_table(CreateTableStmt &stmt) {
   build_row_layout(schema);
   std::string path = data_dir_ + "/t_" + std::to_string(schema.id) + ".dat";
   auto table = std::make_unique<Table>(schema, path, &cache_);
-  table->open();
+  // This ID is not referenced by the catalog. An interrupted DROP can leave
+  // an orphan with the same path after restart; CREATE must start empty.
+  table->open(false, true);
   // Make sure the table file is durable before the catalog references it.
   table->fsync_file();
   uint32_t id = schema.id;
@@ -1243,10 +1249,14 @@ Response Engine::exec_insert(InsertStmt &stmt) {
     for (size_t i = 0; i < schema.columns.size(); ++i)
       target_cols.push_back(static_cast<int>(i));
   } else {
+    std::vector<bool> columns_seen(schema.columns.size(), false);
     for (const auto &name : stmt.columns) {
       int idx = table.column_index(name);
       if (idx < 0)
         throw_error("COLUMN_NOT_FOUND", "column not found: " + name);
+      if (columns_seen[idx])
+        throw_error("INVALID_VALUE", "duplicate INSERT column: " + name);
+      columns_seen[idx] = true;
       target_cols.push_back(idx);
     }
     if (target_cols.size() != stmt.rows[0].size())
@@ -1435,32 +1445,67 @@ double squared_l2_checked(const float *a, const float *b, int dim) {
 // float32 distances fit in double, including subnormals whose squares would
 // silently underflow in a float accumulator.
 
+long double squared_l2_precise(const float *a, const float *b, int dim) {
+  long double sum = 0, correction = 0;
+  for (int i = 0; i < dim; ++i) {
+    long double difference = static_cast<long double>(a[i]) - static_cast<long double>(b[i]);
+    long double term = difference * difference;
+    long double next = sum + term;
+    if (std::fabs(sum) >= std::fabs(term)) correction += (sum - next) + term;
+    else correction += (term - next) + sum;
+    sum = next;
+  }
+  return sum + correction;
+}
+
 struct Candidate {
   double dist;
   int64_t pk;
   uint64_t pos;
+  mutable bool precise_ready = false;
+  mutable long double precise = 0;
 };
-bool candidate_worse(const Candidate &a, const Candidate &b) {
-  if (a.dist != b.dist) return a.dist < b.dist;
-  return a.pk < b.pk;
-}
 // Max-heap where the top is the worst candidate.
 struct CandidateHeap {
   std::vector<Candidate> data;
   size_t k = 10;
-  void push(double dist, int64_t pk, uint64_t pos) {
+  uint64_t uncertainty_ulps = 0;
+  std::function<long double(const Candidate &)> refine;
+  long double precise(const Candidate &candidate) const {
+    if (!candidate.precise_ready) {
+      candidate.precise = refine(candidate);
+      candidate.precise_ready = true;
+    }
+    return candidate.precise;
+  }
+  bool less(const Candidate &a, const Candidate &b) const {
+    if (a.dist == 0 && b.dist == 0) return a.pk < b.pk;
+    // Squared distances are nonnegative finite doubles. Their bit patterns
+    // are ordered, so a conservative ULP band avoids extra work for ordinary
+    // queries while resolving rounding-dependent ties with compensation.
+    uint64_t first, second;
+    std::memcpy(&first, &a.dist, sizeof(first));
+    std::memcpy(&second, &b.dist, sizeof(second));
+    uint64_t gap = first > second ? first - second : second - first;
+    if (gap > uncertainty_ulps) return a.dist < b.dist;
+    long double left = precise(a), right = precise(b);
+    if (left != right) return left < right;
+    return a.pk < b.pk;
+  }
+  void push(Candidate candidate) {
+    auto compare = [this](const Candidate &a, const Candidate &b) { return less(a, b); };
     if (data.size() < k) {
-      data.push_back({dist, pk, pos});
-      std::push_heap(data.begin(), data.end(), candidate_worse);
-    } else if (dist < data.front().dist ||
-               (dist == data.front().dist && pk < data.front().pk)) {
-      std::pop_heap(data.begin(), data.end(), candidate_worse);
-      data.back() = {dist, pk, pos};
-      std::push_heap(data.begin(), data.end(), candidate_worse);
+      data.push_back(std::move(candidate));
+      std::push_heap(data.begin(), data.end(), compare);
+    } else if (less(candidate, data.front())) {
+      std::pop_heap(data.begin(), data.end(), compare);
+      data.back() = std::move(candidate);
+      std::push_heap(data.begin(), data.end(), compare);
     }
   }
+  void push(double dist, int64_t pk, uint64_t pos) { push(Candidate{dist, pk, pos}); }
   void merge(CandidateHeap &other) {
-    for (const auto &c : other.data) push(c.dist, c.pk, c.pos);
+    for (const auto &c : other.data) push(c);
   }
 };
 }  // namespace
@@ -1506,9 +1551,9 @@ OutValue Engine::out_value_from_row(const Table &table, const uint8_t *row,
 // ---------------------------------------------------------------------------
 namespace {
 struct SortKey {
-  OutValue::Kind kind;
-  int64_t i;
-  double d;
+  OutValue::Kind kind = OutValue::Kind::INT;
+  int64_t i = 0;
+  long double d = 0;
   std::string s;
 };
 int compare_sort_keys(const SortKey &a, const SortKey &b) {
@@ -1668,6 +1713,26 @@ Response Engine::exec_select(SelectStmt &stmt) {
 
   if (topk_path && topk >= 0) {
     if (topk == 0) return resp;
+    auto load_candidate = [&](const Candidate &candidate, std::vector<uint8_t> &row) {
+      if (tx_.active) {
+        const TxTable *overlay = find_tx_table(table.id());
+        if (overlay) {
+          auto found = overlay->rows.find(candidate.pk);
+          if (found != overlay->rows.end() && !found->second.deleted) {
+            table.materialize_state(found->second, nullptr, row);
+            return true;
+          }
+        }
+      }
+      return table.read_row(candidate.pos, row);
+    };
+    auto refine = [&](const Candidate &candidate) {
+      std::vector<uint8_t> row;
+      if (!load_candidate(candidate, row))
+        throw_error("CORRUPTION", "TopK candidate row missing");
+      const float *vector = reinterpret_cast<const float *>(row.data() + schema.col_offsets[topk_vector_column]);
+      return squared_l2_precise(vector, topk_query_vec.data(), schema.columns[topk_vector_column].dim);
+    };
     // Parallel exact top-K scan.
     std::vector<CandidateHeap> heaps;
     int thread_count = 1;
@@ -1681,6 +1746,10 @@ Response Engine::exec_select(SelectStmt &stmt) {
     heaps.resize(1);
     heaps[0].k = static_cast<size_t>(topk);
 #endif
+    for (auto &heap : heaps) {
+      heap.uncertainty_ulps = 16 * (static_cast<uint64_t>(schema.columns[topk_vector_column].dim) + 1);
+      heap.refine = refine;
+    }
     if (tx_.active) {
       for_each_visible(table, stmt.where, [&](const VisibleRow &vr) {
         const uint8_t *base = vr.row + schema.col_offsets[topk_vector_column];
@@ -1745,24 +1814,10 @@ Response Engine::exec_select(SelectStmt &stmt) {
     }
     std::vector<Candidate> finalists = heaps[0].data;
     std::sort(finalists.begin(), finalists.end(),
-              [](const Candidate &a, const Candidate &b) {
-                if (a.dist != b.dist) return a.dist < b.dist;
-                return a.pk < b.pk;
-              });
+              [&](const Candidate &a, const Candidate &b) { return heaps[0].less(a, b); });
     for (const auto &c : finalists) {
       std::vector<uint8_t> row;
-      bool have = false;
-      if (tx_.active) {
-        const TxTable *tt = find_tx_table(table.id());
-        if (tt) {
-          auto it = tt->rows.find(c.pk);
-          if (it != tt->rows.end() && !it->second.deleted) {
-            table.materialize_state(it->second, nullptr, row);
-            have = true;
-          }
-        }
-      }
-      if (!have && !table.read_row(c.pos, row)) continue;
+      if (!load_candidate(c, row)) continue;
       resp.rows.push_back(project_row(row.data()));
     }
     return resp;
@@ -1817,19 +1872,17 @@ Response Engine::exec_select(SelectStmt &stmt) {
     rr.pos = vr.pos;
     for (const auto &order : orders) {
       SortKey key;
-      if (order.output >= 0) {
+      if (order.distance) {
+        int ci = order.column;
+        const float *vector = reinterpret_cast<const float *>(vr.row + schema.col_offsets[ci]);
+        key.kind = OutValue::Kind::DOUBLE;
+        key.d = squared_l2_precise(vector, order.query.data(), schema.columns[ci].dim);
+      } else if (order.output >= 0) {
         const OutValue &ov = rr.vals[order.output];
         key.kind = ov.kind;
         key.i = ov.i;
         key.d = ov.d;
         key.s = ov.s;
-      } else if (order.distance) {
-        int ci = order.column;
-        const uint8_t *base = vr.row + schema.col_offsets[ci];
-        const float *vec = reinterpret_cast<const float *>(base);
-        key.kind = OutValue::Kind::DOUBLE;
-        key.d = std::sqrt(
-            squared_l2_checked(vec, order.query.data(), schema.columns[ci].dim));
       } else {
         OutValue ov = out_value_from_row(table, vr.row, order.column);
         key.kind = ov.kind;

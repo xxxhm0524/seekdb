@@ -36,6 +36,9 @@ jobs:
       - name: Hidden boundary regressions
         run: python3 tests/hidden_boundaries.py
 
+      - name: Wide-exponent distance permutations
+        run: python3 tests/vector_precision_model.py
+
       - name: Bounded scan and mutation memory
         run: python3 tests/resource_boundaries.py
 
@@ -73,6 +76,7 @@ jobs:
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/regression.py
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/stress_random.py --rounds 40 --seed 211
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/cache_coherence.py --rounds 4
+          MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/vector_precision_model.py --seeds 7
 
       - name: Docker build
         id: docker_build

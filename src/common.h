@@ -161,7 +161,7 @@ inline bool parse_float32(std::string_view text, float &out) {
   errno = 0;
   char *end = nullptr;
   float v = std::strtof(tmp.c_str(), &end);
-  if (end == tmp.c_str() || *end != '\0') return false;
+  if (end == tmp.c_str() || end != tmp.c_str() + tmp.size()) return false;
   if (errno == ERANGE || !std::isfinite(v)) return false;
   if (v > FLT_MAX || v < -FLT_MAX) return false;
   out = v;

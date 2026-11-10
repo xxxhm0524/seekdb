@@ -22,14 +22,14 @@ class Boundaries(unittest.TestCase):
 
     def sql(self, text, **fields):
         response = self.client.request(text)
-        self.assertIs(response.get("ok"), True, (text, response))
+        self.assertIs(response.get("ok"), True, (text[:200], response))
         for key, expected in fields.items():
-            self.assertEqual(response.get(key), expected, (text, response))
+            self.assertEqual(response.get(key), expected, (text[:200], response))
         return response
 
     def rejected(self, text):
         response = self.client.request(text)
-        self.assertIs(response.get("ok"), False, (text, response))
+        self.assertIs(response.get("ok"), False, (text[:200], response))
         self.assertTrue(response.get("error", {}).get("code"), response)
 
     def test_tiny_finite_distances(self):
@@ -134,6 +134,59 @@ class Boundaries(unittest.TestCase):
         self.rejected("SELECT 汉字 FROM t")
         self.rejected("SELECT 🙂 FROM t")
         self.sql("SELECT id FROM t", rows=[])
+
+    def test_wide_dynamic_range_ties_and_overlay(self):
+        dim = 128
+        zero = '['+','.join(['0']*dim)+']'
+        self.sql('CREATE TABLE t (id BIGINT PRIMARY KEY,v VECTOR(128))')
+        values = []
+        for ident in range(256,0,-1):
+            vector = ['1']*dim
+            vector[ident%dim] = '1e8'
+            values.append("(%d,'[%s]')" % (ident,','.join(vector)))
+        self.sql('INSERT INTO t VALUES '+','.join(values),affected_rows=256)
+        for suffix,expected in [('LIMIT 5',[1,2,3,4,5]),('DESC LIMIT 5',[1,2,3,4,5]),
+                ('LIMIT 5 OFFSET 3',[4,5,6,7,8]),('',list(range(1,257)))]:
+            result = self.sql("SELECT id,L2_DISTANCE(v,'%s') AS d FROM t ORDER BY d " % zero+suffix)
+            self.assertEqual([r[0] for r in result['rows']],expected)
+        self.sql('BEGIN')
+        closer = '['+','.join(['1e8']+['0']*(dim-1))+']'
+        self.sql("UPDATE t SET v='%s' WHERE id=256" % closer,affected_rows=1)
+        result = self.sql("SELECT id FROM t ORDER BY L2_DISTANCE(v,'%s') LIMIT 3" % zero)
+        self.assertEqual(result['rows'],[[256],[1],[2]])
+        self.sql('ROLLBACK')
+
+    def test_insert_duplicate_columns_is_atomic(self):
+        self.sql('CREATE TABLE t (id BIGINT PRIMARY KEY,s VARCHAR(4))')
+        self.rejected("INSERT INTO t(id,s,S) VALUES (1,'a','b')")
+        self.sql('SELECT id FROM t',rows=[])
+
+    def test_vector_component_with_embedded_nul_is_rejected(self):
+        self.sql('CREATE TABLE t (id BIGINT PRIMARY KEY,v VECTOR(2))')
+        self.rejected("INSERT INTO t VALUES (1,'[1\x00junk,2]')")
+        self.rejected("SELECT id FROM t ORDER BY L2_DISTANCE(v,'[1\x00junk,2]') LIMIT 1")
+        self.sql('SELECT id FROM t',rows=[])
+
+    def test_create_does_not_inherit_interrupted_drop_file(self):
+        self.sql('CREATE TABLE old (id BIGINT PRIMARY KEY,s VARCHAR(8))')
+        self.sql("INSERT INTO old VALUES (1,'old')")
+        self.client.shutdown()
+        from pathlib import Path
+        table_file = Path(self.directory.name)/'t_1.dat'
+        orphan = table_file.read_bytes()
+        self.client = Client(datadir=self.directory.name)
+        self.sql('DROP TABLE old')
+        self.client.shutdown()
+        # Fault fixture for a process killed after the catalog rename and
+        # before unlinking the dropped table. This is an unreferenced file.
+        table_file.write_bytes(orphan)
+        self.client = Client(datadir=self.directory.name)
+        self.sql('CREATE TABLE fresh (id BIGINT PRIMARY KEY,s VARCHAR(8))')
+        self.sql('SELECT id,s FROM fresh',rows=[])
+
+    def test_schema_width_cannot_wrap_page_offsets(self):
+        columns = ','.join('c%d VARCHAR(65535)' % i for i in range(16384))
+        self.rejected('CREATE TABLE too_wide (id BIGINT PRIMARY KEY,'+columns+')')
 
 
 if __name__ == "__main__":

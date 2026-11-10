@@ -169,7 +169,7 @@ class Table {
   PageCache *cache() const { return cache_; }
 
   // Opens the data file and computes the next allocation position.
-  void open(bool rebuild = true);
+  void open(bool rebuild = true, bool fresh = false);
   void close_file();
 
   uint32_t page_count() const { return page_count_; }

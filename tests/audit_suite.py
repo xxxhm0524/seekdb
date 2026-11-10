@@ -26,6 +26,7 @@ def main():
         ('extended',['tests/run_extended_tsv.py']),
         ('requirements',['tests/formal_coverage.py']),
         ('hidden-boundaries',['tests/hidden_boundaries.py']),
+        ('vector-precision',['tests/vector_precision_model.py']),
         ('resource',['tests/resource_boundaries.py']),
         ('cache-coherence',['tests/cache_coherence.py']),
         ('regression',['tests/regression.py']),
