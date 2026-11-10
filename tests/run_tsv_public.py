@@ -2,7 +2,7 @@
 """Run public v4 cases against the tsv + __MVD_READY__ protocol."""
 import json, math, os, shutil, subprocess, sys, tempfile
 HERE=os.path.dirname(os.path.abspath(__file__)); ROOT=os.path.dirname(HERE)
-BIN=os.path.join(ROOT,'minivectordb.exe' if os.path.exists(os.path.join(ROOT,'minivectordb.exe')) else 'minivectordb')
+BIN=os.environ.get('MVD_BIN') or os.path.join(ROOT,'minivectordb.exe' if os.path.exists(os.path.join(ROOT,'minivectordb.exe')) else 'minivectordb')
 MARK='__MVD_READY__'
 class C:
     def __init__(self,d):
