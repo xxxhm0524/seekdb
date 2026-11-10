@@ -27,6 +27,7 @@ def main():
         ('requirements',['tests/formal_coverage.py']),
         ('hidden-boundaries',['tests/hidden_boundaries.py']),
         ('resource',['tests/resource_boundaries.py']),
+        ('cache-coherence',['tests/cache_coherence.py']),
         ('regression',['tests/regression.py']),
         ('recovery',['tests/crash_recovery_test.py','50000']),
         ('commit-crash',['tests/commit_crash_boundaries.py']),

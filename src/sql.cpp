@@ -184,7 +184,9 @@ void SqlParser::tokenize() {
       ++i;
       continue;
     }
-    syntax_error(std::string("unexpected character: ") + s[i]);
+    // A single byte may be just the start of a UTF-8 character. Embedding it
+    // in an error message would make the entire JSON response invalid UTF-8.
+    syntax_error("unexpected character at byte " + std::to_string(i));
   }
   tokens_.push_back({Token::Type::END, "", s.size()});
 }

@@ -129,6 +129,12 @@ class Boundaries(unittest.TestCase):
         self.rejected("SELECT id FROM t WHERE v='[0,0]' ORDER BY L2_DISTANCE(v,'[0,0]') LIMIT 1")
         self.sql("SELECT id FROM t", rows=[[1]])
 
+    def test_non_ascii_syntax_errors_preserve_json_transport(self):
+        self.sql("CREATE TABLE t (id BIGINT PRIMARY KEY)")
+        self.rejected("SELECT 汉字 FROM t")
+        self.rejected("SELECT 🙂 FROM t")
+        self.sql("SELECT id FROM t", rows=[])
+
 
 if __name__ == "__main__":
     unittest.main()

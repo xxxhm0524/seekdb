@@ -213,22 +213,32 @@ std::shared_ptr<Page> PageCache::get(Table *table, uint32_t page_no) {
     touch(it);
     return it->second.page;
   }
-  auto page = make_page();
-  if (!table->load_page_raw(page_no, *page)) {
-    page->magic = kPageMagic;
-    page->nrows = 0;
-    page->page_no = page_no;
+  if (!read_buffer_) read_buffer_ = std::make_unique<PageIoBuffer>();
+  uint32_t count = static_cast<uint32_t>(std::min<size_t>(kIoBatchPages,
+      std::max<size_t>(1, max_pages_ / 2)));
+  count = table->load_pages_raw(page_no, count, read_buffer_->bytes);
+  std::shared_ptr<Page> requested;
+  for (uint32_t i = 0; i < std::max<uint32_t>(1, count); ++i) {
+    uint32_t current = page_no + i;
+    uint64_t current_key = key(table->id(), current);
+    // A prefetched disk image must never replace a newer dirty cache page.
+    if (pages_.find(current_key) != pages_.end()) continue;
+    auto page = make_page();
+    if (count)
+      std::memcpy(page.get(), read_buffer_->bytes + static_cast<size_t>(i) * kPageSize, kPageSize);
+    else
+      page->page_no = current;
+    Entry entry;
+    entry.page = page;
+    entry.owner = table;
+    entry.page_no = current;
+    lru_.push_front(current_key);
+    entry.lru_it = lru_.begin();
+    pages_.emplace(current_key, std::move(entry));
+    if (current == page_no) requested = std::move(page);
   }
-  Entry entry;
-  entry.page = page;
-  entry.dirty = false;
-  entry.owner = table;
-  entry.page_no = page_no;
-  lru_.push_front(k);
-  entry.lru_it = lru_.begin();
-  pages_.emplace(k, std::move(entry));
   evict_if_needed();
-  return page;
+  return requested;
 }
 
 void PageCache::install(Table *table, uint32_t page_no,
@@ -289,7 +299,7 @@ void PageCache::write_entries(std::vector<Entry *> entries) {
     if (end == begin + 1) {
       entries[begin]->owner->write_page_to_disk(entries[begin]->page_no, *entries[begin]->page);
     } else {
-      if (!write_buffer_) write_buffer_ = std::make_unique<WriteBuffer>();
+      if (!write_buffer_) write_buffer_ = std::make_unique<PageIoBuffer>();
       for (size_t i = begin; i < end; ++i)
         std::memcpy(write_buffer_->bytes + (i - begin) * kPageSize,
                     entries[i]->page.get(), kPageSize);
@@ -399,6 +409,21 @@ bool Table::load_page_raw(uint32_t page_no, Page &page) {
   return true;
 }
 
+uint32_t Table::load_pages_raw(uint32_t first_page, uint32_t count, void *pages) {
+  int64_t bytes = file_.size();
+  if (bytes < 0) throw_error("IO_ERROR", "cannot stat table file");
+  uint64_t total = static_cast<uint64_t>(bytes) / kPageSize;
+  if (first_page >= total || count == 0) return 0;
+  count = static_cast<uint32_t>(std::min<uint64_t>(count, total - first_page));
+  uint64_t offset = static_cast<uint64_t>(first_page) * kPageSize;
+  size_t length = static_cast<size_t>(count) * kPageSize;
+  if (!file_.pread_full(pages, length, offset)) {
+    if (!direct_io_ || !reopen_buffered() || !file_.pread_full(pages, length, offset))
+      throw_error("IO_ERROR", "cannot read table pages");
+  }
+  return count;
+}
+
 void Table::refresh_after_recovery() {
   int64_t size = file_.size();
   if (size < 0) throw_error("IO_ERROR", "cannot stat table file");
@@ -421,17 +446,24 @@ void Table::refresh_after_recovery() {
 
 void Table::rebuild_pk_index() {
   pk_pos_.clear();
-  for (uint32_t p = 0; p < page_count_; ++p) {
-    Page page;
-    if (!load_page_raw(p, page)) continue;
-    if (page.magic != kPageMagic) continue;
-    uint32_t n = std::min(page.nrows, page.capacity(schema_.row_size));
-    for (uint32_t slot = 0; slot < n; ++slot) {
-      const uint8_t *row = page.row_ptr(slot, schema_.row_size);
-      if (!row_is_valid(row)) continue;
-      int64_t pk = row_id(row);
-      pk_pos_[pk] = static_cast<uint64_t>(p) * schema_.rows_per_page + slot;
+  if (page_count_ == 0) return;
+  auto buffer = std::make_unique<PageIoBuffer>();
+  for (uint32_t p = 0; p < page_count_;) {
+    uint32_t count = load_pages_raw(p, std::min(kIoBatchPages, page_count_ - p), buffer->bytes);
+    if (count == 0) throw_error("CORRUPTION", "table page missing during index rebuild");
+    for (uint32_t i = 0; i < count; ++i) {
+      Page page;
+      std::memcpy(&page, buffer->bytes + static_cast<size_t>(i) * kPageSize, kPageSize);
+      if (page.magic != kPageMagic) continue;
+      uint32_t n = std::min(page.nrows, page.capacity(schema_.row_size));
+      for (uint32_t slot = 0; slot < n; ++slot) {
+        const uint8_t *row = page.row_ptr(slot, schema_.row_size);
+        if (!row_is_valid(row)) continue;
+        int64_t pk = row_id(row);
+        pk_pos_[pk] = static_cast<uint64_t>(p + i) * schema_.rows_per_page + slot;
+      }
     }
+    p += count;
   }
 }
 

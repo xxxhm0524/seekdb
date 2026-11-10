@@ -126,6 +126,7 @@ ROLLBACK;
 - 页缓存按 LRU 管理，超过 `--cache-mb` 时淘汰干净页，脏页刷盘；扫描不会把整表读入内存，支持大于内存预算的数据集。
 - 对齐页缓冲复用，额外闲置池最多 2 MiB，避免扫描、事务节点与提交镜像反复分配时造成堆碎片增长。
 - 提交镜像按页号排序；相邻脏页合并为至多 1 MiB 的写入，降低大修改与 checkpoint 的同步 I/O 次数。
+- 顺序扫描和主键索引恢复使用至多 1 MiB 的批量读取；预读不会覆盖较新的脏缓存页，读写暂存缓冲各至多 1 MiB。
 
 ### 4.2 事务与语句原子性
 
@@ -167,7 +168,7 @@ ROLLBACK;
 | --- | --- | --- |
 | JSONL 握手、关闭、公开用例 | `protocol_check/run.py`，实际目标参数由下方审计入口生成 | 握手及 20/20 公开用例 PASS |
 | 公开要求的本地覆盖 | `tests/formal_coverage.py`，类型、比较、排序、事务与恢复 | PASS；不等同正式用例 |
-| 边界回归 | `tests/hidden_boundaries.py`，极小距离、别名、空结果错误、维度回绕、非法向量、回滚槽位、UPDATE 原子性 | 11 组 PASS |
+| 边界回归 | `tests/hidden_boundaries.py`，极小距离、别名、空结果错误、维度回绕、非法向量、回滚槽位、UPDATE 原子性、Unicode 错误响应 | 12 组 PASS |
 | 随机模型 | `tests/stress_random.py`，种子 7、42、211，各 100 轮 | PASS |
 | 原回归和扩展 | `tests/regression.py`、`tests/run_extended_tsv.py`；后者名称保留，实际走 JSONL | PASS |
 | 恢复中重复强杀 | `tests/crash_recovery_test.py 50000`，合法未提交增删改，核对所有 ID | PASS；本地观测到 2 次恢复写页后、ready 前强杀 |

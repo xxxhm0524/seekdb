@@ -39,6 +39,9 @@ jobs:
       - name: Bounded scan and mutation memory
         run: python3 tests/resource_boundaries.py
 
+      - name: Dirty page and prefetch coherence
+        run: python3 tests/cache_coherence.py
+
       - name: Randomized model stress
         run: python3 tests/stress_random.py --rounds 20 --seed 7
 
@@ -69,6 +72,7 @@ jobs:
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/hidden_boundaries.py
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/regression.py
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/stress_random.py --rounds 40 --seed 211
+          MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/cache_coherence.py --rounds 4
 
       - name: Docker build
         id: docker_build

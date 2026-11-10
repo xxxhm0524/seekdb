@@ -61,6 +61,11 @@ struct alignas(4096) Page {
 // when small transaction nodes are allocated between aligned 64 KiB pages.
 std::shared_ptr<Page> make_page(const Page *source = nullptr);
 
+constexpr uint32_t kIoBatchPages = 16;
+struct alignas(4096) PageIoBuffer {
+  uint8_t bytes[kPageSize * kIoBatchPages];
+};
+
 struct OutValue {
   enum class Kind { INT, DOUBLE, STRING, VECTOR } kind = Kind::INT;
   int64_t i = 0;
@@ -143,10 +148,8 @@ class PageCache {
   void evict_if_needed();
   void write_entries(std::vector<Entry *> entries);
 
-  struct alignas(4096) WriteBuffer {
-    uint8_t bytes[kPageSize * 16];
-  };
-  std::unique_ptr<WriteBuffer> write_buffer_;
+  std::unique_ptr<PageIoBuffer> write_buffer_;
+  std::unique_ptr<PageIoBuffer> read_buffer_;
 
   size_t max_pages_;
   mutable std::mutex mutex_;
@@ -178,6 +181,7 @@ class Table {
     return cache_->get(this, page_no);
   }
   bool load_page_raw(uint32_t page_no, Page &page);
+  uint32_t load_pages_raw(uint32_t first_page, uint32_t count, void *pages);
   void refresh_after_recovery();
   bool read_row(uint64_t pos, std::vector<uint8_t> &row);
   void write_page_to_disk(uint32_t page_no, const Page &page);
