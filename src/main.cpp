@@ -287,10 +287,13 @@ struct Options {
 Options parse_options(int argc, char **argv) {
   Options opt;
   if (const char *env = std::getenv("MVD_OUTPUT")) opt.output = env;
+  else if (const char *env = std::getenv("MVDB_FORMAT")) opt.output = env;
   if (const char *env = std::getenv("MVD_READY_MARKER")) opt.ready_marker = env;
+  else if (const char *env = std::getenv("MVDB_READY_LINE")) opt.ready_marker = env;
   if (const char *env = std::getenv("MVD_QUERY_THREADS")) opt.query_threads = std::atoi(env);
   if (const char *env = std::getenv("MVD_CACHE_MB")) opt.cache_mb = std::atoi(env);
   if (const char *env = std::getenv("MVD_DATA_DIR")) opt.data_dir = env;
+  else if (const char *env = std::getenv("MVDB_DATA_DIR")) opt.data_dir = env;
   if (const char *env = std::getenv("MVD_VECTOR_MODE")) {
     std::string m = env;
     opt.ann_default = (m == "ann" || m == "approximate");
@@ -309,6 +312,10 @@ Options parse_options(int argc, char **argv) {
     else if (arg == "--data-dir" && i + 1 < argc) opt.data_dir = argv[++i];
     else if (take("--ready-marker=", v)) opt.ready_marker = v;
     else if (arg == "--ready-marker" && i + 1 < argc) opt.ready_marker = argv[++i];
+    else if (take("--ready-line=", v)) opt.ready_marker = v;
+    else if (arg == "--ready-line" && i + 1 < argc) opt.ready_marker = argv[++i];
+    else if (take("--format=", v)) opt.output = v;
+    else if (arg == "--format" && i + 1 < argc) opt.output = argv[++i];
     else if (take("--output=", v)) opt.output = v;
     else if (arg == "--output" && i + 1 < argc) opt.output = argv[++i];
     else if (take("--query-threads=", v)) opt.query_threads = std::atoi(v.c_str());
