@@ -23,7 +23,8 @@ COPY --from=build /src/minivectordb /app/minivectordb
 RUN mkdir -p /data
 
 # The evaluator keeps stdin open (-i) and captures stderr separately.
-ENV MVD_OUTPUT=json
+ENV MVD_OUTPUT=tsv
+ENV MVD_READY_MARKER=__MVD_READY__
 VOLUME ["/data"]
 ENTRYPOINT ["/app/minivectordb"]
 CMD ["--data-dir", "/data"]

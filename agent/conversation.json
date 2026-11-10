@@ -180,7 +180,7 @@
     "limitations": "未实现 NULL/JOIN/聚合/子查询/ALTER/主键更新；单事务叠加层驻留内存；Docker 构建已通过 GitHub Actions 验证。"
   },
   "limitations": [
-    "本题正式评测的 stdin/stdout 驱动细节需以平台题包为准；仓库 Docker 默认使用 mysql 文本模式，并支持 json/tsv/miniob 兼容输出，可通过 MVD_OUTPUT 切换。",
+    "本题正式评测的 stdin/stdout 驱动细节需以平台题包为准；仓库 Docker 默认使用 tsv + __MVD_READY__ 标记，并支持 json/mysql/miniob 兼容输出，可通过 MVD_OUTPUT 切换。",
     "学生侧技术判断证据不足：主要实现与验证由 assistant 完成，conversation.json 不伪造学生贡献。"
   ],
   "instances": [
