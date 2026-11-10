@@ -229,7 +229,9 @@ class VectorIndex {
     if (ids_.empty()) return {};
     uint32_t entry = entry_;
     for (int layer = max_level_; layer > 0; --layer) entry = greedy(query, entry, layer);
-    return layer_search(query, entry, std::max<size_t>(384, k * 8), 0);
+    const size_t dimension_width = std::min<size_t>(1024, static_cast<size_t>(dim_) * 2);
+    const size_t width = std::max({size_t(384), k * 8, dimension_width});
+    return layer_search(query, entry, width, 0);
   }
  private:
   struct FilterEntry {
