@@ -1,297 +1,389 @@
 {
-  "schema": "mvd-conversation-v1",
-  "version": "2026-competition-round2 / MiniVectorDB",
+  "schema": "mvd-conversation-v2",
   "rules_version": "agent-learning-evidence-v3-unbounded",
   "synthetic": false,
+  "generated_at_utc": "2026-11-10T17:58:10.062075+00:00",
   "material_scope": {
-    "what_this_file_is": "MiniVectorDB 开发过程中实际发生的任务设定、实现、实验和验证记录。所有 command 与 output 字段都摘自本机实际执行结果，不是事后编造。",
-    "what_this_file_is_not": "本文件不包含合成学习材料，没有 synthetic 标记的条目均对应真实执行过的命令与真实读到的输出。",
-    "redaction": "未包含访问密钥、令牌或私人凭据。本机路径仅保留用于复现。",
-    "provenance_rule": "origin=student 表示用户（参赛学生）的原话；origin=assistant 表示 AI 助手的分析或操作；origin=tool 表示命令的实际输出。评分请只认可 student 条目支撑的理解。",
-    "honest_note": "本轮开发中，技术方案、代码实现、实验设计和结果分析主要由 AI 助手完成。学生侧可核验的证据集中在任务设定、交付形态和推进约束上；本文件如实反映这一分布，不把 assistant 的工作冒充学生理解，也不编造学生的技术判断。"
+    "purpose": "选录可核验的真实可见对话、必要上下文和实际结果；没有替学生编写预测、解释或复盘。",
+    "sources": "本线程用户消息 ID 与助手可见回复；当前源码版本的本地日志和 GitHub Actions 运行日志。",
+    "source_thread_id": "01a1c4bd-6408-73c1-995e-f344d41a3258",
+    "coverage": "覆盖本线程从接手任务到用户要求完整完成两问的相关问题链；省略重复进度、账号、登录、权限流程及内部分析。",
+    "redaction": "账号、密码、令牌已替换；日志的本机根目录替换为 $REPO，数值和状态保留。",
+    "role_boundary": "交接文本不自动证明用户本人已理解；代码、方案、实验设计和多数结果分析由助手完成。",
+    "legacy_treatment": "旧文件的自评分、未在当前可见原始消息定位的历史引语、将助手转述标成学生原话的内容不纳入本次学生证据；原文件已另行留存。",
+    "legacy_sha256": "c103c9f13dce2415d0163fcd4ca4b1c939979891457ddd212d1ee4862990b8ae",
+    "readiness": "所选范围的已确认记录已整理；仍等待用户对当前实测的后续判断，不据格式通过推断学习成绩。"
   },
-  "user_prompts": [
-    {
-      "id": "P01",
-      "origin": "student",
-      "time": "2026-11-09",
-      "text": "现在oceanbase发布了新题目，请你查看并完成，环境下载在d盘",
-      "note": "任务来源与交付约束：要求查看 OceanBase 新发布的题目并完成；指定环境放在 D 盘。"
-    },
-    {
-      "id": "P02",
-      "origin": "student",
-      "time": "2026-11-09",
-      "text": "怎么样了",
-      "note": "进度询问，未提出技术判断。"
-    },
-    {
-      "id": "P03",
-      "origin": "student",
-      "time": "2026-11-09",
-      "text": "/goal 请你完成加赛题目，未完成前不要停止",
-      "note": "明确要求完成加赛题目并持续执行到完成，属于交付范围和推进约束。"
-    },
-    {
-      "id": "P04",
-      "origin": "student",
-      "time": "2026-11-09",
-      "text": "目前全部提测失败了，请你不要浪费提测机会",
-      "note": "学生报告正式提测全部失败，并明确提出节约有限提测机会的约束。"
-    },
-    {
-      "id": "P05",
-      "origin": "student",
-      "time": "2026-11-09",
-      "text": "/goal 请你继续完成题目，未完成前不要停止",
-      "note": "学生要求继续完成题目直至完成，属于推进约束。"
-    },
-    {
-      "id": "P06",
-      "origin": "student",
-      "time": "2026-11-09",
-      "text": "/goal 请你仔细检查没有任何问题，并且一定能拿到满分为止",
-      "note": "学生提出零缺陷检查和冲刺满分的目标，强调独立验证。"
-    },
-    {
-      "id": "P07",
-      "origin": "student",
-      "time": "2026-11-10",
-      "text": "请你先不要提测",
-      "note": "学生在验证完成前明确叫停平台提测，体现对提交机会的取舍。"
-    },
-    {
-      "id": "P08",
-      "origin": "student",
-      "time": "2026-11-10",
-      "text": "你认为现在能够拿到满分了吗，每一个case都考虑到了吗，如果没有，请你继续优化",
-      "note": "学生质疑当前覆盖是否完整，要求逐个 case 核查并继续优化。"
-    }
-  ],
+  "evaluation_context": {
+    "functional_gate": "正式 29 个用例全部通过才具备计分资格，公开 20 个用例不足以替代。",
+    "ranking": "性能、学习材料分别排名，各最高 40；并无保证满分的固定原始指标阈值。",
+    "weights": "写入与查询总权重为 1:2；单项耗时/I/O/内存权重为 60%/20%/20%。",
+    "evidence": "只陈列真实来源与实际结果，不提交自评分，不把通用推进指令拆成多个得分实例。"
+  },
   "conversations": [
     {
-      "id": "C01",
-      "origin": "student",
-      "content": "学生先提出要查看 OceanBase 新发布的题目并完成，同时指定环境在 D 盘。",
-      "student_evidence": {
-        "pointer": "/user_prompts/0/text",
-        "quote": "现在oceanbase发布了新题目，请你查看并完成，环境下载在d盘"
-      },
-      "result": "助手据此定位到 2026 数据库大赛「加赛部分」赛题一：轻量向量数据库（MiniVectorDB），并下载官方 2026-competition-round2 分支到 D:\\oceanbase\\seekdb。",
-      "note": "这是任务识别与交付约束，不是技术理解；对应独立实例 I01（0.5 分档，只有规划/约束，无学生执行结果）。"
+      "role": "user",
+      "id": "01a1c4bd-7cff-7cb1-ae10-aa570688b979",
+      "source_turn_id": "01a1c4bd-67c1-7a70-a4d8-b5ff0f8f2f01",
+      "source_thread_id": "01a1c4bd-6408-73c1-995e-f344d41a3258",
+      "content": "/goal 你接手 OceanBase 2026 加赛题 MiniVectorDB（questionId=600081，子题 800517/800518）。\n\n平台地址：https://open.oceanbase.com/login\n题目页面：https://open.oceanbase.com/train/TopicDetails?questionId=600081\n平台账号：[REDACTED]\n平台密码：[REDACTED]（可能不对）\n\n\n仓库地址：https://github.com/xxxhm0524/seekdb\n分支：2026-competition-round2\n当前 Commit：f85c8445521fbd4ff8b4d236020e7266e878a79d\n\n开发环境：\n- 本地代码：D:\\oceanbase\\seekdb\n- Windows 10 + MSYS2（g++ / mingw32-make）\n- 本机没有 Docker；Docker 构建和容器协议检查由 GitHub Actions ubuntu-24.04 验证\n- 官方协议在仓库 STDIO_PROTOCOL.md，测试驱动在 protocol_check/，公开用例在 mysqltest/\n\n目前已完成：\n- 已按官方 JSONL 协议实现 stdin/stdout：启动输出 {\"type\":\"ready\"}，逐行处理 execute/shutdown，响应原样回传 id、布尔 ok、columns/rows、affected_rows、error.code\n- 官方 protocol_check 握手和 20/20 公开用例通过，Docker 内 protocol_check 也通过\n- 本地扩展测试、正式要求覆盖、随机压力、50k 行强杀恢复、WAL checkpoint、崩溃恢复通过\n- 10k×128d、1000 查询、Recall@10=1.0\n\n你需要做：\n- 阅读 STDIO_PROTOCOL.md、mysqltest/README.md、README.md，先跑现有测试确认环境\n- 继续检查隐藏用例覆盖和性能/恢复边界，发现问题直接修复并复测\n- 不要把纯 SQL/tsv 当成正式协议；不要编造 conversation.json 的学生证据\n- 未经我明确授权，不要平台提测；平台每天最多 2 次正式提交\n\n完成后报告：改动内容、测试结果、当前 SHA、剩余风险。\n\n仓库地址：https://github.com/xxxhm0524/seekdb\n分支：2026-competition-round2\n当前 Commit：f85c8445521fbd4ff8b4d236020e7266e878a79d\n\n开发环境：\n- 本地代码：D:\\oceanbase\\seekdb\n- Windows 10 + MSYS2（g++ / mingw32-make）\n- 本机没有 Docker；Docker 构建和容器协议检查由 GitHub Actions ubuntu-24.04 验证\n- 官方协议在仓库 STDIO_PROTOCOL.md，测试驱动在 protocol_check/，公开用例在 mysqltest/\n\n目前已完成：\n- 已按官方 JSONL 协议实现 stdin/stdout：启动输出 {\"type\":\"ready\"}，逐行处理 execute/shutdown，响应原样回传 id、布尔 ok、columns/rows、affected_rows、error.code\n- 官方 protocol_check 握手和 20/20 公开用例通过，Docker 内 protocol_check 也通过\n- 本地扩展测试、正式要求覆盖、随机压力、50k 行强杀恢复、WAL checkpoint、崩溃恢复通过\n- 10k×128d、1000 查询、Recall@10=1.0\n\n直到你认为已经优化到最好为止，需要我帮助及时告诉我\n\n\n并且你要仔细检查当前已完成是不是真的没有问题，之前提交两次都失败了\n",
+      "source_kind": "codex_visible_message",
+      "source_note": "用户可见原文；交接信息不自动证明其本人已理解或亲自执行。"
     },
     {
-      "id": "C02",
-      "origin": "assistant",
-      "content": "助手分析赛题并确定实现边界：单机单进程单客户端；BIGINT/VARCHAR/VECTOR 表；INSERT/SELECT/UPDATE/DELETE；L2_DISTANCE 精确 TopK；/data 持久化；BEGIN/COMMIT/ROLLBACK；进程被杀后的恢复。",
-      "student_response": "未追加技术讨论。",
-      "note": "属于 assistant 的规划，不作为学生证据。"
+      "role": "user",
+      "id": "01a1c4d0-1a96-70a2-851c-453e6099e55d",
+      "source_turn_id": "01a1c4bd-67c1-7a70-a4d8-b5ff0f8f2f01",
+      "source_thread_id": "01a1c4bd-6408-73c1-995e-f344d41a3258",
+      "content": "加赛题目能分给两个ai做吗，还是统一由一个ai完成更好\n",
+      "source_kind": "codex_visible_message",
+      "source_note": "用户可见原文；交接信息不自动证明其本人已理解或亲自执行。"
     },
     {
-      "id": "C03",
-      "origin": "assistant",
-      "content": "助手从零实现 C++20 引擎：64 KiB 定长页、页缓存、WAL 完整页镜像、事务叠加层、AVX2/FMA 距离内核、OpenMP 并行扫描以及 stdin/stdout 服务。",
-      "student_response": "未参与实现细节。",
-      "note": "属于 assistant 的实现工作，不作为学生证据。"
+      "role": "user",
+      "id": "01a1c4d1-7544-7ae3-bbf8-f697c65328c6",
+      "source_turn_id": "01a1c4bd-67c1-7a70-a4d8-b5ff0f8f2f01",
+      "source_thread_id": "01a1c4bd-6408-73c1-995e-f344d41a3258",
+      "content": "我记得有两道题吧，能不能把这两道题拆开，你完成其中一道就行\n",
+      "source_kind": "codex_visible_message",
+      "source_note": "用户可见原文；交接信息不自动证明其本人已理解或亲自执行。"
     },
     {
-      "id": "C04",
-      "origin": "student",
-      "content": "学生询问「怎么样了」，要求助手汇报进度。",
-      "student_evidence": {
-        "pointer": "/user_prompts/1/text",
-        "quote": "怎么样了"
-      },
-      "result": "助手汇报了题目定位、代码完成度、公开用例与恢复验证进展，并继续推进剩余交付。",
-      "note": "属于过程监督，不构成技术理解证据。"
+      "role": "user",
+      "id": "01a1c4f8-1d51-7a23-83ef-4247bfd912cd",
+      "source_turn_id": "01a1c4d2-dcc2-7182-a106-feb5abe45d51",
+      "source_thread_id": "01a1c4bd-6408-73c1-995e-f344d41a3258",
+      "content": "请你先不要急着提交，提交次数很珍贵",
+      "source_kind": "codex_visible_message",
+      "source_note": "用户可见原文；交接信息不自动证明其本人已理解或亲自执行。"
     },
     {
-      "id": "C05",
-      "origin": "student",
-      "content": "学生进一步要求完成加赛题目且未完成前不要停止。",
-      "student_evidence": {
-        "pointer": "/user_prompts/2/text",
-        "quote": "/goal 请你完成加赛题目，未完成前不要停止"
-      },
-      "result": "助手继续完成回归测试、性能验证、Dockerfile、README 和 Agent Prompt 材料，并准备推送代码。",
-      "note": "属于交付范围和推进约束；对应独立实例 I02（0.5 分档，只有要求，无学生验证结果）。"
+      "role": "user",
+      "id": "01a1c551-a8a1-7dc1-87ff-94a4f9e34727",
+      "source_turn_id": "01a1c551-a87f-7670-936f-a4a5070a2cf4",
+      "source_thread_id": "01a1c4bd-6408-73c1-995e-f344d41a3258",
+      "content": "那么这个问题是不是还可以优化一下呢：ANN 仍采用精确扫描，超大事务仍受内存限制\n",
+      "source_kind": "codex_visible_message",
+      "source_note": "用户可见原文；交接信息不自动证明其本人已理解或亲自执行。"
+    },
+    {
+      "role": "assistant",
+      "id": "msg_0fb0b2ce0dc8ea45016af323548ee087d08e04e96002dfc25d",
+      "source_turn_id": "01a1c5c1-e5f8-7660-b5b6-42d0953c0d68",
+      "source_thread_id": "01a1c4bd-6408-73c1-995e-f344d41a3258",
+      "phase": "commentary",
+      "content": "我继续处理 ANN 建索引超时和大事务内存边界，先核对暂停时的代码状态，再完成复测。不会进行平台提测。\n",
+      "source_kind": "codex_visible_message"
+    },
+    {
+      "role": "assistant",
+      "id": "msg_0fb0b2ce0dc8ea45016af32d96682c87d0afc6b73e04b3d263",
+      "source_turn_id": "01a1c5c1-e5f8-7660-b5b6-42d0953c0d68",
+      "source_thread_id": "01a1c4bd-6408-73c1-995e-f344d41a3258",
+      "phase": "commentary",
+      "content": "随机读取放大问题已修复：同一测试的读取量从约 4.7 GB 降到约 28 MB，多表提交强杀测试也已在 Linux 通过。平台方面，我会只读核对公开页面提供的接口，确认是否有可用的登录和提测方式；目前仍未发起提测。\n",
+      "source_kind": "codex_visible_message"
+    },
+    {
+      "role": "assistant",
+      "id": "msg_0fb0b2ce0dc8ea45016af332f49fd487d0a9f95b30792dd7d8",
+      "source_turn_id": "01a1c5c1-e5f8-7660-b5b6-42d0953c0d68",
+      "source_thread_id": "01a1c4bd-6408-73c1-995e-f344d41a3258",
+      "phase": "final_answer",
+      "content": "本轮优化已完成，[CI 全绿](https://github.com/xxxhm0524/seekdb/actions/runs/42838873216)，工作区干净。\n\n- **改动**：加入 HNSW、紧凑精确索引和事务溢写；修复删除内存残留、读取放大及页分配导致的内存增长。\n- **验证**：本地 22 项审计、公开 20/20、ASan/UBSan 全通过。256 MiB 容器完成超过 2 GiB 的数据与事务测试；UPDATE 约 25 秒、DELETE 约 33 秒、大事务提交约 24 秒，保留原 60 秒限制。\n- **剩余风险**：5 万向量 ANN 召回约 0.981，速度尚无明显优势；事务元数据仍随行数增长；正式 29 个用例尚未验证。\n\n当前 SHA：`082acdb96d847844962f85cd3e3f57e4d38db1dc`  \n[完整审计报告](D:/oceanbase/seekdb/protocol-results/OPTIMIZATION_AUDIT_20261110.json)\n\n平台今天已有两次提测记录，额度已用完。**本轮新增提测 0 次，你授权的 1 次尚未使用。**\n\n另：历史接口中的 GitHub 令牌曾进入工具日志，本地文件已脱敏，建议轮换该令牌。",
+      "source_kind": "codex_visible_message"
+    },
+    {
+      "role": "assistant",
+      "id": "msg_0fb0b2ce0dc8ea45016af3389b221c87d088b887082b2fd166",
+      "source_turn_id": "01a1c602-f570-7290-a26b-f75790f69f51",
+      "source_thread_id": "01a1c4bd-6408-73c1-995e-f344d41a3258",
+      "phase": "commentary",
+      "content": "完整评分说明确认：查询占综合指标的 2/3，耗时占 60%，I/O 和内存各占 20%。当前三轮基线的 1,000 次查询约为 0.25–0.26 秒。\n\n我先逐项验证三个方向：缓存重复过滤条件的候选集合、减少距离计算的指令依赖、加快向量数字解析。每项都单独对比，召回率和事务语义继续做回归检查。通信仍遵循当前官方 JSONL 协议。\n",
+      "source_kind": "codex_visible_message"
+    },
+    {
+      "role": "assistant",
+      "id": "msg_0fb0b2ce0dc8ea45016af33b9aa11c87d0ba62f6a25003d03e",
+      "source_turn_id": "01a1c602-f570-7290-a26b-f75790f69f51",
+      "source_thread_id": "01a1c4bd-6408-73c1-995e-f344d41a3258",
+      "phase": "commentary",
+      "content": "过滤候选缓存已通过 106 组谓词的独立模型测试，覆盖不同查询向量、提交、回滚、失败语句和重启。单次对照中，过滤查询从约 0.11 秒降到约 0.093 秒，召回率保持 1.0；还需要多轮和容器测量确认收益。\n\n接下来检查数字解析优化，尤其保留 float32 最大值、极小值及非法输入的原有处理。\n",
+      "source_kind": "codex_visible_message"
+    },
+    {
+      "role": "assistant",
+      "id": "msg_0fb0b2ce0dc8ea45016af34133f69087d0aeae8b1097508a3b",
+      "source_turn_id": "01a1c602-f570-7290-a26b-f75790f69f51",
+      "source_thread_id": "01a1c4bd-6408-73c1-995e-f344d41a3258",
+      "phase": "commentary",
+      "content": "数字解析已通过约 60 万次逐位差分检查，包括极值、下溢和非法符号；完整回归正在运行。\n\n我也补了三轮容器对照测量：I/O 和峰值内存会覆盖装载、索引准备、预热到最终写回的完整过程，正确性校验放在独立容器中，避免干扰指标。它使用当前已验证版本作参考，不会冒充官方基线。\n",
+      "source_kind": "codex_visible_message"
+    },
+    {
+      "role": "user",
+      "id": "01a1c655-6286-7ed1-8a00-cc98ac76fa56",
+      "source_turn_id": "01a1c602-f570-7290-a26b-f75790f69f51",
+      "source_thread_id": "01a1c4bd-6408-73c1-995e-f344d41a3258",
+      "content": "你只有唯一一次提测机会，请你一定要把握好，直到没有任何风险才能提交。并且请你把这道大题完整做完，包括第二问\n",
+      "source_kind": "codex_visible_message",
+      "source_note": "用户可见原文；交接信息不自动证明其本人已理解或亲自执行。"
     }
   ],
   "experiments": [
     {
-      "id": "E01",
-      "origin": "tool",
-      "hypothesis": "官方公开题包 v4 的 20 个用例（95 条 SQL）应全部通过。",
-      "command": "python tests/local_driver.py（manifest_new.json：20 cases/95 statements）",
-      "output": "20 cases all PASS: sql_crud, sql_comparisons, sql_ordering, sql_empty, sql_primary_key, sql_unicode, sql_bigint, sql_unsupported, storage_restart, vector_euclidean, transaction_commit, transaction_rollback, storage_mutations, storage_multiple_tables, vector_ties_and_filter, vector_float32, vector_index_maintenance, transaction_failed_insert, transaction_autocommit_atomic, transaction_shutdown_rollback",
-      "interpretation": "公开 v4 覆盖错误语义（duplicate_key/unsupported_sql/dimension_mismatch）、--restart、--mode ann、多表持久化和向量索引维护。"
+      "id": "jsonl-public",
+      "role": "tool",
+      "execution_status": "executed",
+      "designed_and_executed_by": "assistant_and_tools",
+      "title": "JSONL 协议与公开用例",
+      "command": "python protocol_check/run.py --command <当前引擎> --output <审计目录>",
+      "command_note": "命令为复现概要，路径和环境设置可作脱敏省略；output 为实际日志摘录，不是拟定结果。",
+      "output": "sql_crud: PASS \nsql_comparisons: PASS \nsql_ordering: PASS \nsql_empty: PASS \nsql_primary_key: PASS \nsql_unicode: PASS \nsql_bigint: PASS \nsql_unsupported: PASS \nstorage_restart: PASS \nvector_euclidean: PASS \ntransaction_commit: PASS \ntransaction_rollback: PASS \nstorage_mutations: PASS \nstorage_multiple_tables: PASS \nvector_ties_and_filter: PASS \nvector_float32: PASS \nvector_index_maintenance: PASS \ntransaction_failed_insert: PASS \ntransaction_autocommit_atomic: PASS \ntransaction_shutdown_rollback: PASS \nReport: $REPO\\protocol-results\\audit-fullscore-20261111-000530\\public\\result.json",
+      "source": {
+        "kind": "native_audit_log",
+        "file": "public.log",
+        "engine_sha": "7a4bb363312750a072e7c37160e137ffeb74f178"
+      },
+      "interpretation_by_assistant": "这是公开 20 个用例的检查，不是正式 29 个用例的验收结果。"
     },
     {
-      "id": "E02",
-      "origin": "tool",
-      "hypothesis": "事务内读己之写、ROLLBACK 恢复、COMMIT 持久化和语句失败原子性应成立。",
-      "command": "python tests/regression.py",
-      "output": "ok: read own writes; ok: rollback restores; ok: commit visible; ok: duplicate insert rejected; ok: failed insert left no partial row; ok: clean restart persistence; ALL REGRESSION CHECKS PASSED",
-      "interpretation": "事务叠加层和语句回滚逻辑符合赛题 2.3 语义。"
+      "id": "float-parser",
+      "role": "tool",
+      "execution_status": "executed",
+      "designed_and_executed_by": "assistant_and_tools",
+      "title": "float-parser",
+      "command": "python tests/float_parse_model.py",
+      "command_note": "命令为复现概要，路径和环境设置可作脱敏省略；output 为实际日志摘录，不是拟定结果。",
+      "output": "float parse model: PASS (598469 conversions)",
+      "source": {
+        "kind": "native_audit_log",
+        "file": "float-parser.log",
+        "engine_sha": "7a4bb363312750a072e7c37160e137ffeb74f178"
+      },
+      "interpretation_by_assistant": "与既有 strtof 行为逐位对照；无学生单独提出的预测或结果解释。"
     },
     {
-      "id": "E03",
-      "origin": "tool",
-      "hypothesis": "显式事务中进程被强制终止后，已提交数据保留、未提交数据不残留，恢复后可以继续写入。",
-      "command": "python tests/regression.py (test_crash)",
-      "output": "ok: crash: committed survives, uncommitted gone; ok: crash: recovery usable",
-      "interpretation": "WAL 仅在 COMMIT 记录存在时重放完整页镜像。"
+      "id": "filter-cache",
+      "role": "tool",
+      "execution_status": "executed",
+      "designed_and_executed_by": "assistant_and_tools",
+      "title": "filter-cache",
+      "command": "python tests/filter_cache_model.py",
+      "command_note": "命令为复现概要，路径和环境设置可作脱敏省略；output 为实际日志摘录，不是拟定结果。",
+      "output": "filter cache model: PASS (106 predicates, changing query vectors, mutation/rollback/failure/restart)",
+      "source": {
+        "kind": "native_audit_log",
+        "file": "filter-cache.log",
+        "engine_sha": "7a4bb363312750a072e7c37160e137ffeb74f178"
+      },
+      "interpretation_by_assistant": "106 组谓词与当前数据模型核对，包含不同查询向量、修改、失败和重启。"
     },
     {
-      "id": "E04",
-      "origin": "tool",
-      "hypothesis": "过滤 TopK 必须在满足 WHERE 的集合内计算，索引创建后增删改仍应正确。",
-      "command": "python tests/regression.py (test_vectors)",
-      "output": "ok: filtered exact topK matches brute force (index maintained); ok: index maintenance after insert/update/delete; ok: dim mismatch rejected; ok: NaN rejected; ok: Infinity rejected",
-      "interpretation": "精确扫描路径与暴力真值在 20 个过滤查询上一致。"
+      "id": "commit-crash",
+      "role": "tool",
+      "execution_status": "executed",
+      "designed_and_executed_by": "assistant_and_tools",
+      "title": "commit-crash",
+      "command": "python tests/commit_crash_boundaries.py",
+      "command_note": "命令为复现概要，路径和环境设置可作脱敏省略；output 为实际日志摘录，不是拟定结果。",
+      "output": "{\"delay\": -1, \"acknowledged\": false, \"wal_bytes_before_kill\": 131224, \"recovered\": \"old\"}\n{\"delay\": 0, \"acknowledged\": false, \"wal_bytes_before_kill\": 131224, \"recovered\": \"old\"}\n{\"delay\": 0.001, \"acknowledged\": false, \"wal_bytes_before_kill\": 262384, \"recovered\": \"old\"}\n{\"delay\": 0.008, \"acknowledged\": false, \"wal_bytes_before_kill\": 2229784, \"recovered\": \"old\"}\n{\"delay\": 0.02, \"acknowledged\": false, \"wal_bytes_before_kill\": 6295744, \"recovered\": \"old\"}\n{\"delay\": \"wal-prefix\", \"acknowledged\": false, \"wal_bytes_before_kill\": 8394304, \"recovered\": \"old\"}\n{\"delay\": null, \"acknowledged\": true, \"wal_bytes_before_kill\": 11148696, \"recovered\": \"new\"}\ncommit crash boundaries: PASS {\"old\": 6, \"new\": 1, \"acknowledged\": 1}",
+      "source": {
+        "kind": "native_audit_log",
+        "file": "commit-crash.log",
+        "engine_sha": "7a4bb363312750a072e7c37160e137ffeb74f178"
+      },
+      "interpretation_by_assistant": "观察到完整旧状态或完整新状态；已确认的提交恢复为新状态，未收到确认并不保证只能回滚。"
     },
     {
-      "id": "E05",
-      "origin": "tool",
-      "hypothesis": "公开性能负载（10,000 行 × 128 维，1,000 个 K=10 查询，一半带过滤）应返回 Recall=1.0 并可重复测量。",
-      "command": "python tests/bench.py",
-      "output": "insert 10000 rows: 1.386 s (7213.53 rows/s); queries 1000 (K=10, half filtered): 0.272 s (3676.95 qps, 0.272 ms/query); recall check: PASS",
-      "interpretation": "本机 2 线程的精确扫描版本已能覆盖公开性能负载形状，且每个返回 id 都与 NumPy 暴力真值一致。"
+      "id": "large-transaction",
+      "role": "tool",
+      "execution_status": "executed",
+      "designed_and_executed_by": "assistant_and_tools",
+      "title": "256 MiB 容器内超过 2 GiB 的显式事务",
+      "command": "python3 tests/docker_transaction_spill.py --image minivectordb:ci",
+      "command_note": "命令为复现概要，路径和环境设置可作脱敏省略；output 为实际日志摘录，不是拟定结果。",
+      "output": "{\"stage\": \"uncommitted load\", \"memory_peak_bytes\": 47529984, \"payload_bytes\": 2229120000, \"seconds\": 5.291}\n{\"stage\": \"large commit\", \"memory_peak_bytes\": 268435456, \"seconds\": 23.707}\nDocker long transaction spill: PASS",
+      "source": {
+        "kind": "github_actions_log",
+        "run_id": 42851645981,
+        "file": "31_Docker transaction larger than formal memory budget.txt",
+        "engine_sha": "7a4bb363312750a072e7c37160e137ffeb74f178"
+      },
+      "interpretation_by_assistant": "未提交装载与 COMMIT 峰值分开记录。行数据可溢写；主键、行定位和撤销元数据仍随行数增加，不能推断任意规模都安全。"
     },
     {
-      "id": "E06",
-      "origin": "tool",
-      "hypothesis": "页缓存小于数据量时仍能正确扫描（不能依赖全量载入内存）。",
-      "command": "python (20,000 行 × 32 维，--cache-mb=1，8 个过滤 TopK 与 NumPy 暴力真值核对)",
-      "output": "small-cache correctness: PASS",
-      "interpretation": "LRU 页缓存淘汰与磁盘回读路径保持正确。"
+      "id": "ann-50k-ann",
+      "role": "tool",
+      "execution_status": "executed",
+      "designed_and_executed_by": "assistant_and_tools",
+      "title": "50k×128d ann",
+      "command": "python3 tests/docker_bench.py --image minivectordb:ci --rows 50000 --queries 300 --seed 20261112 --search-mode ann",
+      "command_note": "命令为复现概要，路径和环境设置可作脱敏省略；output 为实际日志摘录，不是拟定结果。",
+      "output": "{\n  \"rows\": 50000,\n  \"dim\": 128,\n  \"queries\": 300,\n  \"topk\": 10,\n  \"seed\": 20261112,\n  \"mode\": \"ann\",\n  \"insert_seconds\": 3.102733,\n  \"query_seconds\": 0.458362,\n  \"index_prepare_seconds\": 40.664566,\n  \"filtered_seconds\": 0.110233,\n  \"unfiltered_seconds\": 0.348129,\n  \"ms_per_query\": 1.527872,\n  \"recall_at_k\": {\n    \"filtered\": 1.0,\n    \"unfiltered\": 0.9806666666666668\n  },\n  \"exact_query_mismatches\": 26,\n  \"durable_content_verified\": true,\n  \"timing_scope\": \"prepared SQL over JSONL; includes responses and commit fsync; excludes SQL generation and validation\",\n  \"docker_resources\": {\n    \"write\": {\n      \"memory_peak_bytes\": 38494208,\n      \"io_stat\": [\n        \"8:0 rbytes=0 wbytes=79437824 rios=0 wios=1033 dbytes=33587200 dios=2\"\n      ]\n    },\n    \"query\": {\n      \"memory_peak_bytes\": 93093888,\n      \"io_stat\": [\n        \"8:0 rbytes=86228992 wbytes=27922432 rios=278 wios=427 dbytes=27951104 dios=3\"\n      ]\n    },\n    \"scope\": \"diagnostic container peaks and raw io.stat; query setup includes durable-content checks; not official scoring\"\n  }\n}",
+      "source": {
+        "kind": "github_actions_log",
+        "run_id": 42851645981,
+        "file": "33_Docker HNSW recall on a larger collection.txt",
+        "engine_sha": "7a4bb363312750a072e7c37160e137ffeb74f178"
+      },
+      "interpretation_by_assistant": "与同数据同种子的另一模式对照；召回有效不自动意味着速度或综合排名更优。"
     },
     {
-      "id": "E07",
-      "origin": "tool",
-      "hypothesis": "Linux x86_64 目标应能用 Makefile 从源码构建，并在 Ubuntu 24.04 上通过公开用例、回归和性能基准。",
-      "command": "GitHub Actions ubuntu-24.04: make -j$(nproc); python3 tests/local_driver.py --binary ./minivectordb; python3 tests/regression.py --binary ./minivectordb; python3 tests/bench.py --binary ./minivectordb",
-      "output": "Build success; all cases passed; ALL REGRESSION CHECKS PASSED; insert 10000 rows: 1.133 s (8822.73 rows/s); queries 1000: 0.346 s (2888.75 qps, 0.346 ms/query); recall check: PASS",
-      "interpretation": "Linux 构建链和全部本地测试通过。"
+      "id": "ann-50k-exact",
+      "role": "tool",
+      "execution_status": "executed",
+      "designed_and_executed_by": "assistant_and_tools",
+      "title": "50k×128d exact",
+      "command": "python3 tests/docker_bench.py --image minivectordb:ci --rows 50000 --queries 300 --seed 20261112 --search-mode exact",
+      "command_note": "命令为复现概要，路径和环境设置可作脱敏省略；output 为实际日志摘录，不是拟定结果。",
+      "output": "{\n  \"rows\": 50000,\n  \"dim\": 128,\n  \"queries\": 300,\n  \"topk\": 10,\n  \"seed\": 20261112,\n  \"mode\": \"exact\",\n  \"insert_seconds\": 3.084449,\n  \"query_seconds\": 0.374853,\n  \"index_prepare_seconds\": 41.761751,\n  \"filtered_seconds\": 0.117035,\n  \"unfiltered_seconds\": 0.257818,\n  \"ms_per_query\": 1.24951,\n  \"recall_at_k\": {\n    \"filtered\": 1.0,\n    \"unfiltered\": 1.0\n  },\n  \"exact_query_mismatches\": 0,\n  \"durable_content_verified\": true,\n  \"timing_scope\": \"prepared SQL over JSONL; includes responses and commit fsync; excludes SQL generation and validation\",\n  \"docker_resources\": {\n    \"write\": {\n      \"memory_peak_bytes\": 38490112,\n      \"io_stat\": [\n        \"8:0 rbytes=0 wbytes=79437824 rios=0 wios=1033 dbytes=33587200 dios=2\"\n      ]\n    },\n    \"query\": {\n      \"memory_peak_bytes\": 92884992,\n      \"io_stat\": [\n        \"8:0 rbytes=86073344 wbytes=27922432 rios=276 wios=427 dbytes=27951104 dios=3\"\n      ]\n    },\n    \"scope\": \"diagnostic container peaks and raw io.stat; query setup includes durable-content checks; not official scoring\"\n  }\n}",
+      "source": {
+        "kind": "github_actions_log",
+        "run_id": 42851645981,
+        "file": "33_Docker HNSW recall on a larger collection.txt",
+        "engine_sha": "7a4bb363312750a072e7c37160e137ffeb74f178"
+      },
+      "interpretation_by_assistant": "与同数据同种子的另一模式对照；召回有效不自动意味着速度或综合排名更优。"
     },
     {
-      "id": "E08",
-      "origin": "tool",
-      "hypothesis": "Dockerfile 应能从源码构建镜像，容器应能通过 stdin/stdout 跑通公开用例。",
-      "command": "GitHub Actions ubuntu-24.04: docker build -t minivectordb:test .; python3 tests/local_driver.py --binary ./docker-mvd.sh",
-      "output": "Docker build: success; container public cases: sql_crud PASS, sql_comparisons PASS, sql_ordering PASS, sql_empty PASS, vector_euclidean PASS; all cases passed",
-      "interpretation": "Dockerfile 的 Ubuntu 24.04 多阶段构建和容器内 stdin/stdout 运行均已实际验证。"
+      "id": "paired-resource",
+      "role": "tool",
+      "execution_status": "executed",
+      "designed_and_executed_by": "assistant_and_tools",
+      "title": "三轮新旧版本 T/B/M 对照",
+      "command": "python3 tests/docker_score_compare.py --reference-image minivectordb:reference-082acdb9 --candidate-image minivectordb:ci --reference-sha 082acdb96d847844962f85cd3e3f57e4d38db1dc --drop-caches",
+      "command_note": "命令为复现概要，路径和环境设置可作脱敏省略；output 为实际日志摘录，不是拟定结果。",
+      "output": "{\"round\": 1, \"version\": \"reference\", \"item\": \"write\", \"seconds\": 0.7315534680000155, \"memory_peak_bytes\": 18669568, \"io_bytes\": 24727552, \"io_device\": \"8:0\", \"io_stat\": {\"8:0\": {\"rbytes\": 6148096, \"wbytes\": 18579456, \"rios\": 180, \"wios\": 214, \"dbytes\": 12333056, \"dios\": 2}}, \"content_verified_after_measurement\": true}\n{\"round\": 1, \"version\": \"reference\", \"item\": \"query\", \"seconds\": 0.624531999999931, \"memory_peak_bytes\": 24481792, \"io_bytes\": 24735744, \"io_device\": \"8:0\", \"io_stat\": {\"8:0\": {\"rbytes\": 6152192, \"wbytes\": 18583552, \"rios\": 181, \"wios\": 215, \"dbytes\": 12337152, \"dios\": 3}}, \"recall_at_10\": {\"filtered\": 1.0, \"unfiltered\": 1.0}, \"index_seconds\": 0.005506998999976531, \"content_verified_after_measurement\": true}\n{\"round\": 1, \"version\": \"candidate\", \"item\": \"write\", \"seconds\": 0.6176725969999097, \"memory_peak_bytes\": 14770176, \"io_bytes\": 24739840, \"io_device\": \"8:0\", \"io_stat\": {\"8:0\": {\"rbytes\": 6160384, \"wbytes\": 18579456, \"rios\": 181, \"wios\": 214, \"dbytes\": 12333056, \"dios\": 9}}, \"content_verified_after_measurement\": true}\n{\"round\": 1, \"version\": \"candidate\", \"item\": \"query\", \"seconds\": 0.5732465979999688, \"memory_peak_bytes\": 20602880, \"io_bytes\": 24743936, \"io_device\": \"8:0\", \"io_stat\": {\"8:0\": {\"rbytes\": 6160384, \"wbytes\": 18583552, \"rios\": 182, \"wios\": 215, \"dbytes\": 12337152, \"dios\": 3}}, \"recall_at_10\": {\"filtered\": 1.0, \"unfiltered\": 1.0}, \"index_seconds\": 0.005936874999974862, \"content_verified_after_measurement\": true}\n{\"round\": 2, \"version\": \"candidate\", \"item\": \"write\", \"seconds\": 0.601984903000016, \"memory_peak_bytes\": 14639104, \"io_bytes\": 24735744, \"io_device\": \"8:0\", \"io_stat\": {\"8:0\": {\"rbytes\": 6156288, \"wbytes\": 18579456, \"rios\": 180, \"wios\": 214, \"dbytes\": 12333056, \"dios\": 2}}, \"content_verified_after_measurement\": true}\n{\"round\": 2, \"version\": \"candidate\", \"item\": \"query\", \"seconds\": 0.5791259339999897, \"memory_peak_bytes\": 20459520, \"io_bytes\": 24748032, \"io_device\": \"8:0\", \"io_stat\": {\"8:0\": {\"rbytes\": 6164480, \"wbytes\": 18583552, \"rios\": 183, \"wios\": 215, \"dbytes\": 12337152, \"dios\": 9}}, \"recall_at_10\": {\"filtered\": 1.0, \"unfiltered\": 1.0}, \"index_seconds\": 0.005162697999935517, \"content_verified_after_measurement\": true}\n{\"round\": 2, \"version\": \"reference\", \"item\": \"write\", \"seconds\": 0.7121072429999913, \"memory_peak_bytes\": 18989056, \"io_bytes\": 24727552, \"io_device\": \"8:0\", \"io_stat\": {\"8:0\": {\"rbytes\": 6148096, \"wbytes\": 18579456, \"rios\": 180, \"wios\": 214, \"dbytes\": 12333056, \"dios\": 2}}, \"content_verified_after_measurement\": true}\n{\"round\": 2, \"version\": \"reference\", \"item\": \"query\", \"seconds\": 0.6253264940000918, \"memory_peak_bytes\": 24674304, \"io_bytes\": 24735744, \"io_device\": \"8:0\", \"io_stat\": {\"8:0\": {\"rbytes\": 6152192, \"wbytes\": 18583552, \"rios\": 181, \"wios\": 215, \"dbytes\": 12337152, \"dios\": 3}}, \"recall_at_10\": {\"filtered\": 1.0, \"unfiltered\": 1.0}, \"index_seconds\": 0.005210153000007267, \"content_verified_after_measurement\": true}\n{\"round\": 3, \"version\": \"reference\", \"item\": \"write\", \"seconds\": 0.7138042560000031, \"memory_peak_bytes\": 18980864, \"io_bytes\": 24727552, \"io_device\": \"8:0\", \"io_stat\": {\"8:0\": {\"rbytes\": 6148096, \"wbytes\": 18579456, \"rios\": 180, \"wios\": 214, \"dbytes\": 12333056, \"dios\": 2}}, \"content_verified_after_measurement\": true}\n{\"round\": 3, \"version\": \"reference\", \"item\": \"query\", \"seconds\": 0.6300635349999766, \"memory_peak_bytes\": 24678400, \"io_bytes\": 24739840, \"io_device\": \"8:0\", \"io_stat\": {\"8:0\": {\"rbytes\": 6156288, \"wbytes\": 18583552, \"rios\": 182, \"wios\": 215, \"dbytes\": 12337152, \"dios\": 5}}, \"recall_at_10\": {\"filtered\": 1.0, \"unfiltered\": 1.0}, \"index_seconds\": 0.00540267999997468, \"content_verified_after_measurement\": true}\n{\"round\": 3, \"version\": \"candidate\", \"item\": \"write\", \"seconds\": 0.616901084999995, \"memory_peak_bytes\": 14626816, \"io_bytes\": 24735744, \"io_device\": \"8:0\", \"io_stat\": {\"8:0\": {\"rbytes\": 6156288, \"wbytes\": 18579456, \"rios\": 180, \"wios\": 214, \"dbytes\": 12333056, \"dios\": 2}}, \"content_verified_after_measurement\": true}\n{\"round\": 3, \"version\": \"candidate\", \"item\": \"query\", \"seconds\": 0.5659128629999941, \"memory_peak_bytes\": 20463616, \"io_bytes\": 24743936, \"io_device\": \"8:0\", \"io_stat\": {\"8:0\": {\"rbytes\": 6160384, \"wbytes\": 18583552, \"rios\": 182, \"wios\": 215, \"dbytes\": 12337152, \"dios\": 3}}, \"recall_at_10\": {\"filtered\": 1.0, \"unfiltered\": 1.0}, \"index_seconds\": 0.005377869000085411, \"content_verified_after_measurement\": true}\nPAIRED COMPARISON 0.526124 (reference revision, not official baseline)",
+      "source": {
+        "kind": "github_actions_log",
+        "run_id": 42851645981,
+        "file": "35_Paired time I_O and memory comparison.txt",
+        "engine_sha": "7a4bb363312750a072e7c37160e137ffeb74f178"
+      },
+      "interpretation_by_assistant": "写入和查询使用独立容器，B/M 覆盖装载、准备、预热至关闭及同步，正确性检查在另一个容器。0.526124 是相对该参考版本的自建比较指标，非官方基线、官方 E 或赛事得分。"
     },
     {
-      "id": "E09",
-      "origin": "tool",
-      "hypothesis": "最终提交版本的 Linux 构建、公开用例、回归、Benchmark 和 Docker 构建应同时通过。",
-      "command": "GitHub Actions ubuntu-24.04 final pipeline: make; public cases; regression; bench; docker build; container public cases",
-      "output": "all cases passed; ALL REGRESSION CHECKS PASSED; insert 10000 rows: 0.997 s; queries 1000: 0.299 s (3344.63 qps); recall check: PASS; Docker image built and all container public cases passed",
-      "interpretation": "最终版本在 Linux 与 Docker 两条链路上均通过；性能数据来自 Linux x86_64 runner。"
+      "id": "rejected-prototype",
+      "role": "tool",
+      "execution_status": "executed",
+      "designed_and_executed_by": "assistant_and_tools",
+      "title": "未采用的分段距离剪枝试验",
+      "command": "python tests/bench.py --seed 20261110 --output protocol-results/bounded-distance-prototype.json",
+      "command_note": "命令为复现概要，路径和环境设置可作脱敏省略；output 为实际日志摘录，不是拟定结果。",
+      "output": "{\n  \"rows\": 10000,\n  \"dim\": 128,\n  \"queries\": 1000,\n  \"topk\": 10,\n  \"seed\": 20261110,\n  \"mode\": \"exact\",\n  \"insert_seconds\": 1.191864,\n  \"query_seconds\": 0.239545,\n  \"index_prepare_seconds\": 0.013313,\n  \"filtered_seconds\": 0.094755,\n  \"unfiltered_seconds\": 0.144789,\n  \"ms_per_query\": 0.239545,\n  \"recall_at_k\": {\n    \"filtered\": 1.0,\n    \"unfiltered\": 1.0\n  },\n  \"exact_query_mismatches\": 0,\n  \"durable_content_verified\": true,\n  \"timing_scope\": \"prepared SQL over JSONL; includes responses and commit fsync; excludes SQL generation and validation\"\n}",
+      "source": {
+        "kind": "native_benchmark",
+        "file": "bounded-distance-prototype.json",
+        "source_state": "uncommitted prototype based on 7a4bb363312750a072e7c37160e137ffeb74f178"
+      },
+      "interpretation_by_assistant": "单次试验未显示可确认的稳定收益，已撤回该实现；不作统计显著性结论。试验设计、执行和判断均为助手行为。"
     },
     {
-      "id": "E10",
-      "origin": "tool",
-      "hypothesis": "最终修正（事务内向量 TopK 使用叠加层行）后，Linux 构建、回归、Benchmark 与 Docker 仍应全部通过。",
-      "command": "GitHub Actions ubuntu-24.04 final2: make; public; regression; bench; docker build; container public",
-      "output": "all cases passed; ALL REGRESSION CHECKS PASSED; insert 10000 rows: 0.651 s; queries 1000: 0.195 s (5128.74 qps); recall check: PASS; docker image built; container all cases passed",
-      "interpretation": "最终版本在 Linux 与 Docker 两条链路均通过；本机实测数据用于 README 区间。"
+      "id": "primary-key-projection",
+      "role": "tool",
+      "execution_status": "executed",
+      "designed_and_executed_by": "assistant_and_tools",
+      "title": "只投影、排序主键时的宽表读取",
+      "command": "python tests/primary_key_projection.py",
+      "command_note": "复现命令；output 为本地审计实际输出。",
+      "output": "{\"passed\": true, \"heap_bytes\": 46858240, \"projection_read_bytes\": 232, \"transaction_projection_read_bytes\": 102}",
+      "source": {
+        "kind": "native_audit_log",
+        "file": "primary-key-projection.log",
+        "engine_source_sha256": "027b0d1f122617020bc7026cfc758511f9cabd34c85219b0b72d2bf45847e284"
+      },
+      "interpretation_by_assistant": "覆盖主键在最后一列、别名、BIGINT 极值、OFFSET、溢写事务的可见性和其他列回退。这里测量进程读取字节，不等同于官方 cgroup 物理 I/O 指标。学生未参与该试验设计，未倒签成学生实验。"
+    }
+  ],
+  "evidence_index": [
+    {
+      "topic": "正式准入与有限提交机会",
+      "student_evidence": [
+        {
+          "pointer": "/conversations/0/content",
+          "quote": "并且你要仔细检查当前已完成是不是真的没有问题，之前提交两次都失败了"
+        },
+        {
+          "pointer": "/conversations/3/content",
+          "quote": "请你先不要急着提交，提交次数很珍贵"
+        }
+      ],
+      "result_evidence": [
+        {
+          "pointer": "/experiments/0/output",
+          "quote": "sql_crud: PASS"
+        }
+      ],
+      "boundary": "同一复核与提交风险问题链合并呈现；用户要求与工具执行结果分开引用。"
     },
     {
-      "id": "E11",
-      "origin": "tool",
-      "hypothesis": "官方题包 v4（2026-11-09 10:40 更新）应覆盖正式准入的功能边界。",
-      "command": "官方 seekdb 2026-competition-round2 9f6df2b 的 mysqltest v4：python tests/local_driver.py",
-      "output": "all 20 cases PASS; 95/95 SQL statements and expected assertions matched",
-      "interpretation": "错误名、向量维度错误、重启和 ann 模式均已按 v4 断言校正；正式用例仍需平台复测。"
+      "topic": "ANN 当前路径与优化问题",
+      "student_evidence": [
+        {
+          "pointer": "/conversations/4/content",
+          "quote": "ANN 仍采用精确扫描"
+        }
+      ],
+      "result_evidence": [
+        {
+          "pointer": "/experiments/5/output",
+          "quote": "\"unfiltered\": 0.9806666666666668"
+        },
+        {
+          "pointer": "/experiments/6/output",
+          "quote": "\"query_seconds\": 0.374853,"
+        }
+      ],
+      "boundary": "用户提出当前实现的限制；后续源码与实验由助手完成，此快照未收录用户对对照结果的后续解释。"
     },
     {
-      "id": "E12",
-      "origin": "tool",
-      "hypothesis": "官方 2026-11-10 在 origin/2026-competition-round2 新增的 STDIO_PROTOCOL.md 与 protocol_check 可能揭示正式判题器使用 JSONL 握手协议，而不是纯 SQL + tsv；应先核对协议再提测。",
-      "command": "git fetch origin 2026-competition-round2（f4d4e266）；阅读 STDIO_PROTOCOL.md、protocol_check/_transport.py、_assertions.py；重写 src/main.cpp 的 stdin/stdout 层；运行官方 protocol_check 与本地用例",
-      "output": "启动精确输出 {\"type\":\"ready\"}；逐行处理 execute/shutdown 请求；响应原样回传 id（保持整数类型）、ok 为布尔值，查询含 columns/rows，DML 含 affected_rows，错误含 error.code；本地公开用例 20/20、扩展语义与回归全部通过；Docker 边界由 CI 的 protocol_check 验证",
-      "interpretation": "此前四次平台提测均显示 成功 0 / 失败 1，最可能的原因就是协议层不匹配：旧实现按纯 SQL 行读取 stdin 并输出 tsv，而正式判题器发送 JSONL 请求并先等待 ready。协议对齐后，公开断言与边界语义全部通过。"
+      "topic": "超大事务的驻留限制",
+      "student_evidence": [
+        {
+          "pointer": "/conversations/4/content",
+          "quote": "超大事务仍受内存限制"
+        }
+      ],
+      "result_evidence": [
+        {
+          "pointer": "/experiments/4/output",
+          "quote": "{\"stage\": \"uncommitted load\", \"memory_peak_bytes\": 47529984, \"payload_bytes\": 2229120000, \"seconds\": 5.291}"
+        },
+        {
+          "pointer": "/experiments/4/output",
+          "quote": "{\"stage\": \"large commit\", \"memory_peak_bytes\": 268435456, \"seconds\": 23.707}"
+        }
+      ],
+      "boundary": "该消息还提出了事务驻留问题，引用与 ANN 部分互不重叠；溢写设计与工具操作的执行者为助手。"
+    },
+    {
+      "topic": "两问的范围分配与重新整合",
+      "student_evidence": [
+        {
+          "pointer": "/conversations/2/content",
+          "quote": "我记得有两道题吧，能不能把这两道题拆开，你完成其中一道就行"
+        },
+        {
+          "pointer": "/conversations/11/content",
+          "quote": "你只有唯一一次提测机会，请你一定要把握好，直到没有任何风险才能提交。并且请你把这道大题完整做完，包括第二问"
+        }
+      ],
+      "result_evidence": [],
+      "boundary": "这是用户对任务范围的两次要求，未附新的技术试验或结果解释。"
     }
   ],
   "retrospective": {
     "origin": "assistant",
-    "what_worked": "固定页布局 + 页缓存让存储路径可预测；事务叠加层把语句/事务原子性简化为内存状态机；WAL 完整页镜像让崩溃恢复只需按顺序重放已提交页。",
-    "what_failed_or_cost": "最初 INSERT 忘记把主键写入行头，导致所有 SELECT 为空；第一版 DROP TABLE 没有清理页缓存，留下悬垂 owner；ORDER BY L2_DISTANCE 表达式最初未解析，后补上；最大的教训是早期按题包文件推断通信格式为纯 SQL/tsv，直到官方补充 STDIO_PROTOCOL.md 才确认正式判题器使用 JSONL 握手协议，导致此前提测全部失败。",
-    "tradeoffs": "为了确保 Recall=1.0，ann 模式仍使用精确扫描，没有实现 IVF/HNSW；这牺牲了潜在近似加速，但消除了召回不达标导致性能项归零的风险。",
-    "limitations": "未实现 NULL/JOIN/聚合/子查询/ALTER/主键更新；单事务叠加层驻留内存；Docker 构建已通过 GitHub Actions 验证。"
+    "implementation": "目前支持 HNSW 与紧凑精确缓存。默认 10k×128d 选择精确缓存；不能据算法名称推断实际加速。 后续加入无过滤且只投影、排序主键的可见定位路径，其他字段、过滤和排序仍读实际行。",
+    "transaction": "行数据及独立更新值超过预算可溢写；事务元数据及巨大单条 SQL/结果仍受内存约束。",
+    "verification": "本地与 CI 验证覆盖已知边界；没有实际正式准入结果，不能把 CI 全绿改写成正式 29/29。",
+    "student_interpretation": "本次已向用户提出基于真实三轮数据的判断问题；尚未收到回答，未代填。"
   },
   "limitations": [
-    "正式评测协议以官方 STDIO_PROTOCOL.md 为准：程序启动后主动输出一行 {\"type\":\"ready\"}，随后逐行处理 execute/shutdown JSONL 请求；响应原样回传请求 id（保持 JSON 类型）并使用布尔 ok，查询返回 columns/rows，DML 返回 affected_rows，错误返回 error.code。仓库已按该协议实现，并通过官方 protocol_check 的全部公开用例；旧的 tsv/MVD_OUTPUT 说明已移除。",
-    "学生侧技术判断证据不足：主要实现与验证由 assistant 完成，conversation.json 不伪造学生贡献。"
-  ],
-  "instances": [
-    {
-      "id": "I01",
-      "dimension": "问题理解与自主拆解",
-      "score": 0.5,
-      "student_evidence": {
-        "pointer": "/user_prompts/0/text",
-        "quote": "现在oceanbase发布了新题目，请你查看并完成，环境下载在d盘"
-      },
-      "result_evidence": null,
-      "reason": "学生提出了明确的交付任务并指定环境位置，但没有给出技术分析或验证方案；按 0.5 档计（只有规划/约束，无实际结果）。"
-    },
-    {
-      "id": "I02",
-      "dimension": "取舍与反思",
-      "score": 0.5,
-      "student_evidence": {
-        "pointer": "/user_prompts/2/text",
-        "quote": "/goal 请你完成加赛题目，未完成前不要停止"
-      },
-      "result_evidence": null,
-      "reason": "学生要求不完成不停止，体现交付约束和推进取舍，但没有学生本人基于测量结果的反思；按 0.5 档计。"
-    },
-    {
-      "id": "I03",
-      "dimension": "取舍与反思",
-      "score": 0.5,
-      "student_evidence": {
-        "pointer": "/user_prompts/3/text",
-        "quote": "目前全部提测失败了，请你不要浪费提测机会"
-      },
-      "result_evidence": null,
-      "reason": "学生在连续失败后主动约束提测次数，要求先保证正确性再消耗机会；但未提出技术验证方案或执行结果，按 0.5 档计。"
-    },
-    {
-      "id": "I04",
-      "dimension": "独立验证与质疑",
-      "score": 0.5,
-      "student_evidence": {
-        "pointer": "/user_prompts/5/text",
-        "quote": "/goal 请你仔细检查没有任何问题，并且一定能拿到满分为止"
-      },
-      "result_evidence": null,
-      "reason": "学生要求独立复核‘没有任何问题’并达到满分，体现对验证完备性的质疑；实际复核由助手执行，学生未给出可核对的结果，按 0.5 档计。"
-    },
-    {
-      "id": "I05",
-      "dimension": "取舍与反思",
-      "score": 0.5,
-      "student_evidence": {
-        "pointer": "/user_prompts/6/text",
-        "quote": "请你先不要提测"
-      },
-      "result_evidence": null,
-      "reason": "学生在验证尚未完成时主动停止提测，优先保护有限的正式提交机会；属于基于风险的具体取舍，但没有学生侧测量结果，按 0.5 档计。"
-    },
-    {
-      "id": "I06",
-      "dimension": "独立验证与质疑",
-      "score": 0.5,
-      "student_evidence": {
-        "pointer": "/user_prompts/7/text",
-        "quote": "你认为现在能够拿到满分了吗，每一个case都考虑到了吗，如果没有，请你继续优化"
-      },
-      "result_evidence": null,
-      "reason": "学生直接质疑 case 覆盖完整性并要求继续优化，提出了明确的验证问题；尚未由学生本人执行核对或解释结果，按 0.5 档计。"
-    }
+    "当前学生技术解释和迁移验证证据仍少；助手解释与工具日志不自动证明学生理解。",
+    "旧提交失败仅取得汇总信息，没有具体失败 SQL；原因假设未当成已证实结论。",
+    "新版本尚无正式评测成绩。此前一次请求在仓库校验时被退回，未创建新任务。",
+    "正式隐藏用例、官方冻结基线数值及最终竞争排名尚未验证；绝对零风险和满分均未得到证明。"
   ]
 }

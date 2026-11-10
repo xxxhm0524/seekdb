@@ -14,6 +14,7 @@ from protocol_client import Client
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--seeds',type=int,default=25)
+    parser.add_argument('--indexed',action='store_true')
     args = parser.parse_args()
     dimensions = [4,7,8,31,32,127,128]
     def float32(value):
@@ -35,6 +36,7 @@ def main():
                     rng.shuffle(vector)
                     values.append("(%d,'[%s]')" % (ident,','.join('%.9g'%x for x in vector)))
                 sql('INSERT INTO t VALUES '+','.join(values))
+                if args.indexed: sql('CREATE VECTOR INDEX vi ON t(v)')
                 zero = '['+','.join(['0']*dim)+']'
                 for suffix,expected in [('LIMIT 10',list(range(1,11))),
                         ('LIMIT 5 OFFSET 3',list(range(4,9))),('DESC LIMIT 3',[1,2,3])]:

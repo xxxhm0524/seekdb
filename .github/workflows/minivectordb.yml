@@ -37,7 +37,15 @@ jobs:
         run: python3 tests/hidden_boundaries.py
 
       - name: Wide-exponent distance permutations
-        run: python3 tests/vector_precision_model.py
+        run: |
+          python3 tests/vector_precision_model.py
+          python3 tests/vector_precision_model.py --indexed
+
+      - name: Agent material format privacy and evidence references
+        run: |
+          python3 tests/test_agent_material.py
+          python3 tests/validate_agent_material.py --path agent/conversation.json \
+            --mirror conversation.json --require-evidence
 
       - name: Float32 conversion differential model
         run: python3 tests/float_parse_model.py
@@ -50,6 +58,9 @@ jobs:
 
       - name: Bounded wide-row mutation I/O
         run: python3 tests/mutation_io.py
+
+      - name: Primary-key projection without wide-row reads
+        run: python3 tests/primary_key_projection.py
 
       - name: Bounded random spool reads
         run: python3 tests/spool_read_boundaries.py
@@ -98,11 +109,13 @@ jobs:
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/stress_random.py --rounds 40 --seed 211
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/cache_coherence.py --rounds 4
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/vector_precision_model.py --seeds 7
+          MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/vector_precision_model.py --seeds 7 --indexed
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/transaction_spill.py --rows 2000
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/ann_lifecycle.py
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/mutation_io.py
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/spool_read_boundaries.py
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/filter_cache_model.py
+          MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/primary_key_projection.py
 
       - name: Docker build
         id: docker_build
@@ -119,6 +132,8 @@ jobs:
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/mutation_io.py
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/spool_read_boundaries.py
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/filter_cache_model.py
+          MVD_BIN="$PWD/minivectordb-asan" python3 tests/primary_key_projection.py
+          MVD_BIN="$PWD/minivectordb-asan" python3 tests/vector_precision_model.py --seeds 7 --indexed
 
       - name: Docker handshake
         run: |

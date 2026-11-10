@@ -1555,7 +1555,7 @@ void Engine::for_each_visible(
   }
 }
 
-void Engine::for_each_mutation_key(
+void Engine::for_each_visible_key(
     Table &table, const std::vector<Condition> &where,
     const std::function<void(int64_t, uint64_t)> &visit) {
   if (!where.empty()) {
@@ -1565,7 +1565,7 @@ void Engine::for_each_mutation_key(
     });
     return;
   }
-  // An unfiltered mutation only needs row identity. The committed PK map and
+  // An unfiltered identity walk needs no row payload. The committed PK map and
   // transaction overlay already contain that information; don't scan wide
   // records merely to rediscover it. Snapshot keys before callbacks mutate
   // the overlay, and keep any required spool reads in physical order.
@@ -2272,7 +2272,7 @@ Response Engine::exec_select(SelectStmt &stmt) {
                : stmt.offset + stmt.limit;
   }
   std::vector<ResultRow> results;
-  for_each_visible(table, stmt.where, [&](const VisibleRow &vr) {
+  auto consume = [&](const VisibleRow &vr) {
     ResultRow rr;
     rr.vals = project_row(vr.row);
     rr.pk = vr.pk;
@@ -2312,7 +2312,29 @@ Response Engine::exec_select(SelectStmt &stmt) {
       results.push_back(std::move(rr));
     }
     return true;
-  });
+  };
+  bool identity_only = stmt.where.empty() && !orders.empty() &&
+      std::all_of(plans.begin(), plans.end(), [&](const auto &plan) {
+        return !plan.is_distance && plan.column_index == schema.pk_index;
+      }) && std::all_of(orders.begin(), orders.end(), [&](const auto &order) {
+        if (order.distance) return false;
+        return order.output >= 0 ? plans[static_cast<size_t>(order.output)].column_index == schema.pk_index
+                                 : order.column == schema.pk_index;
+      });
+  if (identity_only) {
+    // Project/order only the immutable primary key from the already visible
+    // identity maps. All other projections, predicates and order keys still
+    // use actual row data through the ordinary scan.
+    std::vector<uint8_t> identity(schema.row_size, 0);
+    table.set_row_valid(identity.data(), true);
+    for_each_visible_key(table, {}, [&](int64_t pk, uint64_t pos) {
+      table.set_row_id(identity.data(), pk);
+      std::memcpy(identity.data()+schema.col_offsets[schema.pk_index], &pk, sizeof(pk));
+      VisibleRow row;
+      row.row = identity.data(); row.pk = pk; row.pos = pos;
+      consume(row);
+    });
+  } else for_each_visible(table, stmt.where, consume);
   if (!stmt.order.empty())
     std::sort(results.begin(), results.end(), row_less);
   int64_t start = stmt.has_limit ? stmt.offset : 0;
@@ -2354,7 +2376,7 @@ Response Engine::exec_update(UpdateStmt &stmt) {
   auto tracked_patch=tx_.track_patch(std::move(*patch));
   TxTable &tx_table = tx_table_ref(table.id());
   int64_t matched = 0;
-  for_each_mutation_key(table, stmt.where, [&](int64_t pk, uint64_t pos) {
+  for_each_visible_key(table, stmt.where, [&](int64_t pk, uint64_t pos) {
     RowState state;
     auto it = tx_table.rows.find(pk);
     if (it != tx_table.rows.end()) {
@@ -2393,7 +2415,7 @@ Response Engine::exec_delete(DeleteStmt &stmt) {
   compile_conditions(table, stmt.where);
   TxTable &tx_table = tx_table_ref(table.id());
   int64_t matched = 0;
-  for_each_mutation_key(table, stmt.where, [&](int64_t pk, uint64_t pos) {
+  for_each_visible_key(table, stmt.where, [&](int64_t pk, uint64_t pos) {
     RowState state;
     auto it = tx_table.rows.find(pk);
     if (it != tx_table.rows.end()) {

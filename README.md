@@ -137,6 +137,8 @@ ROLLBACK;
 - 显式事务维护每表的 `pk -> RowState` 叠加层；读取先查叠加层，再查基线，因此事务内可读到自己的修改。
 - 已有记录的 UPDATE 保存共享的列修改，DELETE 保存删除标记，避免为每条宽记录复制完整定长槽。
 - 无过滤 UPDATE/DELETE 直接合并主键索引和事务行定位，避免为枚举主键读取整表；提交完整覆盖的原始行或墓碑页时省去旧页读取。
+- 无过滤且只投影、排序主键的 SELECT 也从当前可见的主键定位中取得值，保留通用排序及 LIMIT/OFFSET 语义。
+  投影其他列、有过滤或按其他列排序时仍使用实际行数据。
 - 每条语句先校验，使用只记录本语句修改行的撤销日志恢复失败语句；不再为每条语句复制整个事务。
 - 新增行及独立更新值超出预算后写入 `/data/txn.tmp`；相同列的旧补丁会被裁剪，避免保留无效历史。
   失败语句回退溢写文件的有效范围；提交、回滚和正常关闭释放该文件，异常重启丢弃未提交溢写数据。
@@ -190,8 +192,10 @@ ROLLBACK;
 | 边界回归 | `tests/hidden_boundaries.py`，极小距离、别名、空结果错误、维度和行宽回绕、非法向量、回滚槽位、UPDATE 原子性、Unicode 错误响应、数值等距、重复列、DDL 孤立文件、float32 最大值回传、请求 id 类型 | 19 组 PASS |
 | 浮点解析差分 | `tests/float_parse_model.py`，与原 `strtof` 行为逐位比较，包含随机有限 float32、十进制、极值、非法符号及下溢 | 本地约 60 万次转换 PASS |
 | 过滤候选模型 | `tests/filter_cache_model.py`，106 组谓词、多查询向量、缓存淘汰、提交/回滚/失败/重启 | 本地 PASS；主键与排序严格核对 |
+| 学习材料完整性 | `tests/validate_agent_material.py`，UTF-8、128 KiB、重复键、非有限数、凭据模式、镜像一致与 RFC6901 引用 | 只验证格式、来源角色和引用，不计算学习分数 |
 | 预读和脏页一致性 | `tests/cache_coherence.py`，1 MiB 缓存下交错更新、过滤 TopK、提交/回滚及强杀重启 | PASS |
 | 宽记录修改 I/O | `tests/mutation_io.py`，按进程读取字节计数验证无过滤修改、全页删除，并检查事务叠加和部分页保留 | 本地 PASS；不放宽容器的 60 秒请求限制 |
+| 主键投影 I/O | `tests/primary_key_projection.py`，主键在最后一列，覆盖别名、极值、OFFSET、事务可见性与其他列回退 | 本地 PASS；记录进程读取字节，非官方物理 I/O 指标 |
 | 溢写读取放大 | `tests/spool_read_boundaries.py`，多表事务越过溢写阈值，验证随机偏移不会触发固定大窗口读取 | 查看对应 SHA 的审计和 Actions |
 | 批量预读分配 | `tests/page_pool_churn.py`，8 MiB 页缓存反复扫描宽表，约束分配器内存增长 | 查看对应 SHA 的审计和 Actions |
 | 长事务溢写 | `tests/transaction_spill.py`，1 MiB 行数据预算，包含 INSERT/UPDATE、覆盖历史裁剪、失败语句、提交/回滚/强杀 | 本地 PASS；12,000 条宽记录峰值约 15 MiB |
@@ -237,3 +241,19 @@ Dockerfile
 3. ANN 会近似检索，也会选择精确缓存或扫描；其召回率须由实际数据验证，不能据此宣称平台排名。
 4. 行数据和更新值可溢写，但主键索引、事务行定位/撤销元数据仍与记录数有关；单条巨大 SQL 的解析和无 LIMIT 的巨大响应仍受内存限制。
 5. 本地测试和 CI 覆盖公开要求的已知边界，不能证明未获得输入的正式 29 个用例全部通过。未经用户授权不做平台提测。
+
+## 8. 学习材料与版本
+
+默认评测材料为 `agent/conversation.json`，根目录 `conversation.json` 是相同内容的兼容副本。
+材料选录可核对的用户原话、助手可见回复和真实日志，明确区分角色；未给学生自行赋分，
+未把助手设计、执行的实验改写成学生独立完成。尚未收到的学生预测、解释和复盘会明确标明。
+
+本地可用独立取回的消息导出进一步核对原话，导出文件不作为评测材料替代品：
+
+```bash
+python tests/validate_agent_material.py --path agent/conversation.json \
+  --mirror conversation.json --require-evidence --source-corpus <可见消息导出.json>
+```
+
+`tests/docker_score_compare.py` 提供三轮新旧代码 T/B/M 对照，B/M 包含准备过程和最终写回，
+内容校验使用另一容器。其参考版本与比较指标仅用于工程判断，不代表官方基线、成绩或名次。
