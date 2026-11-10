@@ -32,10 +32,15 @@ class TxSpool {
       int64_t end = file_.size();
       if (end < 0 || offset > static_cast<uint64_t>(end) || length > static_cast<uint64_t>(end)-offset)
         throw_error("IO_ERROR", "transaction spool row outside file");
-      size_t window = static_cast<size_t>(std::min<uint64_t>(1024*1024, static_cast<uint64_t>(end)-offset));
+      // Migration and point reads can visit offsets in arbitrary order.
+      // Prefetch only after an observed contiguous row, otherwise a tiny row
+      // could force a fresh MiB read on every backward/random access.
+      size_t wanted = offset == next_read_offset_ ? 1024*1024 : length;
+      size_t window = static_cast<size_t>(std::min<uint64_t>(wanted, static_cast<uint64_t>(end)-offset));
       read_buffer_.resize(window);
       if (!file_.pread_full(read_buffer_.data(), window, offset)) {
         read_buffer_.clear();
+        next_read_offset_ = std::numeric_limits<uint64_t>::max();
         throw_error("IO_ERROR", "cannot read transaction spool");
       }
       read_offset_ = offset;
@@ -43,9 +48,11 @@ class TxSpool {
         file_.discard_clean_cache(offset, window);
     }
     std::memcpy(row.data(), read_buffer_.data() + (offset-read_offset_), length);
+    next_read_offset_ = offset + length;
   }
   void truncate(uint64_t end) {
     read_buffer_.clear();  // A later append may reuse the rewound offsets.
+    next_read_offset_ = std::numeric_limits<uint64_t>::max();
     if (!file_.ftruncate(end) || !file_.fsync()) throw_error("IO_ERROR", "cannot rewind transaction spool");
     file_.discard_clean_cache(0, end);
     synced_ = end;
@@ -55,6 +62,7 @@ class TxSpool {
   FileHandle file_;
   uint64_t synced_ = 0;
   mutable uint64_t read_offset_ = 0;
+  mutable uint64_t next_read_offset_ = std::numeric_limits<uint64_t>::max();
   mutable std::vector<uint8_t> read_buffer_;
 };
 }  // namespace mvd
