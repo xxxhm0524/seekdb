@@ -28,8 +28,11 @@ std::string format_json_value(const mvd::OutValue &v) {
   switch (v.kind) {
     case mvd::OutValue::Kind::INT:
       return std::to_string(v.i);
-    case mvd::OutValue::Kind::DOUBLE:
-      return mvd::format_double(v.d);
+    case mvd::OutValue::Kind::DOUBLE: {
+      char buf[64];
+      std::snprintf(buf, sizeof(buf), "%.6f", v.d);
+      return std::string(buf);
+    }
     case mvd::OutValue::Kind::STRING: {
       std::string s = "\"";
       mvd::json_escape_append(s, v.s);
@@ -44,8 +47,11 @@ std::string format_text_value(const mvd::OutValue &v) {
   switch (v.kind) {
     case mvd::OutValue::Kind::INT:
       return std::to_string(v.i);
-    case mvd::OutValue::Kind::DOUBLE:
-      return mvd::format_double(v.d);
+    case mvd::OutValue::Kind::DOUBLE: {
+      char buf[64];
+      std::snprintf(buf, sizeof(buf), "%.6f", v.d);
+      return std::string(buf);
+    }
     case mvd::OutValue::Kind::STRING:
       return v.s;
   }
@@ -60,6 +66,8 @@ std::string semantic_error_name(const std::string &code) {
   if (c == "duplicate_key") return "duplicate_key";
   if (c == "unsupported") return "unsupported_sql";
   if (c == "vector_dim_mismatch") return "dimension_mismatch";
+  if (c == "invalid_vector") return "invalid_vector";
+  if (c == "vector_overflow") return "vector_overflow";
   if (c == "varchar_too_long") return "varchar_too_long";
   if (c == "invalid_schema") return "invalid_schema";
   if (c == "table_exists") return "table_exists";

@@ -27,6 +27,47 @@ std::string lower_copy(std::string s) {
     c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
   return s;
 }
+
+// Parses a vector literal with detailed error classification matching the
+// task package's semantic error names.
+void parse_vector_for_column(const std::string &text, const ColumnDef &col,
+                             std::vector<float> &out) {
+  out.clear();
+  size_t i = 0;
+  while (i < text.size() && std::isspace(static_cast<unsigned char>(text[i]))) ++i;
+  if (i >= text.size() || text[i] != '[')
+    throw_error("INVALID_VECTOR", "expected numeric vector component");
+  ++i;
+  std::vector<std::string> parts;
+  while (true) {
+    while (i < text.size() && std::isspace(static_cast<unsigned char>(text[i]))) ++i;
+    if (i < text.size() && text[i] == ']') { ++i; break; }
+    size_t start = i;
+    while (i < text.size() && text[i] != ',' && text[i] != ']') ++i;
+    size_t end = i;
+    while (end > start && std::isspace(static_cast<unsigned char>(text[end - 1]))) --end;
+    if (end == start) throw_error("INVALID_VECTOR", "expected numeric vector component");
+    parts.emplace_back(text.substr(start, end - start));
+    if (i < text.size() && text[i] == ',') { ++i; continue; }
+    if (i < text.size() && text[i] == ']') { ++i; break; }
+    throw_error("INVALID_VECTOR", "expected numeric vector component");
+  }
+  while (i < text.size() && std::isspace(static_cast<unsigned char>(text[i]))) ++i;
+  if (i != text.size()) throw_error("INVALID_VECTOR", "expected numeric vector component");
+  for (const auto &part : parts) {
+    char *endp = nullptr;
+    errno = 0;
+    double v = std::strtod(part.c_str(), &endp);
+    if (endp == part.c_str() || *endp != '\0' || !std::isfinite(v))
+      throw_error("INVALID_VECTOR", "expected numeric vector component");
+    if (errno == ERANGE || v > FLT_MAX || v < -FLT_MAX)
+      throw_error("VECTOR_OVERFLOW", "vector component overflows float32");
+    out.push_back(static_cast<float>(v));
+  }
+  if (static_cast<int>(out.size()) != col.dim)
+    throw_error("VECTOR_DIM_MISMATCH",
+                col.name + " must have " + std::to_string(col.dim) + " dimensions");
+}
 }  // namespace
 
 // ---------------------------------------------------------------------------
@@ -381,27 +422,24 @@ void Table::encode_value(uint8_t *row, int col_index, const Value &value) {
       throw_error("INVALID_VALUE", "invalid UTF-8 string");
     int cps = utf8_codepoint_count(value.s);
     if (cps > col.max_chars)
-      throw_error("VARCHAR_TOO_LONG", "string exceeds VARCHAR length");
+      throw_error("VARCHAR_TOO_LONG", col.name + " is too long");
     uint32_t bytes = static_cast<uint32_t>(value.s.size());
     std::memcpy(base, &bytes, 4);
     if (bytes) std::memcpy(base + 4, value.s.data(), bytes);
   } else if (col.type == ColumnType::VECTOR) {
     std::vector<float> vec;
-    if (!value.vec.empty() || value.kind == Value::Kind::VECTOR) {
+    if (!value.vec.empty()) {
       vec = value.vec;
-      if (vec.empty() && !value.s.empty()) {
-        if (!parse_vector_literal(value.s, col.dim, vec))
-          throw_error("INVALID_VALUE", "invalid vector literal");
-      }
-    } else if (value.kind == Value::Kind::STRING ||
+    } else if (value.kind == Value::Kind::VECTOR ||
+               value.kind == Value::Kind::STRING ||
                value.kind == Value::Kind::RAW) {
-      if (!parse_vector_literal(value.s, col.dim, vec))
-        throw_error("INVALID_VALUE", "invalid vector literal");
+      parse_vector_for_column(value.s, col, vec);
     } else {
-      throw_error("INVALID_VALUE", "invalid VECTOR value");
+      throw_error("INVALID_VECTOR", "expected numeric vector component");
     }
     if (static_cast<int>(vec.size()) != col.dim)
-      throw_error("VECTOR_DIM_MISMATCH", "vector dimension mismatch");
+      throw_error("VECTOR_DIM_MISMATCH",
+                  col.name + " must have " + std::to_string(col.dim) + " dimensions");
     std::memcpy(base, vec.data(), static_cast<size_t>(col.dim) * sizeof(float));
   }
 }
@@ -659,13 +697,12 @@ Value Engine::coerce_value(const TableSchema &schema, int col_index,
   }
   if (col.type == ColumnType::VECTOR) {
     std::vector<float> vec;
-    if (!v.vec.empty()) vec = v.vec;
-    else if (!v.s.empty()) {
-      if (!parse_vector_literal(v.s, col.dim, vec))
-        throw_error("INVALID_VALUE", "invalid vector literal");
-    }
+    if (!v.s.empty()) parse_vector_for_column(v.s, col, vec);
+    else if (!v.vec.empty()) vec = v.vec;
+    else throw_error("INVALID_VECTOR", "expected numeric vector component");
     if (static_cast<int>(vec.size()) != col.dim)
-      throw_error("VECTOR_DIM_MISMATCH", "vector dimension mismatch");
+      throw_error("VECTOR_DIM_MISMATCH",
+                  col.name + " must have " + std::to_string(col.dim) + " dimensions");
     return Value::make_vector(std::move(vec));
   }
   return v;
@@ -1359,11 +1396,7 @@ Response Engine::exec_select(SelectStmt &stmt) {
         throw_error("INVALID_ARGUMENT", "L2_DISTANCE requires a VECTOR column");
       p.is_distance = true;
       p.vector_column = ci;
-      if (!parse_vector_literal(item.expr.vec_text, schema.columns[ci].dim,
-                                p.query_vec))
-        throw_error("INVALID_VALUE", "invalid query vector literal");
-      if (static_cast<int>(p.query_vec.size()) != schema.columns[ci].dim)
-        throw_error("VECTOR_DIM_MISMATCH", "vector dimension mismatch");
+      parse_vector_for_column(item.expr.vec_text, schema.columns[ci], p.query_vec);
       p.name = item.alias.empty() ? "L2_DISTANCE" : item.alias;
     } else {
       throw_error("UNSUPPORTED", "unsupported select expression");
@@ -1576,10 +1609,7 @@ Response Engine::exec_select(SelectStmt &stmt) {
         if (schema.columns[ci].type != ColumnType::VECTOR)
           throw_error("INVALID_ARGUMENT", "L2_DISTANCE requires a VECTOR column");
         std::vector<float> qv;
-        if (!parse_vector_literal(okey.expr.vec_text, schema.columns[ci].dim, qv))
-          throw_error("INVALID_VALUE", "invalid query vector literal");
-        if (static_cast<int>(qv.size()) != schema.columns[ci].dim)
-          throw_error("VECTOR_DIM_MISMATCH", "vector dimension mismatch");
+        parse_vector_for_column(okey.expr.vec_text, schema.columns[ci], qv);
         const uint8_t *base = vr.row + schema.col_offsets[ci];
         const float *vec = reinterpret_cast<const float *>(base);
         key.kind = OutValue::Kind::DOUBLE;
