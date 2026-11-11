@@ -1,28 +1,42 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Probe the actual BuildKit RUN network, not just docker run or host DNS.
+# Probe the actual locked image build, including HTTPS/possibly proxied APT.
+# Direct DNS alone is not a sufficient test in a proxy-only environment.
 # This selection applies only to image construction. Database test sessions
 # retain their protocol-mandated --network=none runtime configuration.
-mvd_probe_dir=$(mktemp -d)
-mvd_base='ubuntu:24.04@sha256:fe81560990fae86dc4743202b2cb4d3df98d0bcf949173cecef15ce1127ef852'
+mvd_script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+cd -- "$mvd_script_dir/.."
+python3 - <<'PY'
+import os, urllib.parse, urllib.request
+print('Runner proxy variables present:', ', '.join(k for k in
+    ('http_proxy','https_proxy','no_proxy','all_proxy','HTTP_PROXY','HTTPS_PROXY','NO_PROXY','ALL_PROXY')
+    if os.environ.get(k)) or 'none', flush=True)
+for url in ('https://snapshot.ubuntu.com/ubuntu/20261110T160000Z/dists/noble/InRelease',
+            'https://archive.ubuntu.com/ubuntu/dists/noble/InRelease'):
+    host = urllib.parse.urlparse(url).hostname
+    try:
+        with urllib.request.urlopen(url, timeout=12) as response:
+            response.read(64)
+            print('Host HTTPS:', host, response.status, flush=True)
+    except Exception as error:
+        print('Host HTTPS:', host, type(error).__name__,
+              type(getattr(error, 'reason', error)).__name__, getattr(error, 'code', None), flush=True)
+PY
 for mvd_domain in snapshot.ubuntu.com archive.ubuntu.com; do
   printf 'Host resolver: %s\n' "$mvd_domain"
   timeout 8 getent ahostsv4 "$mvd_domain" || true
 done
-printf 'FROM %s\nRUN timeout 8 getent ahostsv4 snapshot.ubuntu.com && timeout 8 getent ahostsv4 archive.ubuntu.com\n' \
-  "$mvd_base" > "$mvd_probe_dir/Dockerfile"
-
 mvd_build_network=''
 for mvd_mode in default host; do
-  printf 'BuildKit DNS probe: network=%s\n' "$mvd_mode"
-  if docker build --no-cache --progress=plain --network="$mvd_mode" "$mvd_probe_dir"; then
+  printf 'Locked compiler-image probe: network=%s\n' "$mvd_mode"
+  if bash "$mvd_script_dir/docker_build_with_proxy.sh" --progress=plain --network="$mvd_mode" --target build .; then
     mvd_build_network=$mvd_mode
     break
   fi
 done
 if [[ -z "$mvd_build_network" ]]; then
-  printf 'Both BuildKit network modes failed their Ubuntu DNS probe.\n' >&2
+  printf 'The locked compiler image failed in both build network modes; inspect the transport/build logs.\n' >&2
   exit 1
 fi
 printf 'MVD_BUILD_NETWORK=%s\n' "$mvd_build_network" >> "$GITHUB_ENV"
