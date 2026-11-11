@@ -231,7 +231,8 @@ class VectorIndex {
     for (int layer = max_level_; layer > 0; --layer) entry = greedy(query, entry, layer);
     const size_t dimension_width = std::min<size_t>(1024, static_cast<size_t>(dim_) * 2);
     const size_t width = std::max({size_t(384), k * 8, dimension_width});
-    return layer_search(query, entry, width, 0);
+    // The SQL layer needs one extra live hit to check the TopK boundary.
+    return layer_search(query, entry, width, 0, k + 1);
   }
  private:
   struct FilterEntry {
@@ -267,7 +268,7 @@ class VectorIndex {
     return best.node;
   }
   template <bool Build = false>
-  std::vector<Hit> layer_search(const float *query, uint32_t entry, size_t ef, int layer) {
+  std::vector<Hit> layer_search(const float *query, uint32_t entry, size_t ef, int layer, size_t result_limit = 0) {
     auto &visited = visited_;
     auto &stamp = stamp_;
     if (++stamp == 0) { std::fill(visited.begin(), visited.end(), 0); ++stamp; }
@@ -335,6 +336,16 @@ class VectorIndex {
             rejection_limit = static_cast<float>(best.front().distance * margin);
         }
       }
+    }
+    if (result_limit != 0) {
+      if (has_tombstones_) {
+        best.erase(std::remove_if(best.begin(), best.end(),
+            [&](const Hit &hit) { return !nodes_[hit.node].active; }), best.end());
+      }
+      const auto end = best.begin() + std::min(result_limit, best.size());
+      std::partial_sort(best.begin(), end, best.end(), maximum);
+      best.erase(end, best.end());
+      return best;
     }
     if (!has_tombstones_) {
       std::sort_heap(best.begin(), best.end(), maximum);

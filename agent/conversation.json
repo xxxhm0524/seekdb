@@ -603,6 +603,32 @@
       },
       "output": "{\n  \"failure\": {\n    \"seed\": 20261115,\n    \"rows\": 40000,\n    \"dim\": 256,\n    \"queries\": 300,\n    \"topk\": 10,\n    \"unfiltered_recall\": 0.944666666666667,\n    \"filtered_recall\": 1.0,\n    \"exit_code\": 1,\n    \"reproduced_with\": [\n      \"1996a1b422aa989a4b5c9d32c067225ca2d225f2\",\n      \"b4025774d6a2cec50301534602133ff6e782f9fc\"\n    ],\n    \"observed_assertion\": \"AssertionError: {'filtered': 1.0, 'unfiltered': 0.944666666666667}\"\n  },\n  \"search_width_256\": {\n    \"before\": 384,\n    \"after\": 512\n  },\n  \"results\": {\n    \"20261113\": {\n      \"rows\": 40000,\n      \"dim\": 256,\n      \"queries\": 300,\n      \"topk\": 10,\n      \"seed\": 20261113,\n      \"mode\": \"ann\",\n      \"insert_seconds\": 8.521949,\n      \"query_seconds\": 0.432084,\n      \"index_prepare_seconds\": 23.293089,\n      \"filtered_seconds\": 0.086555,\n      \"unfiltered_seconds\": 0.345528,\n      \"ms_per_query\": 1.44028,\n      \"recall_at_k\": {\n        \"filtered\": 1.0,\n        \"unfiltered\": 0.9700000000000002\n      },\n      \"exact_query_mismatches\": 41,\n      \"durable_content_verified\": true,\n      \"timing_scope\": \"prepared SQL over JSONL; includes responses and commit fsync; excludes SQL generation and validation\"\n    },\n    \"20261114\": {\n      \"rows\": 40000,\n      \"dim\": 256,\n      \"queries\": 300,\n      \"topk\": 10,\n      \"seed\": 20261114,\n      \"mode\": \"ann\",\n      \"insert_seconds\": 8.324079,\n      \"query_seconds\": 0.613187,\n      \"index_prepare_seconds\": 21.971551,\n      \"filtered_seconds\": 0.103317,\n      \"unfiltered_seconds\": 0.50987,\n      \"ms_per_query\": 2.043956,\n      \"recall_at_k\": {\n        \"filtered\": 1.0,\n        \"unfiltered\": 0.9720000000000001\n      },\n      \"exact_query_mismatches\": 39,\n      \"durable_content_verified\": true,\n      \"timing_scope\": \"prepared SQL over JSONL; includes responses and commit fsync; excludes SQL generation and validation\"\n    },\n    \"20261115\": {\n      \"rows\": 40000,\n      \"dim\": 256,\n      \"queries\": 300,\n      \"topk\": 10,\n      \"seed\": 20261115,\n      \"mode\": \"ann\",\n      \"insert_seconds\": 8.384712,\n      \"query_seconds\": 0.478402,\n      \"index_prepare_seconds\": 21.567838,\n      \"filtered_seconds\": 0.095272,\n      \"unfiltered_seconds\": 0.38313,\n      \"ms_per_query\": 1.594673,\n      \"recall_at_k\": {\n        \"filtered\": 1.0,\n        \"unfiltered\": 0.968\n      },\n      \"exact_query_mismatches\": 45,\n      \"durable_content_verified\": true,\n      \"timing_scope\": \"prepared SQL over JSONL; includes responses and commit fsync; excludes SQL generation and validation\"\n    },\n    \"20261116\": {\n      \"rows\": 40000,\n      \"dim\": 256,\n      \"queries\": 300,\n      \"topk\": 10,\n      \"seed\": 20261116,\n      \"mode\": \"ann\",\n      \"insert_seconds\": 8.352083,\n      \"query_seconds\": 0.454678,\n      \"index_prepare_seconds\": 22.688845,\n      \"filtered_seconds\": 0.082003,\n      \"unfiltered_seconds\": 0.372676,\n      \"ms_per_query\": 1.515594,\n      \"recall_at_k\": {\n        \"filtered\": 1.0,\n        \"unfiltered\": 0.974\n      },\n      \"exact_query_mismatches\": 37,\n      \"durable_content_verified\": true,\n      \"timing_scope\": \"prepared SQL over JSONL; includes responses and commit fsync; excludes SQL generation and validation\"\n    }\n  },\n  \"native_audit_count\": 31\n}",
       "interpretation_by_assistant": "旧版与建图优化版在同一种子上都得到 0.9447 无过滤召回，低于 0.95。扩大 256 维搜索宽度后，该种子达到 0.968。四个种子的无过滤召回在 0.968 至 0.974，过滤召回均为 1。独立种子 20261116 为 0.974。此处测量为 40k×256d 的本地诊断，采用真实 JSONL、独立精确参考和重启后数据校验。CI 已加入失败种子的容器回归，材料生成时该容器验证尚待执行。实验与调整由助手完成。"
+    },
+    {
+      "id": "round2-hnsw-candidate-prefix",
+      "role": "tool",
+      "execution_status": "executed",
+      "designed_and_executed_by": "assistant",
+      "title": "HNSW 查询候选裁剪：配对计时与结果核对",
+      "command": "OMP_WAIT_POLICY=PASSIVE MVD_ANN_MIN_ROWS=2048 taskset -c 4,6 python3 tests/paired_query_compare.py --reference-binary <reference> --candidate-binary <candidate> --rows 10000 --dim 128 --queries 1000 --rounds 9 --output <report>",
+      "source": "本轮用户提出优化并允许先查看其他分支；助手对比官方题包与答题分支，使用 b733990b610126dc6d85fdbd3d88408744e8798b 为对照在 Linux 本地执行。",
+      "output": {
+        "unfiltered_batch_ms_median": {
+          "reference": 302.579,
+          "candidate": 297.574
+        },
+        "recall_at_10": {
+          "reference": 1.0,
+          "candidate": 1.0
+        },
+        "all_results_identical": true,
+        "official_public_cases_passed": 20,
+        "official_public_cases_total": 20,
+        "ann_lifecycle": "PASS",
+        "ann_numeric_range": "PASS",
+        "crash_recovery": "PASS: 50000 rows, 1 verified kill after recovery writes and before ready"
+      },
+      "interpretation_by_assistant": "仅对启用图的无过滤查询测得约 1.65% 中位耗时下降。精确扫描实验未得到稳定收益，相关尝试没有保留。没有取得正式分数或排名，这些是助手执行的结果，未当成学生独立实验或解释。"
     }
   ],
   "evidence_index": [
