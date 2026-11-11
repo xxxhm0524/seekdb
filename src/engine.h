@@ -186,6 +186,7 @@ class PageCache {
   mutable std::mutex mutex_;
   std::unordered_map<uint64_t, Entry> pages_;
   std::list<uint64_t> lru_;  // front = most recently used
+  CompactBlockCache compact_;
 };
 
 class Table {

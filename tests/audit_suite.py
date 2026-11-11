@@ -39,6 +39,8 @@ def main():
         ('wal-read-cache',['tests/wal_read_model.py']),
         ('page-image-codec',['tests/page_image_codec_model.py']),
         ('compact-image-io',['tests/compact_image_io.py']),
+        ('compact-cache-model',['tests/compact_cache_model.py']),
+        ('compact-read-cache',['tests/compact_read_cache.py','--output',str(output/'compact-read-cache.json')]),
         ('sparse-io',['tests/sparse_io_model.py']),
         ('sparse-storage',['tests/sparse_storage.py','--expect-sparse','--output',str(output/'sparse-storage.json')]),
         ('primary-key-projection',['tests/primary_key_projection.py']),

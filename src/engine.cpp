@@ -227,6 +227,18 @@ std::shared_ptr<Page> PageCache::get(Table *table, uint32_t page_no) {
     touch(it);
     return it->second.page;
   }
+  if (!compact_.empty()) {
+    auto page = make_page();
+    if (compact_.get(k, page.get())) {
+      Entry entry;
+      entry.page = page; entry.owner = table; entry.page_no = page_no;
+      lru_.push_front(k);
+      entry.lru_it = lru_.begin();
+      pages_.emplace(k, std::move(entry));
+      evict_if_needed();
+      return page;
+    }
+  }
   if (!read_buffer_) read_buffer_ = std::make_unique<PageIoBuffer>();
   uint32_t count = static_cast<uint32_t>(std::min<size_t>(kIoBatchPages,
       std::max<size_t>(1, max_pages_ / 2)));
@@ -259,6 +271,7 @@ void PageCache::install(Table *table, uint32_t page_no,
                         std::shared_ptr<Page> page) {
   uint64_t k = key(table->id(), page_no);
   std::lock_guard<std::mutex> lock(mutex_);
+  compact_.erase(k);
   auto it = pages_.find(k);
   if (it != pages_.end()) {
     it->second.page = page;
@@ -295,6 +308,7 @@ void PageCache::evict_if_needed() {
     write_entries(std::move(dirty));
     for (uint64_t victim : victims) {
       auto p = pages_.find(victim);
+      if (!compact_.contains(victim)) compact_.put(victim, p->second.page.get());
       lru_.erase(p->second.lru_it);
       pages_.erase(p);
     }
@@ -348,6 +362,7 @@ void PageCache::flush_all(
 
 void PageCache::drop_table(uint32_t table_id) {
   std::lock_guard<std::mutex> lock(mutex_);
+  compact_.erase_if([&](uint64_t k) { return static_cast<uint32_t>(k >> 32) == table_id; });
   for (auto it = pages_.begin(); it != pages_.end();) {
     uint32_t tid = static_cast<uint32_t>(it->first >> 32);
     if (tid == table_id) {

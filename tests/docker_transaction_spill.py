@@ -94,6 +94,11 @@ def main():
         output.write_text(json.dumps(dict(passed=True,stages=stages),indent=2)+'\n',encoding='utf-8')
         print('Docker long transaction spill: PASS',flush=True)
     except Exception as error:
+        if session.proc is not None and session.proc.poll() is None:
+            try:
+                record('failure snapshot')
+            except Exception:
+                pass
         state=session.docker('inspect','--format','{{json .State}}',session.name,check=False)
         output.write_text(json.dumps(dict(passed=False,error=str(error),docker_state=state.stdout.decode(errors='replace'),stages=stages),indent=2),encoding='utf-8')
         print(output.read_text(encoding='utf-8'),flush=True)
