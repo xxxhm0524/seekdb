@@ -2,7 +2,7 @@
   "schema": "mvd-conversation-v2",
   "rules_version": "agent-learning-evidence-v3-unbounded",
   "synthetic": false,
-  "generated_at_utc": "2026-11-11T18:34:17.142356+00:00",
+  "generated_at_utc": "2026-11-11T18:55:08.511230+00:00",
   "material_scope": {
     "purpose": "选录可核验的真实可见对话、必要上下文和实际结果；没有替学生编写预测、解释或复盘。",
     "sources": "本线程用户消息 ID 与助手可见回复、用户提供的失败截图；逐项标明源码版本或快照的本地/CI 日志，包含开发迭代历史。 另保留远端提交 e3770170 中的助手实验报告，逐项标明本线程尚未独立核验。",
@@ -12,7 +12,7 @@
     "role_boundary": "交接文本不自动证明用户本人已理解；代码、方案、实验设计和多数结果分析由助手完成。",
     "legacy_treatment": "旧文件的自评分、未在当前可见原始消息定位的历史引语、将助手转述标成学生原话的内容不纳入本次学生证据；原文件已另行留存。",
     "legacy_sha256": "c103c9f13dce2415d0163fcd4ca4b1c939979891457ddd212d1ee4862990b8ae",
-    "readiness": "已收录原始预测选择和“不确定”的后续回答；不将助手解释当成学生理解，不据格式通过推断学习成绩。"
+    "readiness": "已收录原始预测选择、“不确定”的后续回答及实际 Linux 配对结果；不将助手解释当成学生理解，不据格式通过推断学习成绩。"
   },
   "evaluation_context": {
     "functional_gate": "正式 29 个用例全部通过才具备计分资格，公开 20 个用例不足以替代。",
@@ -742,10 +742,11 @@
         "kind": "completed_exact_sha_ci",
         "sha": "0ba0401c0eb1cda6f8cc7721638921230dc3ba6d",
         "run_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43059429359",
-        "manifest": "ci-43059429359/artifacts/download-manifest.json"
+        "manifest": "ci-43059429359/artifacts/download-manifest.json",
+        "paired_file": "ci-43059429359/storage-artifacts/storage-pair/summary.json"
       },
-      "output": "{\"ci_conclusion\":\"success\",\"large_fixture_results\":{\"short\":{\"passed\":true,\"timed_stages\":[{\"stage\":\"uncommitted load\",\"seconds\":11.69},{\"stage\":\"large commit\",\"seconds\":41.001},{\"stage\":\"short-text group deleted\",\"seconds\":33.827}]},\"unicode\":{\"passed\":true,\"timed_stages\":[{\"stage\":\"uncommitted load\",\"seconds\":73.323},{\"stage\":\"large commit\",\"seconds\":59.689},{\"stage\":\"first long-text group deleted\",\"seconds\":47.211},{\"stage\":\"second long-text group deleted\",\"seconds\":34.638}]},\"wide\":{\"passed\":true,\"timed_stages\":[{\"stage\":\"loaded\",\"seconds\":38.712},{\"stage\":\"whole-table update\",\"seconds\":43.085},{\"stage\":\"whole-table delete\",\"seconds\":36.688}]}},\"request_timeout_seconds\":60,\"memory_limit_bytes\":268435456}",
-      "interpretation_by_assistant": "该 SHA 的两项 CI 作业成功，三类大数据场景均通过。但主作业 Unicode COMMIT 为 59.689 秒，距 60 秒仅 0.311 秒；另一个 runner 的配对成绩更快也不能消除此风险。uncommitted load 为多条请求的总时间。此结果只属于父提交，不代表后续源码已经通过 Linux 验证。"
+      "output": "{\"ci_conclusion\":\"success\",\"large_fixture_results\":{\"short\":{\"passed\":true,\"timed_stages\":[{\"stage\":\"uncommitted load\",\"seconds\":11.69},{\"stage\":\"large commit\",\"seconds\":41.001},{\"stage\":\"short-text group deleted\",\"seconds\":33.827}]},\"unicode\":{\"passed\":true,\"timed_stages\":[{\"stage\":\"uncommitted load\",\"seconds\":73.323},{\"stage\":\"large commit\",\"seconds\":59.689},{\"stage\":\"first long-text group deleted\",\"seconds\":47.211},{\"stage\":\"second long-text group deleted\",\"seconds\":34.638}]},\"wide\":{\"passed\":true,\"timed_stages\":[{\"stage\":\"loaded\",\"seconds\":38.712},{\"stage\":\"whole-table update\",\"seconds\":43.085},{\"stage\":\"whole-table delete\",\"seconds\":36.688}]}},\"request_timeout_seconds\":60,\"memory_limit_bytes\":268435456,\"same_runner_pair\":{\"reference_sha\":\"641d2de54c7837459c43e279b74f7b3ec200434e\",\"candidate_sha\":\"0ba0401c0eb1cda6f8cc7721638921230dc3ba6d\",\"short_commit_seconds\":{\"reference\":24.443,\"candidate\":24.861},\"unicode_second_delete_seconds\":{\"reference\":31.344,\"candidate\":21.191}}}",
+      "interpretation_by_assistant": "该 SHA 的两项 CI 作业成功，三类大数据场景均通过。但主作业 Unicode COMMIT 为 59.689 秒，距 60 秒仅 0.311 秒；另一个 runner 的配对成绩更快也不能消除此风险。uncommitted load 为多条请求的总时间。此结果只属于父提交，不代表后续源码已经通过 Linux 验证。 同一 runner 的配对中，短文本 COMMIT 为 24.443→24.861 秒，没有更快；Unicode 第二次 DELETE 为 31.344→21.191 秒。单轮结果不足以推断稳定排名。这是工具测量及助手解读，不是学生对预测给出的原因或复盘。"
     },
     {
       "id": "native-deferred-projection-and-compact-commit",
@@ -901,15 +902,20 @@
           "quote": "短文本大事务 COMMIT"
         }
       ],
-      "result_evidence": [],
-      "boundary": "学生先选择“短文本大事务 COMMIT”，追问理由时回答“不确定”。没有提供原因、判定阈值或复盘。方案和代码由助手完成；该选择尚无 Linux 配对性能验证结论。"
+      "result_evidence": [
+        {
+          "pointer": "/experiments/29/output",
+          "quote": "\"short_commit_seconds\":{\"reference\":24.443,\"candidate\":24.861}"
+        }
+      ],
+      "boundary": "学生在实测前选择“短文本大事务 COMMIT”，追问理由时回答“不确定”。已附上对应 Linux 配对实际结果；该次短文本 COMMIT 没有加速。学生未提供原因、判定阈值或复盘，不能把助手的结果解释当成学生理解。同一优化链只保留一个预测实例，不拆分多个得分项。"
     }
   ],
   "retrospective": {
     "origin": "assistant",
     "implementation": "目前支持 HNSW 与紧凑精确缓存。默认 10k×128d 选择精确缓存；不能据算法名称推断实际加速。 后续加入无过滤且只投影、排序主键的可见定位路径，其他字段、过滤和排序仍读实际行。 本轮反例发现图内 float 平方距离在下溢区域使建索引超时，现复用 double 内核；默认 10k 紧凑精确路径保持相同计算方式。 后续实测加入 TopK ULP 上界缓存及图邻居预取；原生配对验证结果一致，仍需同提交的容器 T/B/M 验证。",
     "transaction": "行数据及独立更新值超过预算可溢写；事务元数据及巨大单条 SQL/结果仍受内存约束。",
-    "verification": "父提交 0ba0401c 的完整 Linux Docker、ASAN/UBSAN、恢复与三类大数据 CI 已通过；主作业 Unicode COMMIT 59.689 秒暴露余量不足。后续延迟投影、16 MiB 有界镜像缓存和逐请求默认模式修复通过 37 项原生检查及旧版双向恢复；其新 SHA 的 Linux 验证仍待执行。没有正式新成绩或最终排名。",
+    "verification": "父提交 0ba0401c 的完整 Linux Docker、ASAN/UBSAN、恢复与三类大数据 CI 已通过；主作业 Unicode COMMIT 59.689 秒暴露余量不足。后续延迟投影、16 MiB 有界镜像缓存和逐请求默认模式修复通过 37 项原生检查及旧版双向恢复。新源码必须以对应 SHA 的实际 CI 为准；这里不预报正式准入或排名。",
     "student_interpretation": "学生在 Linux 配对实验前选择“短文本大事务 COMMIT”；追问理由时原话为“不确定”。未提供技术解释或结果复盘。先前 K=100 的建议实验仍未执行。"
   },
   "limitations": [
