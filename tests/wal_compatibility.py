@@ -195,12 +195,19 @@ def main():
     for writer, reader in (("reference", "candidate"), ("candidate", "reference")):
         wide[writer] = recover_wide(config, args.output.with_suffix('.wide.'+writer+'.stderr.log'),
                                     targets[writer], targets[reader])
-    assert wide['reference']['record_sha256'] == wide['candidate']['record_sha256'], wide
+    # Shortened strings and deleted slots now clear old, unused payload.
+    # Their page bytes/CRC may differ while the record format and all visible
+    # values remain compatible with the old reader in both directions.
+    for field in ('logical_bytes', 'page_records', 'commits'):
+        assert wide['reference'][field] == wide['candidate'][field], (field, wide)
     if args.reference_image:
         assert wide['candidate']['allocated_bytes'] < wide['reference']['allocated_bytes'], wide
     report['wide_rows'] = wide
     verify_shortened_tail(config, args.output.with_suffix(".tail.stderr.log"), targets["candidate"])
-    report.update(passed=True, byte_equivalent_records=True, shortened_tail_recovery=True)
+    wide_equal = wide['reference']['record_sha256'] == wide['candidate']['record_sha256']
+    report.update(passed=True, byte_equivalent_insert_records=True,
+                  wide_update_image_bytes_identical=wide_equal,
+                  wide_bidirectional_visible_values_verified=True, shortened_tail_recovery=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(report), flush=True)
 

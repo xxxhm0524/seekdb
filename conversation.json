@@ -2,7 +2,7 @@
   "schema": "mvd-conversation-v2",
   "rules_version": "agent-learning-evidence-v3-unbounded",
   "synthetic": false,
-  "generated_at_utc": "2026-11-11T12:35:17.555271+00:00",
+  "generated_at_utc": "2026-11-11T14:15:07.584801+00:00",
   "material_scope": {
     "purpose": "选录可核验的真实可见对话、必要上下文和实际结果；没有替学生编写预测、解释或复盘。",
     "sources": "本线程用户消息 ID 与助手可见回复、用户提供的失败截图；逐项标明源码版本或快照的本地/CI 日志，包含开发迭代历史。",
@@ -12,7 +12,7 @@
     "role_boundary": "交接文本不自动证明用户本人已理解；代码、方案、实验设计和多数结果分析由助手完成。",
     "legacy_treatment": "旧文件的自评分、未在当前可见原始消息定位的历史引语、将助手转述标成学生原话的内容不纳入本次学生证据；原文件已另行留存。",
     "legacy_sha256": "c103c9f13dce2415d0163fcd4ca4b1c939979891457ddd212d1ee4862990b8ae",
-    "readiness": "已收到一条新的预测选择；其原因、实测验证和本人复盘仍待补充，不据格式通过推断学习成绩。"
+    "readiness": "已收录原始预测选择和“不确定”的后续回答；不将助手解释当成学生理解，不据格式通过推断学习成绩。"
   },
   "evaluation_context": {
     "functional_gate": "正式 29 个用例全部通过才具备计分资格，公开 20 个用例不足以替代。",
@@ -153,6 +153,31 @@
       "source_answer_index": 0,
       "source_normalization": "Only the answer field is the student's statement. The question and the other answer are not student technical reasoning.",
       "source_note": "从真实用户结构化回复中仅提取 answer 原文；未将提问文字或关于 GitHub 操作的另一条回答归为学生技术解释。"
+    },
+    {
+      "role": "assistant",
+      "id": "call_90d3c47a382b4536bcebbcec503cd13b",
+      "source_turn_id": "01a1cae7-6d75-7321-8ac0-89848afc94f4",
+      "source_thread_id": "01a1c4bd-6408-73c1-995e-f344d41a3258",
+      "content": "趁实测结果还没出来，你为什么选“短文本大事务 COMMIT”受益最大？请用自己的话说一句；不确定也可以直接说。",
+      "source_kind": "codex_visible_async_question",
+      "source_note": "真实追问及回答；学生表示不确定，不将其计为已提供技术原因或掌握相关知识。"
+    },
+    {
+      "role": "user",
+      "id": "01a1caea-dc6d-7400-8554-ecd1da46255f",
+      "source_turn_id": "01a1cae7-6d75-7321-8ac0-89848afc94f4",
+      "source_thread_id": "01a1c4bd-6408-73c1-995e-f344d41a3258",
+      "content": "不确定",
+      "source_kind": "codex_visible_async_answer",
+      "source_question_item_id": [
+        "request_user_input_async",
+        "call_90d3c47a382b4536bcebbcec503cd13b",
+        0
+      ],
+      "source_answer_index": 0,
+      "source_normalization": "Only the exact answer field is the user's statement; it records uncertainty, not a technical explanation.",
+      "source_note": "真实追问及回答；学生表示不确定，不将其计为已提供技术原因或掌握相关知识。"
     }
   ],
   "experiments": [
@@ -603,6 +628,28 @@
       },
       "output": "{\n  \"failure\": {\n    \"seed\": 20261115,\n    \"rows\": 40000,\n    \"dim\": 256,\n    \"queries\": 300,\n    \"topk\": 10,\n    \"unfiltered_recall\": 0.944666666666667,\n    \"filtered_recall\": 1.0,\n    \"exit_code\": 1,\n    \"reproduced_with\": [\n      \"1996a1b422aa989a4b5c9d32c067225ca2d225f2\",\n      \"b4025774d6a2cec50301534602133ff6e782f9fc\"\n    ],\n    \"observed_assertion\": \"AssertionError: {'filtered': 1.0, 'unfiltered': 0.944666666666667}\"\n  },\n  \"search_width_256\": {\n    \"before\": 384,\n    \"after\": 512\n  },\n  \"results\": {\n    \"20261113\": {\n      \"rows\": 40000,\n      \"dim\": 256,\n      \"queries\": 300,\n      \"topk\": 10,\n      \"seed\": 20261113,\n      \"mode\": \"ann\",\n      \"insert_seconds\": 8.521949,\n      \"query_seconds\": 0.432084,\n      \"index_prepare_seconds\": 23.293089,\n      \"filtered_seconds\": 0.086555,\n      \"unfiltered_seconds\": 0.345528,\n      \"ms_per_query\": 1.44028,\n      \"recall_at_k\": {\n        \"filtered\": 1.0,\n        \"unfiltered\": 0.9700000000000002\n      },\n      \"exact_query_mismatches\": 41,\n      \"durable_content_verified\": true,\n      \"timing_scope\": \"prepared SQL over JSONL; includes responses and commit fsync; excludes SQL generation and validation\"\n    },\n    \"20261114\": {\n      \"rows\": 40000,\n      \"dim\": 256,\n      \"queries\": 300,\n      \"topk\": 10,\n      \"seed\": 20261114,\n      \"mode\": \"ann\",\n      \"insert_seconds\": 8.324079,\n      \"query_seconds\": 0.613187,\n      \"index_prepare_seconds\": 21.971551,\n      \"filtered_seconds\": 0.103317,\n      \"unfiltered_seconds\": 0.50987,\n      \"ms_per_query\": 2.043956,\n      \"recall_at_k\": {\n        \"filtered\": 1.0,\n        \"unfiltered\": 0.9720000000000001\n      },\n      \"exact_query_mismatches\": 39,\n      \"durable_content_verified\": true,\n      \"timing_scope\": \"prepared SQL over JSONL; includes responses and commit fsync; excludes SQL generation and validation\"\n    },\n    \"20261115\": {\n      \"rows\": 40000,\n      \"dim\": 256,\n      \"queries\": 300,\n      \"topk\": 10,\n      \"seed\": 20261115,\n      \"mode\": \"ann\",\n      \"insert_seconds\": 8.384712,\n      \"query_seconds\": 0.478402,\n      \"index_prepare_seconds\": 21.567838,\n      \"filtered_seconds\": 0.095272,\n      \"unfiltered_seconds\": 0.38313,\n      \"ms_per_query\": 1.594673,\n      \"recall_at_k\": {\n        \"filtered\": 1.0,\n        \"unfiltered\": 0.968\n      },\n      \"exact_query_mismatches\": 45,\n      \"durable_content_verified\": true,\n      \"timing_scope\": \"prepared SQL over JSONL; includes responses and commit fsync; excludes SQL generation and validation\"\n    },\n    \"20261116\": {\n      \"rows\": 40000,\n      \"dim\": 256,\n      \"queries\": 300,\n      \"topk\": 10,\n      \"seed\": 20261116,\n      \"mode\": \"ann\",\n      \"insert_seconds\": 8.352083,\n      \"query_seconds\": 0.454678,\n      \"index_prepare_seconds\": 22.688845,\n      \"filtered_seconds\": 0.082003,\n      \"unfiltered_seconds\": 0.372676,\n      \"ms_per_query\": 1.515594,\n      \"recall_at_k\": {\n        \"filtered\": 1.0,\n        \"unfiltered\": 0.974\n      },\n      \"exact_query_mismatches\": 37,\n      \"durable_content_verified\": true,\n      \"timing_scope\": \"prepared SQL over JSONL; includes responses and commit fsync; excludes SQL generation and validation\"\n    }\n  },\n  \"native_audit_count\": 31\n}",
       "interpretation_by_assistant": "旧版与建图优化版在同一种子上都得到 0.9447 无过滤召回，低于 0.95。扩大 256 维搜索宽度后，该种子达到 0.968。四个种子的无过滤召回在 0.968 至 0.974，过滤召回均为 1。独立种子 20261116 为 0.974。此处测量为 40k×256d 的本地诊断，采用真实 JSONL、独立精确参考和重启后数据校验。CI 已加入失败种子的容器回归，材料生成时该容器验证尚待执行。实验与调整由助手完成。"
+    },
+    {
+      "id": "zero-padding-cleanup-regression",
+      "role": "tool",
+      "execution_status": "executed",
+      "designed_and_executed_by": "assistant_and_tools",
+      "title": "宽字符串缩短后未释放零块的复现与清理",
+      "command": "python tests/sparse_storage.py --expect-sparse --output <report>; python tests/audit_suite.py --large-resource --output <directory>",
+      "source": {
+        "kind": "actual_ci_failure_and_native_regression",
+        "reference_sha": "b733990b610126dc6d85fdbd3d88408744e8798b",
+        "source_state": "working-tree VARCHAR tail and deleted-slot cleanup measured before commit",
+        "files": [
+          "ci-43034212903/status.json",
+          "sparse-padding-after-native.json",
+          "audit-zero-padding-20261111/summary.json",
+          "wal-padding-native.json"
+        ],
+        "engine_source_sha256": "8c88e82eacf7360904fe98fd68820449d3129929cb08a7d3fcc1256bc8762f77"
+      },
+      "output": "{\n  \"previous_linux_ci\": {\n    \"run_id\": 43034212903,\n    \"sha\": \"b733990b610126dc6d85fdbd3d88408744e8798b\",\n    \"passed\": false,\n    \"failure\": \"Sparse storage allocation assertion\",\n    \"logical_bytes\": 38404096,\n    \"allocated_before\": 35987456,\n    \"allocated_after_shortening\": 35987456\n  },\n  \"native_zero_block_diagnosis\": {\n    \"before_fix_dense\": 2424832,\n    \"before_fix_after_shortening\": 2424832,\n    \"actual_assertion_output_chunk\": \"e90e46\"\n  },\n  \"native_after_fix\": {\n    \"passed\": true,\n    \"snapshots\": [\n      {\n        \"stage\": \"dense table after restart\",\n        \"logical_bytes\": 38404096,\n        \"allocated_bytes\": null,\n        \"zero_block_bytes\": 2424832,\n        \"sha256\": \"63ce44de7a533253bed43ac9b51162f558e8a04a44c138034b78b468f34862f0\"\n      },\n      {\n        \"stage\": \"short text after restart\",\n        \"logical_bytes\": 38404096,\n        \"allocated_bytes\": null,\n        \"zero_block_bytes\": 19357696,\n        \"sha256\": \"b21063851cabac0410e71d4a8a85a7c0dbe68418e1e8a7bdab60fbe307d9f411\"\n      },\n      {\n        \"stage\": \"deleted slots followed by a new wide row\",\n        \"logical_bytes\": 38404096,\n        \"allocated_bytes\": null,\n        \"zero_block_bytes\": 35991552,\n        \"sha256\": \"3fa4db4b5ebcb82397e70bb853545556822c3c900879539f97b515eea714541b\"\n      }\n    ],\n    \"old_nonzero_blocks_cleared\": true,\n    \"rollback_and_crash_recovery\": true,\n    \"request_timeout\": 60\n  },\n  \"native_audit\": {\n    \"checks\": 33,\n    \"passed\": 33\n  },\n  \"compatibility\": {\n    \"passed\": true,\n    \"byte_equivalent_insert_records\": true,\n    \"wide_update_image_bytes_identical\": false,\n    \"wide_bidirectional_visible_values_verified\": true\n  }\n}",
+      "interpretation_by_assistant": "旧实现只改字符串长度和有效位，未使用的旧载荷仍可能非零。清理尾部与删除槽后，原生零块检查及 33 项审计通过。页布局和 WAL 格式不变，但更新页内容及 CRC 可变化；双向恢复验证所有可见值。该结果不等于 Linux 性能对照，也未验证学生关于最大受益场景的选择。"
     }
   ],
   "evidence_index": [
@@ -718,7 +765,7 @@
         }
       ],
       "result_evidence": [],
-      "boundary": "学生选择了预测场景，未提供原因、判定阈值或结果解释。方案和代码由助手在回答前完成；回答时 Linux 配对测试尚未执行，故没有验证结论。"
+      "boundary": "学生先选择“短文本大事务 COMMIT”，追问理由时回答“不确定”。没有提供原因、判定阈值或复盘。方案和代码由助手完成；该选择尚无 Linux 配对性能验证结论。"
     }
   ],
   "retrospective": {
@@ -726,7 +773,7 @@
     "implementation": "目前支持 HNSW 与紧凑精确缓存。默认 10k×128d 选择精确缓存；不能据算法名称推断实际加速。 后续加入无过滤且只投影、排序主键的可见定位路径，其他字段、过滤和排序仍读实际行。 本轮反例发现图内 float 平方距离在下溢区域使建索引超时，现复用 double 内核；默认 10k 紧凑精确路径保持相同计算方式。 后续实测加入 TopK ULP 上界缓存及图邻居预取；原生配对验证结果一致，仍需同提交的容器 T/B/M 验证。",
     "transaction": "行数据及独立更新值超过预算可溢写；事务元数据及巨大单条 SQL/结果仍受内存约束。",
     "verification": "现有原生审计与独立数值模型均通过；每次新优化仍须对应 SHA 的 CI。内核与复用会话计时不当成正式评分，未取得正式准入或最终排名。",
-    "student_interpretation": "学生在 Linux 配对实验前选择“短文本大事务 COMMIT”受益最大。目前只有该预测选择，没有提供原因；助手未代填学生解释。先前 K=100 的建议实验仍未执行。"
+    "student_interpretation": "学生在 Linux 配对实验前选择“短文本大事务 COMMIT”；追问理由时原话为“不确定”。未提供技术解释或结果复盘。先前 K=100 的建议实验仍未执行。"
   },
   "limitations": [
     "当前学生技术解释和迁移验证证据仍少；助手解释与工具日志不自动证明学生理解。",

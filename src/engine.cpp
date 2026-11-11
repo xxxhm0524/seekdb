@@ -579,14 +579,19 @@ void Table::encode_value(uint8_t *row, int col_index, const Value &value) {
   } else if (col.type == ColumnType::VARCHAR) {
     if (value.kind != Value::Kind::STRING && value.kind != Value::Kind::RAW)
       throw_error("INVALID_VALUE", "invalid VARCHAR value");
-    if (utf8_codepoint_count(value.s) < 0)
-      throw_error("INVALID_VALUE", "invalid UTF-8 string");
     int cps = utf8_codepoint_count(value.s);
+    if (cps < 0)
+      throw_error("INVALID_VALUE", "invalid UTF-8 string");
     if (cps > col.max_chars)
       throw_error("VARCHAR_TOO_LONG", col.name + " is too long");
     uint32_t bytes = static_cast<uint32_t>(value.s.size());
     std::memcpy(base, &bytes, 4);
     if (bytes) std::memcpy(base + 4, value.s.data(), bytes);
+    // Old values may occupy the rest of this fixed-width slot, including
+    // stale padding written by earlier versions. Keep the unused tail zero
+    // so short values can actually use sparse page/WAL blocks.
+    std::memset(base + 4 + bytes, 0,
+                static_cast<size_t>(col.max_chars) * 4 - bytes);
   } else if (col.type == ColumnType::VECTOR) {
     std::vector<float> vec;
     if (!value.vec.empty()) {
@@ -720,7 +725,7 @@ void Table::build_commit_images(const TxTable &tx,
         throw_error("CORRUPTION", "row slot outside page capacity");
       uint8_t *dst = image->row_ptr(slot, schema_.row_size);
       if (ch.deleted) {
-        if (slot < image->nrows) set_row_valid(dst, false);
+        if (slot < image->nrows) std::memset(dst, 0, schema_.row_size);
       } else {
         if (ch.state->has_raw_row()) {
           ch.state->read_raw(spilled_row);

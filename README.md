@@ -29,7 +29,8 @@ docker run --rm -i -v minivectordb-data:/data --cpus=2 --memory=2g minivectordb:
 
 容器以前台方式运行，只通过 stdin 接收 JSONL 请求、stdout 返回 JSONL 响应；日志只写 stderr，不监听网络端口。
 Ubuntu 基础镜像固定到摘要，构建和运行依赖使用 `20261110T160000Z` 的官方 Ubuntu 软件包快照。
-HTTPS 引导证书数据先按固定 SHA-256 校验，APT 签名和 TLS 校验保持启用；实际包版本清单保留在镜像中。
+HTTPS 引导证书数据以固定的官方 Ubuntu 包随仓库保存，使用前核对 SHA-256，避免额外远程 ADD 请求。
+APT 保留签名和 TLS 校验，并对瞬时网络失败有限重试；实际包版本清单保留在镜像中。
 所有持久化文件位于 `/data`。启动完成后先主动输出一行 `{"type":"ready"}`，随后逐行处理
 `execute` / `shutdown` 请求（见第 3 节）。
 
@@ -154,7 +155,8 @@ ROLLBACK;
 
 - `wal.log` 记录两类记录：页镜像（表 id、页号、64 KiB 页内容）和 COMMIT（txid）。
 - Linux 使用定点写入为页镜像的完整零块保留稀疏区。数据页写入也省去全零块；覆盖已有非零数据时先清零相应范围，文件系统不支持打洞时退回普通零写入。
-  逻辑页和 WAL 编码不变，恢复按完整镜像核对 IEEE CRC32，兼容性测试覆盖与旧版的双向恢复。
+  页布局与 WAL 记录格式不变；VARCHAR 的未使用尾部及删除的记录槽清零。更新后的页字节和 CRC 可以改变，
+  恢复仍按完整镜像核对 IEEE CRC32，兼容性测试覆盖与旧版的双向恢复和可见值。
 - 每次提交：写页镜像 → 写 COMMIT → `fsync(wal)` → 返回成功；随后页缓存可延迟刷盘。
 - 启动恢复两遍扫描：第一遍收集有 COMMIT 的 txid，第二遍按 WAL 顺序重放这些页镜像（幂等），
   然后 `fsync` 数据文件、截断 WAL。两遍均按记录读取，不把整个 WAL 读入内存。

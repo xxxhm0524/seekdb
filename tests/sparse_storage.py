@@ -47,6 +47,8 @@ def main():
             if allocation is not None:
                 allocation *= 512
         result = dict(stage=stage, logical_bytes=len(raw), allocated_bytes=allocation,
+                      zero_block_bytes=sum(raw[i:i+4096] == bytes(4096)
+                          for i in range(0, len(raw), 4096)) * 4096,
                       sha256=hashlib.sha256(raw).hexdigest())
         snapshots.append(result)
         return result
@@ -69,6 +71,8 @@ def main():
         session.shutdown(); session.start()
         after = snapshot('short text after restart')
         assert before['logical_bytes'] == after['logical_bytes']
+        if args.expect_sparse:
+            assert after['zero_block_bytes'] > before['zero_block_bytes'] + after['logical_bytes']*.30, snapshots
         if args.expect_sparse and after['allocated_bytes'] is not None:
             assert after['allocated_bytes'] < after['logical_bytes'] * .70, snapshots
         sql('BEGIN')

@@ -2,3 +2,6 @@
 !Makefile
 !src
 !src/**
+!docker
+!docker/bootstrap
+!docker/bootstrap/ca-certificates.deb

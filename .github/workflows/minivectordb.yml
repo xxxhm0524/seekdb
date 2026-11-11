@@ -19,9 +19,9 @@ jobs:
           git archive 641d2de54c7837459c43e279b74f7b3ec200434e \
             Makefile src/main.cpp src/sql.cpp src/sql.h src/engine.cpp \
             src/engine.h src/common.h src/ann.h src/tx_spool.h | tar -x -C "$mvd_storage_reference_dir"
-          cp Dockerfile "$mvd_storage_reference_dir/Dockerfile"
+          tar -c Dockerfile docker/bootstrap/ca-certificates.deb | tar -x -C "$mvd_storage_reference_dir"
           docker build -t minivectordb:storage-reference "$mvd_storage_reference_dir"
-      - name: Check the allocation regression is red on the previous version
+      - name: Check the zero-block regression is red on the previous version
         run: |
           mkdir -p protocol-results
           set +e
@@ -278,21 +278,21 @@ jobs:
           git archive 082acdb96d847844962f85cd3e3f57e4d38db1dc \
             Makefile src/main.cpp src/sql.cpp src/sql.h src/engine.cpp \
             src/engine.h src/common.h src/ann.h src/tx_spool.h | tar -x -C "$mvd_reference_dir"
-          cp Dockerfile "$mvd_reference_dir/Dockerfile"
+          tar -c Dockerfile docker/bootstrap/ca-certificates.deb | tar -x -C "$mvd_reference_dir"
           docker build -t minivectordb:reference-082acdb9 "$mvd_reference_dir"
           mvd_previous_dir=$(mktemp -d)
           git fetch --depth=1 origin e20904ebbf5f6044f0b1cd2093362911e82063ab
           git archive e20904ebbf5f6044f0b1cd2093362911e82063ab \
             Makefile src/main.cpp src/sql.cpp src/sql.h src/engine.cpp \
             src/engine.h src/common.h src/ann.h src/tx_spool.h | tar -x -C "$mvd_previous_dir"
-          cp Dockerfile "$mvd_previous_dir/Dockerfile"
+          tar -c Dockerfile docker/bootstrap/ca-certificates.deb | tar -x -C "$mvd_previous_dir"
           docker build -t minivectordb:reference-e20904eb "$mvd_previous_dir"
           mvd_graph_dir=$(mktemp -d)
           git fetch --depth=1 origin 1996a1b422aa989a4b5c9d32c067225ca2d225f2
           git archive 1996a1b422aa989a4b5c9d32c067225ca2d225f2 \
             Makefile src/main.cpp src/sql.cpp src/sql.h src/engine.cpp \
             src/engine.h src/common.h src/ann.h src/tx_spool.h | tar -x -C "$mvd_graph_dir"
-          cp Dockerfile "$mvd_graph_dir/Dockerfile"
+          tar -c Dockerfile docker/bootstrap/ca-certificates.deb | tar -x -C "$mvd_graph_dir"
           docker build -t minivectordb:reference-1996a1b4 "$mvd_graph_dir"
 
       - name: WAL records and bidirectional recovery

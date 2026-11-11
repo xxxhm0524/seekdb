@@ -2,7 +2,7 @@
 # The certificate data is verified before extraction; TLS and APT signature
 # checks stay enabled while bootstrapping HTTPS access to the snapshot archive.
 FROM ubuntu:24.04@sha256:fe81560990fae86dc4743202b2cb4d3df98d0bcf949173cecef15ce1127ef852 AS certificate-data
-ADD https://snapshot.ubuntu.com/ubuntu/20261110T160000Z/pool/main/c/ca-certificates/ca-certificates_20260816ubuntu0.24.04.2_all.deb /ca.deb
+COPY docker/bootstrap/ca-certificates.deb /ca.deb
 RUN printf '%s  /ca.deb\n' 'f9fbacd417b515450b831032cc39d18059e9874e67525679a43c16071dabf9a0' | sha256sum -c - \
     && mkdir -p /bootstrap/package \
     && dpkg-deb -x /ca.deb /bootstrap/package \
@@ -13,6 +13,7 @@ COPY --from=certificate-data /bootstrap/ca-certificates.crt /etc/ssl/certs/ca-ce
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN printf 'APT::Snapshot "20261110T160000Z";\n' > /etc/apt/apt.conf.d/50mvd-snapshot \
+    && printf 'Acquire::Retries "5";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' > /etc/apt/apt.conf.d/80mvd-retries \
     && apt-get update \
     && apt-cache policy | grep -Fq 'snapshot.ubuntu.com/ubuntu/20261110T160000Z' \
     && apt-get install -y --no-install-recommends build-essential ca-certificates \
@@ -29,6 +30,7 @@ COPY --from=certificate-data /bootstrap/ca-certificates.crt /etc/ssl/certs/ca-ce
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN printf 'APT::Snapshot "20261110T160000Z";\n' > /etc/apt/apt.conf.d/50mvd-snapshot \
+    && printf 'Acquire::Retries "5";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' > /etc/apt/apt.conf.d/80mvd-retries \
     && apt-get update \
     && apt-cache policy | grep -Fq 'snapshot.ubuntu.com/ubuntu/20261110T160000Z' \
     && apt-get install -y --no-install-recommends libgomp1 libstdc++6 libgcc-s1 ca-certificates \
