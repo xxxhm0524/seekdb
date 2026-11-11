@@ -2200,13 +2200,8 @@ Response Engine::exec_select(SelectStmt &stmt) {
       bool approximate = false;
       if (ann_mode_ && stmt.where.empty() && index->approximate_available(static_cast<size_t>(topk))) {
         auto hits=index->search(topk_query_vec.data(),static_cast<size_t>(topk));
-        for (auto &hit:hits) hit.distance=squared_l2_checked(index->vector(hit.node),topk_query_vec.data(),schema.columns[topk_vector_column].dim);
-        std::sort(hits.begin(),hits.end(),[&](const auto&a,const auto&b){
-          return a.distance!=b.distance ? a.distance<b.distance : index->node(a.node).pk<index->node(b.node).pk;
-        });
-        hits.erase(std::remove_if(hits.begin(), hits.end(), [&](const VectorIndex::Hit &hit) {
-          return !index->node(hit.node).active;
-        }), hits.end());
+        // Search already uses squared_l2_checked and returns the ordered
+        // live prefix. Keep its extra hit for the precision boundary check.
         // Dense ties need all eligible IDs to enforce the canonical PK order.
         if (hits.size() > static_cast<size_t>(topk)) {
           uint64_t first, second;
@@ -2215,7 +2210,8 @@ Response Engine::exec_select(SelectStmt &stmt) {
           uint64_t gap = first > second ? first-second : second-first;
           approximate = gap > heaps[0].uncertainty_ulps;
         }
-        if (approximate) for (const auto &hit : hits) {
+        if (approximate) for (size_t i = 0; i < static_cast<size_t>(topk); ++i) {
+          const auto &hit = hits[i];
           const auto &node = index->node(hit.node);
           heaps[0].push(hit.distance, node.pk, node.pos);
         }

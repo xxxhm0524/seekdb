@@ -2,10 +2,10 @@
   "schema": "mvd-conversation-v2",
   "rules_version": "agent-learning-evidence-v3-unbounded",
   "synthetic": false,
-  "generated_at_utc": "2026-11-11T14:15:07.584801+00:00",
+  "generated_at_utc": "2026-11-11T14:25:43.433156+00:00",
   "material_scope": {
     "purpose": "选录可核验的真实可见对话、必要上下文和实际结果；没有替学生编写预测、解释或复盘。",
-    "sources": "本线程用户消息 ID 与助手可见回复、用户提供的失败截图；逐项标明源码版本或快照的本地/CI 日志，包含开发迭代历史。",
+    "sources": "本线程用户消息 ID 与助手可见回复、用户提供的失败截图；逐项标明源码版本或快照的本地/CI 日志，包含开发迭代历史。 另保留远端提交 e3770170 中的助手实验报告，逐项标明本线程尚未独立核验。",
     "source_thread_id": "01a1c4bd-6408-73c1-995e-f344d41a3258",
     "coverage": "选录本线程接手、复核、两问整合的真实问题链，以及学生对稀疏 I/O 受益场景的原始选择；省略账号、登录和权限操作流程。",
     "redaction": "账号、密码、令牌已替换；日志的本机根目录替换为 $REPO，数值和状态保留；截图只转录判断所需的可见文字。",
@@ -650,6 +650,65 @@
       },
       "output": "{\n  \"previous_linux_ci\": {\n    \"run_id\": 43034212903,\n    \"sha\": \"b733990b610126dc6d85fdbd3d88408744e8798b\",\n    \"passed\": false,\n    \"failure\": \"Sparse storage allocation assertion\",\n    \"logical_bytes\": 38404096,\n    \"allocated_before\": 35987456,\n    \"allocated_after_shortening\": 35987456\n  },\n  \"native_zero_block_diagnosis\": {\n    \"before_fix_dense\": 2424832,\n    \"before_fix_after_shortening\": 2424832,\n    \"actual_assertion_output_chunk\": \"e90e46\"\n  },\n  \"native_after_fix\": {\n    \"passed\": true,\n    \"snapshots\": [\n      {\n        \"stage\": \"dense table after restart\",\n        \"logical_bytes\": 38404096,\n        \"allocated_bytes\": null,\n        \"zero_block_bytes\": 2424832,\n        \"sha256\": \"63ce44de7a533253bed43ac9b51162f558e8a04a44c138034b78b468f34862f0\"\n      },\n      {\n        \"stage\": \"short text after restart\",\n        \"logical_bytes\": 38404096,\n        \"allocated_bytes\": null,\n        \"zero_block_bytes\": 19357696,\n        \"sha256\": \"b21063851cabac0410e71d4a8a85a7c0dbe68418e1e8a7bdab60fbe307d9f411\"\n      },\n      {\n        \"stage\": \"deleted slots followed by a new wide row\",\n        \"logical_bytes\": 38404096,\n        \"allocated_bytes\": null,\n        \"zero_block_bytes\": 35991552,\n        \"sha256\": \"3fa4db4b5ebcb82397e70bb853545556822c3c900879539f97b515eea714541b\"\n      }\n    ],\n    \"old_nonzero_blocks_cleared\": true,\n    \"rollback_and_crash_recovery\": true,\n    \"request_timeout\": 60\n  },\n  \"native_audit\": {\n    \"checks\": 33,\n    \"passed\": 33\n  },\n  \"compatibility\": {\n    \"passed\": true,\n    \"byte_equivalent_insert_records\": true,\n    \"wide_update_image_bytes_identical\": false,\n    \"wide_bidirectional_visible_values_verified\": true\n  }\n}",
       "interpretation_by_assistant": "旧实现只改字符串长度和有效位，未使用的旧载荷仍可能非零。清理尾部与删除槽后，原生零块检查及 33 项审计通过。页布局和 WAL 格式不变，但更新页内容及 CRC 可变化；双向恢复验证所有可见值。该结果不等于 Linux 性能对照，也未验证学生关于最大受益场景的选择。"
+    },
+    {
+      "id": "round2-hnsw-candidate-prefix",
+      "role": "tool",
+      "execution_status": "executed",
+      "designed_and_executed_by": "assistant",
+      "title": "HNSW 查询候选裁剪：配对计时与结果核对",
+      "command": "OMP_WAIT_POLICY=PASSIVE MVD_ANN_MIN_ROWS=2048 taskset -c 4,6 python3 tests/paired_query_compare.py --reference-binary <reference> --candidate-binary <candidate> --rows 10000 --dim 128 --queries 1000 --rounds 9 --output <report>",
+      "source": "本轮用户提出优化并允许先查看其他分支；助手对比官方题包与答题分支，使用 b733990b610126dc6d85fdbd3d88408744e8798b 为对照在 Linux 本地执行。",
+      "output": {
+        "unfiltered_batch_ms_median": {
+          "reference": 302.579,
+          "candidate": 297.574
+        },
+        "recall_at_10": {
+          "reference": 1.0,
+          "candidate": 1.0
+        },
+        "all_results_identical": true,
+        "official_public_cases_passed": 20,
+        "official_public_cases_total": 20,
+        "ann_lifecycle": "PASS",
+        "ann_numeric_range": "PASS",
+        "crash_recovery": "PASS: 50000 rows, 1 verified kill after recovery writes and before ready"
+      },
+      "interpretation_by_assistant": "仅对启用图的无过滤查询测得约 1.65% 中位耗时下降。精确扫描实验未得到稳定收益，相关尝试没有保留。没有取得正式分数或排名，这些是助手执行的结果，未当成学生独立实验或解释。",
+      "source_provenance": {
+        "kind": "reported_in_remote_commit",
+        "commit": "e3770170bc186e95f54c2d87f7b474b9217791ff",
+        "independently_verified_in_this_thread": false,
+        "verification_status": "pending merged-source SQL result comparison and CI",
+        "independent_merged_SQL_result_check": {
+          "rows": 50000,
+          "dim": 128,
+          "queries": 300,
+          "rounds": 3,
+          "all_results_identical": true,
+          "report": "ann-remote-merge-paired-native.json"
+        },
+        "original_linux_timing_reproduced_in_this_thread": false
+      }
+    },
+    {
+      "id": "merged-ann-native-result-comparison",
+      "role": "tool",
+      "execution_status": "executed",
+      "designed_and_executed_by": "assistant_and_tools",
+      "title": "合并远端 HNSW 优化后的独立原生结果对照",
+      "command": "python tests/paired_query_compare.py --reference-binary <e6cad36f binary> --candidate-binary <merged binary> --rows 50000 --dim 128 --queries 300 --rounds 3 --seed 20261112 --output <report>",
+      "source": {
+        "kind": "native_windows_jsonl_pair",
+        "reference_sha": "e6cad36fee17867ba1f535378c583559350e7d60",
+        "remote_merge_sha": "e3770170bc186e95f54c2d87f7b474b9217791ff",
+        "candidate_state": "working-tree ordinary merge before commit",
+        "file": "ann-remote-merge-paired-native.json",
+        "engine_source_sha256": "d76e6a353d51b03648ad18c8d0d3f96afd53ec83f30a77a3e205c667c7f648a7"
+      },
+      "output": "{\n  \"passed\": true,\n  \"official_score\": false,\n  \"rows\": 50000,\n  \"dim\": 128,\n  \"queries\": 300,\n  \"seed\": 20261112,\n  \"scope\": \"prepared independent sessions, sequential alternating query rounds; no resource score\",\n  \"preparations\": {\n    \"reference\": {\n      \"index_seconds\": 17.090618900001573,\n      \"image\": null,\n      \"binary_sha256\": \"ce5657e5168ab9fc0d2c52668e720d1cf98dad2213d2cff5dc81ad8195e3ee95\"\n    },\n    \"candidate\": {\n      \"index_seconds\": 16.652413799998612,\n      \"image\": null,\n      \"binary_sha256\": \"f0a581ee01330db0e1576e6e9703a13428d419d7da630f8e6f7fa97e3af5297b\"\n    }\n  },\n  \"rounds\": [\n    {\n      \"reference\": {\n        \"seconds\": 0.3316199000000779,\n        \"filtered_seconds\": 0.10026119999929506,\n        \"unfiltered_seconds\": 0.23135870000078285,\n        \"recall_at_10\": {\n          \"filtered\": 1.0,\n          \"unfiltered\": 0.9806666666666668\n        }\n      },\n      \"candidate\": {\n        \"seconds\": 0.31542049999916344,\n        \"filtered_seconds\": 0.10040549999939685,\n        \"unfiltered_seconds\": 0.2150149999997666,\n        \"recall_at_10\": {\n          \"filtered\": 1.0,\n          \"unfiltered\": 0.9806666666666668\n        }\n      },\n      \"all_results_identical\": true\n    },\n    {\n      \"candidate\": {\n        \"seconds\": 0.2792287000011129,\n        \"filtered_seconds\": 0.08804190000046219,\n        \"unfiltered_seconds\": 0.1911868000006507,\n        \"recall_at_10\": {\n          \"filtered\": 1.0,\n          \"unfiltered\": 0.9806666666666668\n        }\n      },\n      \"reference\": {\n        \"seconds\": 0.2709088999999949,\n        \"filtered_seconds\": 0.08180559999891557,\n        \"unfiltered_seconds\": 0.18910330000107933,\n        \"recall_at_10\": {\n          \"filtered\": 1.0,\n          \"unfiltered\": 0.9806666666666668\n        }\n      },\n      \"all_results_identical\": true\n    },\n    {\n      \"reference\": {\n        \"seconds\": 0.27084589999867603,\n        \"filtered_seconds\": 0.08875119999902381,\n        \"unfiltered_seconds\": 0.18209469999965222,\n        \"recall_at_10\": {\n          \"filtered\": 1.0,\n          \"unfiltered\": 0.9806666666666668\n        }\n      },\n      \"candidate\": {\n        \"seconds\": 0.25766459999977087,\n        \"filtered_seconds\": 0.07433909999963362,\n        \"unfiltered_seconds\": 0.18332550000013725,\n        \"recall_at_10\": {\n          \"filtered\": 1.0,\n          \"unfiltered\": 0.9806666666666668\n        }\n      },\n      \"all_results_identical\": true\n    }\n  ],\n  \"medians\": {\n    \"reference\": {\n      \"seconds\": 0.2709088999999949,\n      \"filtered_seconds\": 0.08875119999902381,\n      \"unfiltered_seconds\": 0.18910330000107933\n    },\n    \"candidate\": {\n      \"seconds\": 0.2792287000011129,\n      \"filtered_seconds\": 0.08804190000046219,\n      \"unfiltered_seconds\": 0.1911868000006507\n    }\n  }\n}",
+      "interpretation_by_assistant": "三轮完整结果均相同，过滤和无过滤召回分别为 1.0、0.980667。本机总查询中位耗时变化为 3.071%，该对照未证明稳定加速。远端 Linux 1.65% 的原始报告保持单独来源，不当成此合并版收益。没有正式性能分或学生理解结论。"
     }
   ],
   "evidence_index": [
@@ -779,6 +838,7 @@
     "当前学生技术解释和迁移验证证据仍少；助手解释与工具日志不自动证明学生理解。",
     "旧提交失败仅取得汇总信息，没有具体失败 SQL；原因假设未当成已证实结论。",
     "新版本尚无正式评测成绩。此前一次请求在仓库校验时被退回，未创建新任务。",
-    "正式隐藏用例、官方冻结基线数值及最终竞争排名尚未验证；绝对零风险和满分均未得到证明。"
+    "正式隐藏用例、官方冻结基线数值及最终竞争排名尚未验证；绝对零风险和满分均未得到证明。",
+    "远端新增的 HNSW 性能报告保留其提交来源；报告中的计时尚未在本线程独立复现，不作为学生本人完成实验或理解的证据。"
   ]
 }
