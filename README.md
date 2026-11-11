@@ -10,7 +10,7 @@ SQL 词法/语法、页式存储、WAL、事务、恢复和距离计算均为自
 | 项目 | 值 |
 | --- | --- |
 | 语言 | C++20 |
-| 编译器 | GCC 13+（Ubuntu 24.04 的 `build-essential`） |
+| 编译器 | GCC 13+；容器使用固定的官方 GCC 13.5.0 编译镜像 |
 | 构建 | GNU make；`make -j` |
 | 第三方依赖 | 无（仅 libc/libm/libstdc++/libgomp） |
 | 运行环境 | Linux x86_64 容器；本地 Windows/MSYS2 也可编译测试 |
@@ -28,9 +28,10 @@ docker run --rm -i -v minivectordb-data:/data --cpus=2 --memory=2g minivectordb:
 ```
 
 容器以前台方式运行，只通过 stdin 接收 JSONL 请求、stdout 返回 JSONL 响应；日志只写 stderr，不监听网络端口。
-Ubuntu 基础镜像固定到摘要，构建和运行依赖使用 `20261110T160000Z` 的官方 Ubuntu 软件包快照。
-HTTPS 引导证书数据以固定的官方 Ubuntu 包随仓库保存，使用前核对 SHA-256，避免额外远程 ADD 请求。
-APT 保留签名和 TLS 校验，并对瞬时网络失败有限重试；实际包版本清单保留在镜像中。
+官方 GCC 13.5.0 编译镜像和 Ubuntu 24.04 运行镜像均固定到摘要。
+拉取基础镜像后，所有 RUN 指令在无网络模式下完成；构建不在线安装软件包。
+运行镜像只复制本项目可执行文件及同一编译镜像的 libstdc++、libgcc、libgomp 标准运行库。
+编译器版本、包清单、运行库 SHA-256 和动态链接检查结果保留在镜像及 CI 产物中。
 所有持久化文件位于 `/data`。启动完成后先主动输出一行 `{"type":"ready"}`，随后逐行处理
 `execute` / `shutdown` 请求（见第 3 节）。
 

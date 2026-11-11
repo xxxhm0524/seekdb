@@ -3,5 +3,5 @@
 !src
 !src/**
 !docker
-!docker/bootstrap
-!docker/bootstrap/ca-certificates.deb
+!docker/licenses
+!docker/licenses/GCC-RUNTIME-EXCEPTION-3.1.txt

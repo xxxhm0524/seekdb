@@ -11,18 +11,16 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
-      - name: Probe Docker build transport
-        run: bash tests/docker_build_preflight.sh
       - name: Build current and previous locked images
         run: |
-          bash tests/docker_build_with_proxy.sh --network="$MVD_BUILD_NETWORK" -t minivectordb:storage-candidate .
+          docker build --network=none -t minivectordb:storage-candidate .
           mvd_storage_reference_dir=$(mktemp -d)
           git fetch --depth=1 origin 641d2de54c7837459c43e279b74f7b3ec200434e
           git archive 641d2de54c7837459c43e279b74f7b3ec200434e \
             Makefile src/main.cpp src/sql.cpp src/sql.h src/engine.cpp \
             src/engine.h src/common.h src/ann.h src/tx_spool.h | tar -x -C "$mvd_storage_reference_dir"
-          tar -cf - Dockerfile docker/bootstrap/ca-certificates.deb | tar -xf - -C "$mvd_storage_reference_dir"
-          bash tests/docker_build_with_proxy.sh --network="$MVD_BUILD_NETWORK" -t minivectordb:storage-reference "$mvd_storage_reference_dir"
+          tar -cf - Dockerfile docker/licenses/GCC-RUNTIME-EXCEPTION-3.1.txt | tar -xf - -C "$mvd_storage_reference_dir"
+          docker build --network=none -t minivectordb:storage-reference "$mvd_storage_reference_dir"
       - name: Check the zero-block regression is red on the previous version
         run: |
           mkdir -p protocol-results
@@ -53,8 +51,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Probe Docker build transport
-        run: bash tests/docker_build_preflight.sh
 
       - name: Build
         run: make -j"$(nproc)"
@@ -177,7 +173,7 @@ jobs:
 
       - name: Docker build
         id: docker_build
-        run: bash tests/docker_build_with_proxy.sh --network="$MVD_BUILD_NETWORK" -t minivectordb:ci .
+        run: docker build --network=none -t minivectordb:ci .
 
       - name: Export locked package versions
         run: |
@@ -189,10 +185,19 @@ jobs:
             > protocol-results/locked-build-packages.txt
           docker image inspect --format '{{.Id}}' minivectordb:ci \
             > protocol-results/locked-image-id.txt
+          docker run --rm --network=none --read-only --cap-drop=ALL \
+            --entrypoint /bin/cat minivectordb:ci /app/compiler-version.txt \
+            > protocol-results/locked-compiler-version.txt
+          docker run --rm --network=none --read-only --cap-drop=ALL \
+            --entrypoint /bin/cat minivectordb:ci /runtime-library-sha256.txt \
+            > protocol-results/locked-runtime-library-sha256.txt
+          docker run --rm --network=none --read-only --cap-drop=ALL \
+            --entrypoint /bin/cat minivectordb:ci /runtime-linkage.txt \
+            > protocol-results/locked-runtime-linkage.txt
 
       - name: Float32 model in the final locked runtime
         run: |
-          bash tests/docker_build_with_proxy.sh --network="$MVD_BUILD_NETWORK" --target build -t minivectordb:compiler-ci .
+          docker build --network=none --target build -t minivectordb:compiler-ci .
           mkdir -p protocol-results/runtime-model
           chmod 777 protocol-results/runtime-model
           docker run --rm --network=none --cpus=2 --memory=2g \
@@ -283,22 +288,22 @@ jobs:
           git archive 082acdb96d847844962f85cd3e3f57e4d38db1dc \
             Makefile src/main.cpp src/sql.cpp src/sql.h src/engine.cpp \
             src/engine.h src/common.h src/ann.h src/tx_spool.h | tar -x -C "$mvd_reference_dir"
-          tar -cf - Dockerfile docker/bootstrap/ca-certificates.deb | tar -xf - -C "$mvd_reference_dir"
-          bash tests/docker_build_with_proxy.sh --network="$MVD_BUILD_NETWORK" -t minivectordb:reference-082acdb9 "$mvd_reference_dir"
+          tar -cf - Dockerfile docker/licenses/GCC-RUNTIME-EXCEPTION-3.1.txt | tar -xf - -C "$mvd_reference_dir"
+          docker build --network=none -t minivectordb:reference-082acdb9 "$mvd_reference_dir"
           mvd_previous_dir=$(mktemp -d)
           git fetch --depth=1 origin e20904ebbf5f6044f0b1cd2093362911e82063ab
           git archive e20904ebbf5f6044f0b1cd2093362911e82063ab \
             Makefile src/main.cpp src/sql.cpp src/sql.h src/engine.cpp \
             src/engine.h src/common.h src/ann.h src/tx_spool.h | tar -x -C "$mvd_previous_dir"
-          tar -cf - Dockerfile docker/bootstrap/ca-certificates.deb | tar -xf - -C "$mvd_previous_dir"
-          bash tests/docker_build_with_proxy.sh --network="$MVD_BUILD_NETWORK" -t minivectordb:reference-e20904eb "$mvd_previous_dir"
+          tar -cf - Dockerfile docker/licenses/GCC-RUNTIME-EXCEPTION-3.1.txt | tar -xf - -C "$mvd_previous_dir"
+          docker build --network=none -t minivectordb:reference-e20904eb "$mvd_previous_dir"
           mvd_graph_dir=$(mktemp -d)
           git fetch --depth=1 origin 1996a1b422aa989a4b5c9d32c067225ca2d225f2
           git archive 1996a1b422aa989a4b5c9d32c067225ca2d225f2 \
             Makefile src/main.cpp src/sql.cpp src/sql.h src/engine.cpp \
             src/engine.h src/common.h src/ann.h src/tx_spool.h | tar -x -C "$mvd_graph_dir"
-          tar -cf - Dockerfile docker/bootstrap/ca-certificates.deb | tar -xf - -C "$mvd_graph_dir"
-          bash tests/docker_build_with_proxy.sh --network="$MVD_BUILD_NETWORK" -t minivectordb:reference-1996a1b4 "$mvd_graph_dir"
+          tar -cf - Dockerfile docker/licenses/GCC-RUNTIME-EXCEPTION-3.1.txt | tar -xf - -C "$mvd_graph_dir"
+          docker build --network=none -t minivectordb:reference-1996a1b4 "$mvd_graph_dir"
 
       - name: WAL records and bidirectional recovery
         if: always() && steps.reference_build.outcome == 'success'
