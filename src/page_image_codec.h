@@ -6,7 +6,7 @@ namespace mvd {
 inline constexpr size_t kCompactPageBytes = 65536;
 inline constexpr size_t kCompactPageWords = kCompactPageBytes / sizeof(uint64_t);
 inline constexpr size_t kCompactPageMaxBytes = 4096;
-static_assert(kCompactPageWords <= 0x7fff);
+static_assert(kCompactPageWords <= 0x3fff);
 
 inline std::string pack_page_image(const void *page, size_t limit = kCompactPageMaxBytes) {
   const auto *bytes = static_cast<const uint8_t *>(page);
@@ -16,20 +16,21 @@ inline std::string pack_page_image(const void *page, size_t limit = kCompactPage
     return value;
   };
   auto repeated = [&](size_t i) {
-    return i+3 < kCompactPageWords && word(i) == word(i+1) &&
-        word(i) == word(i+2) && word(i) == word(i+3);
+    uint64_t value = word(i);
+    return !value || (i+1 < kCompactPageWords && value == word(i+1));
   };
   std::string packed;
   size_t i = 0;
   while (i < kCompactPageWords) {
     if (repeated(i)) {
       uint64_t value = word(i);
-      size_t end = i+4;
+      size_t end = i+1;
       while (end < kCompactPageWords && word(end) == value) ++end;
-      if (packed.size()+sizeof(uint16_t)+sizeof(value) > limit) return {};
-      uint16_t tag = static_cast<uint16_t>(0x8000U | (end-i));
+      size_t payload = value ? sizeof(value) : 0;
+      if (packed.size()+sizeof(uint16_t)+payload > limit) return {};
+      uint16_t tag = static_cast<uint16_t>((value ? 0x8000U : 0xc000U) | (end-i));
       packed.append(reinterpret_cast<const char *>(&tag), sizeof(tag));
-      packed.append(reinterpret_cast<const char *>(&value), sizeof(value));
+      if (value) packed.append(reinterpret_cast<const char *>(&value), sizeof(value));
       i = end;
     } else {
       size_t begin = i;
@@ -56,10 +57,14 @@ inline bool unpack_page_image(std::string_view packed, void *page) {
     uint16_t tag;
     std::memcpy(&tag, packed.data()+cursor, sizeof(tag));
     cursor += sizeof(tag);
-    size_t count = tag & 0x7fffU;
+    uint16_t kind = tag & 0xc000U;
+    if (kind == 0x4000U) return false; // Reserved, never a literal count.
+    size_t count = tag & 0x3fffU;
     if (!count || count > kCompactPageWords-written) return false;
     size_t bytes = count*sizeof(uint64_t);
-    if (tag & 0x8000U) {
+    if (kind == 0xc000U) {
+      std::memset(output+written*sizeof(uint64_t), 0, bytes);
+    } else if (kind == 0x8000U) {
       if (packed.size()-cursor < sizeof(uint64_t)) return false;
       uint64_t value;
       std::memcpy(&value, packed.data()+cursor, sizeof(value));

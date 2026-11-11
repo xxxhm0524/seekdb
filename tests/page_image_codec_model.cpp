@@ -18,7 +18,11 @@ int main() {
       else if (trial == 2) input.fill(0x80989ff080989ff0ULL);
       else if (trial == 3 || trial == 4) {
         input.fill(0);
-        for (size_t j = 0; j < (trial == 3 ? 510U : 511U); ++j) input[j] = random();
+        for (size_t j = 0; j < (trial == 3 ? 511U : 512U); ++j) input[j] = random();
+      } else if (trial == 5) {
+        for (size_t j = 0; j < input.size(); ++j) input[j] = j%2 ? 0 : random();
+      } else if (trial == 6) {
+        for (size_t j = 0; j < input.size(); j += 2) input[j] = input[j+1] = random();
       } else while (i < input.size()) {
         uint64_t value = random();
         size_t run = trial % 3 == 0 ? 1 : 1+static_cast<size_t>(random()%81);
@@ -43,10 +47,12 @@ int main() {
     }
     input.fill(0);
     auto packed = mvd::pack_page_image(input.data());
+    require(packed.size() == sizeof(uint16_t), "zero run retained a redundant payload word");
     for (size_t size = 0; size < packed.size(); ++size)
       require(!mvd::unpack_page_image(std::string_view(packed).substr(0, size), output.data()),
               "truncated packet accepted");
-    for (uint16_t bad : {uint16_t(0), uint16_t(0x8000), uint16_t(0xffff), uint16_t(0x2000)}) {
+    for (uint16_t bad : {uint16_t(0), uint16_t(0x8000), uint16_t(0xc000),
+                        uint16_t(0x4001), uint16_t(0xffff), uint16_t(0x2000)}) {
       std::string corrupt(reinterpret_cast<const char *>(&bad), sizeof(bad));
       require(!mvd::unpack_page_image(corrupt, output.data()), "invalid count/payload accepted");
     }

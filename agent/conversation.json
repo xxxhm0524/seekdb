@@ -2,7 +2,7 @@
   "schema": "mvd-conversation-v2",
   "rules_version": "agent-learning-evidence-v3-unbounded",
   "synthetic": false,
-  "generated_at_utc": "2026-11-11T19:50:35.351304+00:00",
+  "generated_at_utc": "2026-11-11T20:31:06.203949+00:00",
   "material_scope": {
     "purpose": "选录可核验的真实可见对话、必要上下文和实际结果；没有替学生编写预测、解释或复盘。",
     "sources": "本线程用户消息 ID 与助手可见回复、用户提供的失败截图；逐项标明源码版本或快照的本地/CI 日志，包含开发迭代历史。 另保留远端提交 e3770170 中的助手实验报告，逐项标明本线程尚未独立核验。",
@@ -811,8 +811,21 @@
           "wal-read-caches-native-20261112.json"
         ]
       },
-      "output": "{\"previous_repeat_run\":43082409997,\"previous_repeat_sha\":\"963089c28dc4f218e34e5beeca1462e469b4a710\",\"main_failures\":[{\"stage\":\"wide_update\",\"error\":\"JSON response timeout\",\"oom_killed\":false},{\"stage\":\"short_commit\",\"error\":\"JSON response timeout\",\"oom_killed\":false},{\"stage\":\"unicode_first_delete\",\"error\":\"JSON response timeout\",\"oom_killed\":false}],\"negative_warm_scan\":{\"passed\":false,\"rows\":12000,\"heap_bytes\":112394240,\"cold_read_bytes\":112402547,\"warm_read_bytes\":112402547},\"native_checks\":39,\"all_exit_codes_zero\":true,\"warm_scan_after\":{\"passed\":true,\"rows\":12000,\"heap_bytes\":112394240,\"cold_read_bytes\":112402547,\"warm_read_bytes\":8307,\"mutation_rollback_reinsert_and_crash\":true,\"peak_bytes\":14716928},\"commit_reads_after\":{\"passed\":true,\"rows\":12000,\"commit_read_bytes\":71,\"spool_bytes\":99072000,\"peak_bytes\":20656128,\"acknowledged_data_recovered\":true},\"cache_model_output\":\"{\\\"passed\\\":true,\\\"random_spool_reads\\\":20000,\\\"rewind_and_offset_reuse\\\":true,\\\"bounded_admission_and_replacement\\\":true}\",\"legacy_wal_bidirectional_passed\":true,\"insert_records_byte_equivalent\":true}",
-      "interpretation_by_assistant": "相同源码曾全绿，另一 runner 仍有三类 60 秒超时，未归因于 OOM，也未据单次成功放行。新增临时文件和干净页的两个 16 MiB 压缩读取缓存，校验原块 CRC；满额保留已接纳块，避免顺序扫描驱逐缓存前缀。截断、提交新页和删表清除相关旧项。磁盘及 WAL 字节格式、提交同步顺序不变。二次宽表逻辑读取降至请求字节量，COMMIT 读取也大幅下降；这些是逻辑读取计数，不是官方 B_read。新 SHA 仍须用 Linux 严格用例实测耗时，不预报成绩。这些解释来自助手，不代表学生已掌握。"
+      "output": "{\"previous_repeat_run\":43082409997,\"previous_repeat_sha\":\"963089c28dc4f218e34e5beeca1462e469b4a710\",\"main_failures\":[{\"stage\":\"wide_update\",\"error\":\"JSON response timeout\",\"oom_killed\":false},{\"stage\":\"short_commit\",\"error\":\"JSON response timeout\",\"oom_killed\":false},{\"stage\":\"unicode_first_delete\",\"error\":\"JSON response timeout\",\"oom_killed\":false}],\"negative_warm_scan\":{\"passed\":false,\"rows\":12000,\"heap_bytes\":112394240,\"cold_read_bytes\":112402547,\"warm_read_bytes\":112402547},\"native_checks\":39,\"all_exit_codes_zero\":true,\"warm_scan_after\":{\"passed\":true,\"rows\":12000,\"heap_bytes\":112394240,\"cold_read_bytes\":112402547,\"warm_read_bytes\":8307,\"mutation_rollback_reinsert_and_crash\":true,\"peak_bytes\":14716928},\"commit_reads_after\":{\"passed\":true,\"rows\":12000,\"commit_read_bytes\":71,\"spool_bytes\":99072000,\"peak_bytes\":20656128,\"acknowledged_data_recovered\":true},\"cache_model_output\":\"{\\\"passed\\\":true,\\\"random_spool_reads\\\":20000,\\\"rewind_and_offset_reuse\\\":true,\\\"bounded_admission_and_replacement\\\":true}\",\"legacy_wal_bidirectional_passed\":true,\"insert_records_byte_equivalent\":true,\"capacity_followup\":{\"intermediate_ci_run\":43091243864,\"intermediate_sha\":\"f32b4d1b0d7584c02a5588c72f17bd0724a0179a\",\"wide_update_passed\":true,\"short_transaction_passed\":true,\"unicode_commit_error\":\"JSON response timeout\",\"oom_killed\":false,\"new_native_checks\":39,\"new_native_all_exit_codes_zero\":true,\"codec_model\":\"{\\\"passed\\\":true,\\\"pages_checked\\\":1200,\\\"compact\\\":800,\\\"raw_fallback\\\":400,\\\"malformed_packets_rejected\\\":true}\",\"native_270k\":{\"passed\":true,\"rows\":270000,\"commit_read_bytes\":444668376,\"spool_bytes\":2229120000,\"peak_bytes\":110604288,\"acknowledged_data_recovered\":true},\"legacy_wal_compatibility_passed\":true}}",
+      "interpretation_by_assistant": "相同源码曾全绿，另一 runner 仍有三类 60 秒超时，未归因于 OOM，也未据单次成功放行。新增临时文件和干净页的两个 16 MiB 压缩读取缓存，校验原块 CRC；满额保留已接纳块，避免顺序扫描驱逐缓存前缀。截断、提交新页和删表清除相关旧项。磁盘及 WAL 字节格式、提交同步顺序不变。二次宽表逻辑读取降至请求字节量，COMMIT 读取也大幅下降；这些是逻辑读取计数，不是官方 B_read。新 SHA 仍须用 Linux 严格用例实测耗时，不预报成绩。这些解释来自助手，不代表学生已掌握。 后续 Linux 初版已通过宽表与短文本，但长 Unicode COMMIT 仍超时。为同一修正链增加零字无载荷编码、重复字对压缩及字符串容量收紧，预算保持原值。新原生 270000 行用例读取 444668376 字节，COMMIT 进程峰值 110604288 字节，强杀后抽查四个主键通过；未冒称逐行全量校验。该原生配置使用 1 MiB 页缓存和事务内存，不能直接与 Linux 默认配置换算耗时，新 SHA 仍须严格 CI。",
+      "capacity_followup_source": {
+        "source_state": "working tree after f32b4d1b, before commit",
+        "files": [
+          "audit-zero-codec-20261112/summary.json",
+          "compact-image-270k-zero-codec-20261112.json",
+          "wal-zero-codec-native-20261112.json",
+          "ci-43091243864/early-storage-artifacts/docker-transaction-spill-long-text.json"
+        ],
+        "source_sha256": {
+          "src/page_image_codec.h": "fccc010f8e7fbe0e83c01ed1bd52e843b9d6a6b2dba7f9544d98f6d883726466",
+          "src/compact_cache.h": "c1f08c6f1abb96fe5efe40b020933f6a8a21d99e4a5deab35518aad48f7dbeb4"
+        }
+      }
     }
   ],
   "evidence_index": [
@@ -940,7 +953,7 @@
     "origin": "assistant",
     "implementation": "目前支持 HNSW 与紧凑精确缓存。默认 10k×128d 选择精确缓存；不能据算法名称推断实际加速。 后续加入无过滤且只投影、排序主键的可见定位路径，其他字段、过滤和排序仍读实际行。 本轮反例发现图内 float 平方距离在下溢区域使建索引超时，现复用 double 内核；默认 10k 紧凑精确路径保持相同计算方式。 后续实测加入 TopK ULP 上界缓存及图邻居预取；原生配对验证结果一致，仍需同提交的容器 T/B/M 验证。",
     "transaction": "行数据及独立更新值超过预算可溢写；事务元数据及巨大单条 SQL/结果仍受内存约束。",
-    "verification": "已保留一次全绿 CI 及相同源码另一次出现三类 60 秒超时的负结果；没有 OOM。针对重复读取加入两个有界压缩缓存后，39 项原生检查、20000 次随机临时文件读取及偏移回退、旧 WAL 双向恢复通过。Linux 耗时必须以新 SHA 对应的真实结果为准，没有正式准入或最终排名。",
+    "verification": "缓存修复链保留所有负结果：曾三类 60 秒超时，后续只剩长 Unicode COMMIT 超时，均无 OOM。零字编码与缓存容量收紧后，39 项原生审计、20000 次随机读取及偏移回退、270000 行承载与强杀抽查、旧 WAL 双向恢复通过。Linux 耗时和正式准入必须以新 SHA 的实际结果为准，没有预报排名。",
     "student_interpretation": "学生在 Linux 配对实验前选择“短文本大事务 COMMIT”；追问理由时原话为“不确定”。未提供技术解释或结果复盘。先前 K=100 的建议实验仍未执行。"
   },
   "limitations": [

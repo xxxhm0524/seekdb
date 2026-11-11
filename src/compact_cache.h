@@ -45,6 +45,7 @@ class CompactBlockCache {
     try {
       auto packed = pack_page_image(input);
       if (packed.empty()) return;
+      packed.shrink_to_fit();
       // Retain admitted blocks when full: replacing a compressed prefix on
       // every raw-cache eviction would thrash during a sequential second pass.
       // Charge string capacity, map nodes, buckets and allocator overhead.
