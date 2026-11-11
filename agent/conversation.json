@@ -2,7 +2,7 @@
   "schema": "mvd-conversation-v2",
   "rules_version": "agent-learning-evidence-v3-unbounded",
   "synthetic": false,
-  "generated_at_utc": "2026-11-11T16:23:16.473004+00:00",
+  "generated_at_utc": "2026-11-11T18:34:17.142356+00:00",
   "material_scope": {
     "purpose": "选录可核验的真实可见对话、必要上下文和实际结果；没有替学生编写预测、解释或复盘。",
     "sources": "本线程用户消息 ID 与助手可见回复、用户提供的失败截图；逐项标明源码版本或快照的本地/CI 日志，包含开发迭代历史。 另保留远端提交 e3770170 中的助手实验报告，逐项标明本线程尚未独立核验。",
@@ -18,7 +18,8 @@
     "functional_gate": "正式 29 个用例全部通过才具备计分资格，公开 20 个用例不足以替代。",
     "ranking": "性能、学习材料分别排名，各最高 40；并无保证满分的固定原始指标阈值。",
     "weights": "写入与查询总权重为 1:2；单项耗时/I/O/内存权重为 60%/20%/20%。",
-    "evidence": "只陈列真实来源与实际结果，不提交自评分，不把通用推进指令拆成多个得分实例。"
+    "evidence": "只陈列真实来源与实际结果，不提交自评分，不把通用推进指令拆成多个得分实例。",
+    "latest_mode_clarification": "官方公开题面 content_updated_at=2026-11-11T10:25:23Z，将查询模式说明改为“查询默认为 exact 模式。”；公开协议包未变。原始查询及召回规则保留，正式隐藏数据范围仍未知。"
   },
   "conversations": [
     {
@@ -729,6 +730,63 @@
       },
       "output": "{\n  \"previous_linux_pair_run\": 43045997148,\n  \"previous_candidate_sha\": \"1ad448f7af928df26f0fd10e5a2336ae82c80144\",\n  \"previous_pair_results\": [\n    {\n      \"scenario\": \"transaction\",\n      \"version\": \"reference\",\n      \"passed\": true,\n      \"error\": null,\n      \"oom_killed\": null,\n      \"timed_stages\": [\n        {\n          \"stage\": \"uncommitted load\",\n          \"seconds\": 20.088\n        },\n        {\n          \"stage\": \"large commit\",\n          \"seconds\": 56.126\n        },\n        {\n          \"stage\": \"short-text group deleted\",\n          \"seconds\": 38.563\n        }\n      ]\n    },\n    {\n      \"scenario\": \"transaction\",\n      \"version\": \"candidate\",\n      \"passed\": false,\n      \"error\": \"JSON response timeout\",\n      \"oom_killed\": false,\n      \"timed_stages\": [\n        {\n          \"stage\": \"uncommitted load\",\n          \"seconds\": 12.71\n        }\n      ]\n    },\n    {\n      \"scenario\": \"unicode\",\n      \"version\": \"candidate\",\n      \"passed\": false,\n      \"error\": \"JSON response timeout\",\n      \"oom_killed\": false,\n      \"timed_stages\": [\n        {\n          \"stage\": \"uncommitted load\",\n          \"seconds\": 71.241\n        }\n      ]\n    },\n    {\n      \"scenario\": \"unicode\",\n      \"version\": \"reference\",\n      \"passed\": false,\n      \"error\": \"JSON response timeout\",\n      \"oom_killed\": false,\n      \"timed_stages\": [\n        {\n          \"stage\": \"uncommitted load\",\n          \"seconds\": 72.725\n        },\n        {\n          \"stage\": \"large commit\",\n          \"seconds\": 56.807\n        }\n      ]\n    },\n    {\n      \"scenario\": \"update\",\n      \"version\": \"reference\",\n      \"passed\": false,\n      \"error\": \"JSON response timeout\",\n      \"oom_killed\": false,\n      \"timed_stages\": [\n        {\n          \"stage\": \"loaded\",\n          \"seconds\": 35.029\n        }\n      ]\n    },\n    {\n      \"scenario\": \"update\",\n      \"version\": \"candidate\",\n      \"passed\": false,\n      \"error\": \"JSON response timeout\",\n      \"oom_killed\": false,\n      \"timed_stages\": [\n        {\n          \"stage\": \"loaded\",\n          \"seconds\": 127.265\n        }\n      ]\n    }\n  ],\n  \"native_wal_read_model\": {\n    \"before_read_operations\": 147,\n    \"after_read_operations\": 4,\n    \"sequential_pages\": 147,\n    \"truncate_append_reopen\": true,\n    \"uncommitted_and_partial_tail\": true\n  },\n  \"new_native_audit\": {\n    \"checks\": 34,\n    \"passed\": 34\n  },\n  \"new_linux_resource_validation_pending\": true\n}",
       "interpretation_by_assistant": "旧候选的三个大数据场景都超时，没有 OOM；减少分配字节并未保证更快。宽表加载从参考版 35.029 秒退化到 127.265 秒。改为合并短零段的大块写入，保留大零段和 WAL 零尾优化，并加入最多 4 MiB 的顺序读缓存。原生顺序读取147页从147次实际读操作减少为4次，34项原生审计及旧版双向恢复通过。修复后的 Linux 耗时仍待同机对照，未替学生解释或修正预测。"
+    },
+    {
+      "id": "bulk-wal-linux-completed-validation",
+      "role": "tool",
+      "execution_status": "executed",
+      "designed_and_executed_by": "assistant_and_tools",
+      "title": "批量 WAL 修复后完整 Linux CI 与临界耗时",
+      "command": "GitHub Actions minivectordb-ci, run 43059429359",
+      "source": {
+        "kind": "completed_exact_sha_ci",
+        "sha": "0ba0401c0eb1cda6f8cc7721638921230dc3ba6d",
+        "run_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43059429359",
+        "manifest": "ci-43059429359/artifacts/download-manifest.json"
+      },
+      "output": "{\"ci_conclusion\":\"success\",\"large_fixture_results\":{\"short\":{\"passed\":true,\"timed_stages\":[{\"stage\":\"uncommitted load\",\"seconds\":11.69},{\"stage\":\"large commit\",\"seconds\":41.001},{\"stage\":\"short-text group deleted\",\"seconds\":33.827}]},\"unicode\":{\"passed\":true,\"timed_stages\":[{\"stage\":\"uncommitted load\",\"seconds\":73.323},{\"stage\":\"large commit\",\"seconds\":59.689},{\"stage\":\"first long-text group deleted\",\"seconds\":47.211},{\"stage\":\"second long-text group deleted\",\"seconds\":34.638}]},\"wide\":{\"passed\":true,\"timed_stages\":[{\"stage\":\"loaded\",\"seconds\":38.712},{\"stage\":\"whole-table update\",\"seconds\":43.085},{\"stage\":\"whole-table delete\",\"seconds\":36.688}]}},\"request_timeout_seconds\":60,\"memory_limit_bytes\":268435456}",
+      "interpretation_by_assistant": "该 SHA 的两项 CI 作业成功，三类大数据场景均通过。但主作业 Unicode COMMIT 为 59.689 秒，距 60 秒仅 0.311 秒；另一个 runner 的配对成绩更快也不能消除此风险。uncommitted load 为多条请求的总时间。此结果只属于父提交，不代表后续源码已经通过 Linux 验证。"
+    },
+    {
+      "id": "native-deferred-projection-and-compact-commit",
+      "role": "tool",
+      "execution_status": "executed",
+      "designed_and_executed_by": "assistant_and_tools",
+      "title": "延迟投影与有界提交镜像缓存的原生回归",
+      "command": "python tests/audit_suite.py --large-resource --output protocol-results/audit-release-20261112; python tests/wal_compatibility.py --reference-binary <legacy> --candidate-binary <working tree> --output protocol-results/wal-release-native-20261112.json",
+      "source": {
+        "kind": "native_windows_jsonl_and_models",
+        "source_state": "working tree before release commit",
+        "engine_sha256": "6b1c4baf0f0cba343cb66644d36286c1c15ddcf90eacef5c3cddec6457121393",
+        "main_sha256": "61da38db44301bae95d3ecdb7ff176fe384a8985dc0610a615b908a0922bbaac",
+        "codec_sha256": "c74ee988692a0250f2f987fd1528f621cc4f5ccbfc834aeb72a8ada0588def1f",
+        "files": [
+          "audit-release-20261112/summary.json",
+          "audit-release-20261112/projection-memory.log",
+          "audit-release-20261112/compact-image-io.log",
+          "wal-release-native-20261112.json"
+        ]
+      },
+      "output": "{\"checks\":37,\"all_exit_codes_zero\":true,\"projection\":{\"passed\":true,\"rows\":12000,\"effective_text_bytes\":98304000,\"baseline_bytes\":10784768,\"peak_bytes\":15282176,\"max_mb\":48,\"scalar_and_distance_order\":true,\"pending_insert_update_and_rollback\":true},\"commit_image_io\":{\"passed\":true,\"rows\":12000,\"commit_read_bytes\":100836679,\"spool_bytes\":99072000,\"peak_bytes\":17403904,\"acknowledged_data_recovered\":true},\"wal_compatibility\":{\"reference\":{\"logical_bytes\":12332240,\"page_records\":188,\"commits\":100,\"record_sha256\":\"1b75de42e6693424641af9e538a67e445a4650668fd85c4cbe4ad56b68cb17e2\",\"allocated_bytes\":null,\"recovered_rows\":10000},\"candidate\":{\"logical_bytes\":12332240,\"page_records\":188,\"commits\":100,\"record_sha256\":\"1b75de42e6693424641af9e538a67e445a4650668fd85c4cbe4ad56b68cb17e2\",\"allocated_bytes\":null,\"recovered_rows\":10000},\"wide_rows\":{\"reference\":{\"logical_bytes\":8591236,\"page_records\":131,\"commits\":8,\"record_sha256\":\"ea3de92f86e2c4e380c944abb73d197d9c7abd4ca582fd890dc941b99ccdcee1\",\"allocated_bytes\":null,\"recovered_rows\":349},\"candidate\":{\"logical_bytes\":8591236,\"page_records\":131,\"commits\":8,\"record_sha256\":\"ee64a3b6b200c54994b4f5f45fecee54548e7ff5bb30e152a38f33f3165d2f72\",\"allocated_bytes\":null,\"recovered_rows\":349}},\"passed\":true,\"byte_equivalent_insert_records\":true,\"wide_update_image_bytes_identical\":false,\"wide_bidirectional_visible_values_verified\":true,\"shortened_tail_recovery\":true}}",
+      "interpretation_by_assistant": "宽输出仅在有序 LIMIT/OFFSET 切片后解码；排序键和行定位仍占内存。16 MiB 内存缓存仅保存能压到 4 KiB 的无损页，恢复后校验原 WAL CRC，失败读原 WAL；持久化编码及 fsync 顺序不变。12000 行用例的 COMMIT 逻辑读取约 100.8 MB，已确认数据强杀恢复；逻辑读取量不等于官方物理 B_read，也不能预报 Linux 2 GiB 场景的耗时。"
+    },
+    {
+      "id": "jsonl-default-mode-after-ann",
+      "role": "tool",
+      "execution_status": "executed",
+      "designed_and_executed_by": "assistant_and_tools",
+      "title": "JSONL 模式不得从上一请求继承",
+      "command": "python tests/paired_query_compare.py --reference-binary <0ba0401c> --candidate-binary <candidate> --rows 50000 --dim 128 --queries 300 --rounds 1 --seed 20261112 --check-default-mode --output <report>",
+      "source": {
+        "kind": "native_windows_protocol_regression",
+        "files": [
+          "search-mode-before-20261112.json",
+          "search-mode-after-20261112.json"
+        ],
+        "main_sha256": "61da38db44301bae95d3ecdb7ff176fe384a8985dc0610a615b908a0922bbaac"
+      },
+      "output": "{\"rows\":50000,\"dim\":128,\"seed\":20261112,\"before\":{\"probe\":153,\"exact_ids\":[18085,25229,4400,11161,17180,44357,13306,32479,29994,45873],\"ann_ids\":[18085,25229,4400,11161,44357,13306,32479,29994,45873,3553],\"omitted_ids\":[18085,25229,4400,11161,44357,13306,32479,29994,45873,3553],\"observed_ann_difference\":true},\"after\":{\"probe\":153,\"exact_ids\":[18085,25229,4400,11161,17180,44357,13306,32479,29994,45873],\"ann_ids\":[18085,25229,4400,11161,44357,13306,32479,29994,45873,3553],\"omitted_ids\":[18085,25229,4400,11161,17180,44357,13306,32479,29994,45873],\"observed_ann_difference\":true,\"passed\":true},\"paired_results_identical\":true}",
+      "interpretation_by_assistant": "探针 153 上 ANN 与 exact 的第 5 个及后续 ID 不同。修复前省略 search_mode 会继承 ANN；修复后省略模式与显式 exact 一致。每条 execute 重新应用入口默认配置；标准入口默认 exact。该可复现缺陷不等于已证实旧平台失败原因，旧失败 SQL 仍未知。"
     }
   ],
   "evidence_index": [
@@ -851,7 +909,7 @@
     "origin": "assistant",
     "implementation": "目前支持 HNSW 与紧凑精确缓存。默认 10k×128d 选择精确缓存；不能据算法名称推断实际加速。 后续加入无过滤且只投影、排序主键的可见定位路径，其他字段、过滤和排序仍读实际行。 本轮反例发现图内 float 平方距离在下溢区域使建索引超时，现复用 double 内核；默认 10k 紧凑精确路径保持相同计算方式。 后续实测加入 TopK ULP 上界缓存及图邻居预取；原生配对验证结果一致，仍需同提交的容器 T/B/M 验证。",
     "transaction": "行数据及独立更新值超过预算可溢写；事务元数据及巨大单条 SQL/结果仍受内存约束。",
-    "verification": "现有原生审计与独立数值模型均通过；每次新优化仍须对应 SHA 的 CI。内核与复用会话计时不当成正式评分，未取得正式准入或最终排名。",
+    "verification": "父提交 0ba0401c 的完整 Linux Docker、ASAN/UBSAN、恢复与三类大数据 CI 已通过；主作业 Unicode COMMIT 59.689 秒暴露余量不足。后续延迟投影、16 MiB 有界镜像缓存和逐请求默认模式修复通过 37 项原生检查及旧版双向恢复；其新 SHA 的 Linux 验证仍待执行。没有正式新成绩或最终排名。",
     "student_interpretation": "学生在 Linux 配对实验前选择“短文本大事务 COMMIT”；追问理由时原话为“不确定”。未提供技术解释或结果复盘。先前 K=100 的建议实验仍未执行。"
   },
   "limitations": [

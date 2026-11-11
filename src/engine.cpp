@@ -1,5 +1,6 @@
 #include "engine.h"
 #include "ann.h"
+#include "page_image_codec.h"
 
 #include <algorithm>
 #include <array>
@@ -9,6 +10,7 @@
 #include <cstdio>
 #include <cstring>
 #include <limits>
+#include <new>
 #include <queue>
 #include <sstream>
 #include <thread>
@@ -24,6 +26,8 @@ namespace mvd {
 namespace {
 double squared_l2_checked(const float *a, const float *b, int dim);
 constexpr size_t kVectorIndexBudget = 128 * 1024 * 1024;
+constexpr size_t kCompactCommitBudget = 16 * 1024 * 1024;
+static_assert(sizeof(Page) == kCompactPageBytes);
 uint32_t align_up(uint32_t value, uint32_t alignment) {
   return (value + alignment - 1) / alignment * alignment;
 }
@@ -807,7 +811,7 @@ std::shared_ptr<Page> Wal::read_page_image(uint64_t offset) {
 }
 
 bool Wal::append_page(uint64_t txid, uint32_t table_id, uint32_t page_no,
-                      const Page &page) {
+                      const Page &page, uint32_t *payload_crc) {
   if (!file_.valid()) return false;
   uint32_t metadata[] = {table_id, page_no, kPageSize};
   WalRecordHeader h{};
@@ -855,6 +859,7 @@ bool Wal::append_page(uint64_t txid, uint32_t table_id, uint32_t page_no,
     return false;
   }
   end_offset_ += record_bytes;
+  if (payload_crc) *payload_crc = h.crc;
   return true;
 }
 
@@ -1095,12 +1100,14 @@ void Engine::commit_transaction() {
   uint64_t txid = wal_.allocate_txid();
   uint64_t sync_offset = static_cast<uint64_t>(wal_.size());
   std::vector<PageImage> all_images;
+  std::vector<uint8_t> compact_images;
+  bool compact_cache_enabled = true;
   for (auto &kv : tx_.tables) {
     auto it = tables_.find(kv.first);
     if (it == tables_.end()) continue;
     it->second->build_commit_images(kv.second, [&](PageImage img) {
       img.wal_offset = static_cast<uint64_t>(wal_.size());
-      if (!wal_.append_page(txid, img.table_id, img.page_no, *img.page))
+      if (!wal_.append_page(txid, img.table_id, img.page_no, *img.page, &img.wal_crc))
         throw_error("IO_ERROR", "failed to write WAL page image");
       uint64_t written = static_cast<uint64_t>(wal_.size());
       if (written - sync_offset >= kWalWriteWindow) {
@@ -1110,9 +1117,26 @@ void Engine::commit_transaction() {
         wal_.discard_clean_cache(sync_offset, written - sync_offset);
         sync_offset = written;
       }
-      // Small batches keep their fast in-memory path. Large commits retain
-      // only WAL offsets after the first MiB, instead of pinning every page.
-      if (all_images.size() >= 16) img.page.reset();
+      // Keep the first MiB raw. Highly compressible later images may share
+      // a bounded arena; dense pages and exhausted/failed cache allocations
+      // retain the authoritative WAL-offset path.
+      if (all_images.size() >= 16) {
+        if (compact_cache_enabled && compact_images.size()+kCompactPageMaxBytes <= kCompactCommitBudget) {
+          try {
+            auto packed = pack_page_image(img.page.get());
+            if (!packed.empty()) {
+              if (!compact_images.capacity()) compact_images.reserve(kCompactCommitBudget);
+              uint32_t begin = static_cast<uint32_t>(compact_images.size());
+              compact_images.insert(compact_images.end(), packed.begin(), packed.end());
+              img.compact_offset = begin;
+              img.compact_size = static_cast<uint32_t>(packed.size());
+            }
+          } catch (const std::bad_alloc &) {
+            compact_cache_enabled = false;
+          }
+        }
+        img.page.reset();
+      }
       all_images.push_back(std::move(img));
     });
   }
@@ -1131,6 +1155,17 @@ void Engine::commit_transaction() {
   for (auto &img : all_images) {
     auto it = tables_.find(img.table_id);
     if (it != tables_.end()) {
+      if (!img.page && img.compact_size && img.compact_offset <= compact_images.size() &&
+          img.compact_size <= compact_images.size()-img.compact_offset) {
+        auto restored = make_page();
+        std::string_view packed(reinterpret_cast<const char *>(compact_images.data()+img.compact_offset),
+                                img.compact_size);
+        if (unpack_page_image(packed, restored.get())) {
+          uint32_t metadata[] = {img.table_id, img.page_no, kPageSize};
+          uint32_t checksum = crc32_update(crc32(metadata, sizeof(metadata)), restored.get(), kPageSize);
+          if (checksum == img.wal_crc) img.page = std::move(restored);
+        }
+      }
       if (!img.page) {
         img.page = wal_.read_page_image(img.wal_offset);
         uint64_t consumed = img.wal_offset + sizeof(WalRecordHeader) + 12 + kPageSize;
@@ -1144,6 +1179,7 @@ void Engine::commit_transaction() {
     }
   }
   wal_.discard_clean_cache(replay_offset, committed_end - replay_offset);
+  std::vector<uint8_t>().swap(compact_images);
   for (auto &kv : tx_.tables) {
     auto it = tables_.find(kv.first);
     if (it == tables_.end()) continue;
@@ -2153,6 +2189,22 @@ Response Engine::exec_select(SelectStmt &stmt) {
   resp.is_query = true;
   resp.columns = out_columns;
 
+  // All expressions and sort keys are validated above. The base identities
+  // plus every overlay entry conservatively bound visible rows, even when
+  // inserts/deletes are pending, so an excessive OFFSET needs no heap scan.
+  if (stmt.has_limit && stmt.limit >= 0 && stmt.offset >= 0) {
+    uint64_t maximum_rows = static_cast<uint64_t>(table.row_count());
+    if (tx_.active) {
+      auto changes = tx_.tables.find(table.id());
+      if (changes != tx_.tables.end()) {
+        uint64_t extra = static_cast<uint64_t>(changes->second.rows.size());
+        maximum_rows = extra > std::numeric_limits<uint64_t>::max() - maximum_rows
+            ? std::numeric_limits<uint64_t>::max() : maximum_rows + extra;
+      }
+    }
+    if (static_cast<uint64_t>(stmt.offset) >= maximum_rows) return resp;
+  }
+
   auto project_row = [&](const uint8_t *row) -> std::vector<OutValue> {
     std::vector<OutValue> vals;
     vals.reserve(plans.size());
@@ -2177,21 +2229,22 @@ Response Engine::exec_select(SelectStmt &stmt) {
   };
 
 
-  if (topk_path && topk >= 0) {
-    if (topk == 0) return resp;
-    auto load_candidate = [&](const Candidate &candidate, std::vector<uint8_t> &row) {
-      if (tx_.active) {
-        const TxTable *overlay = find_tx_table(table.id());
-        if (overlay) {
-          auto found = overlay->rows.find(candidate.pk);
-          if (found != overlay->rows.end() && !found->second.deleted) {
-            table.materialize_state(found->second, nullptr, row);
-            return true;
-          }
+  auto load_candidate = [&](const Candidate &candidate, std::vector<uint8_t> &row) {
+    if (tx_.active) {
+      const TxTable *overlay = find_tx_table(table.id());
+      if (overlay) {
+        auto found = overlay->rows.find(candidate.pk);
+        if (found != overlay->rows.end() && !found->second.deleted) {
+          table.materialize_state(found->second, nullptr, row);
+          return true;
         }
       }
-      return table.read_row(candidate.pos, row);
-    };
+    }
+    return table.read_row(candidate.pos, row);
+  };
+
+  if (topk_path && topk >= 0) {
+    if (topk == 0) return resp;
     auto refine = [&](const Candidate &candidate) {
       uint32_t cached=0;
       if (!tx_.active && table.vector_search_ && table.vector_search_->find(candidate.pk,cached))
@@ -2402,7 +2455,9 @@ Response Engine::exec_select(SelectStmt &stmt) {
   std::vector<ResultRow> results;
   auto consume = [&](const VisibleRow &vr) {
     ResultRow rr;
-    rr.vals = project_row(vr.row);
+    // Ordered LIMIT/OFFSET needs keys and locations, not every wide output
+    // value. Project the selected visible rows only after sorting/slicing.
+    if (!bounded) rr.vals = project_row(vr.row);
     rr.pk = vr.pk;
     rr.pos = vr.pos;
     for (const auto &order : orders) {
@@ -2412,18 +2467,12 @@ Response Engine::exec_select(SelectStmt &stmt) {
         const float *vector = reinterpret_cast<const float *>(vr.row + schema.col_offsets[ci]);
         key.kind = OutValue::Kind::DOUBLE;
         key.d = squared_l2_precise(vector, order.query.data(), schema.columns[ci].dim);
-      } else if (order.output >= 0) {
-        const OutValue &ov = rr.vals[order.output];
-        key.kind = ov.kind;
-        key.i = ov.i;
-        key.d = ov.d;
-        key.s = ov.s;
       } else {
         OutValue ov = out_value_from_row(table, vr.row, order.column);
         key.kind = ov.kind;
         key.i = ov.i;
         key.d = ov.d;
-        key.s = ov.s;
+        key.s = std::move(ov.s);
       }
       rr.keys.push_back(std::move(key));
     }
@@ -2474,8 +2523,28 @@ Response Engine::exec_select(SelectStmt &stmt) {
   if (start < 0) start = 0;
   if (end > static_cast<int64_t>(results.size()))
     end = static_cast<int64_t>(results.size());
-  for (int64_t i = start; i < end; ++i)
-    resp.rows.push_back(std::move(results[static_cast<size_t>(i)].vals));
+  std::vector<uint8_t> selected_row;
+  if (bounded && identity_only) {
+    selected_row.assign(schema.row_size, 0);
+    table.set_row_valid(selected_row.data(), true);
+  }
+  for (int64_t i = start; i < end; ++i) {
+    auto &result = results[static_cast<size_t>(i)];
+    if (!bounded) {
+      resp.rows.push_back(std::move(result.vals));
+      continue;
+    }
+    if (identity_only) {
+      table.set_row_id(selected_row.data(), result.pk);
+      std::memcpy(selected_row.data()+schema.col_offsets[schema.pk_index], &result.pk, sizeof(result.pk));
+    } else {
+      Candidate location{};
+      location.pk = result.pk; location.pos = result.pos;
+      if (!load_candidate(location, selected_row))
+        throw_error("CORRUPTION", "ordered candidate row missing");
+    }
+    resp.rows.push_back(project_row(selected_row.data()));
+  }
   return resp;
 }
 

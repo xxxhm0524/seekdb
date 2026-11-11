@@ -509,9 +509,10 @@ int main(int argc, char **argv) {
         emit_error(req.id_raw, "unsupported_op", "unsupported operation");
         continue;
       }
-      if (!req.search_mode.empty())
-        engine.set_ann_mode(req.search_mode == "ann" ||
-                            req.search_mode == "approximate");
+      // Each execute starts from its configured default (exact for the
+      // standard entrypoint), rather than inheriting a previous request.
+      engine.set_ann_mode(req.search_mode.empty() ? opt.ann_default :
+                          req.search_mode == "ann" || req.search_mode == "approximate");
 
       mvd::Response resp = engine.execute(req.sql);
       emit_json_response(resp, req.id_raw);

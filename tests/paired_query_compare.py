@@ -32,6 +32,7 @@ def main():
     parser.add_argument('--queries', type=int, default=300)
     parser.add_argument('--rounds', type=int, default=3)
     parser.add_argument('--seed', type=int, default=20261112)
+    parser.add_argument('--check-default-mode', action='store_true')
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     assert args.rows >= 10 and args.queries >= 2 and args.queries % 2 == 0 and args.rounds >= 1
@@ -116,6 +117,27 @@ def main():
             report['rounds'].append(round_result); save(); print(json.dumps(round_result), flush=True)
         report['medians'] = {version: {key: statistics.median(r[version][key] for r in report['rounds'])
             for key in ('seconds', 'filtered_seconds', 'unfiltered_seconds')} for version in sessions}
+        if args.check_default_mode:
+            # Prefer an observed ANN/exact difference, so the protocol probe
+            # can actually catch a mode leaking from the previous request.
+            probe = next((i for i, rows in enumerate(responses['candidate'])
+                          if [row[0] for row in rows] != truths[i][0]), 0)
+            session = sessions['candidate']
+            exact = session.request(sql_queries[probe], mode='exact')
+            assert exact.get('ok') is True and [r[0] for r in exact['rows']] == truths[probe][0], exact
+            ann = sql(session, sql_queries[probe])
+            session.sequence += 1
+            ident = session.sequence
+            session.send(dict(id=ident, op='execute', sql=sql_queries[probe]))
+            omitted = session.read(config['request_timeout'])
+            check = dict(probe=probe, exact_ids=[r[0] for r in exact['rows']],
+                         ann_ids=[r[0] for r in ann['rows']], omitted_ids=[r[0] for r in omitted.get('rows', [])],
+                         observed_ann_difference=ann['rows'] != exact['rows'])
+            report['mode_default_check'] = check
+            save()
+            assert omitted.get('id') == ident and omitted.get('ok') is True and omitted.get('rows') == exact['rows'], \
+                ('omitted mode after ANN did not default to exact', check)
+            check['passed'] = True
         report['passed'] = True
     except Exception as error:
         report['error'] = type(error).__name__+': '+str(error)

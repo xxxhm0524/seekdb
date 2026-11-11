@@ -36,12 +36,23 @@ def main():
         projection_reads = read_bytes(client.p.pid)-before
         assert projection_reads < 2*2**20, ('PK ordering read wide payloads', projection_reads, disk)
         sql('SELECT k FROM t ORDER BY k LIMIT 3 OFFSET 9223372036854775807', rows=[])
+        before = read_bytes(client.p.pid)
+        sql('SELECT k,payload FROM t ORDER BY payload LIMIT 3 OFFSET 9223372036854775807', rows=[])
+        empty_offset_reads = read_bytes(client.p.pid)-before
+        assert empty_offset_reads < 2*2**20, ('provably empty OFFSET read wide payloads', empty_offset_reads, disk)
+        for invalid in (
+            'SELECT absent FROM t LIMIT 1 OFFSET 9223372036854775807',
+            'SELECT k FROM t ORDER BY absent LIMIT 1 OFFSET 9223372036854775807',
+            "SELECT L2_DISTANCE(v,'[NaN,0]') FROM t LIMIT 1 OFFSET 9223372036854775807",
+        ):
+            assert client.request(invalid).get('ok') is False, invalid
         sql('BEGIN')
         sql('DELETE FROM t WHERE k=%d' % maximum, affected_rows=1)
         sql("UPDATE t SET payload='changed' WHERE k=0", affected_rows=1)
         sql('INSERT INTO t VALUES '+','.join("('pending','[0,0]',%d)" % key
             for key in range(10000, 10200)), affected_rows=200)
         assert (Path(data)/'txn.tmp').exists()
+        sql('SELECT k,payload FROM t ORDER BY k LIMIT 1 OFFSET %d' % len(keys), rows=[[10001, 'pending']])
         before = read_bytes(client.p.pid)
         sql('SELECT k FROM t ORDER BY k DESC LIMIT 3', rows=[[10199], [10198], [10197]])
         transaction_reads = read_bytes(client.p.pid)-before
@@ -61,7 +72,7 @@ def main():
         sql('SELECT k FROM t ORDER BY payload DESC LIMIT 2', rows=[[1], [2]])
         sql("SELECT k FROM t WHERE payload='changed' ORDER BY k", rows=[[0]])
         print(json.dumps(dict(passed=True, heap_bytes=disk, projection_read_bytes=projection_reads,
-            transaction_projection_read_bytes=transaction_reads)))
+            transaction_projection_read_bytes=transaction_reads, empty_offset_read_bytes=empty_offset_reads)))
 
 
 if __name__ == '__main__':

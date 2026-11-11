@@ -6,7 +6,7 @@ SOURCES = src/main.cpp src/sql.cpp src/engine.cpp
 
 all: $(TARGET)
 
-$(TARGET): $(SOURCES) src/common.h src/sql.h src/engine.h src/ann.h src/tx_spool.h
+$(TARGET): $(SOURCES) src/common.h src/sql.h src/engine.h src/ann.h src/tx_spool.h src/page_image_codec.h
 	$(CXX) $(CXXFLAGS) $(SOURCES) -o $(TARGET) $(LDFLAGS)
 
 clean:

@@ -144,6 +144,9 @@ struct PageImage {
   uint32_t page_no = 0;
   std::shared_ptr<Page> page;
   uint64_t wal_offset = 0;
+  uint32_t wal_crc = 0;
+  uint32_t compact_offset = 0;
+  uint32_t compact_size = 0;
 };
 
 class Table;
@@ -290,7 +293,7 @@ class Wal {
   bool open(const std::string &path);
   void close();
   bool append_page(uint64_t txid, uint32_t table_id, uint32_t page_no,
-                   const Page &page);
+                   const Page &page, uint32_t *payload_crc = nullptr);
   bool append_commit(uint64_t txid);
   bool sync();
   void discard_clean_cache(uint64_t offset, uint64_t length) {

@@ -110,8 +110,16 @@ jobs:
       - name: WAL sequential read cache and offset reuse
         run: python3 tests/wal_read_model.py
 
+      - name: Lossless page-image codec and bounded commit reads
+        run: |
+          python3 tests/page_image_codec_model.py
+          python3 tests/compact_image_io.py
+
       - name: Primary-key projection without wide-row reads
         run: python3 tests/primary_key_projection.py
+
+      - name: Bounded wide projection with a large OFFSET
+        run: python3 tests/projection_memory.py
 
       - name: Bounded random spool reads
         run: python3 tests/spool_read_boundaries.py
@@ -171,9 +179,12 @@ jobs:
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/spool_read_boundaries.py
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/filter_cache_model.py
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/primary_key_projection.py
+          MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/projection_memory.py --rows 400 --max-mb 512
           python3 tests/heap_rejection_model.py --sanitize undefined
           python3 tests/sparse_io_model.py --sanitize undefined
           python3 tests/wal_read_model.py --sanitize undefined
+          python3 tests/page_image_codec_model.py --sanitize undefined
+          MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/compact_image_io.py --rows 1000
 
       - name: Docker build
         id: docker_build
@@ -226,10 +237,13 @@ jobs:
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/spool_read_boundaries.py
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/filter_cache_model.py
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/primary_key_projection.py
+          MVD_BIN="$PWD/minivectordb-asan" python3 tests/projection_memory.py --rows 400 --max-mb 512
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/vector_precision_model.py --seeds 7 --indexed
           python3 tests/heap_rejection_model.py --sanitize address
           python3 tests/sparse_io_model.py --sanitize address
           python3 tests/wal_read_model.py --sanitize address
+          python3 tests/page_image_codec_model.py --sanitize address
+          MVD_BIN="$PWD/minivectordb-asan" python3 tests/compact_image_io.py --rows 1000
 
       - name: Docker handshake
         run: |
@@ -338,7 +352,7 @@ jobs:
         run: |
           python3 tests/paired_query_compare.py \
             --reference-image minivectordb:reference-1996a1b4 --candidate-image minivectordb:ci \
-            --output protocol-results/paired-queries-docker-50k.json
+            --check-default-mode --output protocol-results/paired-queries-docker-50k.json
 
       - name: Upload protocol reports
         if: always()
