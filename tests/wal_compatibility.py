@@ -129,6 +129,42 @@ def verify_shortened_tail(config, output, candidate):
         session.close()
 
 
+def recover_wide(config, output, writer, reader):
+    session = Session(config, output, **writer)
+    count = 511
+    dense = '\U0001f600' * 2048
+    expected = {i: dense if i % 3 == 0 else 'x' for i in range(1, count+1)}
+    try:
+        session.start()
+        execute(session, 'CREATE TABLE wide(id BIGINT PRIMARY KEY,s VARCHAR(2048),v VECTOR(2))')
+        for start in range(1, count+1, 100):
+            stop = min(start+100, count+1)
+            execute(session, 'INSERT INTO wide VALUES '+','.join("(%d,'%s','[%d,0]')"
+                % (i, expected[i], i % 17) for i in range(start, stop)), affected_rows=stop-start)
+        execute(session, "UPDATE wide SET s='short' WHERE id<=200", affected_rows=200)
+        for i in range(1, 201):
+            expected[i] = 'short'
+        execute(session, 'DELETE FROM wide WHERE id>=350', affected_rows=count-349)
+        expected = {i: value for i, value in expected.items() if i < 350}
+        raw, allocation = read_wal(session)
+        report = describe_wal(raw)
+        assert report['page_records'] > 100 and report['commits'] == 8
+        report['allocated_bytes'] = allocation
+        session.crash()
+        session.image, session.command = reader.get('image'), reader.get('command')
+        session.start()
+        assert not read_wal(session)[0]
+        for start in range(1, count+1, 20):
+            rows = execute(session, 'SELECT id,s,v FROM wide WHERE id>=%d AND id<%d ORDER BY id'
+                           % (start, start+20))['rows']
+            assert rows == [[i, expected[i], [i % 17, 0]] for i in range(start, min(start+20, count+1)) if i in expected]
+        session.shutdown()
+        report['recovered_rows'] = len(expected)
+        return report
+    finally:
+        session.close()
+
+
 def main():
     parser = argparse.ArgumentParser()
     for version in ("reference", "candidate"):
@@ -155,6 +191,14 @@ def main():
     assert report["reference"]["logical_bytes"] == report["candidate"]["logical_bytes"], report
     if args.reference_image:
         assert report["candidate"]["allocated_bytes"] < report["reference"]["allocated_bytes"], report
+    wide = {}
+    for writer, reader in (("reference", "candidate"), ("candidate", "reference")):
+        wide[writer] = recover_wide(config, args.output.with_suffix('.wide.'+writer+'.stderr.log'),
+                                    targets[writer], targets[reader])
+    assert wide['reference']['record_sha256'] == wide['candidate']['record_sha256'], wide
+    if args.reference_image:
+        assert wide['candidate']['allocated_bytes'] < wide['reference']['allocated_bytes'], wide
+    report['wide_rows'] = wide
     verify_shortened_tail(config, args.output.with_suffix(".tail.stderr.log"), targets["candidate"])
     report.update(passed=True, byte_equivalent_records=True, shortened_tail_recovery=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")

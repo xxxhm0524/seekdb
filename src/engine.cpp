@@ -509,9 +509,9 @@ void Table::write_scattered_pages(uint32_t first, const Page *const *pages, uint
     vectors[i].iov_len = kPageSize;
   }
   uint64_t offset = static_cast<uint64_t>(first)*kPageSize;
-  if (!file_.pwritev_full(vectors.data(), static_cast<int>(count), offset)) {
+  if (!file_.pwritev_sparse(vectors.data(), static_cast<int>(count), offset)) {
     if (!direct_io_ || !reopen_buffered() ||
-        !file_.pwritev_full(vectors.data(), static_cast<int>(count), offset))
+        !file_.pwritev_sparse(vectors.data(), static_cast<int>(count), offset))
       throw_error("IO_ERROR", "failed to write table page batch");
   }
   if (first+count > page_count_) page_count_ = first+count;
@@ -521,9 +521,15 @@ void Table::write_scattered_pages(uint32_t first, const Page *const *pages, uint
 void Table::write_pages_to_disk(uint32_t page_no, const void *pages, uint32_t count) {
   uint64_t offset = static_cast<uint64_t>(page_no) * kPageSize;
   size_t bytes = static_cast<size_t>(count) * kPageSize;
-  if (!file_.pwrite_full(pages, bytes, offset)) {
+#ifdef __linux__
+  iovec vector{const_cast<void *>(pages), bytes};
+  auto write = [&]() { return file_.pwritev_sparse(&vector, 1, offset); };
+#else
+  auto write = [&]() { return file_.pwrite_full(pages, bytes, offset); };
+#endif
+  if (!write()) {
     if (direct_io_ && reopen_buffered()) {
-      if (!file_.pwrite_full(pages, bytes, offset))
+      if (!write())
         throw_error("IO_ERROR", "failed to write table page");
     } else {
       throw_error("IO_ERROR", "failed to write table page");
@@ -783,24 +789,30 @@ bool Wal::append_page(uint64_t txid, uint32_t table_id, uint32_t page_no,
   if (end_offset_ > std::numeric_limits<int64_t>::max() - record_bytes) return false;
 
 #ifdef __linux__
-  // A later positioned write fills the gap with logical zeros. Only skip a
-  // suffix when it contains a whole aligned block of zero bytes.
-  static constexpr std::array<uint8_t, 4096> zeros{};
+  // WAL only appends into new extents. A later record/COMMIT materializes
+  // skipped zeros without changing the full page image or its checksum.
   const auto *bytes = reinterpret_cast<const uint8_t *>(&page);
-  const size_t tail = static_cast<uint64_t>(end_offset_ + record_bytes) % zeros.size();
-  const size_t aligned_end = kPageSize - tail;
-  size_t page_bytes = kPageSize;
-  if (std::memcmp(bytes + aligned_end, zeros.data(), tail) == 0) {
-    size_t prefix = aligned_end;
-    while (prefix >= zeros.size() &&
-           std::memcmp(bytes + prefix - zeros.size(), zeros.data(), zeros.size()) == 0)
-      prefix -= zeros.size();
-    if (prefix < aligned_end) page_bytes = prefix;
+  const uint64_t page_offset = end_offset_ + sizeof(h) + sizeof(metadata);
+  bool prefix_written = false;
+  bool written = write_nonzero_extents(&page, kPageSize, page_offset,
+      [&](size_t begin, size_t length) {
+        if (!prefix_written && begin == 0) {
+          iovec buffers[] = {{&h, sizeof(h)}, {metadata, sizeof(metadata)},
+              {const_cast<uint8_t *>(bytes), length}};
+          prefix_written = true;
+          return file_.pwritev_full(buffers, 3, end_offset_);
+        }
+        if (!prefix_written) {
+          iovec prefix[] = {{&h, sizeof(h)}, {metadata, sizeof(metadata)}};
+          if (!file_.pwritev_full(prefix, 2, end_offset_)) return false;
+          prefix_written = true;
+        }
+        return file_.pwrite_full(bytes + begin, length, page_offset + begin);
+      });
+  if (written && !prefix_written) {
+    iovec prefix[] = {{&h, sizeof(h)}, {metadata, sizeof(metadata)}};
+    written = file_.pwritev_full(prefix, 2, end_offset_);
   }
-  iovec buffers[] = {
-      {&h, sizeof(h)}, {metadata, sizeof(metadata)},
-      {const_cast<Page *>(&page), page_bytes}};
-  bool written = file_.pwritev_full(buffers, 3, end_offset_);
 #else
   std::array<uint8_t, sizeof(h) + sizeof(metadata)> prefix;
   std::memcpy(prefix.data(), &h, sizeof(h));

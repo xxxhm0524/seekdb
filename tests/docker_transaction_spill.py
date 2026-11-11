@@ -12,9 +12,10 @@ def main():
     parser.add_argument('--image',required=True)
     parser.add_argument('--rows',type=int,default=270000)
     parser.add_argument('--long-unicode',action='store_true')
+    parser.add_argument('--output',type=Path)
     args=parser.parse_args()
     suffix='-long-text' if args.long_unicode else ''
-    output=ROOT/('protocol-results/docker-transaction-spill'+suffix+'.json')
+    output=args.output or ROOT/('protocol-results/docker-transaction-spill'+suffix+'.json')
     output.parent.mkdir(parents=True,exist_ok=True)
     config=json.loads((ROOT/'protocol_check/config.json').read_text(encoding='utf-8'))
     config['memory']='256m'
@@ -36,7 +37,11 @@ def main():
         return int(session.docker('exec',session.name,'stat','-c','%s','/data/txn.tmp').stdout)
     def record(stage,**values):
         peak=int(session.docker('exec',session.name,'cat','/sys/fs/cgroup/memory.peak').stdout)
-        row=dict(stage=stage,memory_peak_bytes=peak,**values);stages.append(row)
+        raw=session.docker('exec',session.name,'cat','/proc/1/io').stdout.decode()
+        io={k:int(v) for k,v in (line.split(':',1) for line in raw.splitlines())}
+        raw=session.docker('exec',session.name,'cat','/sys/fs/cgroup/cpu.stat').stdout.decode()
+        cpu={k:int(v) for k,v in (line.split() for line in raw.splitlines())}
+        row=dict(stage=stage,memory_peak_bytes=peak,io=io,cpu=cpu,**values);stages.append(row)
         print(json.dumps(row),flush=True)
     def batch(start,stop):
         return ','.join("(%d,'%s','[%d,0]')"%(i,text_a if i%2 else text_b,i%10) for i in range(start,stop))
@@ -74,7 +79,9 @@ def main():
             sql("DELETE FROM t WHERE s='%s'"%text_b,affected_rows=args.rows//2)
             record('second long-text group deleted',seconds=round(time.perf_counter()-before,3))
         else:
+            before=time.perf_counter()
             sql("DELETE FROM t WHERE s='x'",affected_rows=args.rows-1)
+            record('short-text group deleted',seconds=round(time.perf_counter()-before,3))
         sql('SELECT id FROM t',rows=[[1]])
         # Abandoned uncommitted spill is discarded on startup.
         sql('BEGIN')

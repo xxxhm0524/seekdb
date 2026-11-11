@@ -6,6 +6,45 @@ on:
   workflow_dispatch:
 
 jobs:
+  storage-io-comparison:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build current and previous locked images
+        run: |
+          docker build -t minivectordb:storage-candidate .
+          mvd_storage_reference_dir=$(mktemp -d)
+          git fetch --depth=1 origin 641d2de54c7837459c43e279b74f7b3ec200434e
+          git archive 641d2de54c7837459c43e279b74f7b3ec200434e \
+            Makefile src/main.cpp src/sql.cpp src/sql.h src/engine.cpp \
+            src/engine.h src/common.h src/ann.h src/tx_spool.h | tar -x -C "$mvd_storage_reference_dir"
+          cp Dockerfile "$mvd_storage_reference_dir/Dockerfile"
+          docker build -t minivectordb:storage-reference "$mvd_storage_reference_dir"
+      - name: Check the allocation regression is red on the previous version
+        run: |
+          mkdir -p protocol-results
+          set +e
+          python3 tests/sparse_storage.py --image minivectordb:storage-reference --expect-sparse \
+            --output protocol-results/sparse-storage-reference.json \
+            > protocol-results/sparse-storage-reference.log 2>&1
+          mvd_reference_exit=$?
+          set -e
+          test "$mvd_reference_exit" -eq 1
+          grep -q 'allocated_bytes' protocol-results/sparse-storage-reference.log
+      - name: Paired large storage requests at unchanged deadlines
+        run: |
+          python3 tests/docker_storage_compare.py \
+            --reference-image minivectordb:storage-reference --candidate-image minivectordb:storage-candidate \
+            --output protocol-results/storage-pair
+      - name: Upload paired storage evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: storage-io-comparison
+          path: protocol-results
+          if-no-files-found: ignore
+
   protocol-and-tests:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -61,6 +100,11 @@ jobs:
 
       - name: Bounded wide-row mutation I/O
         run: python3 tests/mutation_io.py
+
+      - name: Sparse storage alignment overwrite and filesystem fallback
+        run: |
+          python3 tests/sparse_io_model.py
+          python3 tests/sparse_storage.py --expect-sparse --output protocol-results/sparse-storage-local.json
 
       - name: Primary-key projection without wide-row reads
         run: python3 tests/primary_key_projection.py
@@ -124,6 +168,7 @@ jobs:
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/filter_cache_model.py
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/primary_key_projection.py
           python3 tests/heap_rejection_model.py --sanitize undefined
+          python3 tests/sparse_io_model.py --sanitize undefined
 
       - name: Docker build
         id: docker_build
@@ -169,6 +214,7 @@ jobs:
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/primary_key_projection.py
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/vector_precision_model.py --seeds 7 --indexed
           python3 tests/heap_rejection_model.py --sanitize address
+          python3 tests/sparse_io_model.py --sanitize address
 
       - name: Docker handshake
         run: |
@@ -179,6 +225,11 @@ jobs:
         run: |
           python3 protocol_check/run.py --image minivectordb:ci \
             --output protocol-results/public-docker
+
+      - name: Docker sparse wide-row overwrite and recovery
+        run: |
+          python3 tests/sparse_storage.py --image minivectordb:ci --expect-sparse \
+            --output protocol-results/sparse-storage-docker.json
 
       - name: Docker graph index numeric deadline
         run: |

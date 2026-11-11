@@ -300,6 +300,34 @@ inline std::string format_float_g(float v) {
 // ---------------------------------------------------------------------------
 // File I/O
 // ---------------------------------------------------------------------------
+// Visit the byte ranges that must be written into a new file extent. Only
+// complete, file-aligned zero blocks may become holes; partial blocks stay in
+// a neighbouring write. A final zero suffix may wait for the next append.
+template <class Write>
+inline bool write_nonzero_extents(const void *data, size_t length,
+                                  uint64_t offset, const Write &write) {
+  static constexpr std::array<uint8_t, 4096> zeros{};
+  const auto *bytes = static_cast<const uint8_t *>(data);
+  size_t begin = 0;
+  size_t position = (zeros.size() - offset % zeros.size()) % zeros.size();
+  while (position + zeros.size() <= length) {
+    if (std::memcmp(bytes + position, zeros.data(), zeros.size()) != 0) {
+      position += zeros.size();
+      continue;
+    }
+    if (position > begin && !write(begin, position - begin)) return false;
+    do {
+      position += zeros.size();
+    } while (position + zeros.size() <= length &&
+             std::memcmp(bytes + position, zeros.data(), zeros.size()) == 0);
+    begin = position;
+    if (length - begin < zeros.size() &&
+        std::memcmp(bytes + begin, zeros.data(), length - begin) == 0)
+      return true;
+  }
+  return begin == length || write(begin, length - begin);
+}
+
 inline bool path_exists(const std::string &path) {
 #ifdef _WIN32
   struct _stat64 st;
@@ -326,6 +354,9 @@ class FileHandle {
   FileHandle &operator=(const FileHandle &) = delete;
   FileHandle(FileHandle &&other) noexcept
       : fd_(other.fd_), io_mutex_(std::move(other.io_mutex_)) {
+#ifdef __linux__
+    sparse_holes_ = other.sparse_holes_;
+#endif
     other.fd_ = -1;
   }
   FileHandle &operator=(FileHandle &&other) noexcept {
@@ -333,6 +364,9 @@ class FileHandle {
       close();
       fd_ = other.fd_;
       io_mutex_ = std::move(other.io_mutex_);
+#ifdef __linux__
+      sparse_holes_ = other.sparse_holes_;
+#endif
       other.fd_ = -1;
     }
     return *this;
@@ -447,6 +481,92 @@ class FileHandle {
     }
     return true;
   }
+
+  // Full aligned table pages, with the same logical bytes as pwritev_full.
+  // New zero blocks need no write. Existing bytes must be cleared before
+  // they can be skipped; hole punching is an optional filesystem facility.
+  bool pwritev_sparse(const iovec *vectors, int count, uint64_t offset) {
+    if (count <= 0) return count == 0;
+    constexpr size_t block = 4096;
+    uint64_t length = 0;
+    for (int i = 0; i < count; ++i) {
+      if (vectors[i].iov_len % block || offset % block)
+        return pwritev_full(vectors, count, offset);
+      length += vectors[i].iov_len;
+    }
+    if (!length) return true;
+    if (offset > static_cast<uint64_t>(std::numeric_limits<int64_t>::max()) ||
+        length > static_cast<uint64_t>(std::numeric_limits<int64_t>::max()) - offset)
+      return false;
+    int64_t old_size = size();
+    if (old_size < 0) return false;
+    if (offset + length > static_cast<uint64_t>(old_size) && !ftruncate(offset + length))
+      return false;
+    alignas(block) static constexpr std::array<uint8_t, block> zeros{};
+    std::vector<iovec> pending;
+    pending.reserve(static_cast<size_t>(count));
+    uint64_t position = offset, data_offset = offset, zero_offset = offset;
+    uint64_t zero_length = 0;
+    auto flush_data = [&]() {
+      if (pending.empty()) return true;
+      bool ok = pending.size() == 1
+          ? pwrite_full(pending[0].iov_base, pending[0].iov_len, data_offset)
+          : pwritev_full(pending.data(), static_cast<int>(pending.size()), data_offset);
+      pending.clear();
+      return ok;
+    };
+    auto flush_zero = [&]() {
+      if (!zero_length) return true;
+      uint64_t begin = zero_offset, bytes = zero_length;
+      zero_length = 0;
+      if (begin >= static_cast<uint64_t>(old_size)) return true;
+      uint64_t existing = std::min(bytes, static_cast<uint64_t>(old_size) - begin);
+      if (sparse_holes_) {
+        int result;
+        do {
+          result = ::fallocate(fd_, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE,
+                               static_cast<off_t>(begin), static_cast<off_t>(existing));
+        } while (result != 0 && errno == EINTR);
+        if (result == 0) return true;
+        sparse_holes_ = false;
+      }
+      // A failed/unsupported punch may have done partial work. Writing all
+      // zeros is idempotent and also supports filesystems or sandboxes that
+      // permit normal writes but deny fallocate.
+      std::array<iovec, 64> zero_vectors;
+      for (auto &v : zero_vectors) v = {const_cast<uint8_t *>(zeros.data()), block};
+      while (bytes) {
+        size_t blocks = static_cast<size_t>(std::min<uint64_t>(bytes / block, zero_vectors.size()));
+        if (!pwritev_full(zero_vectors.data(), static_cast<int>(blocks), begin)) return false;
+        begin += blocks * block;
+        bytes -= blocks * block;
+      }
+      return true;
+    };
+    for (int i = 0; i < count; ++i) {
+      auto *bytes = static_cast<uint8_t *>(vectors[i].iov_base);
+      size_t begin = 0;
+      while (begin < vectors[i].iov_len) {
+        bool zero = std::memcmp(bytes + begin, zeros.data(), block) == 0;
+        size_t end = begin + block;
+        while (end < vectors[i].iov_len &&
+               (std::memcmp(bytes + end, zeros.data(), block) == 0) == zero)
+          end += block;
+        if (zero) {
+          if (!flush_data()) return false;
+          if (!zero_length) zero_offset = position;
+          zero_length += end - begin;
+        } else {
+          if (!flush_zero()) return false;
+          if (pending.empty()) data_offset = position;
+          pending.push_back({bytes + begin, end - begin});
+        }
+        position += end - begin;
+        begin = end;
+      }
+    }
+    return flush_data() && flush_zero();
+  }
 #endif
 
   bool append(const void *buf, size_t len) {
@@ -505,6 +625,9 @@ class FileHandle {
 
  private:
   int fd_ = -1;
+#ifdef __linux__
+  bool sparse_holes_ = true;
+#endif
   std::unique_ptr<std::mutex> io_mutex_ = std::make_unique<std::mutex>();
 };
 
