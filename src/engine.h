@@ -336,9 +336,18 @@ class Wal {
   }
 
  private:
+  bool read_cached(void *data, size_t length, uint64_t offset, uint64_t file_size);
+  void reset_read_cache() {
+    read_cache_.clear();
+    read_cache_begin_ = 0;
+    next_read_offset_ = std::numeric_limits<uint64_t>::max();
+  }
   bool read_record(uint64_t offset, uint64_t size, WalRecordHeader &header,
                     std::string &payload);
   FileHandle file_;
+  std::vector<uint8_t> read_cache_;
+  uint64_t read_cache_begin_ = 0;
+  uint64_t next_read_offset_ = std::numeric_limits<uint64_t>::max();
   // The next record begins after the full logical image. A zero suffix may
   // remain beyond the physical end of the file until the next record is written.
   int64_t end_offset_ = 0;

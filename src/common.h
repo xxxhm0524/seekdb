@@ -303,6 +303,7 @@ inline std::string format_float_g(float v) {
 // Visit the byte ranges that must be written into a new file extent. Only
 // complete, file-aligned zero blocks may become holes; partial blocks stay in
 // a neighbouring write. A final zero suffix may wait for the next append.
+inline constexpr size_t kSparseIoMinRun = 16 * 1024;
 template <class Write>
 inline bool write_nonzero_extents(const void *data, size_t length,
                                   uint64_t offset, const Write &write) {
@@ -315,15 +316,20 @@ inline bool write_nonzero_extents(const void *data, size_t length,
       position += zeros.size();
       continue;
     }
-    if (position > begin && !write(begin, position - begin)) return false;
+    size_t zero_begin = position;
     do {
       position += zeros.size();
     } while (position + zeros.size() <= length &&
              std::memcmp(bytes + position, zeros.data(), zeros.size()) == 0);
-    begin = position;
-    if (length - begin < zeros.size() &&
-        std::memcmp(bytes + begin, zeros.data(), length - begin) == 0)
-      return true;
+    bool suffix = length - position < zeros.size() &&
+        std::memcmp(bytes + position, zeros.data(), length - position) == 0;
+    // Keep small interior gaps in one large write. The established sparse
+    // suffix needs no additional I/O boundary and remains worthwhile.
+    if (position - zero_begin >= kSparseIoMinRun || suffix) {
+      if (zero_begin > begin && !write(begin, zero_begin - begin)) return false;
+      begin = position;
+      if (suffix) return true;
+    }
   }
   return begin == length || write(begin, length - begin);
 }
@@ -552,14 +558,20 @@ class FileHandle {
         while (end < vectors[i].iov_len &&
                (std::memcmp(bytes + end, zeros.data(), block) == 0) == zero)
           end += block;
-        if (zero) {
+        if (zero && end - begin >= kSparseIoMinRun) {
           if (!flush_data()) return false;
           if (!zero_length) zero_offset = position;
           zero_length += end - begin;
         } else {
           if (!flush_zero()) return false;
           if (pending.empty()) data_offset = position;
-          pending.push_back({bytes + begin, end - begin});
+          // Coalesce only within this input buffer, preserving the page
+          // boundaries between independently allocated scatter vectors.
+          if (begin != 0 && !pending.empty() &&
+              static_cast<uint8_t *>(pending.back().iov_base) + pending.back().iov_len == bytes + begin)
+            pending.back().iov_len += end - begin;
+          else
+            pending.push_back({bytes + begin, end - begin});
         }
         position += end - begin;
         begin = end;

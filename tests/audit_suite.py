@@ -36,6 +36,7 @@ def main():
             '--mirror','conversation.json','--require-evidence']),
         ('resource',['tests/resource_boundaries.py']),
         ('mutation-io',['tests/mutation_io.py']),
+        ('wal-read-cache',['tests/wal_read_model.py']),
         ('sparse-io',['tests/sparse_io_model.py']),
         ('sparse-storage',['tests/sparse_storage.py','--expect-sparse','--output',str(output/'sparse-storage.json')]),
         ('primary-key-projection',['tests/primary_key_projection.py']),

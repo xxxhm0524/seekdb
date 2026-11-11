@@ -107,6 +107,9 @@ jobs:
           python3 tests/sparse_io_model.py
           python3 tests/sparse_storage.py --expect-sparse --output protocol-results/sparse-storage-local.json
 
+      - name: WAL sequential read cache and offset reuse
+        run: python3 tests/wal_read_model.py
+
       - name: Primary-key projection without wide-row reads
         run: python3 tests/primary_key_projection.py
 
@@ -170,6 +173,7 @@ jobs:
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/primary_key_projection.py
           python3 tests/heap_rejection_model.py --sanitize undefined
           python3 tests/sparse_io_model.py --sanitize undefined
+          python3 tests/wal_read_model.py --sanitize undefined
 
       - name: Docker build
         id: docker_build
@@ -225,6 +229,7 @@ jobs:
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/vector_precision_model.py --seeds 7 --indexed
           python3 tests/heap_rejection_model.py --sanitize address
           python3 tests/sparse_io_model.py --sanitize address
+          python3 tests/wal_read_model.py --sanitize address
 
       - name: Docker handshake
         run: |

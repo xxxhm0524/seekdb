@@ -750,6 +750,7 @@ void Table::build_commit_images(const TxTable &tx,
 // WAL
 // ---------------------------------------------------------------------------
 bool Wal::open(const std::string &path) {
+  reset_read_cache();
   int flags = O_RDWR | O_CREAT;
 #ifndef __linux__
   flags |= O_APPEND;
@@ -759,24 +760,48 @@ bool Wal::open(const std::string &path) {
   return end_offset_ >= 0;
 }
 
-void Wal::close() { file_.close(); }
+void Wal::close() { reset_read_cache(); file_.close(); }
+
+bool Wal::read_cached(void *data, size_t length, uint64_t offset, uint64_t file_size) {
+  if (!file_.valid() || offset > file_size || length > file_size - offset) return false;
+  if (!length) return true;
+  uint64_t within = offset >= read_cache_begin_ ? offset - read_cache_begin_
+      : std::numeric_limits<uint64_t>::max();
+  if (within > read_cache_.size() || length > read_cache_.size() - static_cast<size_t>(within)) {
+    bool sequential = offset >= next_read_offset_ &&
+        offset - next_read_offset_ <= sizeof(WalRecordHeader) + 12;
+    size_t wanted = sequential ? std::max<size_t>(length, 4*1024*1024) : length;
+    size_t window = static_cast<size_t>(std::min<uint64_t>(wanted, file_size - offset));
+    read_cache_.resize(window);
+    if (!file_.pread_full(read_cache_.data(), window, offset)) {
+      reset_read_cache();
+      return false;
+    }
+    read_cache_begin_ = offset;
+    within = 0;
+  }
+  std::memcpy(data, read_cache_.data() + static_cast<size_t>(within), length);
+  next_read_offset_ = offset + length;
+  return true;
+}
 
 bool Wal::read_record(uint64_t offset, uint64_t size, WalRecordHeader &h,
                       std::string &payload) {
   if (offset + sizeof(h) > size) return false;
-  if (!file_.pread_full(&h, sizeof(h), offset))
+  if (!read_cached(&h, sizeof(h), offset, size))
     throw_error("IO_ERROR", "cannot read WAL header");
   if (h.magic != 0x4D564457 || h.payload_len > 1024 * 1024 ||
       offset + sizeof(h) + h.payload_len > size) return false;
   payload.resize(h.payload_len);
-  if (!payload.empty() && !file_.pread_full(payload.data(), payload.size(), offset + sizeof(h)))
+  if (!payload.empty() && !read_cached(payload.data(), payload.size(), offset + sizeof(h), size))
     throw_error("IO_ERROR", "cannot read WAL record");
   return crc32(payload.data(), payload.size()) == h.crc;
 }
 
 std::shared_ptr<Page> Wal::read_page_image(uint64_t offset) {
   auto page = make_page();
-  if (!file_.pread_full(page.get(), kPageSize, offset + sizeof(WalRecordHeader) + 12))
+  if (!read_cached(page.get(), kPageSize, offset + sizeof(WalRecordHeader) + 12,
+                   static_cast<uint64_t>(end_offset_)))
     throw_error("IO_ERROR", "cannot read committed WAL page");
   return page;
 }
@@ -862,6 +887,7 @@ bool Wal::sync() {
 }
 
 bool Wal::truncate() {
+  reset_read_cache();
   if (!file_.ftruncate(0)) return false;
   end_offset_ = 0;
   return sync();
