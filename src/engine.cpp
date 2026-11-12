@@ -1,6 +1,7 @@
 #include "engine.h"
 #include "ann.h"
 #include "page_image_codec.h"
+#include "external_sort.h"
 
 #include <algorithm>
 #include <array>
@@ -916,11 +917,11 @@ bool Wal::truncate() {
 // ---------------------------------------------------------------------------
 // Engine basic helpers
 // ---------------------------------------------------------------------------
-Engine::Engine(std::string data_dir, size_t cache_pages, size_t tx_memory, size_t ann_min_rows)
+Engine::Engine(std::string data_dir, size_t cache_pages, size_t tx_memory, size_t ann_min_rows, size_t sort_memory)
     : data_dir_(std::move(data_dir)),
       catalog_path_(data_dir_ + "/catalog.dat"),
       wal_path_(data_dir_ + "/wal.log"),
-      cache_(cache_pages), tx_memory_(tx_memory), ann_min_rows_(ann_min_rows) {}
+      cache_(cache_pages), tx_memory_(tx_memory), ann_min_rows_(ann_min_rows), sort_memory_(sort_memory) {}
 
 Engine::~Engine() {
   try {
@@ -932,6 +933,7 @@ Engine::~Engine() {
 void Engine::open() {
   make_dir(data_dir_);
   std::remove((data_dir_ + "/txn.tmp").c_str());
+  std::remove((data_dir_ + "/sort.tmp").c_str());
   load_catalog();
   // Create/open all tables from catalog.
   for (auto &kv : tables_) kv.second->open(false);
@@ -2145,11 +2147,13 @@ Response Engine::exec_select(SelectStmt &stmt) {
     int output = -1;
     int column = -1;
     bool distance = false;
+    bool descending = false;
     std::vector<float> query;
   };
   std::vector<OrderPlan> orders;
   for (const auto &key : stmt.order) {
     OrderPlan order;
+    order.descending=key.desc;
     if (key.is_distance) {
       order.column = table.column_index(key.expr.column);
       if (order.column < 0)
@@ -2184,7 +2188,13 @@ Response Engine::exec_select(SelectStmt &stmt) {
       if (!order.distance && schema.columns[order.column].type == ColumnType::VECTOR)
         throw_error("UNSUPPORTED", "ORDER BY VECTOR requires L2_DISTANCE");
     }
-    orders.push_back(std::move(order));
+    // A later occurrence of the same value cannot break a tie left by its
+    // first occurrence, even with the opposite direction. Validate it first.
+    bool duplicate=std::any_of(orders.begin(),orders.end(),[&](const OrderPlan &previous) {
+      return previous.column==order.column && previous.distance==order.distance &&
+          (!order.distance || previous.query==order.query);
+    });
+    if (!duplicate) orders.push_back(std::move(order));
   }
   bool topk_path = false;
   int64_t topk = 0;
@@ -2450,7 +2460,7 @@ Response Engine::exec_select(SelectStmt &stmt) {
     uint64_t pos;
   };
   std::vector<bool> desc;
-  for (const auto &o : stmt.order) desc.push_back(o.desc);
+  for (const auto &o : orders) desc.push_back(o.descending);
   auto row_less = [&](const ResultRow &a, const ResultRow &b) {
     for (size_t i = 0; i < desc.size(); ++i) {
       int cmp = compare_sort_keys(a.keys[i], b.keys[i]);
@@ -2468,11 +2478,84 @@ Response Engine::exec_select(SelectStmt &stmt) {
                : stmt.offset + stmt.limit;
   }
   std::vector<ResultRow> results;
+  const bool ordered=!orders.empty();
+  size_t retained_extra=0;
+  auto row_memory=[](const ResultRow &row) {
+    size_t bytes=sizeof(ResultRow)+row.keys.capacity()*sizeof(SortKey);
+    for (const auto &key:row.keys) if (key.kind==OutValue::Kind::STRING) bytes+=key.s.capacity();
+    return bytes;
+  };
+  auto encode_row=[](const ResultRow &row) {
+    std::string packet;
+    auto append=[&](const auto &value) {
+      packet.append(reinterpret_cast<const char *>(&value),sizeof(value));
+    };
+    append(row.pk);append(row.pos);
+    if (row.keys.size()>std::numeric_limits<uint32_t>::max())
+      throw_error("RESOURCE_LIMIT","too many query sort keys");
+    uint32_t count=static_cast<uint32_t>(row.keys.size());append(count);
+    for (const auto &key:row.keys) {
+      uint8_t kind=static_cast<uint8_t>(key.kind);append(kind);
+      if (key.kind==OutValue::Kind::INT) append(key.i);
+      else if (key.kind==OutValue::Kind::DOUBLE) pack_sort_number(packet,key.d);
+      else if (key.kind==OutValue::Kind::STRING) {
+        if (key.s.size()>std::numeric_limits<uint32_t>::max()) throw_error("RESOURCE_LIMIT","sort string too large");
+        uint32_t length=static_cast<uint32_t>(key.s.size());append(length);packet.append(key.s);
+      } else throw_error("CORRUPTION","invalid query sort key kind");
+    }
+    return packet;
+  };
+  auto decode_row=[&](std::string_view packet) {
+    ResultRow row{};size_t cursor=0;
+    auto read=[&](auto &value) {
+      if (sizeof(value)>packet.size()-cursor) throw_error("CORRUPTION","truncated query sort key");
+      std::memcpy(&value,packet.data()+cursor,sizeof(value));cursor+=sizeof(value);
+    };
+    read(row.pk);read(row.pos);uint32_t count=0;read(count);
+    if (count!=orders.size()) throw_error("CORRUPTION","query sort key count mismatch");
+    row.keys.resize(count);
+    for (auto &key:row.keys) {
+      uint8_t kind=0;read(kind);
+      if (kind>static_cast<uint8_t>(OutValue::Kind::STRING)) throw_error("CORRUPTION","invalid query sort key kind");
+      key.kind=static_cast<OutValue::Kind>(kind);
+      if (key.kind==OutValue::Kind::INT) read(key.i);
+      else if (key.kind==OutValue::Kind::DOUBLE) {
+        if (kSortNumberBytes>packet.size()-cursor ||
+            !unpack_sort_number(packet.substr(cursor,kSortNumberBytes),key.d))
+          throw_error("CORRUPTION","invalid query sort distance");
+        cursor+=kSortNumberBytes;
+      } else {
+        uint32_t length=0;read(length);
+        if (length>packet.size()-cursor) throw_error("CORRUPTION","truncated query sort string");
+        key.s.assign(packet.data()+cursor,length);cursor+=length;
+      }
+    }
+    if (cursor!=packet.size()) throw_error("CORRUPTION","trailing query sort record bytes");
+    return row;
+  };
+  std::unique_ptr<ExternalSorter<ResultRow>> external;
+  auto promote_sort=[&]() {
+    uint64_t maximum_record=sizeof(int64_t)+sizeof(uint64_t)+sizeof(uint32_t);
+    for (const auto &order:orders) {
+      uint64_t bytes=1;
+      if (order.distance) bytes+=kSortNumberBytes;
+      else if (schema.columns[order.column].type==ColumnType::BIGINT) bytes+=sizeof(int64_t);
+      else bytes+=sizeof(uint32_t)+static_cast<uint64_t>(schema.columns[order.column].max_chars)*4;
+      maximum_record=std::min<uint64_t>(std::numeric_limits<uint32_t>::max(),maximum_record+bytes);
+    }
+    external=std::make_unique<ExternalSorter<ResultRow>>(data_dir_+"/sort.tmp",sort_memory_,
+        sizeof(ResultRow)+orders.size()*sizeof(SortKey),static_cast<uint32_t>(maximum_record),
+        row_less,encode_row,decode_row,row_memory);
+    // Any rows previously rejected by the TopK heap cannot enter its final
+    // prefix, so retaining the heap plus all subsequent rows is sufficient.
+    for (auto &row:results) external->push(std::move(row));
+    std::vector<ResultRow>().swap(results);retained_extra=0;
+  };
   auto consume = [&](const VisibleRow &vr) {
     ResultRow rr;
     // Ordered LIMIT/OFFSET needs keys and locations, not every wide output
     // value. Project the selected visible rows only after sorting/slicing.
-    if (!bounded) rr.vals = project_row(vr.row);
+    if (!ordered) rr.vals = project_row(vr.row);
     rr.pk = vr.pk;
     rr.pos = vr.pos;
     for (const auto &order : orders) {
@@ -2491,18 +2574,29 @@ Response Engine::exec_select(SelectStmt &stmt) {
       }
       rr.keys.push_back(std::move(key));
     }
+    if (external) {
+      external->push(std::move(rr));
+      return true;
+    }
     if (bounded) {
       if (static_cast<int64_t>(results.size()) < need) {
+        retained_extra+=row_memory(rr)-sizeof(ResultRow);
         results.push_back(std::move(rr));
         std::push_heap(results.begin(), results.end(), row_less);
       } else if (row_less(rr, results.front())) {
         std::pop_heap(results.begin(), results.end(), row_less);
+        retained_extra-=row_memory(results.back())-sizeof(ResultRow);
+        retained_extra+=row_memory(rr)-sizeof(ResultRow);
         results.back() = std::move(rr);
         std::push_heap(results.begin(), results.end(), row_less);
       }
     } else {
+      if (ordered) retained_extra+=row_memory(rr)-sizeof(ResultRow);
       results.push_back(std::move(rr));
     }
+    if (ordered && (retained_extra>sort_memory_ ||
+        results.capacity()>((sort_memory_-std::min(sort_memory_,retained_extra))/sizeof(ResultRow))))
+      promote_sort();
     return true;
   };
   bool identity_only = stmt.where.empty() && !orders.empty() &&
@@ -2527,28 +2621,12 @@ Response Engine::exec_select(SelectStmt &stmt) {
       consume(row);
     });
   } else for_each_visible(table, stmt.where, consume);
-  if (!stmt.order.empty())
-    std::sort(results.begin(), results.end(), row_less);
-  int64_t start = stmt.has_limit ? stmt.offset : 0;
-  int64_t end = stmt.has_limit
-                    ? ((stmt.offset > std::numeric_limits<int64_t>::max() - stmt.limit)
-                           ? std::numeric_limits<int64_t>::max()
-                           : stmt.offset + stmt.limit)
-                    : static_cast<int64_t>(results.size());
-  if (start < 0) start = 0;
-  if (end > static_cast<int64_t>(results.size()))
-    end = static_cast<int64_t>(results.size());
   std::vector<uint8_t> selected_row;
-  if (bounded && identity_only) {
+  if (ordered && identity_only) {
     selected_row.assign(schema.row_size, 0);
     table.set_row_valid(selected_row.data(), true);
   }
-  for (int64_t i = start; i < end; ++i) {
-    auto &result = results[static_cast<size_t>(i)];
-    if (!bounded) {
-      resp.rows.push_back(std::move(result.vals));
-      continue;
-    }
+  auto emit_result=[&](const ResultRow &result) {
     if (identity_only) {
       table.set_row_id(selected_row.data(), result.pk);
       std::memcpy(selected_row.data()+schema.col_offsets[schema.pk_index], &result.pk, sizeof(result.pk));
@@ -2559,6 +2637,25 @@ Response Engine::exec_select(SelectStmt &stmt) {
         throw_error("CORRUPTION", "ordered candidate row missing");
     }
     resp.rows.push_back(project_row(selected_row.data()));
+  };
+  if (external) {
+    external->finish(stmt.has_limit?static_cast<uint64_t>(stmt.offset):0,
+        stmt.has_limit?static_cast<uint64_t>(stmt.limit):std::numeric_limits<uint64_t>::max(),emit_result);
+    return resp;
+  }
+  if (ordered) std::sort(results.begin(), results.end(), row_less);
+  int64_t start = stmt.has_limit ? stmt.offset : 0;
+  int64_t end = stmt.has_limit
+                    ? ((stmt.offset > std::numeric_limits<int64_t>::max() - stmt.limit)
+                           ? std::numeric_limits<int64_t>::max()
+                           : stmt.offset + stmt.limit)
+                    : static_cast<int64_t>(results.size());
+  if (start < 0) start = 0;
+  if (end > static_cast<int64_t>(results.size())) end = static_cast<int64_t>(results.size());
+  for (int64_t i=start;i<end;++i) {
+    auto &result=results[static_cast<size_t>(i)];
+    if (ordered) emit_result(result);
+    else resp.rows.push_back(std::move(result.vals));
   }
   return resp;
 }

@@ -361,7 +361,7 @@ class Wal {
 class Engine {
  public:
   Engine(std::string data_dir, size_t cache_pages = 1024, size_t tx_memory = 8*1024*1024,
-          size_t ann_min_rows = 40000);
+          size_t ann_min_rows = 40000, size_t sort_memory = 16*1024*1024);
   ~Engine();
 
   void open();
@@ -384,6 +384,7 @@ class Engine {
   Transaction tx_;
   size_t tx_memory_;
   size_t ann_min_rows_;
+  size_t sort_memory_;
   struct UndoRow { uint32_t table; int64_t pk; bool existed; RowState before; };
   struct UndoTable { bool existed; uint64_t next_pos; };
   struct StatementUndo {

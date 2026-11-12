@@ -47,7 +47,7 @@ jobs:
 
   protocol-and-tests:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
 
@@ -123,6 +123,11 @@ jobs:
       - name: Bounded wide projection with a large OFFSET
         run: python3 tests/projection_memory.py
 
+      - name: External sort numeric keys merge and bounded wide keys
+        run: |
+          python3 tests/external_sort_model.py
+          python3 tests/ordered_key_memory.py --output protocol-results/ordered-key-memory.json
+
       - name: Bounded random spool reads
         run: python3 tests/spool_read_boundaries.py
 
@@ -189,6 +194,8 @@ jobs:
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/compact_image_io.py --rows 1000
           python3 tests/compact_cache_model.py --sanitize undefined
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/compact_read_cache.py --rows 1000 --max-mb 512
+          python3 tests/external_sort_model.py --sanitize undefined
+          MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/ordered_key_memory.py --rows 3000 --max-mb 512 --sort-memory-mb 1
 
       - name: Docker build
         id: docker_build
@@ -227,6 +234,14 @@ jobs:
           docker run --rm --network=none --read-only --cap-drop=ALL --cpus=2 --memory=2g \
             --mount "type=bind,src=$PWD/protocol-results/runtime-model,dst=/model,readonly" \
             --entrypoint /model/float-model minivectordb:ci
+          docker run --rm --network=none --cpus=2 --memory=2g \
+            --mount "type=bind,src=$PWD/tests/external_sort_model.cpp,dst=/src/sort-model.cpp,readonly" \
+            --mount "type=bind,src=$PWD/protocol-results/runtime-model,dst=/model-out" \
+            minivectordb:compiler-ci \
+            g++ -std=c++20 -O2 -Isrc sort-model.cpp -o /model-out/sort-model
+          docker run --rm --network=none --read-only --cap-drop=ALL --cpus=2 --memory=2g \
+            --mount "type=bind,src=$PWD/protocol-results/runtime-model,dst=/model,readonly" \
+            --entrypoint /model/sort-model minivectordb:ci /data/sort-model.tmp
 
       - name: Address and lifetime sanitizer
         run: |
@@ -250,6 +265,8 @@ jobs:
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/compact_image_io.py --rows 1000
           python3 tests/compact_cache_model.py --sanitize address
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/compact_read_cache.py --rows 1000 --max-mb 512
+          python3 tests/external_sort_model.py --sanitize address
+          MVD_BIN="$PWD/minivectordb-asan" python3 tests/ordered_key_memory.py --rows 3000 --max-mb 512 --sort-memory-mb 1
 
       - name: Docker handshake
         run: |
@@ -260,6 +277,9 @@ jobs:
         run: |
           python3 protocol_check/run.py --image minivectordb:ci \
             --output protocol-results/public-docker
+
+      - name: Docker sorting effective keys beyond the memory limit
+        run: python3 tests/docker_ordered_keys.py --image minivectordb:ci
 
       - name: Docker sparse wide-row overwrite and recovery
         run: |
@@ -293,6 +313,7 @@ jobs:
           path: |
             protocol-results/docker-resource*
             protocol-results/docker-transaction-spill*
+            protocol-results/docker-ordered-keys*
           if-no-files-found: ignore
 
       - name: Docker durable benchmark and recall

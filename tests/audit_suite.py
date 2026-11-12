@@ -45,6 +45,8 @@ def main():
         ('sparse-storage',['tests/sparse_storage.py','--expect-sparse','--output',str(output/'sparse-storage.json')]),
         ('primary-key-projection',['tests/primary_key_projection.py']),
         ('projection-memory',['tests/projection_memory.py']),
+        ('external-sort-model',['tests/external_sort_model.py']),
+        ('ordered-key-memory',['tests/ordered_key_memory.py','--output',str(output/'ordered-key-memory.json')]),
         ('spool-read',['tests/spool_read_boundaries.py']),
         ('page-churn',['tests/page_pool_churn.py']),
         ('cache-coherence',['tests/cache_coherence.py']),

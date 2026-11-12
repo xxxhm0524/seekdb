@@ -2,7 +2,7 @@
  "schema": "mvd-conversation-v2",
  "rules_version": "agent-learning-evidence-v3-unbounded",
  "synthetic": false,
- "generated_at_utc": "2026-11-12T09:25:14.706606+00:00",
+ "generated_at_utc": "2026-11-12T11:36:20.930986+00:00",
  "material_scope": {
   "purpose": "选录可核验的真实可见对话、必要上下文和实际结果；没有替学生编写预测、解释或复盘。",
   "sources": "本线程用户消息 ID 与助手可见回复、用户提供的失败截图；逐项标明源码版本或快照的本地/CI 日志，包含开发迭代历史。 另保留远端提交 e3770170 中的助手实验报告，逐项标明本线程尚未独立核验。",
@@ -860,6 +860,29 @@
    },
    "output": "{\"launch_exact_match\":true,\"ENTRYPOINT\":[\"/app/minivectordb\"],\"CMD\":[\"--data-dir\",\"/data\"],\"VOLUME\":[\"/data\"],\"source_build\":\"multi-stage; explicitly permitted\",\"final_runtime\":\"Ubuntu 24.04, pinned digest\",\"ci_run\":43184534656,\"ci_sha\":\"128faad8a27112f796b184e2e89cbbd308fdeac7\",\"ci_conclusion\":\"success\",\"docker_handshake_passed\":true,\"docker_public_cases_passed\":20,\"largest_measured_storage_request_seconds\":55.068,\"stress_memory_limit_bytes\":268435456,\"request_timeout_seconds\":60,\"formal_29_verified\":false}",
    "interpretation_by_assistant": "入口、参数和数据卷声明与示例一致，实际容器握手及公开用例通过。旧版长 Unicode COMMIT 的 60 秒超时与另一轮未创建作业的 startup_failure 分开记录。2 核/2 GiB 在 4.2.1 中只是演示值，256 MiB 是附加压力条件。不能据此证明旧平台失败唯一原因或正式 29 例已通过。"
+  },
+  {
+   "id": "bounded-wide-sort-keys",
+   "role": "tool",
+   "execution_status": "executed",
+   "designed_and_executed_by": "assistant_and_tools",
+   "title": "延迟投影之后，继续复现并修复宽排序键的驻留增长",
+   "command": "python tests/ordered_key_memory.py; python tests/external_sort_model.py; python tests/audit_suite.py --large-resource --output protocol-results/audit-external-sort-final-20261112",
+   "source": {
+    "source_state": "working tree after 6e27d3c4, before commit",
+    "source_sha256": {
+     "src/engine.cpp": "529c82347203e1dafd6893b140f66c7a232dcdfdfc74b79579a30a219cdc6b9b",
+     "src/external_sort.h": "a0fe41c1a4b52324705babb6a0b460c97d9548e612aab8ad632480ad36c763e4"
+    },
+    "files": [
+     "ordered-keys-before-20261112.json",
+     "ordered-keys-normalized-final-20261112.json",
+     "audit-external-sort-final-20261112/summary.json",
+     "wal-external-sort-final-native-20261112.json"
+    ]
+   },
+   "output": "{\"before\":{\"passed\":false,\"rows\":12000,\"effective_key_bytes\":98283000,\"one_row_query_peak_bytes\":118583296},\"after\":{\"passed\":true,\"rows\":12000,\"effective_key_bytes\":98283000,\"one_row_query_peak_bytes\":30236672,\"peak_bytes\":33480704,\"scalar_distance_alias_ordinal_and_full_result\":true,\"pending_spilled_rows_failed_statement_and_rollback\":true,\"crash_scratch_cleanup\":true},\"native_checks\":41,\"all_exit_codes_zero\":true,\"number_and_merge_model\":\"{\\\"passed\\\":true,\\\"number_roundtrips\\\":10012,\\\"sorted_rows\\\":1000,\\\"multi_run_order_and_slicing\\\":true,\\\"signed_ids\\\":true}\",\"legacy_wal_bidirectional_passed\":true,\"insert_records_byte_equivalent\":true}",
+   "interpretation_by_assistant": "原来仅延迟输出，宽字符串排序键仍可撑大堆；一行 ID 的查询实测峰值 118583296 字节。改为默认 16 MiB 工作预算、分段排序及至多 16 路归并，默认预算下该查询峰值约 30 MB，完整事务流程约 33 MB；1 MiB 工作预算也通过多段验证。距离键保留有效位及指数，临时记录 CRC 校验；全部表达式校验后去掉重复键。小 TopK 保留内存堆，已有表/WAL 格式与同步顺序不变。原生覆盖别名、序号、升降序、距离、空字段、溢写行、失败语句、回滚及重启清理。Linux 128 MiB 容器新检查仍待本次 SHA 实测；这项方案和实验由助手完成，不作为用户独立设计的说明。"
   }
  ],
  "evidence_index": [
@@ -998,7 +1021,7 @@
  "retrospective": {
   "origin": "assistant",
   "implementation": "目前支持 HNSW 与紧凑精确缓存。默认 10k×128d 选择精确缓存；不能据算法名称推断实际加速。 后续加入无过滤且只投影、排序主键的可见定位路径，其他字段、过滤和排序仍读实际行。 本轮反例发现图内 float 平方距离在下溢区域使建索引超时，现复用 double 内核；默认 10k 紧凑精确路径保持相同计算方式。 后续实测加入 TopK ULP 上界缓存及图邻居预取；原生配对验证结果一致，仍需同提交的容器 T/B/M 验证。",
-  "transaction": "行数据及独立更新值超过预算可溢写；事务元数据及巨大单条 SQL/结果仍受内存约束。",
+  "transaction": "事务载荷可溢写，宽排序键也可按工作预算写入查询临时排序段；返回结果、事务及主键元数据仍受有限内存约束。",
   "verification": "缓存修复链保留所有负结果：曾三类 60 秒超时，后续只剩长 Unicode COMMIT 超时，均无 OOM。零字编码与缓存容量收紧后，39 项原生审计、20000 次随机读取及偏移回退、270000 行承载与强杀抽查、旧 WAL 双向恢复通过。Linux 耗时和正式准入必须以新 SHA 的实际结果为准，没有预报排名。",
   "student_interpretation": "学生在 Linux 配对实验前选择“短文本大事务 COMMIT”；追问理由时原话为“不确定”。该预测的技术原因未补充。先前 K=100 的建议实验仍未执行。 用户随后确认已阅读并认同 Docker 复盘草稿；认可原文及助手代拟来源均可定位。",
   "docker_review": {
