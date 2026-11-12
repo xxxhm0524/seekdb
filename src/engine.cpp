@@ -1865,6 +1865,13 @@ long double squared_l2_precise(const float *a, const float *b, int dim) {
   return sum + correction;
 }
 
+double returned_l2_distance(const float *a, const float *b, int dim) {
+  // L2_DISTANCE is a float64 SQL scalar. Different precise squared norms can
+  // round to the same returned Euclidean value, so those rows must tie on PK.
+  // Compensated accumulation also keeps component permutations consistent.
+  return std::sqrt(static_cast<double>(squared_l2_precise(a, b, dim)));
+}
+
 struct Candidate {
   double dist;
   int64_t pk;
@@ -1891,7 +1898,8 @@ struct CandidateHeap {
     if (a.dist == 0 && b.dist == 0) return a.pk < b.pk;
     // Squared distances are nonnegative finite doubles. Their bit patterns
     // are ordered, so a conservative ULP band avoids extra work for ordinary
-    // queries while resolving rounding-dependent ties with compensation.
+    // queries. The refinement callback uses the canonical returned L2 value,
+    // including square-root rounding ties, rather than a hidden squared key.
     uint64_t first, second;
     std::memcpy(&first, &a.dist, sizeof(first));
     std::memcpy(&second, &b.dist, sizeof(second));
@@ -2240,11 +2248,9 @@ Response Engine::exec_select(SelectStmt &stmt) {
       } else if (p.is_distance) {
         const uint8_t *base = row + schema.col_offsets[p.vector_column];
         const float *vec = reinterpret_cast<const float *>(base);
-        double sq = squared_l2_checked(vec, p.query_vec.data(),
-                                       schema.columns[p.vector_column].dim);
         OutValue ov;
         ov.kind = OutValue::Kind::DOUBLE;
-        ov.d = std::sqrt(sq);
+        ov.d = returned_l2_distance(vec, p.query_vec.data(), schema.columns[p.vector_column].dim);
         vals.push_back(std::move(ov));
       } else {
         vals.push_back(out_value_from_row(table, row, p.column_index));
@@ -2273,12 +2279,12 @@ Response Engine::exec_select(SelectStmt &stmt) {
     auto refine = [&](const Candidate &candidate) {
       uint32_t cached=0;
       if (!tx_.active && table.vector_search_ && table.vector_search_->find(candidate.pk,cached))
-        return squared_l2_precise(table.vector_search_->vector(cached),topk_query_vec.data(),schema.columns[topk_vector_column].dim);
+        return returned_l2_distance(table.vector_search_->vector(cached),topk_query_vec.data(),schema.columns[topk_vector_column].dim);
       std::vector<uint8_t> row;
       if (!load_candidate(candidate, row))
         throw_error("CORRUPTION", "TopK candidate row missing");
       const float *vector = reinterpret_cast<const float *>(row.data() + schema.col_offsets[topk_vector_column]);
-      return squared_l2_precise(vector, topk_query_vec.data(), schema.columns[topk_vector_column].dim);
+      return returned_l2_distance(vector, topk_query_vec.data(), schema.columns[topk_vector_column].dim);
     };
     // Parallel exact top-K scan.
     std::vector<CandidateHeap> heaps;
@@ -2294,7 +2300,8 @@ Response Engine::exec_select(SelectStmt &stmt) {
     heaps[0].k = static_cast<size_t>(topk);
 #endif
     for (auto &heap : heaps) {
-      heap.uncertainty_ulps = 16 * (static_cast<uint64_t>(schema.columns[topk_vector_column].dim) + 1);
+      // Include extra room for distinct squared values coalescing after sqrt.
+      heap.uncertainty_ulps = 16 * (static_cast<uint64_t>(schema.columns[topk_vector_column].dim) + 1) + 8;
       heap.refine = refine;
     }
     if (!tx_.active && table.schema().vector_index_created && !table.vector_search_ &&
@@ -2415,7 +2422,7 @@ Response Engine::exec_select(SelectStmt &stmt) {
           OutValue value;
           if (plan.is_distance) {
             value.kind=OutValue::Kind::DOUBLE;
-            value.d=std::sqrt(squared_l2_checked(index->vector(cached),plan.query_vec.data(),schema.columns[plan.vector_column].dim));
+            value.d=returned_l2_distance(index->vector(cached),plan.query_vec.data(),schema.columns[plan.vector_column].dim);
           } else if (plan.column_index==schema.vector_index) {
             value.kind=OutValue::Kind::VECTOR;
             value.vec.assign(index->vector(cached),index->vector(cached)+schema.columns[plan.column_index].dim);
@@ -2564,7 +2571,7 @@ Response Engine::exec_select(SelectStmt &stmt) {
         int ci = order.column;
         const float *vector = reinterpret_cast<const float *>(vr.row + schema.col_offsets[ci]);
         key.kind = OutValue::Kind::DOUBLE;
-        key.d = squared_l2_precise(vector, order.query.data(), schema.columns[ci].dim);
+        key.d = returned_l2_distance(vector, order.query.data(), schema.columns[ci].dim);
       } else {
         OutValue ov = out_value_from_row(table, vr.row, order.column);
         key.kind = ov.kind;

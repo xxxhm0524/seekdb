@@ -317,7 +317,9 @@ std::string format_json_value(const mvd::OutValue &v) {
     case mvd::OutValue::Kind::DOUBLE: {
       if (!std::isfinite(v.d)) return "0";
       char buf[64];
-      std::snprintf(buf, sizeof(buf), "%.9g", v.d);
+      // Preserve the float64 SQL scalar used by ORDER BY, including adjacent
+      // representable distances. VECTOR components below remain float32/9g.
+      std::snprintf(buf, sizeof(buf), "%.17g", v.d);
       return std::string(buf);
     }
     case mvd::OutValue::Kind::VECTOR: {

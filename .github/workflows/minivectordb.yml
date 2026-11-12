@@ -75,6 +75,9 @@ jobs:
           python3 tests/vector_literal_syntax.py --output protocol-results/vector-literal-syntax.json
           python3 tests/state_machine_model.py --seed 20261113 --steps 1200 --output protocol-results/state-machine-model.json
 
+      - name: Returned Euclidean distance ordering
+        run: python3 tests/returned_distance_order.py --output protocol-results/returned-distance-order.json
+
       - name: Formal requirement coverage
         run: python3 tests/formal_coverage.py
 
@@ -180,6 +183,7 @@ jobs:
             src/main.cpp src/sql.cpp src/engine.cpp -o minivectordb-ubsan
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/hidden_boundaries.py
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/vector_literal_syntax.py
+          MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/returned_distance_order.py --rows 1200
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/regression.py
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/stress_random.py --rounds 40 --seed 211
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/cache_coherence.py --rounds 4
@@ -256,6 +260,7 @@ jobs:
             src/main.cpp src/sql.cpp src/engine.cpp -o minivectordb-asan
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/hidden_boundaries.py
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/vector_literal_syntax.py
+          MVD_BIN="$PWD/minivectordb-asan" python3 tests/returned_distance_order.py --rows 1200
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/ann_lifecycle.py
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/ann_numeric_range.py
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/commit_crash_boundaries.py
@@ -284,6 +289,19 @@ jobs:
         run: |
           python3 protocol_check/run.py --image minivectordb:ci \
             --output protocol-results/public-docker
+
+      - name: Unmodified frozen official public checker
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 https://github.com/oceanbase/seekdb.git f4d4e26653af823a7601668802f80e374ad6643c
+          mvd_official_dir=$(mktemp -d)
+          git archive f4d4e26653af823a7601668802f80e374ad6643c STDIO_PROTOCOL.md protocol_check mysqltest | tar -x -C "$mvd_official_dir"
+          python3 -c 'import sys; assert sys.flags.optimize == 0'
+          python3 "$mvd_official_dir/protocol_check/run.py" --image minivectordb:ci --package "$mvd_official_dir/mysqltest" --config "$mvd_official_dir/protocol_check/config.json" --output protocol-results/official-public
+          cp protocol-results/official-public/result.json protocol-results/official-public-unchanged.json
+
+      - name: Docker returned Euclidean distance ordering
+        run: python3 tests/returned_distance_order.py --image minivectordb:ci --output protocol-results/returned-distance-order-docker.json
 
       - name: Docker sorting effective keys beyond the memory limit
         run: python3 tests/docker_ordered_keys.py --image minivectordb:ci

@@ -25,6 +25,7 @@ def main():
         ('public',['protocol_check/run.py','--command',command,'--output',str(output/'public')]),
         ('extended',['tests/run_extended_tsv.py']),
         ('vector-literal-syntax',['tests/vector_literal_syntax.py','--output',str(output/'vector-literal-syntax.json')]),
+        ('returned-distance-order',['tests/returned_distance_order.py','--output',str(output/'returned-distance-order.json')]),
         ('state-machine-model',['tests/state_machine_model.py','--seed','20261113','--steps','1200',
             '--output',str(output/'state-machine-model.json')]),
         ('requirements',['tests/formal_coverage.py']),
