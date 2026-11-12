@@ -13,8 +13,11 @@ from protocol_client import Client
 
 parser=argparse.ArgumentParser()
 parser.add_argument('--output',type=Path)
+parser.add_argument('--image')
+parser.add_argument('--protocol-root',type=Path,default=ROOT/'protocol_check')
 args=parser.parse_args()
 report=dict(passed=False,checks=0,scope='Local parser consistency regression; not proof of the unpublished formal failure cause.')
+report['target']=args.image or 'native binary'
 cases=[('[1,2]','[1,2]',(1,2)),('[-1,2]','[-1,2]',(-1,2)),
     ('[- 1,+ 2]','[-1,+2]',(-1,2)),('[-.5,+.25]','[-.5,+.25]',(-.5,.25)),
     ('[-1.25e-3,+2.5e+2]','[-1.25e-3,+2.5e+2]',(-1.25e-3,250)),
@@ -25,7 +28,29 @@ invalid=['[1 2,3]','[1e- 2,3]','[1e -2,3]','[--1,2]','[+-1,2]',
     '[1,,2]','[1,2,]','[[1],2]','[NaN,0]','[Infinity,0]','[1e100,0]']
 try:
     with tempfile.TemporaryDirectory(prefix='mvd-vector-syntax-') as data:
-        client=Client(datadir=data,extra=['--cache-mb=1'])
+        if args.image:
+            sys.path.insert(0,str(args.protocol_root.resolve()))
+            from _transport import Session
+            config=json.loads((args.protocol_root/'config.json').read_text(encoding='utf-8'))
+            log=(args.output.with_suffix('.stderr.log') if args.output else Path(data)/'docker.stderr.log')
+            log.parent.mkdir(parents=True,exist_ok=True)
+            class ImageClient:
+                def __init__(self):
+                    self.session=Session(config,log,image=args.image);self.active=False
+                    try:self.start()
+                    except Exception:
+                        self.session.close();raise
+                def start(self):self.session.start();self.active=True
+                def request(self,text,mode='exact'):return self.session.request(text,mode)
+                def shutdown(self):
+                    if self.active:self.session.shutdown();self.active=False
+                def kill(self):self.session.crash();self.active=False
+                def close(self):
+                    try:self.shutdown()
+                    finally:self.session.close()
+            client=ImageClient()
+            report['transport_sha256']=__import__('hashlib').sha256((args.protocol_root/'_transport.py').read_bytes()).hexdigest()
+        else:client=Client(datadir=data,extra=['--cache-mb=1'])
         try:
             def sql(text,**wanted):
                 response=client.request(text);report['checks']+=1
