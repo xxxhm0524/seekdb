@@ -369,6 +369,29 @@ std::unique_ptr<Statement> SqlParser::parse_create_table() {
   return stmt;
 }
 
+std::string SqlParser::collect_vector_literal() {
+  std::string raw = "[";
+  int depth = 1;
+  while (depth > 0) {
+    const Token &token = peek();
+    if (token.type == Token::Type::END) syntax_error("unterminated vector literal");
+    if (token.type == Token::Type::SYMBOL && token.text == "[") ++depth;
+    if (token.type == Token::Type::SYMBOL && token.text == "]") --depth;
+    if (depth > 0) {
+      // Join a SQL unary sign to its component. Keep other token boundaries:
+      // a malformed numeric token ending in '-' must not merge with a later
+      // NUMBER (for example, [1e- 2,3] must remain invalid).
+      bool after_sign = index_ > 0 && tokens_[index_-1].type == Token::Type::SYMBOL &&
+          (tokens_[index_-1].text == "-" || tokens_[index_-1].text == "+");
+      if (!raw.empty() && raw.back() != '[' && !after_sign) raw.push_back(' ');
+      raw += token.text;
+    }
+    ++index_;
+  }
+  raw += "]";
+  return raw;
+}
+
 std::unique_ptr<Statement> SqlParser::parse_insert() {
   auto stmt = std::make_unique<InsertStmt>();
   consume_keyword("insert");
@@ -403,20 +426,7 @@ std::unique_ptr<Statement> SqlParser::parse_insert() {
         v = Value::make_raw(peek().text);
         ++index_;
       } else if (consume_symbol('[')) {
-        std::string raw = "[";
-        int depth = 1;
-        while (depth > 0) {
-          if (peek().type == Token::Type::END) syntax_error("unterminated vector literal");
-          if (peek().type == Token::Type::SYMBOL && peek().text == "[") ++depth;
-          if (peek().type == Token::Type::SYMBOL && peek().text == "]") --depth;
-          if (depth > 0) {
-            if (!raw.empty() && raw.back() != '[') raw.push_back(' ');
-            raw += peek().text;
-          }
-          ++index_;
-        }
-        raw += "]";
-        v = Value::make_string(raw);
+        v = Value::make_string(collect_vector_literal());
         v.kind = Value::Kind::VECTOR;
       } else if (peek().type == Token::Type::IDENT &&
                  lower(peek().text) == "null") {
@@ -450,21 +460,7 @@ Expr SqlParser::parse_expr() {
       expr.vec_text = peek().text;
       ++index_;
     } else if (consume_symbol('[')) {
-      std::string raw = "[";
-      int depth = 1;
-      while (depth > 0) {
-        if (peek().type == Token::Type::END)
-          syntax_error("unterminated vector literal");
-        if (peek().type == Token::Type::SYMBOL && peek().text == "[") ++depth;
-        if (peek().type == Token::Type::SYMBOL && peek().text == "]") --depth;
-        if (depth > 0) {
-          if (!raw.empty() && raw.back() != '[') raw.push_back(' ');
-          raw += peek().text;
-        }
-        ++index_;
-      }
-      raw += "]";
-      expr.vec_text = raw;
+      expr.vec_text = collect_vector_literal();
     } else {
       syntax_error("expected vector literal");
     }
@@ -618,20 +614,7 @@ std::unique_ptr<Statement> SqlParser::parse_update() {
       v = Value::make_raw(peek().text);
       ++index_;
     } else if (consume_symbol('[')) {
-      std::string raw = "[";
-      int depth = 1;
-      while (depth > 0) {
-        if (peek().type == Token::Type::END) syntax_error("unterminated vector literal");
-        if (peek().type == Token::Type::SYMBOL && peek().text == "[") ++depth;
-        if (peek().type == Token::Type::SYMBOL && peek().text == "]") --depth;
-        if (depth > 0) {
-          if (!raw.empty() && raw.back() != '[') raw.push_back(' ');
-          raw += peek().text;
-        }
-        ++index_;
-      }
-      raw += "]";
-      v = Value::make_string(raw);
+      v = Value::make_string(collect_vector_literal());
       v.kind = Value::Kind::VECTOR;
     } else {
       syntax_error("expected literal value");

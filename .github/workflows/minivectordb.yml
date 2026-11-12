@@ -70,6 +70,11 @@ jobs:
       - name: Extended semantics
         run: python3 tests/run_extended_tsv.py
 
+      - name: Bare vector signs and mixed transaction state model
+        run: |
+          python3 tests/vector_literal_syntax.py --output protocol-results/vector-literal-syntax.json
+          python3 tests/state_machine_model.py --seed 20261113 --steps 1200 --output protocol-results/state-machine-model.json
+
       - name: Formal requirement coverage
         run: python3 tests/formal_coverage.py
 
@@ -174,6 +179,7 @@ jobs:
             -fsanitize=undefined -fno-sanitize-recover=undefined \
             src/main.cpp src/sql.cpp src/engine.cpp -o minivectordb-ubsan
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/hidden_boundaries.py
+          MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/vector_literal_syntax.py
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/regression.py
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/stress_random.py --rounds 40 --seed 211
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/cache_coherence.py --rounds 4
@@ -249,6 +255,7 @@ jobs:
             -fsanitize=address,undefined -fno-sanitize-recover=undefined -fno-omit-frame-pointer \
             src/main.cpp src/sql.cpp src/engine.cpp -o minivectordb-asan
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/hidden_boundaries.py
+          MVD_BIN="$PWD/minivectordb-asan" python3 tests/vector_literal_syntax.py
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/ann_lifecycle.py
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/ann_numeric_range.py
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/commit_crash_boundaries.py

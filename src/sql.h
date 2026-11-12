@@ -205,6 +205,7 @@ class SqlParser {
   std::string expect_string_or_ident_for_value();
   int64_t expect_int();
   Value parse_value_for_column(const ColumnDef &col);
+  std::string collect_vector_literal();  // Opening '[' was already consumed.
   Expr parse_expr();
   std::vector<Condition> parse_where();
   Condition parse_condition();
