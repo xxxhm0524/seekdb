@@ -14,16 +14,18 @@ from resource_boundaries import peak_bytes
 parser=argparse.ArgumentParser()
 parser.add_argument('--rows',type=int,default=12000)
 parser.add_argument('--max-mb',type=int,default=64)
+parser.add_argument('--cache-mb',type=int,default=1)
 parser.add_argument('--sort-memory-mb',type=int,default=0)
 parser.add_argument('--output',type=Path)
 args=parser.parse_args()
 assert args.rows>=1000
 texts=[prefix+'\U0001f600'*2047 for prefix in ['b','a','中','\U0001f642']]
 model={i:(i%7,texts[i%4],i) for i in range(args.rows)}
-report=dict(passed=False,rows=args.rows,effective_key_bytes=sum(len(x[1].encode('utf-8')) for x in model.values()))
+report=dict(passed=False,rows=args.rows,effective_key_bytes=sum(len(x[1].encode('utf-8')) for x in model.values()),
+    page_cache_budget_bytes=args.cache_mb*1024*1024)
 try:
     with tempfile.TemporaryDirectory(prefix='mvd-sort-keys-') as data, ExitStack() as cleanup:
-        extra=['--cache-mb=1','--tx-memory-mb=1']
+        extra=['--cache-mb=%d'%args.cache_mb,'--tx-memory-mb=1']
         if args.sort_memory_mb:extra.append('--sort-memory-mb=%d'%args.sort_memory_mb)
         client=Client(datadir=data,extra=extra)
         cleanup.callback(client.close)
@@ -59,6 +61,7 @@ try:
             last=min(first+100,args.rows)
             sql('INSERT INTO t VALUES '+batch(first,last),affected_rows=last-first)
         client.shutdown();client.start()
+        report['startup_peak_bytes']=peak_bytes(client.p.pid)
         ascending=sorted(model,key=lambda i:(model[i][1],-model[i][0],i))
         sql('SELECT id FROM t ORDER BY s ASC,g DESC,id ASC LIMIT 1 OFFSET %d'%(args.rows-1),rows=[[ascending[-1]]])
         peak=peak_bytes(client.p.pid)

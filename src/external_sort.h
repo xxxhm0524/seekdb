@@ -110,7 +110,7 @@ template<class Row> class ExternalSorter {
       write(&length,sizeof(length));write(&checksum,sizeof(checksum));write(packet.data(),packet.size());
       ++run_.rows;
     }
-    Run finish() { flush();run_.end=owner_.end_;return run_; }
+    Run finish() { flush();owner_.sync_written();run_.end=owner_.end_;return run_; }
    private:
     void write(const void *data,size_t length) {
       const auto *bytes=static_cast<const uint8_t *>(data);
@@ -127,6 +127,7 @@ template<class Row> class ExternalSorter {
           !owner_.scratch_.file.pwrite_full(buffer_.data(),used_,owner_.end_))
         throw_error("IO_ERROR","cannot write query sort run");
       owner_.end_+=used_;used_=0;
+      if (owner_.end_-owner_.synced_>=8*1024*1024) owner_.sync_written();
     }
     ExternalSorter &owner_;
     Run run_;
@@ -161,6 +162,7 @@ template<class Row> class ExternalSorter {
           available_=static_cast<size_t>(std::min<uint64_t>(buffer_.size(),run_.end-position_));within_=0;
           if (!available_ || !owner.scratch_.file.pread_full(buffer_.data(),available_,position_))
             throw_error("IO_ERROR","cannot read query sort run");
+          owner.scratch_.file.discard_clean_cache(position_,available_);
         }
         size_t count=std::min(length,available_-within_);
         std::memcpy(bytes,buffer_.data()+within_,count);
@@ -173,6 +175,15 @@ template<class Row> class ExternalSorter {
     size_t within_=0,available_=0;
     std::string packet_;
   };
+  void sync_written() {
+    if (end_==synced_) return;
+    // Buffered scratch pages count against a Linux cgroup too. Bound dirty
+    // writes before discarding their clean cache; this is not a durability
+    // requirement and changes neither table/WAL bytes nor commit ordering.
+    if (!scratch_.file.fsync()) throw_error("IO_ERROR","cannot flush query sort run");
+    scratch_.file.discard_clean_cache(synced_,end_-synced_);
+    synced_=end_;
+  }
   Run write_buffer() {
     std::sort(buffer_.begin(),buffer_.end(),less_);
     Writer writer(*this);
@@ -224,6 +235,7 @@ template<class Row> class ExternalSorter {
   Decode decode_;
   Memory memory_;
   uint64_t end_=0;
+  uint64_t synced_=0;
   size_t extra_=0;
   std::vector<Row> buffer_;
   std::vector<std::vector<Run>> levels_;
