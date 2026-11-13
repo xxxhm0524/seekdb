@@ -34,9 +34,10 @@ struct TableSchema {
   std::vector<uint32_t> col_offsets;  // payload offset of each column
   uint32_t page_size = kPageSize;
   uint32_t rows_per_page = 0;
+  uint32_t pages_per_row = 1;
 };
 
-// Compute row layout.  Throws INVALID_SCHEMA when a row cannot fit a page.
+// Compute the fixed row layout and its physical page mapping.
 void build_row_layout(TableSchema &schema);
 
 struct alignas(4096) Page {
@@ -277,6 +278,8 @@ class Table {
   bool direct_io_ = false;
   std::unordered_map<int64_t, uint64_t> pk_pos_;
   bool reopen_buffered();
+  void locate_end_of_file();
+  uint32_t wide_row_page(uint64_t pos) const;
 };
 
 struct WalRecordHeader {

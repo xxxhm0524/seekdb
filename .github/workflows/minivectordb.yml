@@ -303,6 +303,9 @@ jobs:
       - name: Docker returned Euclidean distance ordering
         run: python3 tests/returned_distance_order.py --image minivectordb:ci --output protocol-results/returned-distance-order-docker.json
 
+      - name: Docker multi-page rows and recovery
+        run: python3 tests/wide_rows.py --image minivectordb:ci
+
       - name: Docker sorting effective keys beyond the memory limit
         run: python3 tests/docker_ordered_keys.py --image minivectordb:ci
 
