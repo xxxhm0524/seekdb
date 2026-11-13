@@ -1,13 +1,14 @@
 """Physical rewind succeeds, sync fails, then the same offsets are reused."""
 import argparse,json,os,subprocess,tempfile
 from pathlib import Path
+from build_support import engine_objects
 ROOT=Path(__file__).resolve().parent.parent
 p=argparse.ArgumentParser();p.add_argument('--output',type=Path);p.add_argument('--sanitize',choices=['address','undefined']);a=p.parse_args()
 flags=['-g','-fno-omit-frame-pointer','-fsanitize='+a.sanitize] if a.sanitize else []
 wrappers=['__imp__commit','__imp__write'] if os.name=='nt' else ['fsync','write']
 with tempfile.TemporaryDirectory(prefix='mvd-rewind-fault-') as directory:
     binary=Path(directory)/('probe.exe' if os.name=='nt' else 'probe')
-    subprocess.run(['g++','-std=c++20','-O1' if a.sanitize else '-O2','-fopenmp',*flags,str(ROOT/'tests/spool_rewind_failure.cpp'),str(ROOT/'src/engine.cpp'),str(ROOT/'src/sql.cpp'),*['-Wl,--wrap='+n for n in wrappers],'-o',str(binary)],check=True,timeout=180)
+    subprocess.run(['g++','-std=c++20','-O1' if a.sanitize else '-O2','-fopenmp',*flags,str(ROOT/'tests/spool_rewind_failure.cpp'),*engine_objects(ROOT,['-std=c++20','-O1' if a.sanitize else '-O2','-fopenmp',*flags]),*['-Wl,--wrap='+n for n in wrappers],'-o',str(binary)],check=True,timeout=180)
     results=[]
     for mode in ['matrix','commit','rollback','kill','kill-commit']:
         data=Path(directory)/mode;data.mkdir()

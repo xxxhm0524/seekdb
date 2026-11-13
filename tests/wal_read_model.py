@@ -3,6 +3,7 @@
 import argparse
 import os
 from pathlib import Path
+from build_support import engine_objects
 import subprocess
 import tempfile
 
@@ -15,11 +16,9 @@ def main():
     args = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix='mvd-wal-read-') as temp:
         binary = Path(temp) / ('model.exe' if os.name == 'nt' else 'model')
-        command = ['g++', '-std=c++20', '-O1', '-Wall', '-Wextra', '-fopenmp',
-            '-I'+str(ROOT/'src'), str(ROOT/'tests/wal_read_model.cpp'),
-            str(ROOT/'src/engine.cpp'), str(ROOT/'src/sql.cpp'), '-o', str(binary)]
-        if args.sanitize:
-            command += ['-fsanitize='+args.sanitize, '-fno-omit-frame-pointer', '-fno-sanitize-recover=all']
+        flags=['-std=c++20','-O1' if args.sanitize else '-O2','-fopenmp']
+        if args.sanitize:flags+=['-fsanitize='+args.sanitize,'-fno-omit-frame-pointer','-fno-sanitize-recover=all']
+        command=['g++',*flags,'-Wall','-Wextra','-I'+str(ROOT/'src'),str(ROOT/'tests/wal_read_model.cpp'),*engine_objects(ROOT,flags),'-o',str(binary)]
         subprocess.run(command, check=True)
         subprocess.run([str(binary), str(Path(temp)/'wal.log')], check=True)
 

@@ -1,6 +1,7 @@
 """A failed COMMIT must leave one coherent outcome, live and after restart."""
 import argparse,json,os,subprocess,tempfile
 from pathlib import Path
+from build_support import engine_objects
 ROOT=Path(__file__).resolve().parent.parent
 p=argparse.ArgumentParser();p.add_argument('--output',type=Path)
 p.add_argument('--sanitize',choices=['address','undefined']);a=p.parse_args()
@@ -9,8 +10,7 @@ wrappers=['-Wl,--wrap=__imp__commit'] if os.name=='nt' else ['-Wl,--wrap=fsync']
 with tempfile.TemporaryDirectory(prefix='mvd-commit-allocation-') as directory:
     binary=Path(directory)/('probe.exe' if os.name=='nt' else 'probe')
     subprocess.run(['g++','-std=c++20','-O1' if a.sanitize else '-O2','-fopenmp',*flags,
-        str(ROOT/'tests/commit_allocation_failure.cpp'),str(ROOT/'src/engine.cpp'),
-        str(ROOT/'src/sql.cpp'),*wrappers,'-o',str(binary)],check=True,timeout=180)
+        str(ROOT/'tests/commit_allocation_failure.cpp'),*engine_objects(ROOT,['-std=c++20','-O1' if a.sanitize else '-O2','-fopenmp',*flags]),*wrappers,'-o',str(binary)],check=True,timeout=180)
     results=[]
     for mode in ['live','wide','shutdown','retry','sync-live','sync-shutdown']:
         data=Path(directory)/mode;data.mkdir()

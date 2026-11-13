@@ -1,5 +1,5 @@
 // Synthetic numeric fixtures: no student-learning evidence is implied.
-#include "../src/engine.cpp"
+#include "../src/query/distance.h"
 #include <iomanip>
 #include <iostream>
 #include <numeric>
@@ -9,7 +9,7 @@ struct Record { double estimate; long double truth; int64_t pk; };
 static size_t checks=0;
 
 size_t check_graph_screen() {
-  const auto screen = mvd::graph_build_screen();
+  const auto screen = mvd::detail::graph_build_screen();
   if (!screen) return 0;
 
   const float samples[] = {
@@ -26,7 +26,7 @@ size_t check_graph_screen() {
         a[i] = samples[choose(random)];
         b[i] = trial % 3 ? samples[choose(random)] : a[i];
       }
-      const double exact = mvd::squared_l2_checked(a.data(), b.data(), dim);
+      const double exact = mvd::detail::squared_l2_checked(a.data(), b.data(), dim);
       const float equal_limit = static_cast<float>(exact * margin);
       if (screen(a.data(), b.data(), dim, equal_limit))
         throw std::runtime_error("graph screening rejected an equal distance");
@@ -40,11 +40,11 @@ size_t check_graph_screen() {
 }
 
 void check(const std::vector<Record> &records,const std::vector<size_t> &order,size_t k,uint64_t ulps,bool merge) {
-  auto initialize=[&](mvd::CandidateHeap &heap) {
+  auto initialize=[&](mvd::detail::CandidateHeap &heap) {
     heap.k=k;heap.uncertainty_ulps=ulps;
-    heap.refine=[&](const mvd::Candidate &candidate){return records.at(candidate.pos).truth;};
+    heap.refine=[&](const mvd::detail::Candidate &candidate){return records.at(candidate.pos).truth;};
   };
-  mvd::CandidateHeap left,right;initialize(left);initialize(right);
+  mvd::detail::CandidateHeap left,right;initialize(left);initialize(right);
   for(size_t n=0;n<order.size();++n) {
     size_t i=order[n];const auto &record=records[i];
     auto &heap=merge&&n%2 ? right:left;

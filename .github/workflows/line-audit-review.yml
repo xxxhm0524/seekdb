@@ -25,6 +25,7 @@ jobs:
           git archive 13682c60013ab43c49f4479c2efe46b47a6cf56c src Makefile | tar -x -C "$mvd_previous"
           mkdir -p "$mvd_previous/tests"
           cp tests/json_nesting_boundaries.py tests/startup_io_failure.* tests/file_io_progress.* tests/parallel_query_failure.* "$mvd_previous/tests/"
+          cp tests/build_support.py "$mvd_previous/tests/"
           make -C "$mvd_previous" -j2
           export MVD_PREVIOUS="$mvd_previous"
           python3 - <<'PY'
@@ -40,7 +41,7 @@ jobs:
           PY
       - name: Address and undefined behavior checks
         run: |
-          g++ -std=c++20 -O1 -g -fopenmp -fno-omit-frame-pointer -fsanitize=address,undefined src/main.cpp src/sql.cpp src/engine.cpp -o minivectordb-sanitized
+          g++ -std=c++20 -O1 -g -fopenmp -fno-omit-frame-pointer -fsanitize=address,undefined $(make -s print-sources) -o minivectordb-sanitized
           python3 tests/json_nesting_boundaries.py --binary "$PWD/minivectordb-sanitized" --output protocol-results/json-nesting-sanitized.json
           python3 tests/parallel_query_failure.py --sanitize address --output protocol-results/parallel-query-asan.json
           python3 tests/parallel_query_failure.py --sanitize undefined --output protocol-results/parallel-query-ubsan.json

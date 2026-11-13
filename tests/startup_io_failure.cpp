@@ -1,3 +1,4 @@
+#include "../src/common.h"
 #include "../src/engine.h"
 #include <array>
 #include <cerrno>

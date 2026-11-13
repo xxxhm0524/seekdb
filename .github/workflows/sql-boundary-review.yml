@@ -30,6 +30,7 @@ jobs:
           git archive e69f120bdc19702df1614f0670fa1d02738b0051 src | tar -x -C "$mvd_before_dir"
           mkdir -p "$mvd_before_dir/tests"
           cp tests/create_sync_failure.cpp tests/create_sync_failure.py "$mvd_before_dir/tests/"
+          cp tests/build_support.py "$mvd_before_dir/tests/"
           set +e
           python3 "$mvd_before_dir/tests/create_sync_failure.py" --output "$PWD/protocol-results/ddl-before-linux.json"
           mvd_before_exit=$?
@@ -52,6 +53,7 @@ jobs:
           git archive 8514212bbaf3966eef030c90a2ff6505a52be0b0 src | tar -x -C "$mvd_before_dir"
           mkdir -p "$mvd_before_dir/tests"
           cp tests/transaction_allocation_failure.cpp tests/transaction_allocation_failure.py "$mvd_before_dir/tests/"
+          cp tests/build_support.py "$mvd_before_dir/tests/"
           set +e
           python3 "$mvd_before_dir/tests/transaction_allocation_failure.py" --output "$PWD/protocol-results/allocation-before-linux.json"
           mvd_before_exit=$?
@@ -75,6 +77,7 @@ jobs:
           git archive e7be1e8d237233f4b57ebf9f082e5ee63f9d54bd src | tar -x -C "$mvd_before_dir"
           mkdir -p "$mvd_before_dir/tests"
           cp tests/commit_allocation_failure.cpp tests/commit_allocation_failure.py "$mvd_before_dir/tests/"
+          cp tests/build_support.py "$mvd_before_dir/tests/"
           set +e
           python3 "$mvd_before_dir/tests/commit_allocation_failure.py" --output "$PWD/protocol-results/commit-before-linux.json"
           mvd_before_exit=$?

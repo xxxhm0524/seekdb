@@ -17,6 +17,6 @@ if args.sanitize:
 with tempfile.TemporaryDirectory(prefix='mvd-heap-model-') as temp:
     binary = Path(temp) / ('heap-model.exe' if os.name == 'nt' else 'heap-model')
     subprocess.run([os.environ.get('CXX', 'g++'), *flags,
-        str(ROOT/'tests/heap_rejection_model.cpp'), str(ROOT/'src/sql.cpp'), '-o', str(binary)],
+        str(ROOT/'tests/heap_rejection_model.cpp'), str(ROOT/'src/query/distance.cpp'), '-o', str(binary)],
         check=True, timeout=120)
     subprocess.run([str(binary)], check=True, timeout=30)

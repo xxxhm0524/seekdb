@@ -1,3 +1,7 @@
+#include "../src/common.h"
+#if __has_include("../src/storage/store.h")
+#include "../src/storage/store.h"
+#endif
 #include "../src/engine.h"
 #include <cstdlib>
 #include <iostream>

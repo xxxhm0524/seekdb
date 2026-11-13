@@ -1,6 +1,7 @@
 """One-shot allocation faults in real DML, preserving earlier transaction work."""
 import argparse,json,os,subprocess,tempfile
 from pathlib import Path
+from build_support import engine_objects
 ROOT=Path(__file__).resolve().parent.parent
 p=argparse.ArgumentParser()
 p.add_argument('--output',type=Path)
@@ -13,8 +14,7 @@ flags=['-g','-fno-omit-frame-pointer','-fsanitize='+a.sanitize] if a.sanitize el
 with tempfile.TemporaryDirectory(prefix='mvd-tx-allocation-') as directory:
     binary=Path(directory)/('probe.exe' if os.name=='nt' else 'probe')
     subprocess.run(['g++','-std=c++20','-O1' if a.sanitize else '-O2','-fopenmp',*flags,
-        str(ROOT/'tests/transaction_allocation_failure.cpp'),str(ROOT/'src/engine.cpp'),
-        str(ROOT/'src/sql.cpp'),'-o',str(binary)],check=True,timeout=180)
+        str(ROOT/'tests/transaction_allocation_failure.cpp'),*engine_objects(ROOT,['-std=c++20','-O1' if a.sanitize else '-O2','-fopenmp',*flags]),'-o',str(binary)],check=True,timeout=180)
     data=Path(directory)/'data';data.mkdir()
     command=[str(binary),str(data)]
     if a.operation is not None:command += [str(a.operation),str(a.point)]

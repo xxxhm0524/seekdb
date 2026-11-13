@@ -1,3 +1,4 @@
+#include "../src/tx_spool.h"
 #include "../src/engine.h"
 #include <cerrno>
 #include <iostream>

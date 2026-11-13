@@ -1,0 +1,51 @@
+name: refactor-v3-review
+on:
+  push:
+    branches: [refactor/minivectordb-v3-20261113]
+  workflow_dispatch:
+jobs:
+  interfaces-and-docker:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and module contracts
+        run: |
+          python3 -m pip install --break-system-packages numpy
+          make -j2
+          python3 tests/header_self_containment.py --output protocol-results/header-contracts.json
+          python3 tests/refactor_contracts.py --output protocol-results/refactor-contracts.json
+          python3 tests/state_machine_model.py --wide-spill --seed 20261214 --steps 1200 --output protocol-results/refactor-wide-local.json
+      - name: Frozen reference and JSONL equivalence
+        run: |
+          git fetch --depth=1 origin f3b13767c3c6a2f3532fd22839f67786043f759b
+          mvd_before=$(mktemp -d)
+          git archive f3b13767c3c6a2f3532fd22839f67786043f759b src Makefile | tar -x -C "$mvd_before"
+          make -C "$mvd_before" -j2
+          python3 tests/refactor_differential.py --reference "$mvd_before/minivectordb" --trace protocol-results/refactor-wide-local.trace/requests.jsonl --output protocol-results/refactor-differential.json
+      - name: Fault boundaries and sanitizers
+        run: |
+          python3 tests/spool_rewind_failure.py --output protocol-results/spool-rewind-failure.json
+          python3 tests/create_sync_failure.py --output protocol-results/ddl-failure-atomicity.json
+          python3 tests/transaction_allocation_failure.py --output protocol-results/transaction-allocation-failure.json
+          python3 tests/commit_allocation_failure.py --output protocol-results/commit-allocation-failure.json
+          python3 tests/refactor_contracts.py --sanitize address --output protocol-results/refactor-contracts-asan.json
+          python3 tests/refactor_contracts.py --sanitize undefined --output protocol-results/refactor-contracts-ubsan.json
+      - name: Locked Docker, frozen public driver and wide model
+        run: |
+          docker build --network=none -t minivectordb:refactor-base .
+          printf 'FROM minivectordb:refactor-base\nENV MVD_CACHE_MB=1 MVD_TX_MEMORY_MB=1 MVD_SORT_MEMORY_MB=1 MVD_ANN_MIN_ROWS=512\n' | docker build --network=none -t minivectordb:refactor-review -
+          git fetch --depth=1 origin f4d4e26653af823a7601668802f80e374ad6643c
+          mvd_official=$(mktemp -d)
+          git archive f4d4e26653af823a7601668802f80e374ad6643c protocol_check mysqltest STDIO_PROTOCOL.md | tar -x -C "$mvd_official"
+          python3 "$mvd_official/protocol_check/run.py" --image minivectordb:refactor-review --output "$PWD/protocol-results/official-public"
+          python3 tests/state_machine_model.py --image minivectordb:refactor-review --wide-spill --seed 20261215 --steps 1200 --output protocol-results/refactor-wide-docker.json
+      - name: Upload refactor evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: refactor-v3-review
+          path: |
+            protocol-results/*.json
+            protocol-results/*.log
+            protocol-results/official-public

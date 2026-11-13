@@ -8,7 +8,7 @@ rng=random.Random(a.seed);report=dict(passed=False,seed=a.seed,steps=a.steps,req
 root=Path(__file__).resolve().parent.parent
 report.update(numeric_scope='exploratory wide-exponent oracle comparison' if a.wide_vectors else 'small integer float32 vectors: squared terms and sums exactly representable in float64',
               base_sha=subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip(),
-              source_sha256={name:hashlib.sha256((root/name).read_bytes()).hexdigest() for name in ['src/main.cpp','src/sql.cpp','src/sql.h','src/engine.cpp']})
+              source_sha256={path.relative_to(root).as_posix():hashlib.sha256(path.read_bytes()).hexdigest() for path in sorted((root/'src').rglob('*')) if path.is_file() and path.suffix in ('.h','.cpp','.mk')})
 def literal(x):
     if isinstance(x,str):return "'"+x.replace('\\','\\\\').replace("'","''")+"'"
     return str(x)

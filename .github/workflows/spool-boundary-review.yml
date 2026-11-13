@@ -22,6 +22,7 @@ jobs:
           git archive 9d2950ef8e28685b6c2a34b456d055482d8ea578 src | tar -x -C "$mvd_previous"
           mkdir -p "$mvd_previous/tests"
           cp tests/spool_rewind_failure.cpp tests/spool_rewind_failure.py "$mvd_previous/tests/"
+          cp tests/build_support.py "$mvd_previous/tests/"
           set +e
           python3 "$mvd_previous/tests/spool_rewind_failure.py" --output "$PWD/protocol-results/spool-before-linux.json"
           mvd_previous_exit=$?

@@ -1,319 +1,92 @@
-# MiniVectorDB
+# MiniVectorDB v3
 
-2026 OceanBase 数据库大赛 · 加赛 · 赛题一「完成一个轻量向量数据库」的从零实现。
+OceanBase 2026 加赛的单机向量数据库。标准接口是 UTF-8 JSONL stdin/stdout，协议见 [STDIO_PROTOCOL.md](STDIO_PROTOCOL.md)。
 
-本实现不依赖 SQLite、RocksDB、Faiss、VSAG、HNSWlib 等现成数据库或向量索引引擎；
-SQL 词法/语法、页式存储、WAL、事务、恢复和距离计算均为自行实现。
+本分支从已验证候选 f3b13767 重构。原主分支、原候选和未完成重写实验均保留；不自动平台提测。验收按实际 SHA 区分，旧版测试结果不自动算作新版通过。
 
-## 1. 语言与构建
+## 构建与运行
 
-| 项目 | 值 |
-| --- | --- |
-| 语言 | C++20 |
-| 编译器 | GCC 13+；容器使用固定的官方 GCC 13.5.0 编译镜像 |
-| 构建 | GNU make；`make -j` |
-| 第三方依赖 | 无（仅 libc/libm/libstdc++/libgomp） |
-| 运行环境 | Linux x86_64 容器；本地 Windows/MSYS2 也可编译测试 |
+需要 GCC 13+、C++20、GNU make 和 OpenMP；Windows/MSYS2 使用 mingw32-make。产品只依赖标准 C/C++ 和 OpenMP 运行库。
 
-```bash
-make -j
+```sh
+make -j2
 ./minivectordb --data-dir=/tmp/mvd-data
 ```
 
-### Docker
+src/sources.mk 是产品、故障探针和 sanitizer 的统一来源清单；make print-sources 输出完整产品编译清单。链接时优化恢复拆分后的跨模块优化。
 
-```bash
+```sh
 docker build -t minivectordb:latest .
 docker run --rm -i -v minivectordb-data:/data --cpus=2 --memory=2g minivectordb:latest
 ```
 
-容器以前台方式运行，只通过 stdin 接收 JSONL 请求、stdout 返回 JSONL 响应；日志只写 stderr，不监听网络端口。
-官方 GCC 13.5.0 编译镜像和 Ubuntu 24.04 运行镜像均固定到摘要。
-拉取基础镜像后，所有 RUN 指令在无网络模式下完成；构建不在线安装软件包。
-运行镜像只复制本项目可执行文件及同一编译镜像的 libstdc++、libgcc、libgomp 标准运行库。
-编译器版本、包清单、运行库 SHA-256 和动态链接检查结果保留在镜像及 CI 产物中。
-所有持久化文件位于 `/data`。启动完成后先主动输出一行 `{"type":"ready"}`，随后逐行处理
-`execute` / `shutdown` 请求（见第 3 节）。
+基础镜像按摘要固定。拉取基础镜像后，构建不在线安装软件包；运行镜像只复制可执行文件、同一编译镜像的标准运行库及许可。示例资源数值不代表未知正式限额。容器不开放端口，stdout 只输出协议报文；恢复完成后才输出 ready。
 
-## 2. SQL 支持范围
+## 模块
 
-### 2.1 表与类型
-
-```sql
-CREATE TABLE docs (
-    id BIGINT PRIMARY KEY,
-    category VARCHAR(32),
-    content VARCHAR(1024),
-    embedding VECTOR(128)
-);
+```mermaid
+flowchart LR
+  IO[JSONL streams] --> API[Engine interface]
+  API --> SQL[Parser and immutable AST]
+  SQL --> Plan[Bound query plan]
+  Plan --> Exec[Execution coordinator]
+  Exec --> TX[Transaction workspace]
+  TX --> Spool[Payload spool]
+  Exec --> Store[Table and page cache]
+  Exec --> WAL[WAL and recovery]
+  Exec --> Index[Derived vector index]
 ```
 
-- `BIGINT`、`VARCHAR(n)`、`VECTOR(n)`；一个 `BIGINT` 主键（列内 `PRIMARY KEY` 或表级 `PRIMARY KEY (id)`）。
-- 每表最多一个 `VECTOR` 列。
-- `VARCHAR(n)` 的 `n` 按 Unicode 码点数计算；字符串比较按 UTF-8 字节序（等价于 Unicode 码点序）。
-- `VECTOR(n)` 固定维度 float32；拒绝 NaN、Infinity、维度不符和溢出。
+| 模块 | 职责 |
+| --- | --- |
+| engine.h | 小型公开 interface，内部状态由独占执行器持有 |
+| app/、protocol/ | 参数、流适配、JSON 编解码及恢复与 ready 的顺序 |
+| syntax/、sql.cpp | 词法、语法和不携带执行状态的 AST |
+| model/、core/ | 值、schema、结果、错误、数值转换、UTF-8、CRC、字节编码 |
+| query/plan.* | 扫描前绑定名称、别名、类型和排序键 |
+| transaction/workspace.* | 独占行增量、载荷计数、临时文件、语句撤销与自动提交作用域 |
+| storage/ | 页、缓存、表、文件 I/O 和 WAL，不拥有向量图或执行器状态 |
+| query/ | 可见性、排序、精确距离、向量索引和派生缓存 |
+| runtime/ | DDL、修改、提交发布、恢复及明确的生命周期 |
 
-### 2.2 数据操作与查询
+部分根目录头文件保留为兼容入口。已验证的数值和自研 ANN 算法继续使用；数值测试不再通过包含整个 engine.cpp 获取内部类型。
+
+## SQL 与持久化
+
+支持 BIGINT、VARCHAR(n)、VECTOR(n)、单 BIGINT 主键、每表最多一向量列；支持多行 INSERT、投影、比较和 AND、排序、LIMIT/OFFSET、UPDATE/DELETE、事务及 CREATE VECTOR INDEX。
 
 ```sql
-INSERT INTO docs VALUES (1, 'db', '事务', '[1,0,0]'), (2, 'db', '索引', '[0,1,0]');
-INSERT INTO docs (id, category, content, embedding) VALUES (3, 'travel', '攻略', '[0,0,1]');
-SELECT * FROM docs WHERE category = 'db' ORDER BY id DESC LIMIT 10;
-SELECT id, content, L2_DISTANCE(embedding, '[0.9,0.1,0]') AS distance
-FROM docs WHERE category = 'db' ORDER BY distance LIMIT 2;
-UPDATE docs SET content = '新内容' WHERE id = 1;
-DELETE FROM docs WHERE id >= 10;
-
+CREATE TABLE docs(id BIGINT PRIMARY KEY,category VARCHAR(32),v VECTOR(2));
+INSERT INTO docs VALUES(1,'db','[1,0]');
+SELECT id,L2_DISTANCE(v,'[0,0]') AS d FROM docs ORDER BY d LIMIT 10;
 BEGIN;
-UPDATE docs SET embedding = '[0.8,0.2,0]' WHERE id = 1;
-DELETE FROM docs WHERE id = 2;
+UPDATE docs SET category='new' WHERE id=1;
 ROLLBACK;
 ```
 
-- 支持 `=`、`<`、`<=`、`>`、`>=`、`AND`、`ORDER BY`（多列、升降序）、`LIMIT` / `OFFSET`。
-- `L2_DISTANCE` 返回欧氏距离（不是平方距离）。精确 TopK 在满足 `WHERE` 的记录集合内计算；
-  距离相同按主键升序；结果不足 K 条时返回全部。
-- `CREATE VECTOR INDEX name ON table(vector_column)` 构建自研 HNSW 与紧凑向量/属性缓存。
-  exact 模式始终精确；ann 模式根据规模、过滤条件和预算选择图搜索或精确索引路径。
-  提交后维护索引，回滚不修改已提交索引，重启从恢复后的记录重建。
-- 未显式 `BEGIN` 时，成功的修改语句自动提交。
-- JSON 协议中查询结果里的 VECTOR 列以 JSON 数组输出（如 `[1.0,2.0]`）。
-- 向量字面量支持引号包裹的 `'[-1,2]'` 和裸形式 `[-1,2]`；裸形式的正负号、科学计数法在插入、更新和距离查询中保持一致。
+VARCHAR 长度按 Unicode 码点计，比较按 UTF-8 字节顺序。向量存储为有限 float32，拒绝维度错误、NaN/Infinity 和转换溢出。
 
-### 2.3 不支持项
+精确距离对存储后的 float32 作精确 dyadic 平方和累加，舍入到 float64 后开方；SQL 标量与排序共用结果，等距按有符号主键升序。近似模式可使用自研 HNSW，过滤和事务可见性不能放宽。缺省 exact，模式由请求参数指定。
 
-不要求且未实现：NULL、JOIN、聚合、子查询、ALTER TABLE、外键、嵌套事务、主键更新、`OR`、`IN`、`LIKE`。
-不支持的语句返回失败响应 `{"ok":false,"error":{"code":"<semantic_name>",...}}`，不会静默改变语义。
+磁盘格式保持兼容：64 KiB 页、表目录、完整页镜像 WAL 和提交记录。提交成功确认前同步 WAL；发布中断进入恢复屏障，恢复一致状态后才处理后续请求。事务临时载荷与查询外排不是恢复依据。
 
-## 3. stdin/stdout 协议（JSON Lines）
+## 检查入口
 
-正式判题器通过进程 stdin/stdout 逐行交换 JSON，不使用文本 SQL 终端或表格输出。协议细节见
-`STDIO_PROTOCOL.md`。
-
-1. 启动：完成数据目录打开与恢复后，主动输出一行并 flush：
-
-```json
-{"type":"ready"}
+```sh
+python tests/audit_suite.py --output protocol-results/local-audit
+python tests/refactor_contracts.py --output protocol-results/module-contracts.json
+python tests/state_machine_model.py --wide-spill --steps 1200 --output protocol-results/wide-model.json
 ```
 
-2. 请求：每行一个 JSON 对象。
+覆盖 JSONL 握手/公开用例、独立语义与数值模型、已有故障反例、强杀及重复恢复。新接口检查包括 I/O 错误后的载荷和计数一致性、嵌套语句、自动提交、同对象重开、协议顺序、schema 与绑定验证。ASAN/UBSAN、锁定 Docker、超内存数据和大事务由 GitHub Actions 验证。每项按完成产物判断，未执行的不计为通过。
 
-```json
-{"id":1,"op":"execute","sql":"SELECT id FROM docs ORDER BY id;","search_mode":"exact"}
-{"id":2,"op":"shutdown"}
-```
+SQL/TSV 辅助回归不代替正式 JSONL。自测 T/B/M 是同机对照，不是官方成绩；I/O 按实际数据文件系统及经验证的分区关系识别，保留原始计数，缺失采集不算零成本。
 
-3. 响应：原样回传请求 `id`（保持 JSON 类型），`ok` 为布尔值。
+## 当前限制
 
-```json
-{"id":1,"ok":true,"columns":["id"],"rows":[[1],[2]]}
-{"id":2,"ok":true,"affected_rows":1}
-{"id":3,"ok":true}
-{"id":4,"ok":false,"error":{"code":"duplicate_key","message":"duplicate primary key"}}
-```
+- 定长记录须放入一页；超宽 VARCHAR/VECTOR 建表仍会报错。
+- 主键、事务元数据和最终结果集内存随规模增长，载荷落盘不代表所有内存恒定。
+- 正式失败 SQL、完整冻结参数范围与极端参考浮点计算顺序仍未知。
+- 有限审查和测试不证明全部 bug 已排除，也不保证正式准入或分数。
 
-- 查询返回 `columns` + `rows`（空结果也返回列名）；BIGINT 为 JSON 整数，VECTOR 为 JSON 数组。
-- INSERT/UPDATE/DELETE 返回实际 `affected_rows`；DDL 与事务控制返回仅 `id` + `ok:true`。
-- 每条响应一行并立即 flush；stdout 不输出日志、提示符或空行，调试信息只写 stderr。
-- 请求中的 `search_mode`（`exact` / `ann`）按请求生效；ann 支持 HNSW，事务内查询使用当前事务可见记录精确计算。
-  标准入口在省略模式时使用 exact，不继承上一条请求的 ann 状态。
-- `shutdown` 先回滚未提交事务、刷盘并清理，再返回 `{"id":N,"ok":true}` 并以 0 退出。
-- 进程被强杀后，已提交事务由 WAL 恢复；未提交改动不会部分生效。
-
-`--query-threads=N` 控制向量扫描线程数（默认 2），`--cache-mb=N` 控制页缓存上限（默认 64 MiB），
-`--data-dir=/data`（或环境变量 `VECTORDB_DATA_DIR`）指定数据目录。
-`--tx-memory-mb=N` 控制事务行数据与更新值的驻留预算（默认 8 MiB）；
-`--sort-memory-mb=N` 控制排序键与行定位的工作预算（默认 16 MiB）；
-`--ann-min-rows=N` 控制图搜索启用规模（默认 40,000，亦需维度至少 32）。
-
-## 4. 设计与验证
-
-### 4.1 存储布局
-
-- 固定 64 KiB 页；每页 16 字节头（magic、nrows、page_no、CRC 保留位），页内为定长记录槽。
-- 每张表一个 `t_<id>.dat` 文件；记录包含：有效位、8 字节主键副本、各列定长槽（VARCHAR 槽为 4 字节长度 + 最大字节空间，VECTOR 槽为 float32 数组）。
-- 主键到槽位的映射在内存中维护，启动/恢复时扫描页头与有效记录重建。
-- 页缓存按 LRU 管理，超过 `--cache-mb` 时淘汰干净页，脏页刷盘；扫描不会把整表读入内存，支持大于内存预算的数据集。
-- 对齐页缓冲复用，额外闲置池最多保留一个 I/O 批次（4 MiB），避免扫描、事务节点与提交镜像反复分配时造成堆碎片增长。
-- 提交镜像按页号排序；相邻脏页合并为至多 4 MiB 的写入，降低大修改与 checkpoint 的同步 I/O 次数。
-  Linux 使用 `pwritev` 直接写对齐页，省去合并写暂存的分配和复制；其他平台保留合并缓冲路径。
-- 顺序扫描和主键索引恢复使用至多 4 MiB 的批量读取；缓存较小时缩小批次，预读不会覆盖较新的脏缓存页，读写暂存缓冲各至多 4 MiB。
-
-### 4.2 事务与语句原子性
-
-- 显式事务维护每表的 `pk -> RowState` 叠加层；读取先查叠加层，再查基线，因此事务内可读到自己的修改。
-- 已有记录的 UPDATE 保存共享的列修改，DELETE 保存删除标记，避免为每条宽记录复制完整定长槽。
-- 无过滤 UPDATE/DELETE 直接合并主键索引和事务行定位，避免为枚举主键读取整表；提交完整覆盖的原始行或墓碑页时省去旧页读取。
-- 无过滤且只投影、排序主键的 SELECT 也从当前可见的主键定位中取得值，保留通用排序及 LIMIT/OFFSET 语义。
-  投影其他列、有过滤或按其他列排序时仍使用实际行数据。
-- 校验全部查询参数后，可由行数保守上界判断为空的 OFFSET 直接返回，不扫描宽记录。
-  有序 LIMIT/OFFSET 只在排序阶段保留键和行位置，切片后再读取返回值，避免为被跳过的行保存大正文。
-  有序查询的输出在选定行之后解码；排序键超过工作预算时写入查询临时文件，以至多 16 路分批归并。
-  距离键按二进制有效位与指数保存，保留原计算精度；临时记录带 CRC，查询结束即删除，异常重启丢弃残留文件。
-  全部排序表达式先校验，再去除不会改变排序结果的重复键，避免重复宽字段放大工作集。
-  小 TopK 继续使用内存堆。巨大返回结果及事务/主键元数据仍随行数增长。
-- 每条语句先校验，使用只记录本语句修改行的撤销日志恢复失败语句；不再为每条语句复制整个事务。
-- 新增行及独立更新值超出预算后写入 `/data/txn.tmp`；相同列的旧补丁会被裁剪，避免保留无效历史。
-  失败语句回退溢写文件的有效范围；提交、回滚和正常关闭释放该文件，异常重启丢弃未提交溢写数据。
-  连续读取溢写行时使用至多 1 MiB 预读，随机访问只读取所需行；回退文件时清空该缓存，避免复用偏移后读到旧内容。
-- 新增槽位的分配进度只在 COMMIT 后安装，失败语句与 ROLLBACK 不消耗基线槽位。
-- `ROLLBACK` 丢弃叠加层；`COMMIT` 先把提交涉及的页生成完整页镜像写入 WAL，`fsync` 后才安装到页缓存并返回成功。
-- 提交逐页生成镜像，保留首 1 MiB 原始镜像，并允许高可压缩页使用至多 16 MiB 的内存缓存。
-  重复 64 位字按无损游程编码，仅缓存压缩到 4 KiB 以内的页；密集页、缓存用尽或分配失败仍通过 WAL 偏移读取。
-  还原后用原 WAL 载荷 CRC 核对，校验失败回退到 WAL；该缓存不写入磁盘，持久化格式和 COMMIT 同步顺序不变。
-- 临时事务文件按逻辑 64 KiB 块保留至多 16 MiB 的压缩读取缓存；不足一块的尾部保留原始字节。
-  回退偏移时删除受影响的缓存块并重建尾部，完整文件及记录偏移保持原样；缓存不可用时读取原文件。
-- 原始页缓存驱逐的干净页还可保留在至多 16 MiB 的压缩缓存中，减少宽记录的重复扫描。
-  满额后保留已接纳的页，避免顺序扫描反复替换压缩缓存；提交安装新页和删表会清除对应旧项。
-  两种缓存均使用无损编码及原始块 CRC，空间计入字符串容量、容器和分配开销；密集页保留原读取路径。
-  零字游程省略重复载荷，重复字对也可压缩；缓存收紧字符串预留空间，使固定预算覆盖更多逻辑页。
-- 未提交事务从不写数据页；崩溃后 WAL 中没有 COMMIT 记录的页镜像会被忽略。
-
-### 4.3 WAL 与崩溃恢复
-
-- `wal.log` 记录两类记录：页镜像（表 id、页号、64 KiB 页内容）和 COMMIT（txid）。
-- Linux 只跳过至少 16 KiB 的内部连续零段，WAL 另外保留已有的完整零尾优化。
-  短零段保留在批量写入中，避免宽行被拆成大量小块同步 I/O；覆盖已有非零数据时先清零相应范围，文件系统不支持打洞时退回普通零写入。
-  页布局与 WAL 记录格式不变；VARCHAR 的未使用尾部及删除的记录槽清零。更新后的页字节和 CRC 可以改变，
-  恢复仍按完整镜像核对 IEEE CRC32，兼容性测试覆盖与旧版的双向恢复和可见值。
-- 每次提交：写页镜像 → 写 COMMIT → `fsync(wal)` → 返回成功；随后页缓存可延迟刷盘。
-- 启动恢复两遍扫描：第一遍收集有 COMMIT 的 txid，第二遍按 WAL 顺序重放这些页镜像（幂等），
-  然后 `fsync` 数据文件、截断 WAL。两遍均按记录读取，不把整个 WAL 读入内存。
-- 每次提交后检查 32 MiB checkpoint 阈值：先刷全部脏页并 `fsync` 数据文件，再截断 WAL。
-  单个大事务的 WAL 可以超过阈值，其页镜像仍逐页生成、安装和恢复。
-- 大事务每写入约 8 MiB WAL 同步一次并释放已干净的 Linux 文件缓存；最终 COMMIT 仍单独同步后才安装数据页。
-  分段持久化不代表事务提交，缺少 COMMIT 的前缀仍会在恢复时忽略。
-- 提交安装和恢复的顺序 WAL 读取使用至多 4 MiB 预读，随机访问只读取所需范围。
-  截断、关闭和重新打开 WAL 时清空有效读缓存，避免偏移复用后读到旧镜像。
-- 正常关闭（JSON shutdown 或 stdin EOF）：回滚未提交事务、刷脏页、`fsync`、截断 WAL。
-  恢复未成功时保留 WAL；同步失败会返回错误，不继续截断恢复日志。
-
-### 4.4 向量检索
-
-- 精确扫描：过滤谓词先判定，命中记录才计算距离；维护大小为 K 的最大堆，SQL 排序键为 `(返回的 float64 欧氏距离, 主键)`。
-  平方距离只用于快速估计和安全拒绝；接近边界时按同一欧氏距离值比较，避免不同平方值开方后并列却未按主键排序。
-- 堆首变化时缓存比较器 ULP 误差带的上界；只提前拒绝已能确定更差的候选，误差带内仍作原有的高精度比较。
-- float32 存储，快速估计使用 double 差值与平方累加，避免极小合法向量的平方距离下溢为 0；最大有限 float32 向量的距离也可表示。
-- 十进制向量分量使用 `from_chars` 直接转换，特殊形式和范围边界回退 `strtof`；解析仍先完整校验语法。
-- AVX2 距离内核带运行期 CPU 检测，不支持 AVX2 时回退到 double 标量实现；不会因 `-march=native` 在未知评测机报非法指令。
-- 候选距离落入保守 ULP 误差带时，与最终投影共用自研固定字长累加器：精确累加存储 float32 的平方差，按最近偶数舍入为 float64 平方和，再开方。它不依赖 long double 宽度，避免微小项在中间舍入时丢失；快速候选扫描与图遍历保持原路径。
-  堆排序、普通/外部排序及缓存投影使用同一个值；DOUBLE 以 17 位有效数字输出，VECTOR 分量仍为可往返 float32 的 9 位。
-- OpenMP 按页切分并行扫描，线程数默认 2（可用 `--query-threads` 调整），结果合并后按 `(距离, 主键)` 输出。
-- 自研 HNSW 使用分层图和邻居多样性筛选（M=32、构建 ef=256）。搜索 ef 至少为 384，高维查询可按维度扩大候选宽度。
-  建图可在 AVX2/FMA 机器上保守筛除距离明显超界的候选。进入堆的距离由 float64 内核计算，筛选覆盖范围外的向量直接使用该内核。
-  图构建、遍历与精确扫描共用 double 累加内核，避免合法小幅 float32 向量的平方距离落入 float 下溢慢路径；返回前重新精确计算和排序。
-  反向邻接保留有界余量后批量筛选（第 0 层最多 80 条、上层最多 40 条），减少重复构建工作。
-  遍历邻接表时预取稍后必然评分的未访问邻居向量，不改变访问次序、距离计算或候选选择。
-- 小集合、低维、过滤查询使用紧凑向量/属性缓存精确计算；不适合缓存的过滤或超预算集合使用页式扫描。
-  已缓存的投影直接返回，避免逐条回读宽记录。密集等距结果回退精确索引，保持主键并列规则。
-- 重复过滤条件可复用满足条件的行编号；每次查询仍重新计算距离和 TopK，提交增删改后清空候选缓存。
-  该缓存计入索引预算，最多 64 组条件且不超过每个节点 8 字节、单索引 4 MiB 的较小值。
-- 索引总预算按保守估计限制为 128 MiB；提交维护当前值，删除标记累计后重建，恢复重建完成后才发送 ready。
-  大批量提交使派生索引失效，下一次检索或重启重建；事务内读取自身修改不依赖旧图。
-- 算法参考：[HNSW 原论文](https://arxiv.org/abs/1603.09320)，未调用任何现成向量索引库。
-
-## 5. 验证记录
-
-2026-11-12 正式任务 `47251869`（SHA `6da81bf4`）未通过正确性门槛，平台未给出失败 SQL；性能和 Agent Prompt 均未执行。
-之后在本地发现并修复裸向量负号被错误拼接成 `- 1` 的问题，补充插入、更新、查询、非法输入和事务原子性对照，以及多表、非首列主键的独立状态模型。
-该本地反例与正式失败的关联尚未确认，修复版本尚未再次正式验证。
-随后参考公开复核记录，又复现了“返回距离均为 1，但按距离排序输出主键 2、1”的问题；现已统一距离输出与排序键。
-公开参考的通过声明仅为作者发布的记录，本地修复与正式失败的关联仍未确认，没有因此追加提测。
-
-2026-11-10 重新审计并修复公开样例之外的边界。以下是 Windows MSYS2 的实际本地结果，
-不是正式 29 个用例的通过证明；Linux、sanitizer 与实际 Docker 镜像以对应 SHA 的 `minivectordb-ci` 记录为准。
-
-| 验证项 | 方法 | 结果 |
-| --- | --- | --- |
-| JSONL 握手、关闭、公开用例 | `protocol_check/run.py`，实际目标参数由下方审计入口生成 | 握手及 20/20 公开用例 PASS |
-| 公开要求的本地覆盖 | `tests/formal_coverage.py`，类型、比较、排序、事务与恢复 | PASS；不等同正式用例 |
-| 边界回归 | `tests/hidden_boundaries.py`，极小距离、别名、空结果错误、维度和行宽回绕、非法向量、回滚槽位、UPDATE 原子性、Unicode 错误响应、数值等距、重复列、DDL 孤立文件、float32 最大值回传、请求 id 类型 | 19 组 PASS |
-| 浮点解析差分 | `tests/float_parse_model.py`，与原 `strtof` 行为逐位比较，包含随机有限 float32、十进制、极值、非法符号及下溢 | 本地约 60 万次转换 PASS |
-| TopK 拒绝边界模型 | `tests/heap_rejection_model.py`，以独立精确数值顺序检查 464 组边界、零距离、合并及饱和上界 | 本地 PASS；Linux/sanitizer 查看对应 SHA 的 CI |
-| 过滤候选模型 | `tests/filter_cache_model.py`，106 组谓词、多查询向量、缓存淘汰、提交/回滚/失败/重启 | 本地 PASS；主键与排序严格核对 |
-| 学习材料完整性 | `tests/validate_agent_material.py`，UTF-8、128 KiB、重复键、非有限数、凭据模式、镜像一致与 RFC6901 引用 | 只验证格式、来源角色和引用，不计算学习分数 |
-| 预读和脏页一致性 | `tests/cache_coherence.py`，1 MiB 缓存下交错更新、过滤 TopK、提交/回滚及强杀重启 | PASS |
-| 宽记录修改 I/O | `tests/mutation_io.py`，按进程读取字节计数验证无过滤修改、全页删除，并检查事务叠加和部分页保留 | 本地 PASS；不放宽容器的 60 秒请求限制 |
-| 主键投影 I/O | `tests/primary_key_projection.py`，主键在最后一列，覆盖别名、极值、OFFSET、事务可见性与其他列回退 | 本地 PASS；记录进程读取字节，非官方物理 I/O 指标 |
-| 溢写读取放大 | `tests/spool_read_boundaries.py`，多表事务越过溢写阈值，验证随机偏移不会触发固定大窗口读取 | 查看对应 SHA 的审计和 Actions |
-| 批量预读分配 | `tests/page_pool_churn.py`，8 MiB 页缓存反复扫描宽表，约束分配器内存增长 | 查看对应 SHA 的审计和 Actions |
-| 长事务溢写 | `tests/transaction_spill.py`，1 MiB 行数据预算，包含 INSERT/UPDATE、覆盖历史裁剪、失败语句、提交/回滚/强杀 | 本地 PASS；12,000 条宽记录峰值约 15 MiB |
-| HNSW 生命周期 | `tests/ann_lifecycle.py`，显式启用图路径，验证精确/近似切换、过滤、增删改、事务与崩溃重建 | 本地 PASS |
-| HNSW 数值范围 | `tests/ann_numeric_range.py`，强制图路径，覆盖 2⁻¹³⁵、2⁻⁷⁵、1、2¹¹⁰ 尺度及密集等距主键排序 | Linux 与 sanitizer 以对应 SHA 的 CI 为准 |
-| 图索引数值耗时边界 | `tests/ann_index_deadline.py`，50k×64d 对比 2⁻⁷⁵ 与正常量纲，保留 60 秒请求期限，核对召回、距离及强杀后的启动重建 | 查看对应 SHA 的本地日志与 Actions |
-| 随机模型 | `tests/stress_random.py`，种子 7、42、211，各 100 轮 | PASS |
-| 原回归和扩展 | `tests/regression.py`、`tests/run_extended_tsv.py`；后者名称保留，实际走 JSONL | PASS |
-| 恢复中重复强杀 | `tests/crash_recovery_test.py 50000`，合法未提交增删改，核对所有 ID | PASS；本地观测到 2 次恢复写页后、ready 前强杀 |
-| 多表提交途中强杀 | `tests/commit_crash_boundaries.py`，包含未发 COMMIT、不同延迟、已确认 COMMIT | PASS；完整旧状态或完整新状态 |
-| 大于内存的数据文件 | `tests/resource_boundaries.py --rows 260000 --max-mb 128`，1 MiB 页缓存，2321.44 MiB 数据文件 | PASS；排序/事务 TopK 约 22.4 MiB，更新/删除峰值约 78.8 MiB（进程指标） |
-| exact 基准 | 10k×128d，1000 查询，种子 20261110；强杀后逐条核对持久化内容及查询距离 | 两组 Recall@10 均 1.0；写入约 1.35 s，查询约 0.272 s |
-| ann 基准 | 同规模，种子 20261111；该规模选择紧凑精确索引 | 两组 Recall@10 均 1.0；写入约 1.23 s，查询约 0.260 s |
-| Linux 和 sanitizer | `.github/workflows/minivectordb.yml`，GCC/UBSan 和回归 | 查看对应 SHA 的 Actions |
-| 实际容器资源边界 | `tests/docker_resource_boundaries.py`，256 MiB 容器、超过 2 GiB 数据文件、全表更新/删除及重启 | 查看对应 SHA 的 Actions |
-| 有效文本大事务 | `tests/docker_transaction_spill.py --image <镜像> --long-unicode`，256 MiB 容器内输入超过 2 GiB 的有效 UTF-8 文本，检查失败语句、提交、强杀恢复、长文本过滤与未提交清理 | 查看对应 SHA 的 Actions；不以定长槽占用代替有效文本量 |
-
-重跑本地审计（输出目录必须是新目录；需已构建程序与 NumPy）：
-
-```bash
-python tests/audit_suite.py --output protocol-results/audit-20261110 --large-resource
-```
-
-审计保留逐项日志和 `summary.json`。基准计时包含 JSONL 请求/响应与提交持久化，排除 SQL 文本生成及事后验证；
-不据此宣称平台综合性能或排名。Windows 传输层增加了带超时的管道读写，Linux 保留原 selectors 路径，
-公开断言规则未放宽。容器构建及容器资源边界可查看对应提交的 Ubuntu 24.04 Actions。
-
-### HNSW 查询候选裁剪
-
-图搜索本身已经计算候选距离。查询现在只选择并排序前 K+1 个仍可见的候选，
-由 SQL 层复用距离，并保留第 K+1 个结果判断边界是否需要回退到精确扫描。
-搜索宽度、图构建和精确扫描保持原样。
-
-相对 `b733990b610126dc6d85fdbd3d88408744e8798b`，在本地 Linux 进程上使用同一批 10,000 个
-128 维向量、1,000 条查询（有、无过滤各 500 条），两线程交替跑 9 轮。
-通过 `MVD_ANN_MIN_ROWS=2048` 启用图路径时，无过滤查询批次的耗时中位数由 302.58 ms 降至 297.57 ms，
-约下降 1.65%；两版本返回的 ID、顺序、距离完全一致，本样本 Recall@10 都为 1.0。
-默认阈值下该数据规模走精确扫描，测得的时差不归因于此改动。可用
-`tests/paired_query_compare.py --rows 10000 --dim 128 --queries 1000 --rounds 9`，
-传入前后版本二进制路径及输出文件复现。该数据是查询诊断，不是正式性能分。
-上述计时来自远端提交 `e3770170` 的实验记录；合并存储修复后的版本另行进行结果一致性和 CI 验证。
-
-## 6. 目录
-
-```
-src/common.h      文件、CRC32、UTF-8、数值解析
-src/sql.h/.cpp    SQL 词法/递归下降解析器
-src/engine.h/.cpp 页存储、页缓存、WAL、事务、恢复、向量扫描
-src/main.cpp      JSONL stdin/stdout 服务
-tests/            本地协议驱动、回归、Benchmark
-mysqltest/        官方公开用例与 manifest
-protocol_check/   官方 JSON 协议检查器
-agent/conversation.json  Agent Prompt 学习材料
-Dockerfile
-```
-
-## 7. 已知限制
-
-1. 行必须能放入 64 KiB 页；超宽 VARCHAR/VECTOR 建表会返回错误。
-2. 不支持 NULL、默认值、JOIN、聚合、子查询、ALTER TABLE、主键更新。
-3. ANN 会近似检索，也会选择精确缓存或扫描；其召回率须由实际数据验证，不能据此宣称平台排名。
-4. 行数据和更新值可溢写，但主键索引、事务行定位/撤销元数据仍与记录数有关；单条巨大 SQL 的解析和无 LIMIT 的巨大响应仍受内存限制。
-5. 本地测试和 CI 覆盖公开要求的已知边界，不能证明未获得输入的正式 29 个用例全部通过。未经用户授权不做平台提测。
-
-## 8. 学习材料与版本
-
-默认评测材料为 `agent/conversation.json`，根目录 `conversation.json` 是相同内容的兼容副本。
-材料选录可核对的用户原话、助手可见回复和真实日志，明确区分角色；未给学生自行赋分，
-未把助手设计、执行的实验改写成学生独立完成。尚未收到的学生预测、解释和复盘会明确标明。
-
-本地可用独立取回的消息导出进一步核对原话，导出文件不作为评测材料替代品：
-
-```bash
-python tests/validate_agent_material.py --path agent/conversation.json \
-  --mirror conversation.json --require-evidence --source-corpus <可见消息导出.json>
-```
-
-`tests/docker_score_compare.py` 提供三轮新旧代码 T/B/M 对照，B/M 包含准备过程和最终写回，
-内容校验使用另一容器。其参考版本与比较指标仅用于工程判断，不代表官方基线、成绩或名次。
-
-`tests/paired_query_compare.py` 在分别准备的相同集合上交替执行查询轮次，检查两版本结果逐项一致并记录召回。
-它复用已准备的会话，供比较查询耗时，不作为正式 T/B/M 或赛事评分；既支持 Docker 镜像，也支持本地二进制。
+重构与验收见 [REFACTOR_V3.md](REFACTOR_V3.md)。Agent 材料保留真实对话，不伪造学生解释、工具结果或学习证据。

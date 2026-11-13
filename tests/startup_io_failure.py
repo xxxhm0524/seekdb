@@ -1,12 +1,13 @@
 import argparse,json,os,subprocess,tempfile
 from pathlib import Path
+from build_support import engine_objects
 ROOT=Path(__file__).resolve().parent.parent
 p=argparse.ArgumentParser();p.add_argument('--output',type=Path);a=p.parse_args()
 names=['__imp__open','__imp__read','_lseeki64'] if os.name=='nt' else ['open','pread','lseek']
 with tempfile.TemporaryDirectory(prefix='mvd-startup-io-') as directory:
     binary=Path(directory)/('probe.exe' if os.name=='nt' else 'probe')
     subprocess.run(['g++','-std=c++20','-O2','-fopenmp',str(ROOT/'tests/startup_io_failure.cpp'),
-        str(ROOT/'src/engine.cpp'),str(ROOT/'src/sql.cpp'),*['-Wl,--wrap='+name for name in names],'-o',str(binary)],check=True,timeout=120)
+        *engine_objects(ROOT,['-std=c++20','-O2','-fopenmp']),*['-Wl,--wrap='+name for name in names],'-o',str(binary)],check=True,timeout=120)
     data=Path(directory)/'data';data.mkdir()
     run=subprocess.run([str(binary),str(data)],capture_output=True,text=True,timeout=30)
     report=dict(passed=run.returncode==0,exit_code=run.returncode,stdout=run.stdout,stderr=run.stderr,

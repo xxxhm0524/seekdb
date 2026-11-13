@@ -1,3 +1,4 @@
+#include "../src/common.h"
 // Linker-level I/O fault: the real Engine CREATE call must propagate sync failure.
 #include "../src/engine.h"
 #include <cerrno>

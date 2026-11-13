@@ -1,3 +1,4 @@
+#include "../src/common.h"
 #include "../src/engine.h"
 #include <cstdlib>
 #include <iostream>

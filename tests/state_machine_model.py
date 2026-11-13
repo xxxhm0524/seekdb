@@ -26,7 +26,7 @@ args=parser.parse_args();rng=random.Random(args.seed)
 report=dict(passed=False,seed=args.seed,steps=args.steps,
     base_sha=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
     working_tree_dirty=bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True).strip()),
-    source_sha256={str(path.relative_to(ROOT)).replace('\\','/'):hashlib.sha256(path.read_bytes()).hexdigest() for path in sorted((ROOT/'src').iterdir()) if path.suffix in ('.h','.cpp')},
+    source_sha256={str(path.relative_to(ROOT)).replace('\\','/'):hashlib.sha256(path.read_bytes()).hexdigest() for path in sorted((ROOT/'src').rglob('*')) if path.is_file() and path.suffix in ('.h','.cpp','.mk')},
     script_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),requests=0,
     scope='Independent Python state model; '+('Docker' if args.image else 'native')+' JSONL; no claim to reproduce the unpublished formal case.')
 target=args.output or ROOT/'protocol-results'/('functional-state-holdout-%d-20261112'%args.seed)/'result.json'

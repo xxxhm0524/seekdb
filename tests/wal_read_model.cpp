@@ -1,3 +1,6 @@
+#if __has_include("../src/storage/store.h")
+#include "../src/storage/store.h"
+#endif
 #include "engine.h"
 #include <fstream>
 #include <iostream>

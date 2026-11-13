@@ -1,11 +1,12 @@
 import argparse,json,os,subprocess,tempfile
 from pathlib import Path
+from build_support import engine_objects
 ROOT=Path(__file__).resolve().parent.parent
 p=argparse.ArgumentParser();p.add_argument('--output',type=Path);p.add_argument('--sanitize',choices=['address','undefined']);a=p.parse_args()
 flags=['-g','-fno-omit-frame-pointer','-fsanitize='+a.sanitize] if a.sanitize else []
 with tempfile.TemporaryDirectory(prefix='mvd-parallel-fault-') as directory:
     binary=Path(directory)/('probe.exe' if os.name=='nt' else 'probe')
-    subprocess.run(['g++','-std=c++20','-O1' if a.sanitize else '-O2','-fopenmp',*flags,str(ROOT/'tests/parallel_query_failure.cpp'),str(ROOT/'src/engine.cpp'),str(ROOT/'src/sql.cpp'),'-o',str(binary)],check=True,timeout=180)
+    subprocess.run(['g++','-std=c++20','-O1' if a.sanitize else '-O2','-fopenmp',*flags,str(ROOT/'tests/parallel_query_failure.cpp'),*engine_objects(ROOT,['-std=c++20','-O1' if a.sanitize else '-O2','-fopenmp',*flags]),'-o',str(binary)],check=True,timeout=180)
     results=[]
     for mode in ['heap','indexed']:
         data=Path(directory)/mode;data.mkdir()

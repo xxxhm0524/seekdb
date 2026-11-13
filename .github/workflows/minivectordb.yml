@@ -47,7 +47,7 @@ jobs:
 
   protocol-and-tests:
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
 
@@ -69,6 +69,11 @@ jobs:
 
       - name: Extended semantics
         run: python3 tests/run_extended_tsv.py
+
+      - name: Refactored module interfaces and header independence
+        run: |
+          python3 tests/header_self_containment.py --output protocol-results/header-contracts.json
+          python3 tests/refactor_contracts.py --output protocol-results/refactor-contracts.json
 
       - name: JSON nesting startup I/O and worker failure boundaries
         run: |
@@ -218,7 +223,7 @@ jobs:
         run: |
           g++ -std=c++20 -O1 -g -Wall -Wextra -fopenmp \
             -fsanitize=undefined -fno-sanitize-recover=undefined \
-            src/main.cpp src/sql.cpp src/engine.cpp -o minivectordb-ubsan
+            $(make -s print-sources) -o minivectordb-ubsan
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/hidden_boundaries.py
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/vector_literal_syntax.py
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/returned_distance_order.py --rows 1200
@@ -243,6 +248,7 @@ jobs:
           python3 tests/compact_cache_model.py --sanitize undefined
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/compact_read_cache.py --rows 1000 --max-mb 512
           python3 tests/external_sort_model.py --sanitize undefined
+          python3 tests/refactor_contracts.py --sanitize undefined --output protocol-results/refactor-contracts-ubsan.json
           MVD_BIN="$PWD/minivectordb-ubsan" python3 tests/ordered_key_memory.py --rows 3000 --max-mb 512 --sort-memory-mb 1
 
       - name: Docker build
@@ -295,7 +301,7 @@ jobs:
         run: |
           g++ -std=c++20 -O1 -g -Wall -Wextra -fopenmp \
             -fsanitize=address,undefined -fno-sanitize-recover=undefined -fno-omit-frame-pointer \
-            src/main.cpp src/sql.cpp src/engine.cpp -o minivectordb-asan
+            $(make -s print-sources) -o minivectordb-asan
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/hidden_boundaries.py
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/vector_literal_syntax.py
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/returned_distance_order.py --rows 1200
@@ -316,6 +322,7 @@ jobs:
           python3 tests/compact_cache_model.py --sanitize address
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/compact_read_cache.py --rows 1000 --max-mb 512
           python3 tests/external_sort_model.py --sanitize address
+          python3 tests/refactor_contracts.py --sanitize address --output protocol-results/refactor-contracts-asan.json
           MVD_BIN="$PWD/minivectordb-asan" python3 tests/ordered_key_memory.py --rows 3000 --max-mb 512 --sort-memory-mb 1
 
       - name: Docker handshake
@@ -426,6 +433,10 @@ jobs:
             src/engine.h src/common.h src/ann.h src/tx_spool.h | tar -x -C "$mvd_graph_dir"
           tar -cf - Dockerfile docker/licenses/GCC-RUNTIME-EXCEPTION-3.1.txt | tar -xf - -C "$mvd_graph_dir"
           docker build --network=none -t minivectordb:reference-1996a1b4 "$mvd_graph_dir"
+          mvd_refactor_dir=$(mktemp -d)
+          git fetch --depth=1 origin f3b13767c3c6a2f3532fd22839f67786043f759b
+          git archive f3b13767c3c6a2f3532fd22839f67786043f759b src Makefile Dockerfile .dockerignore docker/licenses/GCC-RUNTIME-EXCEPTION-3.1.txt | tar -x -C "$mvd_refactor_dir"
+          docker build --network=none -t minivectordb:reference-f3b13767 "$mvd_refactor_dir"
 
       - name: WAL records and bidirectional recovery
         if: always() && steps.reference_build.outcome == 'success'
@@ -456,6 +467,11 @@ jobs:
           python3 tests/paired_query_compare.py \
             --reference-image minivectordb:reference-1996a1b4 --candidate-image minivectordb:ci \
             --check-default-mode --output protocol-results/paired-queries-docker-50k.json
+
+      - name: Refactor paired resource comparison against frozen baseline
+        if: always() && steps.reference_build.outcome == 'success'
+        run: |
+          python3 tests/docker_score_compare.py --reference-image minivectordb:reference-f3b13767 --candidate-image minivectordb:ci --reference-sha f3b13767c3c6a2f3532fd22839f67786043f759b --drop-caches --output protocol-results/paired-refactor-comparison.json
 
       - name: Upload protocol reports
         if: always()

@@ -1,4 +1,6 @@
 #include "sql.h"
+#include "common.h"
+#include "core/text.h"
 
 #include <cctype>
 #include <cstring>
@@ -7,9 +9,7 @@
 namespace mvd {
 
 std::string SqlParser::lower(const std::string &s) {
-  std::string out(s);
-  for (char &c : out) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-  return out;
+  return lower_copy(s);
 }
 
 void SqlParser::syntax_error(const std::string &message) {
@@ -306,7 +306,6 @@ std::unique_ptr<Statement> SqlParser::parse_create_table() {
   }
   stmt->table = expect_ident();
   expect_symbol('(');
-  size_t start_index = index_;
   bool table_pk_seen = false;
   std::vector<ColumnDef> cols;
   std::string table_pk;
@@ -375,7 +374,6 @@ std::unique_ptr<Statement> SqlParser::parse_create_table() {
     expect_symbol(')');
     break;
   }
-  (void)start_index;
   stmt->columns = std::move(cols);
   if (stmt->columns.empty()) syntax_error("CREATE TABLE requires at least one column");
   // If table-level PK given and an inline PK exists elsewhere, that's an error.
