@@ -419,7 +419,8 @@ class FileHandle {
 #ifdef _WIN32
     std::lock_guard<std::mutex> lock(io_mutex_);
     while (done < len) {
-      _lseeki64(fd_, static_cast<__int64>(offset + done), SEEK_SET);
+      if (_lseeki64(fd_, static_cast<__int64>(offset + done), SEEK_SET) < 0)
+        return false;
       int n = _read(fd_, p + done, static_cast<unsigned>(len - done));
       if (n < 0) return false;
       if (n == 0) return false;
@@ -446,9 +447,11 @@ class FileHandle {
 #ifdef _WIN32
     std::lock_guard<std::mutex> lock(io_mutex_);
     while (done < len) {
-      _lseeki64(fd_, static_cast<__int64>(offset + done), SEEK_SET);
+      if (_lseeki64(fd_, static_cast<__int64>(offset + done), SEEK_SET) < 0)
+        return false;
       int n = _write(fd_, p + done, static_cast<unsigned>(len - done));
       if (n < 0) return false;
+      if (n == 0) return false;
       done += static_cast<size_t>(n);
     }
     return true;
@@ -459,6 +462,7 @@ class FileHandle {
         if (errno == EINTR) continue;
         return false;
       }
+      if (n == 0) return false;
       done += static_cast<size_t>(n);
     }
     return true;
@@ -597,6 +601,7 @@ class FileHandle {
         if (errno == EINTR) continue;
         return false;
       }
+      if (n == 0) return false;
       done += static_cast<size_t>(n);
     }
     return true;

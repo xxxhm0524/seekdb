@@ -151,40 +151,56 @@ struct JsonCursor {
   }
 
   bool skip_value() {
+    // Request IDs and ignored extension fields may themselves be nested JSON.
+    // Keep nesting on the heap so a valid input cannot exhaust the call stack.
+    std::vector<char> containers;
+    bool need_value = true;
+    while (true) {
+      skip_ws();
+      if (need_value) {
+        if (pos >= text.size()) return false;
+        char open = text[pos];
+        if (open == '{' || open == '[') {
+          ++pos;
+          char close = open == '{' ? '}' : ']';
+          skip_ws();
+          if (pos < text.size() && text[pos] == close) {
+            ++pos;
+          } else {
+            containers.push_back(close);
+            if (open == '{') {
+              std::string key;
+              if (!parse_string(key) || !take(':')) return false;
+            }
+            continue;
+          }
+        } else if (!skip_scalar()) {
+          return false;
+        }
+        need_value = false;
+      }
+      if (containers.empty()) return true;
+      if (take(',')) {
+        if (containers.back() == '}') {
+          std::string key;
+          if (!parse_string(key) || !take(':')) return false;
+        }
+        need_value = true;
+      } else if (take(containers.back())) {
+        containers.pop_back();
+      } else {
+        return false;
+      }
+    }
+  }
+
+  bool skip_scalar() {
     skip_ws();
     if (pos >= text.size()) return false;
     char c = text[pos];
     if (c == '"') {
       std::string ignored;
       return parse_string(ignored);
-    }
-    if (c == '{' || c == '[') {
-      char open = c;
-      char close = (c == '{') ? '}' : ']';
-      ++pos;
-      skip_ws();
-      if (pos < text.size() && text[pos] == close) {
-        ++pos;
-        return true;
-      }
-      while (true) {
-        if (open == '{') {
-          std::string key;
-          if (!parse_string(key)) return false;
-          if (!take(':')) return false;
-        }
-        if (!skip_value()) return false;
-        skip_ws();
-        if (pos < text.size() && text[pos] == ',') {
-          ++pos;
-          continue;
-        }
-        if (pos < text.size() && text[pos] == close) {
-          ++pos;
-          return true;
-        }
-        return false;
-      }
     }
     // Number, true, false, null.
     size_t start = pos;

@@ -1,0 +1,60 @@
+name: line-audit-review
+on:
+  push:
+    branches: [fix/json-stack-and-line-audit-20261113]
+  workflow_dispatch:
+jobs:
+  native-and-docker:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and current boundary checks
+        run: |
+          make -j2
+          python3 tests/json_nesting_boundaries.py --output protocol-results/json-nesting-local.json
+          python3 tests/startup_io_failure.py --output protocol-results/startup-io-local.json
+          python3 tests/file_io_progress.py --output protocol-results/io-progress-local.json
+          python3 tests/parallel_query_failure.py --output protocol-results/parallel-query-local.json
+          python3 tests/formal_coverage.py
+          python3 tests/state_machine_model.py --steps 1200 --seed 20261126 --output protocol-results/state-model.json
+      - name: Previous source must fail the same probes
+        run: |
+          git fetch --depth=1 origin 13682c60013ab43c49f4479c2efe46b47a6cf56c
+          mvd_previous=$(mktemp -d)
+          git archive 13682c60013ab43c49f4479c2efe46b47a6cf56c src Makefile | tar -x -C "$mvd_previous"
+          mkdir -p "$mvd_previous/tests"
+          cp tests/json_nesting_boundaries.py tests/startup_io_failure.* tests/file_io_progress.* tests/parallel_query_failure.* "$mvd_previous/tests/"
+          make -C "$mvd_previous" -j2
+          export MVD_PREVIOUS="$mvd_previous"
+          python3 - <<'PY'
+          import json,os,subprocess
+          from pathlib import Path
+          root=Path(os.environ['MVD_PREVIOUS']);output=Path('protocol-results');rows=[]
+          for name in ['json_nesting_boundaries','startup_io_failure','file_io_progress','parallel_query_failure']:
+              report=output/(name+'-before.json')
+              run=subprocess.run(['python3',str(root/'tests'/(name+'.py')),'--output',str(report.resolve())],capture_output=True,text=True,timeout=180)
+              assert run.returncode==1,(name,run.returncode,run.stdout,run.stderr)
+              rows.append(dict(name=name,expected_failure=True,exit_code=run.returncode,stdout=run.stdout[-8000:],stderr=run.stderr[-2000:]))
+          (output/'before-controls.json').write_text(json.dumps(rows,indent=2)+'\n')
+          PY
+      - name: Address and undefined behavior checks
+        run: |
+          g++ -std=c++20 -O1 -g -fopenmp -fno-omit-frame-pointer -fsanitize=address,undefined src/main.cpp src/sql.cpp src/engine.cpp -o minivectordb-sanitized
+          python3 tests/json_nesting_boundaries.py --binary "$PWD/minivectordb-sanitized" --output protocol-results/json-nesting-sanitized.json
+          python3 tests/parallel_query_failure.py --sanitize address --output protocol-results/parallel-query-asan.json
+          python3 tests/parallel_query_failure.py --sanitize undefined --output protocol-results/parallel-query-ubsan.json
+      - name: Locked Docker and frozen public protocol
+        run: |
+          docker build --network=none -t minivectordb:line-review .
+          git fetch --depth=1 origin f4d4e26653af823a7601668802f80e374ad6643c
+          mvd_official=$(mktemp -d)
+          git archive f4d4e26653af823a7601668802f80e374ad6643c protocol_check mysqltest STDIO_PROTOCOL.md | tar -x -C "$mvd_official"
+          python3 "$mvd_official/protocol_check/run.py" --image minivectordb:line-review --output "$PWD/protocol-results/official-public"
+          python3 tests/json_nesting_boundaries.py --image minivectordb:line-review --output protocol-results/json-nesting-docker.json
+      - name: Upload line audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: line-audit-review
+          path: protocol-results

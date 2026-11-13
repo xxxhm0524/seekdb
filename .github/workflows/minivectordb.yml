@@ -70,6 +70,13 @@ jobs:
       - name: Extended semantics
         run: python3 tests/run_extended_tsv.py
 
+      - name: JSON nesting startup I/O and worker failure boundaries
+        run: |
+          python3 tests/json_nesting_boundaries.py --output protocol-results/json-nesting.json
+          python3 tests/startup_io_failure.py --output protocol-results/startup-io-failure.json
+          python3 tests/file_io_progress.py --output protocol-results/file-io-progress.json
+          python3 tests/parallel_query_failure.py --output protocol-results/parallel-query-failure.json
+
       - name: SQL block comment boundary regressions
         run: python3 tests/sql_comment_boundaries.py --output protocol-results/sql-comment-boundaries.json
 

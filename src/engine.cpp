@@ -11,6 +11,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <exception>
 #include <limits>
 #include <new>
 #include <queue>
@@ -422,7 +423,8 @@ void Table::open(bool rebuild, bool fresh) {
   // Find the highest page with a valid header.
   for (int64_t p = static_cast<int64_t>(total_pages) - 1; p >= 0; --p) {
     Page page;
-    if (!load_page_raw(static_cast<uint32_t>(p), page)) break;
+    if (!load_page_raw(static_cast<uint32_t>(p), page))
+      throw_error("IO_ERROR", "cannot read table tail");
     if (page.magic == kPageMagic) {
       page_count_ = static_cast<uint32_t>(p) + 1;
       next_pos_ = static_cast<uint64_t>(p) * schema_.rows_per_page + page.nrows;
@@ -445,7 +447,8 @@ bool Table::load_page_raw(uint32_t page_no, Page &page) {
   if (!file_.valid()) return false;
   int64_t size = file_.size();
   uint64_t offset = static_cast<uint64_t>(page_no) * kPageSize;
-  if (size < 0 || static_cast<int64_t>(offset + kPageSize) > size) {
+  if (size < 0) return false;
+  if (static_cast<int64_t>(offset + kPageSize) > size) {
     page = Page();
     page.magic = kPageMagic;
     page.nrows = 0;
@@ -488,7 +491,8 @@ void Table::refresh_after_recovery() {
   next_pos_ = 0;
   for (int64_t p = static_cast<int64_t>(total_pages) - 1; p >= 0; --p) {
     Page page;
-    if (!load_page_raw(static_cast<uint32_t>(p), page)) continue;
+    if (!load_page_raw(static_cast<uint32_t>(p), page))
+      throw_error("IO_ERROR", "cannot read recovered table tail");
     if (page.magic == kPageMagic) {
       page_count_ = static_cast<uint32_t>(p) + 1;
       next_pos_ = static_cast<uint64_t>(p) * schema_.rows_per_page + page.nrows;
@@ -1067,7 +1071,17 @@ void Engine::load_catalog() {
   table_ids_.clear();
   next_table_id_ = 1;
   std::string data;
-  if (!read_file(catalog_path_, data) || data.empty()) return;
+  FileHandle catalog = FileHandle::open(catalog_path_, O_RDONLY);
+  if (!catalog.valid()) {
+    if (errno == ENOENT) return;
+    throw_error("IO_ERROR", "cannot open catalog");
+  }
+  int64_t bytes = catalog.size();
+  if (bytes < 0) throw_error("IO_ERROR", "cannot stat catalog");
+  if (bytes == 0) throw_error("CORRUPTION", "empty catalog");
+  data.resize(static_cast<size_t>(bytes));
+  if (!catalog.pread_full(data.data(), data.size(), 0))
+    throw_error("IO_ERROR", "cannot read catalog");
   Reader r(data);
   uint32_t magic, version, count;
   if (!r.u32(magic) || !r.u32(version) || !r.u32(count))
@@ -2356,6 +2370,17 @@ Response Engine::exec_select(SelectStmt &stmt) {
     if (!tx_.active && table.schema().vector_index_created && !table.vector_search_ &&
         !table.vector_search_unavailable_) rebuild_vector_index(table);
     auto *index = table.vector_search_.get();
+    std::exception_ptr scan_error;
+    std::atomic<bool> scan_failed{false};
+    auto remember_scan_error = [&]() {
+      // Exceptions must not unwind out of an OpenMP worker. Publish the first
+      // failure, join every worker, then rethrow in execute's error boundary.
+#ifdef _OPENMP
+#pragma omp critical(mvd_topk_error)
+#endif
+      { if (!scan_error) scan_error = std::current_exception(); }
+      scan_failed.store(true, std::memory_order_relaxed);
+    };
     if (!tx_.active && index && index->supports(stmt.where)) {
       bool approximate = false;
       if (ann_mode_ && stmt.where.empty() && index->approximate_available(static_cast<size_t>(topk))) {
@@ -2383,16 +2408,20 @@ Response Engine::exec_select(SelectStmt &stmt) {
 #pragma omp parallel for num_threads(thread_count) schedule(static)
 #endif
         for (int64_t i = 0; i < static_cast<int64_t>(scan_count); ++i) {
-          uint32_t id = matching ? (*matching)[static_cast<size_t>(i)] : static_cast<uint32_t>(i);
-          if (!matching && !index->matches(id, stmt.where)) continue;
-          int tid = 0;
+          if (scan_failed.load(std::memory_order_relaxed)) continue;
+          try {
+            uint32_t id = matching ? (*matching)[static_cast<size_t>(i)] : static_cast<uint32_t>(i);
+            if (!matching && !index->matches(id, stmt.where)) continue;
+            int tid = 0;
 #ifdef _OPENMP
-          tid = omp_get_thread_num();
+            tid = omp_get_thread_num();
 #endif
-          const auto &node = index->node(id);
-          heaps[static_cast<size_t>(tid)].push(squared_l2_checked(index->vector(id),
-              topk_query_vec.data(), schema.columns[topk_vector_column].dim), node.pk, node.pos);
+            const auto &node = index->node(id);
+            heaps[static_cast<size_t>(tid)].push(squared_l2_checked(index->vector(id),
+                topk_query_vec.data(), schema.columns[topk_vector_column].dim), node.pk, node.pos);
+          } catch (...) { remember_scan_error(); }
         }
+        if (scan_error) std::rethrow_exception(scan_error);
         for (size_t t = 1; t < heaps.size(); ++t) heaps[0].merge(heaps[t]);
       }
     } else if (tx_.active) {
@@ -2413,24 +2442,27 @@ Response Engine::exec_select(SelectStmt &stmt) {
         CandidateHeap &heap = heaps[static_cast<size_t>(tid)];
 #pragma omp for schedule(static)
         for (int64_t pi = 0; pi < static_cast<int64_t>(pages); ++pi) {
-          auto page = table.get_page(static_cast<uint32_t>(pi));
-          if (page->magic != kPageMagic) continue;
-          uint32_t n = std::min(page->nrows, page->capacity(schema.row_size));
-          for (uint32_t slot = 0; slot < n; ++slot) {
-            const uint8_t *row = table.row_data(*page, slot);
-            if (!table.row_is_valid(row)) continue;
-            bool match = true;
-            for (const auto &cond : stmt.where) {
-              if (!table.compare(row, cond)) { match = false; break; }
+          if (scan_failed.load(std::memory_order_relaxed)) continue;
+          try {
+            auto page = table.get_page(static_cast<uint32_t>(pi));
+            if (page->magic != kPageMagic) continue;
+            uint32_t n = std::min(page->nrows, page->capacity(schema.row_size));
+            for (uint32_t slot = 0; slot < n; ++slot) {
+              const uint8_t *row = table.row_data(*page, slot);
+              if (!table.row_is_valid(row)) continue;
+              bool match = true;
+              for (const auto &cond : stmt.where) {
+                if (!table.compare(row, cond)) { match = false; break; }
+              }
+              if (!match) continue;
+              const uint8_t *base = row + schema.col_offsets[topk_vector_column];
+              const float *vec = reinterpret_cast<const float *>(base);
+              double sq = squared_l2_checked(vec, topk_query_vec.data(),
+                                             schema.columns[topk_vector_column].dim);
+              int64_t pk = table.row_id(row);
+              heap.push(sq, pk, static_cast<uint64_t>(pi) * schema.rows_per_page + slot);
             }
-            if (!match) continue;
-            const uint8_t *base = row + schema.col_offsets[topk_vector_column];
-            const float *vec = reinterpret_cast<const float *>(base);
-            double sq = squared_l2_checked(vec, topk_query_vec.data(),
-                                           schema.columns[topk_vector_column].dim);
-            int64_t pk = table.row_id(row);
-            heap.push(sq, pk, static_cast<uint64_t>(pi) * schema.rows_per_page + slot);
-          }
+          } catch (...) { remember_scan_error(); }
         }
       }
 #else
@@ -2455,6 +2487,7 @@ Response Engine::exec_select(SelectStmt &stmt) {
         }
       }
 #endif
+      if (scan_error) std::rethrow_exception(scan_error);
       for (size_t t = 1; t < heaps.size(); ++t) heaps[0].merge(heaps[t]);
     }
     std::vector<Candidate> finalists = heaps[0].data;
