@@ -62,16 +62,21 @@ class TxSpool {
   void truncate(uint64_t end) {
     read_buffer_.clear();  // A later append may reuse the rewound offsets.
     next_read_offset_ = std::numeric_limits<uint64_t>::max();
-    if (!file_.ftruncate(end) || !file_.fsync()) throw_error("IO_ERROR", "cannot rewind transaction spool");
-    file_.discard_clean_cache(0, end);
-    synced_ = end;
+    if (!file_.ftruncate(end)) throw_error("IO_ERROR", "cannot rewind transaction spool");
+    // ftruncate has already changed the visible bytes, even if the following
+    // sync fails. Invalidate decoded/packed tails before reporting that error:
+    // a later append can reuse these offsets within the same transaction.
     end_ = end;
+    synced_ = std::min(synced_, end);
     uint64_t first = end-end%kCompactPageBytes;
     compact_.erase_if([&](uint64_t offset) { return offset >= first; });
     decoded_offset_ = std::numeric_limits<uint64_t>::max();
     staging_offset_ = first;
     staging_size_ = static_cast<size_t>(end-first);
     staging_valid_ = !staging_size_ || file_.pread_full(staging_.data(), staging_size_, first);
+    if (!file_.fsync()) throw_error("IO_ERROR", "cannot rewind transaction spool");
+    synced_ = end;
+    file_.discard_clean_cache(0, end);
   }
  private:
   void cache_append(uint64_t offset, const uint8_t *bytes, size_t length) {

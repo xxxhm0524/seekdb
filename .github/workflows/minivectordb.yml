@@ -111,6 +111,11 @@ jobs:
       - name: COMMIT publication failure and replay retry
         run: python3 tests/commit_allocation_failure.py --output protocol-results/commit-allocation-failure.json
 
+      - name: Spool rewind synchronization and wide state combinations
+        run: |
+          python3 tests/spool_rewind_failure.py --output protocol-results/spool-rewind-failure.json
+          python3 tests/state_machine_model.py --wide-spill --seed 20261202 --steps 1200 --output protocol-results/wide-state-machine-model.json
+
       - name: Hidden boundary regressions
         run: python3 tests/hidden_boundaries.py
 

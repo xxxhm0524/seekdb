@@ -14,19 +14,21 @@ import tempfile
 
 ROOT=Path(__file__).resolve().parent.parent
 sys.path.insert(0,str(ROOT/'tests'))
-from protocol_client import Client
+from protocol_client import Client,create_fixture_client
 
 parser=argparse.ArgumentParser()
 parser.add_argument('--seed',type=int,default=20261112)
 parser.add_argument('--steps',type=int,default=1000)
+parser.add_argument('--wide-spill',action='store_true')
+parser.add_argument('--image')
 parser.add_argument('--output',type=Path)
 args=parser.parse_args();rng=random.Random(args.seed)
 report=dict(passed=False,seed=args.seed,steps=args.steps,
     base_sha=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
     working_tree_dirty=bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True).strip()),
-    source_sha256={name:hashlib.sha256((ROOT/name).read_bytes()).hexdigest() for name in ['src/main.cpp','src/sql.cpp','src/engine.cpp']},
+    source_sha256={str(path.relative_to(ROOT)).replace('\\','/'):hashlib.sha256(path.read_bytes()).hexdigest() for path in sorted((ROOT/'src').iterdir()) if path.suffix in ('.h','.cpp')},
     script_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),requests=0,
-    scope='Independent Python state model; native JSONL; no claim to reproduce the unpublished formal case.')
+    scope='Independent Python state model; '+('Docker' if args.image else 'native')+' JSONL; no claim to reproduce the unpublished formal case.')
 target=args.output or ROOT/'protocol-results'/('functional-state-holdout-%d-20261112'%args.seed)/'result.json'
 out=target.parent/(target.stem+'.trace')
 target.parent.mkdir(parents=True,exist_ok=True)
@@ -34,6 +36,10 @@ out.mkdir(exist_ok=False)
 schemas={'a':dict(columns=['s','v','pk','g','n'],dim=9,width=384),
     'b':dict(columns=['n','pk','s','g','v'],dim=33,width=64),
     'c':dict(columns=['g','n','s','pk'],dim=0,width=4)}
+if args.wide_spill:
+    schemas['a']['width']=2048
+    schemas['b']['width']=8184
+report['wide_spill']=args.wide_spill
 groups=['','a','b','甲','😀',"a'b",'\0x','z']
 strings=['','a','甲','😀','é','e\u0301',"a'b",'a\\b','\n','\t','\0z','\U0010ffff']
 model={name:{} for name in schemas};committed=copy.deepcopy(model);active=False
@@ -58,7 +64,7 @@ def freeze(value):return tuple(freeze(x) for x in value) if isinstance(value,lis
 
 try:
     with tempfile.TemporaryDirectory(prefix='mvd-state-holdout-') as data, (out/'requests.jsonl').open('w',encoding='utf-8') as trace:
-        client=Client(datadir=data,extra=['--cache-mb=1','--tx-memory-mb=1','--sort-memory-mb=1','--ann-min-rows=512'])
+        client=create_fixture_client(data,args.image,target) if args.image else Client(datadir=data,extra=['--cache-mb=1','--tx-memory-mb=1','--sort-memory-mb=1','--ann-min-rows=512'])
         try:
             def sql(text,mode='exact',expected_error=False,**expected):
                 global last
@@ -123,10 +129,13 @@ try:
                 sql('CREATE TABLE '+name+'('+','.join(col+' '+definitions[col] for col in schema['columns'])+')')
             sql('BEGIN');active=True
             for name in schemas:
-                for first in range(0,800,80):
+                for first in range(0,320 if args.wide_spill else 800,80):
                     batch=[make_row(name,i-400) for i in range(first,first+80)]
                     sql('INSERT INTO '+name+' VALUES '+','.join(row_values(name,row) for row in batch),affected_rows=len(batch))
                     model[name].update({row['pk']:row for row in batch})
+            if args.wide_spill:
+                assert client.spool_exists(),'wide model did not exercise spill'
+                report['initial_payload_spilled']=True
             snapshot();sql('COMMIT');active=False;committed=copy.deepcopy(model)
             for name,schema in schemas.items():
                 if schema['dim']:sql('CREATE VECTOR INDEX vi_'+name+' ON '+name+'(v)')
@@ -166,7 +175,17 @@ try:
                 elif op<81:
                     if model[name]:
                         new=next(i for i in range(2000,10000) if i not in model[name]);duplicate=rng.choice(list(model[name]))
-                        sql('INSERT INTO '+name+' VALUES '+row_values(name,make_row(name,new))+','+row_values(name,make_row(name,duplicate)),expected_error=True)
+                        if args.wide_spill and schema['dim']:
+                            count=(1<<20)//(schema['width']*4)+8
+                            identities=[i for i in range(2000,10000) if i not in model[name]][:count]
+                            batch=[make_row(name,i) for i in identities]
+                            for row in batch:row['s']='staged-'+str(row['pk'])
+                            sql('INSERT INTO '+name+' VALUES '+','.join(row_values(name,row) for row in batch)+','+row_values(name,make_row(name,duplicate)),expected_error=True)
+                            snapshot()
+                            sql('INSERT INTO '+name+' VALUES '+row_values(name,batch[0]),affected_rows=1)
+                            model[name][batch[0]['pk']]=batch[0];commit_model();operations['failed_spill_then_offset_reuse']+=1
+                        else:
+                            sql('INSERT INTO '+name+' VALUES '+row_values(name,make_row(name,new))+','+row_values(name,make_row(name,duplicate)),expected_error=True)
                     else:sql('UPDATE '+name+' SET s='+literal('x'*(schema['width']+1)),expected_error=True)
                     operations['failed_statement']+=1;snapshot()
                 else:query(name);operations['query']+=1
@@ -175,6 +194,7 @@ try:
             snapshot();client.kill();client.start();active=False;model=copy.deepcopy(committed);snapshot()
             means={str(key):sum(values)/len(values) for key,values in recalls.items() if values}
             assert all(value>=.95 for value in means.values()),means
+            if args.wide_spill:assert operations['failed_spill_then_offset_reuse']>0
             report.update(passed=True,operation_counts=dict(operations),mean_recall=means,
                 pk_not_first=True,multi_table_transaction_state=True,unicode_and_embedded_controls=True,
                 failed_statement_atomicity=True,ordinary_and_vector_results_checked=True)

@@ -42,6 +42,8 @@ def main():
         ('ddl-failure-atomicity',['tests/create_sync_failure.py','--output',str(output/'ddl-failure-atomicity.json')]),
         ('transaction-allocation-failure',['tests/transaction_allocation_failure.py','--output',str(output/'transaction-allocation-failure.json')]),
         ('commit-allocation-failure',['tests/commit_allocation_failure.py','--output',str(output/'commit-allocation-failure.json')]),
+        ('spool-rewind-failure',['tests/spool_rewind_failure.py','--output',str(output/'spool-rewind-failure.json')]),
+        ('wide-spill-state-model',['tests/state_machine_model.py','--wide-spill','--seed','20261202','--steps','1200','--output',str(output/'wide-state-machine-model.json')]),
         ('hidden-boundaries',['tests/hidden_boundaries.py']),
         ('vector-precision',['tests/vector_precision_model.py']),
         ('indexed-vector-precision',['tests/vector_precision_model.py','--indexed']),

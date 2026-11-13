@@ -1,0 +1,61 @@
+name: spool-boundary-review
+on:
+  push:
+    branches: [fix/spool-rewind-failure-20261113]
+  workflow_dispatch:
+jobs:
+  native-and-docker:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and current rewind fault matrix
+        run: |
+          make -j2
+          python3 tests/spool_rewind_failure.py --output protocol-results/spool-after-linux.json
+          python3 tests/state_machine_model.py --wide-spill --seed 20261201 --steps 1200 --output protocol-results/wide-model-local-1.json
+          python3 tests/state_machine_model.py --wide-spill --seed 20261202 --steps 1200 --output protocol-results/wide-model-local-2.json
+      - name: Previous source must fail the same SQL sequence
+        run: |
+          git fetch --depth=1 origin 9d2950ef8e28685b6c2a34b456d055482d8ea578
+          mvd_previous=$(mktemp -d)
+          git archive 9d2950ef8e28685b6c2a34b456d055482d8ea578 src | tar -x -C "$mvd_previous"
+          mkdir -p "$mvd_previous/tests"
+          cp tests/spool_rewind_failure.cpp tests/spool_rewind_failure.py "$mvd_previous/tests/"
+          set +e
+          python3 "$mvd_previous/tests/spool_rewind_failure.py" --output "$PWD/protocol-results/spool-before-linux.json"
+          mvd_previous_exit=$?
+          set -e
+          test "$mvd_previous_exit" -eq 1
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          report=json.loads(Path('protocol-results/spool-before-linux.json').read_text())
+          assert report['passed'] is False
+          rows={r['mode']:r for r in report['results']}
+          matrix=json.loads(rows['matrix']['stdout'].splitlines()[-1])
+          assert matrix['cases']==112 and matrix['violations']>0
+          assert any(rows[name]['exit_code']==1 for name in ['commit','rollback','kill','kill-commit'])
+          PY
+      - name: Rewind address and undefined behavior checks
+        run: |
+          python3 tests/spool_rewind_failure.py --sanitize address --output protocol-results/spool-asan.json
+          python3 tests/spool_rewind_failure.py --sanitize undefined --output protocol-results/spool-ubsan.json
+      - name: Locked runtime and Docker state model
+        run: |
+          docker build --network=none -t minivectordb:spool-base .
+          printf 'FROM minivectordb:spool-base\nENV MVD_CACHE_MB=1 MVD_TX_MEMORY_MB=1 MVD_SORT_MEMORY_MB=1 MVD_ANN_MIN_ROWS=512\n' | docker build --network=none -t minivectordb:spool-review -
+          python3 tests/state_machine_model.py --image minivectordb:spool-review --wide-spill --seed 20261203 --steps 1200 --output protocol-results/wide-model-docker.json
+          git fetch --depth=1 origin f4d4e26653af823a7601668802f80e374ad6643c
+          mvd_official=$(mktemp -d)
+          git archive f4d4e26653af823a7601668802f80e374ad6643c protocol_check mysqltest STDIO_PROTOCOL.md | tar -x -C "$mvd_official"
+          python3 "$mvd_official/protocol_check/run.py" --image minivectordb:spool-review --output "$PWD/protocol-results/official-public"
+      - name: Upload spool boundary evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spool-boundary-review
+          path: |
+            protocol-results/*.json
+            protocol-results/*.log
+            protocol-results/official-public

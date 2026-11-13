@@ -30,6 +30,12 @@ def create_fixture_client(directory, image=None, output=None):
         def start(self):self.session.start();self.active=True
         def request(self,text,mode='exact'):return self.session.request(text,mode)
         def kill(self):self.session.crash();self.active=False
+        def shutdown(self):
+            if self.active:self.session.shutdown();self.active=False
+        def spool_exists(self):
+            result=self.session.docker('exec',self.session.name,'test','-f','/data/txn.tmp',check=False)
+            if result.returncode not in (0,1):raise RuntimeError('cannot inspect fixture transaction spool')
+            return result.returncode==0
         def close(self):
             try:
                 if self.active:self.session.shutdown();self.active=False
@@ -65,6 +71,9 @@ class Client:
         if message != {"type": "ready"}:
             raise ProtocolError("expected ready, got %r" % (message,))
         self.seq = 0
+
+    def spool_exists(self):
+        return os.path.exists(os.path.join(self.datadir,'txn.tmp'))
 
     def request(self, sql, mode="exact"):
         if self.p.poll() is not None:
