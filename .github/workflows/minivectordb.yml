@@ -98,6 +98,9 @@ jobs:
       - name: DDL disk-space and allocation failure atomicity
         run: python3 tests/create_sync_failure.py --output protocol-results/ddl-failure-atomicity.json
 
+      - name: Allocation failure transaction and cache invariants
+        run: python3 tests/transaction_allocation_failure.py --output protocol-results/transaction-allocation-failure.json
+
       - name: Hidden boundary regressions
         run: python3 tests/hidden_boundaries.py
 

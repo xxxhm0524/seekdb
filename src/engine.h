@@ -176,6 +176,7 @@ class PageCache {
     return (static_cast<uint64_t>(table_id) << 32) | page_no;
   }
   void touch(std::unordered_map<uint64_t, Entry>::iterator it);
+  void insert(uint64_t key, Entry entry);
   void evict_if_needed();
   void write_entries(std::vector<Entry *> entries);
 

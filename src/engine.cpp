@@ -216,9 +216,20 @@ size_t PageCache::size() const {
 }
 
 void PageCache::touch(std::unordered_map<uint64_t, Entry>::iterator it) {
-  lru_.erase(it->second.lru_it);
-  lru_.push_front(it->first);
-  it->second.lru_it = lru_.begin();
+  // Relink the existing node: erase + push_front could leave a dangling
+  // iterator if the replacement node allocation failed.
+  lru_.splice(lru_.begin(), lru_, it->second.lru_it);
+}
+
+void PageCache::insert(uint64_t k, Entry entry) {
+  lru_.push_front(k);
+  entry.lru_it = lru_.begin();
+  try {
+    pages_.emplace(k, std::move(entry));
+  } catch (...) {
+    lru_.pop_front();
+    throw;
+  }
 }
 
 std::shared_ptr<Page> PageCache::get(Table *table, uint32_t page_no) {
@@ -234,9 +245,7 @@ std::shared_ptr<Page> PageCache::get(Table *table, uint32_t page_no) {
     if (compact_.get(k, page.get())) {
       Entry entry;
       entry.page = page; entry.owner = table; entry.page_no = page_no;
-      lru_.push_front(k);
-      entry.lru_it = lru_.begin();
-      pages_.emplace(k, std::move(entry));
+      insert(k, std::move(entry));
       evict_if_needed();
       return page;
     }
@@ -260,9 +269,7 @@ std::shared_ptr<Page> PageCache::get(Table *table, uint32_t page_no) {
     entry.page = page;
     entry.owner = table;
     entry.page_no = current;
-    lru_.push_front(current_key);
-    entry.lru_it = lru_.begin();
-    pages_.emplace(current_key, std::move(entry));
+    insert(current_key, std::move(entry));
     if (current == page_no) requested = std::move(page);
   }
   evict_if_needed();
@@ -287,9 +294,7 @@ void PageCache::install(Table *table, uint32_t page_no,
     entry.dirty = true;
     entry.owner = table;
     entry.page_no = page_no;
-    lru_.push_front(k);
-    entry.lru_it = lru_.begin();
-    pages_.emplace(k, std::move(entry));
+    insert(k, std::move(entry));
   }
   evict_if_needed();
 }

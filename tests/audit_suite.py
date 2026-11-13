@@ -36,6 +36,7 @@ def main():
             '--output',str(output/'state-machine-model.json')]),
         ('requirements',['tests/formal_coverage.py']),
         ('ddl-failure-atomicity',['tests/create_sync_failure.py','--output',str(output/'ddl-failure-atomicity.json')]),
+        ('transaction-allocation-failure',['tests/transaction_allocation_failure.py','--output',str(output/'transaction-allocation-failure.json')]),
         ('hidden-boundaries',['tests/hidden_boundaries.py']),
         ('vector-precision',['tests/vector_precision_model.py']),
         ('indexed-vector-precision',['tests/vector_precision_model.py','--indexed']),
