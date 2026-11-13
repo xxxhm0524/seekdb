@@ -24,6 +24,7 @@ def main():
         ('handshake',['protocol_check/run.py','--command',command,'--handshake-only','--output',str(output/'handshake')]),
         ('public',['protocol_check/run.py','--command',command,'--output',str(output/'public')]),
         ('extended',['tests/run_extended_tsv.py']),
+        ('sql-comment-boundaries',['tests/sql_comment_boundaries.py','--output',str(output/'sql-comment-boundaries.json')]),
         ('vector-literal-syntax',['tests/vector_literal_syntax.py','--output',str(output/'vector-literal-syntax.json')]),
         ('returned-distance-order',['tests/returned_distance_order.py','--output',str(output/'returned-distance-order.json')]),
         ('state-machine-model',['tests/state_machine_model.py','--seed','20261113','--steps','1200',

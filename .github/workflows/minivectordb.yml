@@ -70,6 +70,9 @@ jobs:
       - name: Extended semantics
         run: python3 tests/run_extended_tsv.py
 
+      - name: SQL block comment boundary regressions
+        run: python3 tests/sql_comment_boundaries.py --output protocol-results/sql-comment-boundaries.json
+
       - name: Bare vector signs and mixed transaction state model
         run: |
           python3 tests/vector_literal_syntax.py --output protocol-results/vector-literal-syntax.json

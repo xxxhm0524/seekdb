@@ -93,7 +93,8 @@ void SqlParser::tokenize() {
     if (c == '/' && i + 1 < s.size() && s[i + 1] == '*') {
       i += 2;
       while (i + 1 < s.size() && !(s[i] == '*' && s[i + 1] == '/')) ++i;
-      i = (i + 1 < s.size()) ? i + 2 : s.size();
+      if (i + 1 >= s.size()) syntax_error("unterminated block comment");
+      i += 2;
       continue;
     }
     if (std::isalpha(c) || c == '_' || c == '$') {

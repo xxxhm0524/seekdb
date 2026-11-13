@@ -1,0 +1,33 @@
+name: sql-boundary-review
+on:
+  push:
+    branches: [fix/reject-unclosed-comments-20261113]
+  workflow_dispatch:
+jobs:
+  native-and-docker:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and check SQL semantics
+        run: |
+          make -j2
+          python3 tests/sql_comment_boundaries.py --output protocol-results/sql-comment-local.json
+          python3 tests/run_extended_tsv.py
+          python3 tests/formal_coverage.py
+          python3 tests/state_machine_model.py --seed 20261115 --steps 1000 --output protocol-results/state-model.json
+      - name: Build locked Docker runtime
+        run: docker build --network=none -t minivectordb:comment-review .
+      - name: Official public driver and comment rollback inside Docker
+        run: |
+          git fetch --depth=1 origin f4d4e26653af823a7601668802f80e374ad6643c
+          mvd_official_dir=$(mktemp -d)
+          git archive f4d4e26653af823a7601668802f80e374ad6643c protocol_check mysqltest STDIO_PROTOCOL.md | tar -x -C "$mvd_official_dir"
+          python3 "$mvd_official_dir/protocol_check/run.py" --image minivectordb:comment-review --output "$PWD/protocol-results/official-public"
+          python3 tests/sql_comment_boundaries.py --image minivectordb:comment-review --output protocol-results/sql-comment-docker.json
+      - name: Upload actual reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sql-boundary-review
+          path: protocol-results
