@@ -9,6 +9,7 @@ import argparse
 import json
 import math
 import os
+import re
 from pathlib import Path
 import statistics
 import subprocess
@@ -50,6 +51,25 @@ def drop_caches(enabled):
             stdout=subprocess.DEVNULL, check=True, timeout=30)
 
 
+def data_mount_device(session):
+    # st_dev identifies the filesystem backing /data, even when cgroup io.stat
+    # also contains root-image devices and multiple layers of a block stack.
+    raw = session.docker('exec', session.name, 'stat', '-c', '%d', '/data').stdout.decode().strip()
+    assert raw.isdecimal() and hasattr(os, 'major'), ('Cannot identify data filesystem device', raw)
+    number = int(raw)
+    return '%d:%d' % (os.major(number), os.minor(number))
+
+
+def partition_parent_device(device):
+    assert re.fullmatch(r'\d+:\d+', device), ('Invalid data device', device)
+    path = Path('/sys/dev/block')/device
+    if not (path/'partition').exists():
+        return None
+    parent = (path.resolve().parent/'dev').read_text().strip()
+    assert re.fullmatch(r'\d+:\d+', parent), ('Invalid partition parent', device, parent)
+    return parent
+
+
 def resources(session, device):
     raw = session.docker('exec', session.name, 'cat', '/sys/fs/cgroup/memory.peak',
         '/sys/fs/cgroup/io.stat').stdout.decode().splitlines()
@@ -60,14 +80,21 @@ def resources(session, device):
         if fields:
             counters[fields[0]] = {key: int(value) for key, value in
                 (field.split('=', 1) for field in fields[1:])}
-    nonzero = [key for key, value in counters.items() if value.get('rbytes', 0)+value.get('wbytes', 0)]
+    mount_device = data_mount_device(session)
+    selection = 'explicit' if device else 'data_mount'
     if not device:
-        assert len(nonzero) == 1, ('Select the measured data device explicitly', counters)
-        device = nonzero[0]
-    assert device in counters and peak > 0, ('Missing cgroup measurement', counters, peak)
+        device = mount_device
+        if device not in counters:
+            device = partition_parent_device(mount_device)
+            selection = 'partition_parent'
+    assert device in counters and peak > 0, ('Data device has no cgroup measurement; select a verified --io-device', mount_device, device, counters, peak)
     values = counters[device]
+    assert 'rbytes' in values and 'wbytes' in values, ('Incomplete data I/O counters', device, values)
+    # Both phases load a fresh database and sync it before this snapshot. Zero
+    # write attribution is missing measurement, never a zero-cost write result.
+    assert values['rbytes'] >= 0 and values['wbytes'] > 0, ('Missing data writeback attribution', device, values)
     return dict(memory_peak_bytes=peak, io_bytes=values['rbytes']+values['wbytes'],
-        io_device=device, io_stat=counters)
+        io_device=device, data_mount_device=mount_device, io_device_selection=selection, io_stat=counters)
 
 
 def workload(seed, rows, queries):
@@ -218,12 +245,20 @@ def main():
             args.output.write_text(json.dumps(report, indent=2)+'\n', encoding='utf-8')
         reference = {item: {field: statistics.median(row['reference'][item][field] for row in report['rounds'])
             for field in ('seconds', 'io_bytes', 'memory_peak_bytes')} for item in ('write', 'query')}
+        devices = {row[version][item]['io_device'] for row in report['rounds']
+            for version in ('reference','candidate') for item in ('write','query')}
+        assert len(devices) == 1, ('Measured devices changed between paired phases', devices)
+        report['io_device'] = next(iter(devices))
         indices = [(indicator(row['candidate']['write'], reference['write'])+
             2*indicator(row['candidate']['query'], reference['query']))/3 for row in report['rounds']]
         report.update(reference_medians=reference, candidate_comparison_indicators=indices,
             median_comparison_indicator=round(statistics.median(indices), 6), passed=True)
         args.output.write_text(json.dumps(report, indent=2)+'\n', encoding='utf-8')
         print('PAIRED COMPARISON', report['median_comparison_indicator'], '(reference revision, not official baseline)', flush=True)
+    except Exception as error:
+        report.update(passed=False,error_type=type(error).__name__,error=str(error))
+        args.output.write_text(json.dumps(report,indent=2)+'\n',encoding='utf-8')
+        raise
     finally:
         for image in held.values():
             subprocess.run(['docker', 'image', 'rm', image], stdout=subprocess.PIPE, stderr=subprocess.PIPE)

@@ -198,6 +198,9 @@ jobs:
       - name: Install benchmark dependency
         run: python3 -m pip install --break-system-packages numpy
 
+      - name: Data device measurement model
+        run: python3 tests/io_device_model.py --output protocol-results/io-device-model.json
+
       - name: Benchmark and recall
         run: |
           python3 tests/bench.py --rows 10000 --queries 1000 --seed 20261110 \

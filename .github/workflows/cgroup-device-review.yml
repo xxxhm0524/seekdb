@@ -1,0 +1,27 @@
+name: cgroup-device-review
+on:
+  push:
+    branches: [test/cgroup-device-selection-20261113]
+  workflow_dispatch:
+jobs:
+  real-device-probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install test dependency and validate device model
+        run: |
+          python3 -m pip install --break-system-packages numpy
+          python3 tests/io_device_model.py --output protocol-results/io-device-model.json
+      - name: Locked Docker resource smoke test
+        run: |
+          docker build --network=none -t minivectordb:device-review .
+          python3 tests/docker_score_compare.py --reference-image minivectordb:device-review --candidate-image minivectordb:device-review --reference-sha "$(git rev-parse HEAD)" --rows 1000 --queries 40 --rounds 1 --drop-caches --output protocol-results/device-smoke.json
+      - name: Upload measurement evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cgroup-device-review
+          path: |
+            protocol-results/*.json
+            protocol-results/*.log
