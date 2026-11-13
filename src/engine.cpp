@@ -2,6 +2,7 @@
 #include "ann.h"
 #include "page_image_codec.h"
 #include "external_sort.h"
+#include "exact_l2.h"
 
 #include <algorithm>
 #include <array>
@@ -1852,24 +1853,11 @@ VectorIndex::DistanceScreen graph_build_screen() {
 // float32 distances fit in double, including subnormals whose squares would
 // silently underflow in a float accumulator.
 
-long double squared_l2_precise(const float *a, const float *b, int dim) {
-  long double sum = 0, correction = 0;
-  for (int i = 0; i < dim; ++i) {
-    long double difference = static_cast<long double>(a[i]) - static_cast<long double>(b[i]);
-    long double term = difference * difference;
-    long double next = sum + term;
-    if (std::fabs(sum) >= std::fabs(term)) correction += (sum - next) + term;
-    else correction += (term - next) + sum;
-    sum = next;
-  }
-  return sum + correction;
-}
-
 double returned_l2_distance(const float *a, const float *b, int dim) {
   // L2_DISTANCE is a float64 SQL scalar. Different precise squared norms can
   // round to the same returned Euclidean value, so those rows must tie on PK.
-  // Compensated accumulation also keeps component permutations consistent.
-  return std::sqrt(static_cast<double>(squared_l2_precise(a, b, dim)));
+  // Exact dyadic accumulation avoids a second rounding at long-double precision.
+  return canonical_l2_distance(a, b, dim);
 }
 
 struct Candidate {

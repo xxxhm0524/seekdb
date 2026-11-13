@@ -30,6 +30,8 @@ def main():
         ('sqlite-differential',['tests/sqlite_differential.py','--output',str(output/'sqlite-differential.json')]),
         ('vector-literal-syntax',['tests/vector_literal_syntax.py','--output',str(output/'vector-literal-syntax.json')]),
         ('returned-distance-order',['tests/returned_distance_order.py','--output',str(output/'returned-distance-order.json')]),
+        ('exact-norm-boundary',['tests/exact_norm_boundary.py','--output',str(output/'exact-norm-boundary.json')]),
+        ('exact-norm-model',['tests/exact_norm_model.py','--output',str(output/'exact-norm-model.json')]),
         ('state-machine-model',['tests/state_machine_model.py','--seed','20261113','--steps','1200',
             '--output',str(output/'state-machine-model.json')]),
         ('requirements',['tests/formal_coverage.py']),

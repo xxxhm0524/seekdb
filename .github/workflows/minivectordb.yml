@@ -87,6 +87,11 @@ jobs:
       - name: Returned Euclidean distance ordering
         run: python3 tests/returned_distance_order.py --output protocol-results/returned-distance-order.json
 
+      - name: Exact squared-norm rounding
+        run: |
+          python3 tests/exact_norm_model.py --output protocol-results/exact-norm-model.json
+          python3 tests/exact_norm_boundary.py --output protocol-results/exact-norm-boundary.json
+
       - name: Formal requirement coverage
         run: python3 tests/formal_coverage.py
 

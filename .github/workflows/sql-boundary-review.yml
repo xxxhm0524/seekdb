@@ -1,7 +1,7 @@
 name: sql-boundary-review
 on:
   push:
-    branches: [fix/reject-unclosed-comments-20261113, fix/deep-sql-audit-20261113]
+    branches: [fix/reject-unclosed-comments-20261113, fix/deep-sql-audit-20261113, fix/exact-distance-rounding-20261113]
   workflow_dispatch:
 jobs:
   native-and-docker:
@@ -16,6 +16,8 @@ jobs:
           python3 tests/vector_token_types.py --output protocol-results/vector-token-types-local.json
           python3 tests/identifier_boundaries.py --output protocol-results/identifier-boundaries-local.json
           python3 tests/sqlite_differential.py --steps 2000 --output protocol-results/sqlite-differential.json
+          python3 tests/exact_norm_model.py --output protocol-results/exact-norm-model.json
+          python3 tests/exact_norm_boundary.py --output protocol-results/exact-norm-boundary-local.json
           python3 tests/run_extended_tsv.py
           python3 tests/formal_coverage.py
           python3 tests/state_machine_model.py --seed 20261115 --steps 1000 --output protocol-results/state-model.json
@@ -30,6 +32,11 @@ jobs:
           python3 tests/sql_comment_boundaries.py --image minivectordb:comment-review --output protocol-results/sql-comment-docker.json
           python3 tests/vector_token_types.py --image minivectordb:comment-review --output protocol-results/vector-token-types-docker.json
           python3 tests/identifier_boundaries.py --image minivectordb:comment-review --output protocol-results/identifier-boundaries-docker.json
+          python3 tests/exact_norm_boundary.py --image minivectordb:comment-review --output protocol-results/exact-norm-boundary-docker.json
+      - name: Exact norm undefined-behavior and address sanitizers
+        run: |
+          python3 tests/exact_norm_model.py --sanitize undefined --output protocol-results/exact-norm-ubsan.json
+          python3 tests/exact_norm_model.py --sanitize address --output protocol-results/exact-norm-asan.json
       - name: Upload actual reports
         if: always()
         uses: actions/upload-artifact@v4
