@@ -162,6 +162,7 @@ class PageCache {
   void install(Table *table, uint32_t page_no, std::shared_ptr<Page> page);
   void flush_all(const std::unordered_map<uint32_t, std::unique_ptr<Table>> &tables);
   void drop_table(uint32_t table_id);
+  void discard();
   size_t size() const;
 
  private:
@@ -401,6 +402,8 @@ class Engine {
   void rollback_statement(StatementUndo &undo);
   bool ann_mode_ = false;
   bool opened_ = false;
+  bool recovery_required_ = false;
+  void recover_commit_publication();
   uint32_t next_table_id_ = 1;
   size_t vector_search_bytes_ = 0;
   void rebuild_vector_index(Table &table);

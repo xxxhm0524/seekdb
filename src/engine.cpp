@@ -215,6 +215,15 @@ size_t PageCache::size() const {
   return pages_.size();
 }
 
+void PageCache::discard() {
+  std::lock_guard<std::mutex> lock(mutex_);
+  pages_.clear();
+  lru_.clear();
+  compact_.erase_if([](uint64_t) { return true; });
+  read_buffer_.reset();
+  write_buffer_.reset();
+}
+
 void PageCache::touch(std::unordered_map<uint64_t, Entry>::iterator it) {
   // Relink the existing node: erase + push_front could leave a dangling
   // iterator if the replacement node allocation failed.
@@ -963,6 +972,14 @@ void Engine::open() {
 }
 
 void Engine::shutdown() {
+  if (recovery_required_) {
+    // The committed WAL is authoritative when cache/map installation failed.
+    // Do not flush a partial view and truncate the only complete copy.
+    rollback_transaction();
+    wal_.close();
+    opened_ = false;
+    return;
+  }
   if (!opened_) { wal_.close(); return; }
   if (tx_.active) rollback_transaction();
   if (!tables_.empty()) {
@@ -971,6 +988,20 @@ void Engine::shutdown() {
   if (!wal_.truncate()) throw_error("IO_ERROR", "failed to truncate WAL at shutdown");
   wal_.close();
   opened_ = false;
+}
+
+void Engine::recover_commit_publication() {
+  tx_.clear();
+  cache_.discard();
+  tables_.clear();
+  table_ids_.clear();
+  vector_search_bytes_ = 0;
+  wal_.close();
+  opened_ = false;
+  // Leave the flag set if replay itself fails. Every subsequent request must
+  // retry recovery instead of observing partially rebuilt maps or caches.
+  open();
+  recovery_required_ = false;
 }
 
 Table *Engine::find_table(const std::string &name) {
@@ -1166,6 +1197,10 @@ void Engine::commit_transaction() {
       all_images.push_back(std::move(img));
     });
   }
+  // A failed commit-record write or sync can also leave its outcome uncertain.
+  // Replay, rather than later flushing a potentially incomplete in-memory view,
+  // decides whether this transaction has a complete commit record.
+  recovery_required_ = true;
   if (!all_images.empty()) {
     if (!wal_.append_commit(txid) || !wal_.sync())
       throw_error("IO_ERROR", "failed to commit WAL");
@@ -1223,6 +1258,7 @@ void Engine::commit_transaction() {
   }
   tx_.clear();
   maybe_checkpoint();
+  recovery_required_ = false;
 }
 
 void Engine::maybe_checkpoint() {
@@ -1323,12 +1359,18 @@ Response Engine::execute(const std::string &sql) {
   Response resp;
   std::unique_ptr<Statement> stmt;
   try {
+    if (recovery_required_) recover_commit_publication();
     SqlParser parser(sql);
     stmt = parser.parse();
   } catch (const DbError &e) {
     resp.ok = false;
     resp.error_code = e.code;
     resp.error_message = e.message;
+    return resp;
+  } catch (const std::exception &e) {
+    resp.ok = false;
+    resp.error_code = "INTERNAL_ERROR";
+    resp.error_message = e.what();
     return resp;
   }
 

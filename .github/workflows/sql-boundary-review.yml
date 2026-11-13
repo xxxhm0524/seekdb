@@ -1,12 +1,12 @@
 name: sql-boundary-review
 on:
   push:
-    branches: [fix/reject-unclosed-comments-20261113, fix/deep-sql-audit-20261113, fix/exact-distance-rounding-20261113, fix/ddl-failure-atomicity-20261113, fix/cache-allocation-safety-20261113]
+    branches: [fix/reject-unclosed-comments-20261113, fix/deep-sql-audit-20261113, fix/exact-distance-rounding-20261113, fix/ddl-failure-atomicity-20261113, fix/cache-allocation-safety-20261113, fix/commit-publication-recovery-20261113]
   workflow_dispatch:
 jobs:
   native-and-docker:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - name: Build and check SQL semantics
@@ -68,6 +68,30 @@ jobs:
           python3 tests/transaction_allocation_failure.py --output protocol-results/allocation-after-linux.json
           python3 tests/transaction_allocation_failure.py --sanitize address --output protocol-results/allocation-asan.json
           python3 tests/transaction_allocation_failure.py --sanitize undefined --output protocol-results/allocation-ubsan.json
+      - name: COMMIT publication is red on previous source
+        run: |
+          git fetch --depth=1 origin e7be1e8d237233f4b57ebf9f082e5ee63f9d54bd
+          mvd_before_dir=$(mktemp -d)
+          git archive e7be1e8d237233f4b57ebf9f082e5ee63f9d54bd src | tar -x -C "$mvd_before_dir"
+          mkdir -p "$mvd_before_dir/tests"
+          cp tests/commit_allocation_failure.cpp tests/commit_allocation_failure.py "$mvd_before_dir/tests/"
+          set +e
+          python3 "$mvd_before_dir/tests/commit_allocation_failure.py" --output "$PWD/protocol-results/commit-before-linux.json"
+          mvd_before_exit=$?
+          set -e
+          test "$mvd_before_exit" -eq 1
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          report=json.loads(Path('protocol-results/commit-before-linux.json').read_text())
+          assert report['passed'] is False
+          assert any(row['mode'] in ['live','wide'] and row['exit_code']!=0 for row in report['results'])
+          PY
+      - name: COMMIT publication recovery and sanitizers
+        run: |
+          python3 tests/commit_allocation_failure.py --output protocol-results/commit-after-linux.json
+          python3 tests/commit_allocation_failure.py --sanitize address --output protocol-results/commit-asan.json
+          python3 tests/commit_allocation_failure.py --sanitize undefined --output protocol-results/commit-ubsan.json
       - name: Official public driver and comment rollback inside Docker
         run: |
           git fetch --depth=1 origin f4d4e26653af823a7601668802f80e374ad6643c

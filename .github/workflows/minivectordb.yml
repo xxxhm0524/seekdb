@@ -101,6 +101,9 @@ jobs:
       - name: Allocation failure transaction and cache invariants
         run: python3 tests/transaction_allocation_failure.py --output protocol-results/transaction-allocation-failure.json
 
+      - name: COMMIT publication failure and replay retry
+        run: python3 tests/commit_allocation_failure.py --output protocol-results/commit-allocation-failure.json
+
       - name: Hidden boundary regressions
         run: python3 tests/hidden_boundaries.py
 
