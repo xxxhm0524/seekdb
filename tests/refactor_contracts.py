@@ -12,7 +12,7 @@ with tempfile.TemporaryDirectory(prefix='mvd-refactor-contract-') as directory:
         wrappers=['__imp__commit','__imp__write'] if os.name=='nt' else ['fsync','write']
         links=['-Wl,--wrap='+n for n in wrappers] if name=='workspace_contract' else []
         subprocess.run(['g++',*flags,str(ROOT/'tests'/(name+'.cpp')),*objects,*links,'-o',str(binary)],check=True,timeout=120)
-        data=Path(directory)/name;data.mkdir()
+        data=Path(directory)/(name+'-data');data.mkdir()
         run=subprocess.run([str(binary),str(data)],capture_output=True,text=True,timeout=30)
         results.append(dict(name=name,exit_code=run.returncode,stdout=run.stdout,stderr=run.stderr))
 report=dict(passed=all(row['exit_code']==0 for row in results),results=results,sanitizer=a.sanitize)
