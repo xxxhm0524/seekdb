@@ -35,6 +35,7 @@ def main():
         ('state-machine-model',['tests/state_machine_model.py','--seed','20261113','--steps','1200',
             '--output',str(output/'state-machine-model.json')]),
         ('requirements',['tests/formal_coverage.py']),
+        ('ddl-failure-atomicity',['tests/create_sync_failure.py','--output',str(output/'ddl-failure-atomicity.json')]),
         ('hidden-boundaries',['tests/hidden_boundaries.py']),
         ('vector-precision',['tests/vector_precision_model.py']),
         ('indexed-vector-precision',['tests/vector_precision_model.py','--indexed']),

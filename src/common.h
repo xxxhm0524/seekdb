@@ -26,6 +26,9 @@
 #include <io.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+// Keep the Windows ABI declaration narrow: Windows.h defines DELETE and other
+// macros that collide with the SQL AST. This rename stays on the same volume.
+extern "C" __declspec(dllimport) int __stdcall MoveFileExA(const char *, const char *, unsigned long);
 #else
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -355,11 +358,11 @@ inline void make_dir(const std::string &path) {
 class FileHandle {
  public:
   FileHandle() = default;
-  explicit FileHandle(int fd) : fd_(fd) {}
+  explicit FileHandle(int fd) noexcept : fd_(fd) {}
   FileHandle(const FileHandle &) = delete;
   FileHandle &operator=(const FileHandle &) = delete;
   FileHandle(FileHandle &&other) noexcept
-      : fd_(other.fd_), io_mutex_(std::move(other.io_mutex_)) {
+      : fd_(other.fd_) {
 #ifdef __linux__
     sparse_holes_ = other.sparse_holes_;
 #endif
@@ -369,7 +372,6 @@ class FileHandle {
     if (this != &other) {
       close();
       fd_ = other.fd_;
-      io_mutex_ = std::move(other.io_mutex_);
 #ifdef __linux__
       sparse_holes_ = other.sparse_holes_;
 #endif
@@ -404,6 +406,7 @@ class FileHandle {
   int64_t size() const {
     if (fd_ < 0) return -1;
 #ifdef _WIN32
+    std::lock_guard<std::mutex> lock(io_mutex_);
     return _lseeki64(fd_, 0, SEEK_END);
 #else
     return ::lseek(fd_, 0, SEEK_END);
@@ -414,7 +417,7 @@ class FileHandle {
     uint8_t *p = static_cast<uint8_t *>(buf);
     size_t done = 0;
 #ifdef _WIN32
-    std::lock_guard<std::mutex> lock(*io_mutex_);
+    std::lock_guard<std::mutex> lock(io_mutex_);
     while (done < len) {
       _lseeki64(fd_, static_cast<__int64>(offset + done), SEEK_SET);
       int n = _read(fd_, p + done, static_cast<unsigned>(len - done));
@@ -441,7 +444,7 @@ class FileHandle {
     const uint8_t *p = static_cast<const uint8_t *>(buf);
     size_t done = 0;
 #ifdef _WIN32
-    std::lock_guard<std::mutex> lock(*io_mutex_);
+    std::lock_guard<std::mutex> lock(io_mutex_);
     while (done < len) {
       _lseeki64(fd_, static_cast<__int64>(offset + done), SEEK_SET);
       int n = _write(fd_, p + done, static_cast<unsigned>(len - done));
@@ -640,7 +643,7 @@ class FileHandle {
 #ifdef __linux__
   bool sparse_holes_ = true;
 #endif
-  std::unique_ptr<std::mutex> io_mutex_ = std::make_unique<std::mutex>();
+  mutable std::mutex io_mutex_;
 };
 
 inline void fsync_dir(const std::string &dir) {
@@ -667,6 +670,12 @@ inline bool read_file(const std::string &path, std::string &out) {
 
 inline bool write_file_atomic(const std::string &path, const std::string &data) {
   std::string tmp = path + ".tmp";
+#ifndef _WIN32
+  // Prepare allocations before rename: no bad_alloc may turn a published
+  // directory into a reported failure and cause its table to be rolled back.
+  size_t slash = path.find_last_of('/');
+  const std::string parent = slash == std::string::npos ? "." : path.substr(0, slash);
+#endif
   {
     FileHandle f = FileHandle::open(tmp, O_WRONLY | O_CREAT | O_TRUNC);
     if (!f.valid()) return false;
@@ -675,16 +684,16 @@ inline bool write_file_atomic(const std::string &path, const std::string &data) 
   }
   bool renamed = false;
 #ifdef _WIN32
-  std::remove(path.c_str());
-  renamed = std::rename(tmp.c_str(), path.c_str()) == 0;
+  // MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH. Do not unlink the old
+  // directory before attempting replacement: a failed rename must preserve it.
+  renamed = MoveFileExA(tmp.c_str(), path.c_str(), 0x1ul | 0x8ul) != 0;
 #else
   renamed = ::rename(tmp.c_str(), path.c_str()) == 0;
 #endif
   if (!renamed) return false;
 #ifndef _WIN32
   // Persist the rename itself.
-  size_t slash = path.find_last_of('/');
-  fsync_dir(slash == std::string::npos ? "." : path.substr(0, slash));
+  fsync_dir(parent);
 #endif
   return true;
 }

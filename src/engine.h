@@ -408,7 +408,7 @@ class Engine {
 
   // catalog
   void load_catalog();
-  void save_catalog();
+  void save_catalog(uint32_t excluded_table = 0);
   Table *find_table(const std::string &name);
   Table &require_table(const std::string &name);
 

@@ -95,6 +95,9 @@ jobs:
       - name: Formal requirement coverage
         run: python3 tests/formal_coverage.py
 
+      - name: DDL disk-space and allocation failure atomicity
+        run: python3 tests/create_sync_failure.py --output protocol-results/ddl-failure-atomicity.json
+
       - name: Hidden boundary regressions
         run: python3 tests/hidden_boundaries.py
 

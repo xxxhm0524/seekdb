@@ -1082,12 +1082,15 @@ void Engine::load_catalog() {
   }
 }
 
-void Engine::save_catalog() {
+void Engine::save_catalog(uint32_t excluded_table) {
+  if (excluded_table && !tables_.count(excluded_table))
+    throw_error("INTERNAL_ERROR", "catalog exclusion references missing table");
   std::string data;
   write_u32(data, 0x4D564443);
   write_u32(data, 1);
-  write_u32(data, static_cast<uint32_t>(tables_.size()));
+  write_u32(data, static_cast<uint32_t>(tables_.size() - (excluded_table ? 1 : 0)));
   for (auto &kv : tables_) {
+    if (excluded_table && kv.first == excluded_table) continue;
     TableSchema &schema = kv.second->schema();
     write_u32(data, schema.id);
     write_u32(data, static_cast<uint32_t>(schema.name.size()));
@@ -1426,16 +1429,21 @@ Response Engine::exec_create_table(CreateTableStmt &stmt) {
   // an orphan with the same path after restart; CREATE must start empty.
   table->open(false, true);
   // Make sure the table file is durable before the catalog references it.
-  table->fsync_file();
+  if (!table->fsync_file()) {
+    table.reset();
+    std::remove(path.c_str());
+    throw_error("IO_ERROR", "failed to sync new table file");
+  }
   uint32_t id = schema.id;
   std::string name = schema.name;
-  tables_[id] = std::move(table);
-  table_ids_[lower] = id;
   try {
+    tables_[id] = std::move(table);
+    table_ids_[lower] = id;
     save_catalog();
   } catch (...) {
     tables_.erase(id);
     table_ids_.erase(lower);
+    table.reset();
     std::remove(path.c_str());
     throw;
   }
@@ -1453,16 +1461,13 @@ Response Engine::exec_drop_table(DropTableStmt &stmt) {
   uint32_t id = table->id();
   std::string path = table->data_path();
   std::string lower = lower_copy(table->name());
+  // Publish the prospective directory before discarding live rows or dirty
+  // pages. A failed catalog write must leave the current table recoverable.
+  save_catalog(id);
   drop_vector_index(*table);
   cache_.drop_table(id);
   tables_.erase(id);
   table_ids_.erase(lower);
-  try {
-    save_catalog();
-  } catch (...) {
-    // Recovery of catalog failure is not critical here; rethrow.
-    throw;
-  }
   std::remove(path.c_str());
   Response resp;
   return resp;
@@ -1475,9 +1480,18 @@ Response Engine::exec_create_vector_index(CreateVectorIndexStmt &stmt) {
     throw_error("COLUMN_NOT_FOUND", "column not found: " + stmt.column);
   if (table.schema().columns[col].type != ColumnType::VECTOR)
     throw_error("INVALID_ARGUMENT", "vector index requires a VECTOR column");
-  table.schema().vector_index_created = true;
-  save_catalog();
-  rebuild_vector_index(table);
+  const bool previous = table.schema().vector_index_created;
+  const bool unavailable = table.vector_search_unavailable_;
+  try {
+    table.schema().vector_index_created = true;
+    rebuild_vector_index(table);
+    save_catalog();
+  } catch (...) {
+    drop_vector_index(table);
+    table.schema().vector_index_created = previous;
+    table.vector_search_unavailable_ = unavailable;
+    throw;
+  }
   return Response{};
 }
 
