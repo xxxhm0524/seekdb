@@ -1347,6 +1347,12 @@ void Engine::rollback_statement(StatementUndo &undo) {
     if (entry.second.existed) tx_.tables.at(entry.first).next_pos = entry.second.next_pos;
     else tx_.tables.erase(entry.first);
   }
+  // Restore logical accounting before the fallible spool rewind. An I/O
+  // error must not leave the counter below restored resident rows, otherwise
+  // a subsequent overwrite can subtract those bytes from zero.
+  tx_.resident_payload = 0;
+  for (const auto &entry : tx_.tables) for (const auto &row : entry.second.rows)
+    tx_.resident_payload += row.second.row.size();
   if (tx_.spool && !undo.had_spool) {
     // Keep migrated earlier work on disk. Reifying wide UPDATE rows could
     // otherwise expand a small patch budget into an entire table in RAM.
@@ -1356,9 +1362,6 @@ void Engine::rollback_statement(StatementUndo &undo) {
     if (retained) tx_.spool->truncate(retained);
     else tx_.spool.reset();
   } else if (tx_.spool) tx_.spool->truncate(undo.spool_end);
-  tx_.resident_payload = 0;
-  for (const auto &entry : tx_.tables) for (const auto &row : entry.second.rows)
-    tx_.resident_payload += row.second.row.size();
 }
 
 const TxTable *Engine::find_tx_table(uint32_t table_id) const {
