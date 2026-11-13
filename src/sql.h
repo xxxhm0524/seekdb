@@ -193,12 +193,14 @@ class SqlParser {
     enum class Type { IDENT, NUMBER, STRING, SYMBOL, END } type;
     std::string text;
     size_t pos;
+    bool quoted = false;
   };
 
   void tokenize();
   const Token &peek(size_t ahead = 0) const;
   bool consume_symbol(char c);
   bool consume_keyword(const char *kw);
+  bool is_distance_call() const;
   bool accept_keyword(const char *kw);
   void expect_symbol(char c);
   std::string expect_ident();

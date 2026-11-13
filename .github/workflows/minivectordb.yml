@@ -73,6 +73,12 @@ jobs:
       - name: SQL block comment boundary regressions
         run: python3 tests/sql_comment_boundaries.py --output protocol-results/sql-comment-boundaries.json
 
+      - name: Vector token types and quoted identifier boundaries
+        run: |
+          python3 tests/vector_token_types.py --output protocol-results/vector-token-types.json
+          python3 tests/identifier_boundaries.py --output protocol-results/identifier-boundaries.json
+          python3 tests/sqlite_differential.py --output protocol-results/sqlite-differential.json
+
       - name: Bare vector signs and mixed transaction state model
         run: |
           python3 tests/vector_literal_syntax.py --output protocol-results/vector-literal-syntax.json

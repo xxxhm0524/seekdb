@@ -34,7 +34,7 @@ bool SqlParser::consume_symbol(char c) {
 }
 
 bool SqlParser::consume_keyword(const char *kw) {
-  if (peek().type == Token::Type::IDENT && lower(peek().text) == kw) {
+  if (peek().type == Token::Type::IDENT && !peek().quoted && lower(peek().text) == kw) {
     ++index_;
     return true;
   }
@@ -42,6 +42,13 @@ bool SqlParser::consume_keyword(const char *kw) {
 }
 
 bool SqlParser::accept_keyword(const char *kw) { return consume_keyword(kw); }
+
+bool SqlParser::is_distance_call() const {
+  if (peek().type != Token::Type::IDENT || peek().quoted ||
+      peek(1).type != Token::Type::SYMBOL || peek(1).text != "(") return false;
+  const std::string name = lower(peek().text);
+  return name == "l2_distance" || name == "vector_distance";
+}
 
 void SqlParser::expect_symbol(char c) {
   if (!consume_symbol(c)) {
@@ -172,11 +179,20 @@ void SqlParser::tokenize() {
       continue;
     }
     if (c == '`') {
-      size_t start = ++i;
-      while (i < s.size() && s[i] != '`') ++i;
-      if (i >= s.size()) syntax_error("unterminated quoted identifier");
-      tokens_.push_back({Token::Type::IDENT, s.substr(start, i - start), start});
-      ++i;
+      const size_t start = i++;
+      std::string name;
+      bool closed = false;
+      while (i < s.size()) {
+        if (s[i] == '`') {
+          if (i + 1 < s.size() && s[i + 1] == '`') {
+            name.push_back('`'); i += 2; continue;
+          }
+          ++i; closed = true; break;
+        }
+        name.push_back(s[i++]);
+      }
+      if (!closed) syntax_error("unterminated quoted identifier");
+      tokens_.push_back({Token::Type::IDENT, std::move(name), start, true});
       continue;
     }
     // symbols
@@ -198,6 +214,7 @@ std::unique_ptr<Statement> SqlParser::parse() {
   if (accept_keyword("create")) {
     --index_;  // rewind to CREATE
     std::string next = lower(peek(1).text);
+    if (peek(1).quoted) syntax_error("expected TABLE or VECTOR after CREATE");
     if (next == "table") {
       stmt = parse_create_table();
     } else if (next == "vector") {
@@ -296,7 +313,7 @@ std::unique_ptr<Statement> SqlParser::parse_create_table() {
   while (true) {
     if (peek().type == Token::Type::END) syntax_error("unterminated CREATE TABLE");
     // table-level PRIMARY KEY (col)
-    if (peek().type == Token::Type::IDENT && lower(peek().text) == "primary") {
+    if (peek().type == Token::Type::IDENT && !peek().quoted && lower(peek().text) == "primary") {
       ++index_;
       if (!consume_keyword("key")) syntax_error("expected KEY");
       expect_symbol('(');
@@ -376,6 +393,10 @@ std::string SqlParser::collect_vector_literal() {
   while (depth > 0) {
     const Token &token = peek();
     if (token.type == Token::Type::END) syntax_error("unterminated vector literal");
+    // Preserve component types: stripping a string/quoted identifier here
+    // would turn ['1,2'] into two numeric components instead of rejecting it.
+    if (token.type == Token::Type::STRING || token.type == Token::Type::IDENT)
+      throw_error("INVALID_VECTOR", "expected numeric vector component");
     if (token.type == Token::Type::SYMBOL && token.text == "[") ++depth;
     if (token.type == Token::Type::SYMBOL && token.text == "]") --depth;
     if (depth > 0) {
@@ -450,8 +471,7 @@ std::unique_ptr<Statement> SqlParser::parse_insert() {
 Expr SqlParser::parse_expr() {
   Expr expr;
   if (peek().type != Token::Type::IDENT) syntax_error("expected expression");
-  std::string name = lower(peek().text);
-  if (name == "l2_distance" || name == "vector_distance") {
+  if (is_distance_call()) {
     ++index_;
     expr.kind = Expr::Kind::L2_DISTANCE;
     expect_symbol('(');
@@ -532,8 +552,8 @@ std::unique_ptr<Statement> SqlParser::parse_select() {
       if (accept_keyword("as")) {
         item.alias = expect_ident();
       } else if (peek().type == Token::Type::IDENT &&
-                 lower(peek().text) != "from" && lower(peek().text) != "where" &&
-                 lower(peek().text) != "order" && lower(peek().text) != "limit") {
+                 (peek().quoted || (lower(peek().text) != "from" && lower(peek().text) != "where" &&
+                 lower(peek().text) != "order" && lower(peek().text) != "limit"))) {
         item.alias = peek().text;
         ++index_;
       }
@@ -549,9 +569,7 @@ std::unique_ptr<Statement> SqlParser::parse_select() {
     if (!consume_keyword("by")) syntax_error("expected BY");
     while (true) {
       OrderKey key;
-      if (peek().type == Token::Type::IDENT &&
-          (lower(peek().text) == "l2_distance" ||
-           lower(peek().text) == "vector_distance")) {
+      if (is_distance_call()) {
         key.is_distance = true;
         key.expr = parse_expr();
       } else if (peek().type == Token::Type::NUMBER) {

@@ -12,6 +12,31 @@ DEFAULT_BINARY = os.environ.get("MVD_BIN") or os.path.join(
     else "minivectordb")
 
 
+def create_fixture_client(directory, image=None, output=None):
+    """Use the same checks against a native process or an actual Docker Session."""
+    if not image:
+        return Client(datadir=directory)
+    from pathlib import Path
+    sys.path.insert(0, str(Path(ROOT)/'protocol_check'))
+    from _transport import Session
+    config=json.loads((Path(ROOT)/'protocol_check/config.json').read_text())
+    class ImageClient:
+        def __init__(self):
+            log=Path(output).with_suffix('.stderr.log') if output else Path(directory)/'docker.stderr.log'
+            log.parent.mkdir(parents=True,exist_ok=True)
+            self.session=Session(config,log,image=image);self.active=False
+            try:self.start()
+            except Exception:self.session.close();raise
+        def start(self):self.session.start();self.active=True
+        def request(self,text,mode='exact'):return self.session.request(text,mode)
+        def kill(self):self.session.crash();self.active=False
+        def close(self):
+            try:
+                if self.active:self.session.shutdown();self.active=False
+            finally:self.session.close()
+    return ImageClient()
+
+
 class ProtocolError(RuntimeError):
     pass
 
