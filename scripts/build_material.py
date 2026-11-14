@@ -4,16 +4,18 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-validation = ROOT/"validation/audit-20261114"
+validation = ROOT/"validation/final-20261114"
+history = ROOT/"validation/audit-20261114"
 status = json.loads((validation/"ci-source.json").read_text(encoding="utf-8"))
-assert status["head_sha"] == "c396ecd5957460100327eb5c49cdd80b89d2a158" and status["conclusion"] == "success"
+assert status["head_sha"] == "cf04b2446863f5abe3bbfbc312f49586de021d1a" and status["conclusion"] == "success"
 reports = []
 passed_count = 0
-for path in sorted(validation.glob("*.json")):
+paths = list(validation.glob("*.json")) + [p for p in history.glob("*.json") if not p.name.startswith(("linux-", "asan-", "ci-source"))]
+for path in sorted(paths):
     if path.name == "ci-source.json": continue
     value = json.loads(path.read_text(encoding="utf-8"))
     name = path.stem
-    current = name.startswith(("linux-", "asan-"))
+    current = path.parent == validation and name.startswith(("linux-", "asan-"))
     if current:
         assert value.get("passed") is True
         passed_count += 1
@@ -21,7 +23,7 @@ for path in sorted(validation.glob("*.json")):
                         source_commit=status["head_sha"] if current else "pre-fix development build; see preserved original report",
                         source=status["html_url"] if current else path.relative_to(ROOT).as_posix(),
                         output=json.dumps(value, ensure_ascii=False, indent=2)))
-assert passed_count == 18
+assert passed_count == 19
 material = {
     "format": "actual-clean-rewrite-evidence-v1",
     "synthetic": False,
@@ -55,7 +57,7 @@ material = {
         "The low-memory test actually stored 163840000 payload bytes in a container limited to 100663296 bytes. This is evidence for external-memory handling, not a claim based on an in-memory simulation.",
         "The user's objection led to a broader lifecycle audit. Four real defects were reproduced: unbounded committed history, token concatenation accepting malformed vectors, unneeded wide-text reads, and partial JSON publication when the spill file's final flush failed. The preserved red reports and passing regressions support the fixes; they do not retroactively establish that the earlier candidate was bug-free.",
         "A frozen public commit with author-published formal feedback was compiled as a reference. 1600 operations / 1629 requests across three tables agreed with both implementations and independent Python state. The original backslash escaping difference is recorded separately because the task does not specify that dialect choice. No public reference code or learning material was incorporated into the database core.",
-        "The expanded capacity test used the actual 2 GiB memory budget with 2621440000 bytes of business text. Compaction was interrupted exactly before and after file replacement. ASan, UBSan and library assertions covered the protocol, state machine, large tree, compaction and all 120 column layouts.",
+        "The expanded capacity test used the actual 2 GiB memory budget with 2621440000 bytes of business text. Compaction was interrupted exactly before and after file replacement. Recovery was then repeatedly interrupted at the real truncation syscall, twice before and twice after it, without readiness between interruptions. Committed rows survived and uncommitted changes were rolled back. ASan, UBSan and library assertions covered the protocol, state machine, large tree, compaction and all 120 column layouts.",
         "Local benchmark times and CI results are not formal platform scores. The nine retained formal inputs are unavailable. Formal admission and ranking require the platform to evaluate the locked submission."
     ],
     "limitations": [
