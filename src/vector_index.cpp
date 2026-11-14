@@ -6,7 +6,9 @@ namespace mvd {
 static size_t vector_budget() {
     size_t mib = 16;
     if (const char* value = std::getenv("MVD_VECTOR_CACHE_MIB")) {
-        try { mib = std::stoull(value); } catch (...) { fail("invalid_config", "invalid vector cache size"); }
+        try { mib = std::stoull(value); }
+        catch (const std::invalid_argument&) { fail("invalid_config", "invalid vector cache size"); }
+        catch (const std::out_of_range&) { fail("invalid_config", "invalid vector cache size"); }
         if (mib > 64) fail("invalid_config", "vector cache maximum is 64 MiB");
     }
     return mib * 1024 * 1024;

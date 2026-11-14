@@ -143,7 +143,9 @@ void File::replace_with(const std::filesystem::path& replacement) {
 static size_t cache_pages() {
     size_t mib = 4;
     if (const char* v = std::getenv("MVD_PAGE_CACHE_MIB")) {
-        try { mib = std::stoull(v); } catch (...) { fail("invalid_config", "invalid page cache size"); }
+        try { mib = std::stoull(v); }
+        catch (const std::invalid_argument&) { fail("invalid_config", "invalid page cache size"); }
+        catch (const std::out_of_range&) { fail("invalid_config", "invalid page cache size"); }
         if (mib > 64) fail("invalid_config", "page cache maximum is 64 MiB");
     }
     return std::max(size_t(8), mib * 1024 * 1024 / PAGE_SIZE);
@@ -172,6 +174,9 @@ static bool incomplete_first_initialization(const File& file, uint64_t size) {
 Storage::Storage(const std::filesystem::path& dir) : directory_(dir), file_(dir / "database.mvd"), cache_pages_(cache_pages()) {
     const uint64_t file_size = file_.size();
     bool found = false;
+    struct Candidate { uint64_t generation, offset, length, end, catalog_checksum; };
+    std::array<Candidate, 2> candidates{};
+    size_t count = 0;
     for (unsigned slot = 0; slot < 2; ++slot) {
         if (file_size < (slot + 1) * PAGE_SIZE) continue;
         Page h{}; file_.read(slot * PAGE_SIZE, h.data(), h.size());
@@ -180,14 +185,20 @@ Storage::Storage(const std::filesystem::path& dir) : directory_(dir), file_(dir 
         uint64_t gen = read_le(h.data() + 8, 8), off = read_le(h.data() + 16, 8);
         uint64_t len = read_le(h.data() + 24, 8), end = read_le(h.data() + 32, 8);
         if (off < 8192 || !len || len > (64ULL << 20) || end > file_size || off > end || len > end - off) continue;
-        std::string bytes(static_cast<size_t>(len), '\0'); file_.read(off, bytes.data(), bytes.size());
-        if (checksum(bytes.data(), bytes.size()) != read_le(h.data() + 40, 8)) continue;
-        try {
-            auto catalog = catalog_from_json(Json::parse(bytes));
-            if (!found || gen > generation_) {
-                committed = std::move(catalog); generation_ = gen; end_ = durable_end_ = end; found = true;
-            }
-        } catch (const std::exception&) { continue; }
+        candidates[count++] = {gen, off, len, end, read_le(h.data() + 40, 8)};
+    }
+    if (count == 2 && candidates[0].generation < candidates[1].generation) std::swap(candidates[0], candidates[1]);
+    for (size_t i = 0; i < count; ++i) {
+        const auto& candidate = candidates[i];
+        std::string bytes(static_cast<size_t>(candidate.length), '\0');
+        file_.read(candidate.offset, bytes.data(), bytes.size());
+        if (checksum(bytes.data(), bytes.size()) != candidate.catalog_checksum) continue;
+        // Once checksums identify a committed root, allocation/schema failures
+        // must abort opening. Falling back and truncating would discard an
+        // acknowledged commit. Decode the newest candidate only.
+        auto catalog = catalog_from_json(Json::parse(bytes));
+        committed = std::move(catalog); generation_ = candidate.generation;
+        end_ = durable_end_ = candidate.end; found = true; break;
     }
     if (!found) {
         // An incomplete first initialization has never acknowledged any SQL.

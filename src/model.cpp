@@ -42,7 +42,8 @@ Value parse_value(const Column& c, const std::string& text, bool quoted) {
         return text;
     }
     Json a;
-    try { a = Json::parse(text); } catch (...) { fail("invalid_vector", "invalid vector literal"); }
+    try { a = Json::parse(text); }
+    catch (const Json::exception&) { fail("invalid_vector", "invalid vector literal"); }
     if (!a.is_array() || a.size() != c.width) fail("invalid_vector", "incorrect vector dimension");
     std::vector<float> v; v.reserve(a.size());
     for (const auto& x : a) {
