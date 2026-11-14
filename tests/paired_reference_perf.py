@@ -12,6 +12,7 @@ import statistics
 import subprocess
 import sys
 import time
+import zipfile
 import numpy as np
 from client import Client, ROOT
 from reference_differential import fetch_reference
@@ -74,16 +75,32 @@ def measure(image,directory,data):
                     memory_peak_bytes=peak,raw_io_stat=io,storage_bytes=files,exact_ids_checked=len(answers))
     finally:db.kill()
 
-def run(output,ours,rounds):
+def run(output,ours,rounds,baseline_commit):
     source,manifest=fetch_reference(output)
     reference='mvd-public-controlled:'+manifest['commit'][:12]
     with (output/'reference-build.log').open('wb') as log:
         subprocess.run(['docker','build','--platform','linux/amd64','-f',str(ROOT/'tests/reference-controlled.Dockerfile'),'-t',reference,str(source)],check=True,stdout=log,stderr=subprocess.STDOUT)
+    actors={'ours':ours,'reference':reference}
+    if baseline_commit:
+        exists=subprocess.run(['git','cat-file','-e',baseline_commit+'^{commit}'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+        if exists.returncode:
+            subprocess.run(['git','fetch','--depth=1','origin',baseline_commit],cwd=ROOT,check=True)
+        archive=output/'frozen-source.zip'
+        subprocess.run(['git','archive','--format=zip','--output',str(archive),baseline_commit],cwd=ROOT,check=True)
+        directory=output/'frozen-source';directory.mkdir()
+        with zipfile.ZipFile(archive) as package:
+            for item in package.infolist():(directory/item.filename).resolve().relative_to(directory.resolve())
+            package.extractall(directory)
+        frozen='mvd-frozen:'+baseline_commit[:12]
+        with (output/'frozen-build.log').open('wb') as log:
+            subprocess.run(['docker','build','--platform','linux/amd64','-t',frozen,str(directory)],check=True,stdout=log,stderr=subprocess.STDOUT)
+        actors['frozen']=frozen
     records=[]
     for width in [16,1024]:
         for round in range(rounds):
             data=corpus(91271+round,width)
-            order=[('ours',ours),('reference',reference)] if round%2==0 else [('reference',reference),('ours',ours)]
+            names=list(actors);rotation=round%len(names);names=names[rotation:]+names[:rotation]
+            order=[(name,actors[name]) for name in names]
             result=dict(body_bytes=width,round=round,seed=data['seed'])
             for name,image in order:
                 result[name]=measure(image,output/f'body{width}-round{round}-{name}',data)
@@ -92,18 +109,19 @@ def run(output,ours,rounds):
     medians={}
     for width in [16,1024]:
         selected=[r for r in records if r['body_bytes']==width]
-        summary={name:{key:statistics.median(r[name][key] for r in selected) for key in ['write_seconds','query_seconds','memory_peak_bytes','storage_bytes']} for name in ['ours','reference']}
+        summary={name:{key:statistics.median(r[name][key] for r in selected) for key in ['write_seconds','query_seconds','memory_peak_bytes','storage_bytes']} for name in actors}
         summary['ours_over_reference_query_time']=summary['ours']['query_seconds']/summary['reference']['query_seconds']
+        if 'frozen' in summary:summary['ours_over_frozen_query_time']=summary['ours']['query_seconds']/summary['frozen']['query_seconds']
         medians[str(width)]=summary
-    return dict(passed=True,rounds=records,medians=medians,reference_commit=manifest['commit'],reference_evidence=manifest['formal_result_evidence'],
+    return dict(passed=True,rounds=records,medians=medians,reference_commit=manifest['commit'],reference_evidence=manifest['formal_result_evidence'],frozen_baseline_commit=baseline_commit,
                 environment='Each server: same GCC 13.5 O3 toolchain and Ubuntu runtime; 2 CPU, 2 GiB, swap disabled, read-only root and no network. This controls the toolchain and is not the reference author\'s original Alpine/GCC 14 production image.',
                 scope='Input SQL and independent truth are prepared outside timers. Timers include request serialization, IPC, responses and server persistence. Query prep and oracle work are excluded. Memory peak includes prep and page cache. Raw io.stat is observational; no official B, E, rank or score is inferred.')
 
 if __name__=='__main__':
     sys.stdout.reconfigure(encoding='utf-8')
-    p=argparse.ArgumentParser();p.add_argument('--output',required=True);p.add_argument('--image',required=True);p.add_argument('--rounds',type=int,default=3);args=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--output',required=True);p.add_argument('--image',required=True);p.add_argument('--rounds',type=int,default=3);p.add_argument('--baseline-commit');args=p.parse_args()
     out=Path(args.output).resolve();out.mkdir(parents=True,exist_ok=False)
-    try:result=run(out,args.image,args.rounds)
+    try:result=run(out,args.image,args.rounds,args.baseline_commit)
     except Exception as error:
         import traceback
         result=dict(passed=False,error=str(error),traceback=traceback.format_exc())
