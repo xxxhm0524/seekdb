@@ -1,0 +1,25 @@
+{
+  "passed": true,
+  "cases": [
+    {
+      "stage": "before_replace",
+      "stopped_before_response": true,
+      "recovery_passed": true
+    },
+    {
+      "stage": "after_replace",
+      "stopped_before_response": true,
+      "recovery_passed": true
+    },
+    {
+      "stage": "before_replace",
+      "stopped_before_response": true,
+      "recovery_passed": true
+    },
+    {
+      "stage": "after_replace",
+      "stopped_before_response": true,
+      "recovery_passed": true
+    }
+  ]
+}

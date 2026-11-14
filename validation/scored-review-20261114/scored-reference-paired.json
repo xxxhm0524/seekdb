@@ -1,0 +1,273 @@
+{
+  "passed": true,
+  "rounds": [
+    {
+      "body_bytes": 16,
+      "round": 0,
+      "seed": 91271,
+      "ours": {
+        "passed": true,
+        "write_seconds": 0.482720951999994,
+        "prepare_seconds": 0.04380810399999291,
+        "query_seconds": 0.5804899920000253,
+        "memory_peak_bytes": 21827584,
+        "raw_io_stat": "259:1 rbytes=0 wbytes=8056832 rios=0 wios=1967 dbytes=0 dios=0\n252:0 rbytes=0 wbytes=8056832 rios=0 wios=1967 dbytes=0 dios=0\n",
+        "storage_bytes": 7223133,
+        "exact_ids_checked": 1000
+      },
+      "reference": {
+        "passed": true,
+        "write_seconds": 0.23316509800000063,
+        "prepare_seconds": 0.0647970500000099,
+        "query_seconds": 0.2579789490000053,
+        "memory_peak_bytes": 15785984,
+        "raw_io_stat": "259:1 rbytes=0 wbytes=6115328 rios=0 wios=1493 dbytes=0 dios=0\n252:0 rbytes=0 wbytes=6115328 rios=0 wios=1493 dbytes=0 dios=0\n",
+        "storage_bytes": 6115328,
+        "exact_ids_checked": 1000
+      },
+      "frozen": {
+        "passed": true,
+        "write_seconds": 0.7041105799999912,
+        "prepare_seconds": 0.03607137899999202,
+        "query_seconds": 1.787441696000002,
+        "memory_peak_bytes": 23515136,
+        "raw_io_stat": "259:1 rbytes=0 wbytes=8056832 rios=0 wios=1967 dbytes=0 dios=0\n252:0 rbytes=0 wbytes=8056832 rios=0 wios=1967 dbytes=0 dios=0\n",
+        "storage_bytes": 7223133,
+        "exact_ids_checked": 1000
+      }
+    },
+    {
+      "body_bytes": 16,
+      "round": 1,
+      "seed": 91272,
+      "reference": {
+        "passed": true,
+        "write_seconds": 0.23210077699999943,
+        "prepare_seconds": 0.06343260399998485,
+        "query_seconds": 0.25667921500001967,
+        "memory_peak_bytes": 16302080,
+        "raw_io_stat": "259:1 rbytes=0 wbytes=6115328 rios=0 wios=1493 dbytes=0 dios=0\n252:0 rbytes=0 wbytes=6115328 rios=0 wios=1493 dbytes=0 dios=0\n",
+        "storage_bytes": 6115328,
+        "exact_ids_checked": 1000
+      },
+      "frozen": {
+        "passed": true,
+        "write_seconds": 0.7173551639999971,
+        "prepare_seconds": 0.0352013730000067,
+        "query_seconds": 1.78055284200002,
+        "memory_peak_bytes": 23539712,
+        "raw_io_stat": "259:1 rbytes=0 wbytes=8056832 rios=0 wios=1967 dbytes=0 dios=0\n252:0 rbytes=0 wbytes=8056832 rios=0 wios=1967 dbytes=0 dios=0\n",
+        "storage_bytes": 7223133,
+        "exact_ids_checked": 1000
+      },
+      "ours": {
+        "passed": true,
+        "write_seconds": 0.4794992899999784,
+        "prepare_seconds": 0.04477477300000032,
+        "query_seconds": 0.5765170290000015,
+        "memory_peak_bytes": 21753856,
+        "raw_io_stat": "259:1 rbytes=0 wbytes=8056832 rios=0 wios=1967 dbytes=0 dios=0\n252:0 rbytes=0 wbytes=8056832 rios=0 wios=1967 dbytes=0 dios=0\n",
+        "storage_bytes": 7223133,
+        "exact_ids_checked": 1000
+      }
+    },
+    {
+      "body_bytes": 16,
+      "round": 2,
+      "seed": 91273,
+      "frozen": {
+        "passed": true,
+        "write_seconds": 0.7093707610000024,
+        "prepare_seconds": 0.035591921999980514,
+        "query_seconds": 1.7962195839999993,
+        "memory_peak_bytes": 23474176,
+        "raw_io_stat": "259:1 rbytes=0 wbytes=8056832 rios=0 wios=1967 dbytes=0 dios=0\n252:0 rbytes=0 wbytes=8056832 rios=0 wios=1967 dbytes=0 dios=0\n",
+        "storage_bytes": 7223133,
+        "exact_ids_checked": 1000
+      },
+      "ours": {
+        "passed": true,
+        "write_seconds": 0.49024286500002745,
+        "prepare_seconds": 0.04400681699999609,
+        "query_seconds": 0.5836215260000017,
+        "memory_peak_bytes": 21434368,
+        "raw_io_stat": "259:1 rbytes=0 wbytes=8056832 rios=0 wios=1967 dbytes=0 dios=0\n252:0 rbytes=0 wbytes=8056832 rios=0 wios=1967 dbytes=0 dios=0\n",
+        "storage_bytes": 7223133,
+        "exact_ids_checked": 1000
+      },
+      "reference": {
+        "passed": true,
+        "write_seconds": 0.23647163600000454,
+        "prepare_seconds": 0.06698955400000273,
+        "query_seconds": 0.2635002909999855,
+        "memory_peak_bytes": 15564800,
+        "raw_io_stat": "259:1 rbytes=0 wbytes=6115328 rios=0 wios=1493 dbytes=0 dios=0\n252:0 rbytes=0 wbytes=6115328 rios=0 wios=1493 dbytes=0 dios=0\n",
+        "storage_bytes": 6115328,
+        "exact_ids_checked": 1000
+      }
+    },
+    {
+      "body_bytes": 1024,
+      "round": 0,
+      "seed": 91271,
+      "ours": {
+        "passed": true,
+        "write_seconds": 0.6645809190000023,
+        "prepare_seconds": 0.04661973800000396,
+        "query_seconds": 0.5800136290000069,
+        "memory_peak_bytes": 32350208,
+        "raw_io_stat": "259:1 rbytes=0 wbytes=18194432 rios=0 wios=4442 dbytes=0 dios=0\n252:0 rbytes=0 wbytes=18194432 rios=0 wios=4442 dbytes=0 dios=0\n",
+        "storage_bytes": 17362929,
+        "exact_ids_checked": 1000
+      },
+      "reference": {
+        "passed": true,
+        "write_seconds": 0.3613854220000121,
+        "prepare_seconds": 0.12058685899998522,
+        "query_seconds": 0.31376403400000186,
+        "memory_peak_bytes": 31756288,
+        "raw_io_stat": "259:1 rbytes=0 wbytes=16355328 rios=0 wios=3993 dbytes=0 dios=0\n252:0 rbytes=0 wbytes=16355328 rios=0 wios=3993 dbytes=0 dios=0\n",
+        "storage_bytes": 16355328,
+        "exact_ids_checked": 1000
+      },
+      "frozen": {
+        "passed": true,
+        "write_seconds": 0.8995733409999787,
+        "prepare_seconds": 0.16456099200001972,
+        "query_seconds": 14.144178017999991,
+        "memory_peak_bytes": 41222144,
+        "raw_io_stat": "259:1 rbytes=0 wbytes=18194432 rios=0 wios=4442 dbytes=0 dios=0\n252:0 rbytes=0 wbytes=18194432 rios=0 wios=4442 dbytes=0 dios=0\n",
+        "storage_bytes": 17362929,
+        "exact_ids_checked": 1000
+      }
+    },
+    {
+      "body_bytes": 1024,
+      "round": 1,
+      "seed": 91272,
+      "reference": {
+        "passed": true,
+        "write_seconds": 0.36870135300000584,
+        "prepare_seconds": 0.12167880300000888,
+        "query_seconds": 0.32596155599998156,
+        "memory_peak_bytes": 32157696,
+        "raw_io_stat": "259:1 rbytes=0 wbytes=16355328 rios=0 wios=3993 dbytes=0 dios=0\n252:0 rbytes=0 wbytes=16355328 rios=0 wios=3993 dbytes=0 dios=0\n",
+        "storage_bytes": 16355328,
+        "exact_ids_checked": 1000
+      },
+      "frozen": {
+        "passed": true,
+        "write_seconds": 0.8885700809999832,
+        "prepare_seconds": 0.16901678199999992,
+        "query_seconds": 14.641433974999984,
+        "memory_peak_bytes": 41086976,
+        "raw_io_stat": "259:1 rbytes=0 wbytes=18194432 rios=0 wios=4442 dbytes=0 dios=0\n252:0 rbytes=0 wbytes=18194432 rios=0 wios=4442 dbytes=0 dios=0\n",
+        "storage_bytes": 17362929,
+        "exact_ids_checked": 1000
+      },
+      "ours": {
+        "passed": true,
+        "write_seconds": 0.67983351700002,
+        "prepare_seconds": 0.046436285000027056,
+        "query_seconds": 0.5625083340000288,
+        "memory_peak_bytes": 32428032,
+        "raw_io_stat": "259:1 rbytes=0 wbytes=18194432 rios=0 wios=4442 dbytes=0 dios=0\n252:0 rbytes=0 wbytes=18194432 rios=0 wios=4442 dbytes=0 dios=0\n",
+        "storage_bytes": 17362929,
+        "exact_ids_checked": 1000
+      }
+    },
+    {
+      "body_bytes": 1024,
+      "round": 2,
+      "seed": 91273,
+      "frozen": {
+        "passed": true,
+        "write_seconds": 0.8928478159999713,
+        "prepare_seconds": 0.17837102299995422,
+        "query_seconds": 14.989262574999998,
+        "memory_peak_bytes": 40873984,
+        "raw_io_stat": "259:1 rbytes=0 wbytes=18194432 rios=0 wios=4442 dbytes=0 dios=0\n252:0 rbytes=0 wbytes=18194432 rios=0 wios=4442 dbytes=0 dios=0\n",
+        "storage_bytes": 17362929,
+        "exact_ids_checked": 1000
+      },
+      "ours": {
+        "passed": true,
+        "write_seconds": 0.6683668219999959,
+        "prepare_seconds": 0.04754812999999558,
+        "query_seconds": 0.5620692910000002,
+        "memory_peak_bytes": 32047104,
+        "raw_io_stat": "259:1 rbytes=0 wbytes=18194432 rios=0 wios=4442 dbytes=0 dios=0\n252:0 rbytes=0 wbytes=18194432 rios=0 wios=4442 dbytes=0 dios=0\n",
+        "storage_bytes": 17362929,
+        "exact_ids_checked": 1000
+      },
+      "reference": {
+        "passed": true,
+        "write_seconds": 0.3656037709999964,
+        "prepare_seconds": 0.12200170599999183,
+        "query_seconds": 0.31620234199999686,
+        "memory_peak_bytes": 32018432,
+        "raw_io_stat": "259:1 rbytes=0 wbytes=16355328 rios=0 wios=3993 dbytes=0 dios=0\n252:0 rbytes=0 wbytes=16355328 rios=0 wios=3993 dbytes=0 dios=0\n",
+        "storage_bytes": 16355328,
+        "exact_ids_checked": 1000
+      }
+    }
+  ],
+  "medians": {
+    "16": {
+      "ours": {
+        "write_seconds": 0.482720951999994,
+        "query_seconds": 0.5804899920000253,
+        "memory_peak_bytes": 21753856,
+        "storage_bytes": 7223133
+      },
+      "reference": {
+        "write_seconds": 0.23316509800000063,
+        "query_seconds": 0.2579789490000053,
+        "memory_peak_bytes": 15785984,
+        "storage_bytes": 6115328
+      },
+      "frozen": {
+        "write_seconds": 0.7093707610000024,
+        "query_seconds": 1.787441696000002,
+        "memory_peak_bytes": 23515136,
+        "storage_bytes": 7223133
+      },
+      "ours_over_reference_query_time": 2.250144805419815,
+      "ours_over_frozen_query_time": 0.3247602387809715
+    },
+    "1024": {
+      "ours": {
+        "write_seconds": 0.6683668219999959,
+        "query_seconds": 0.5625083340000288,
+        "memory_peak_bytes": 32350208,
+        "storage_bytes": 17362929
+      },
+      "reference": {
+        "write_seconds": 0.3656037709999964,
+        "query_seconds": 0.31620234199999686,
+        "memory_peak_bytes": 32018432,
+        "storage_bytes": 16355328
+      },
+      "frozen": {
+        "write_seconds": 0.8928478159999713,
+        "query_seconds": 14.641433974999984,
+        "memory_peak_bytes": 41086976,
+        "storage_bytes": 17362929
+      },
+      "ours_over_reference_query_time": 1.7789505619791846,
+      "ours_over_frozen_query_time": 0.038418937309043825
+    }
+  },
+  "reference_commit": "dfee55b84284f4c39d2df45951cdbcb1d1baf1a2",
+  "reference_evidence": {
+    "source": "author-published user-supplied platform feedback",
+    "url": "https://github.com/juanzhi-gcb/seekdb/blob/42f69e8320dcd8c802614f10cfb0699aa7551d2c/agent/conversation.json",
+    "json_pointer": "/experiments/43/output",
+    "mysql": "passed",
+    "agent_prompt_raw_score": 6.5,
+    "independently_authenticated_platform_record": false
+  },
+  "frozen_baseline_commit": "977fb6d6e4f7dc2865ab5ba847ae3c489ba27100",
+  "environment": "Each server: same GCC 13.5 O3 toolchain and Ubuntu runtime; 2 CPU, 2 GiB, swap disabled, read-only root and no network. This controls the toolchain and is not the reference author's original Alpine/GCC 14 production image.",
+  "scope": "Input SQL and independent truth are prepared outside timers. Timers include request serialization, IPC, responses and server persistence. Query prep and oracle work are excluded. Memory peak includes prep and page cache. Raw io.stat is observational; no official B, E, rank or score is inferred."
+}

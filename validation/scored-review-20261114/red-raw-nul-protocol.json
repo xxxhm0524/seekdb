@@ -1,0 +1,4 @@
+{
+  "passed": false,
+  "error": "raw NUL terminated parsing early and executed a JSON prefix"
+}

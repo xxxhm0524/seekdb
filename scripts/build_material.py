@@ -4,26 +4,27 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-validation = ROOT/"validation/hardened-20261114"
+validation = ROOT/"validation/scored-review-20261114"
 history = ROOT/"validation/audit-20261114"
-status = json.loads((validation/"ci-source.json").read_text(encoding="utf-8"))
-assert status["head_sha"] == "efca704aeaa0935e327e82f80a827d64b6e53402" and status["conclusion"] == "success"
+provenance = json.loads((validation/"provenance.json").read_text(encoding="utf-8"))
+assert len(provenance) == 30
+assert sum(p["kind"] == "normal" for p in provenance.values()) == 26
 reports = []
 passed_count = 0
-paths = list(validation.glob("*.json")) + [p for p in history.glob("*.json") if not p.name.startswith(("linux-", "asan-", "ci-source"))]
+paths = [validation/name for name in provenance] + list(validation.glob("red-*.json")) + [p for p in history.glob("*.json") if not p.name.startswith(("linux-", "asan-", "ci-source"))]
 for path in sorted(paths):
     if path.name == "ci-source.json": continue
     value = json.loads(path.read_text(encoding="utf-8"))
     name = path.stem
-    current = path.parent == validation and name.startswith(("linux-", "asan-"))
+    current = path.parent == validation and path.name in provenance
     if current:
         assert value.get("passed") is True
         passed_count += 1
-    reports.append(dict(id=name, stage="verified_current_logic" if current else "retained_development_observation",
-                        source_commit=status["head_sha"] if current else "pre-fix development build; see preserved original report",
-                        source=status["html_url"] if current else path.relative_to(ROOT).as_posix(),
+    reports.append(dict(id=name, stage=("verified_"+provenance[path.name]["kind"]) if current else "retained_development_observation",
+                        source_commit=provenance[path.name]["commit"] if current else "pre-fix development build; see preserved original report",
+                        source=provenance[path.name]["ci_url"] if current else path.relative_to(ROOT).as_posix(),
                         output=json.dumps(value, ensure_ascii=False, indent=2)))
-assert passed_count == 22
+assert passed_count == 30
 material = {
     "format": "actual-clean-rewrite-evidence-v1",
     "synthetic": False,
@@ -40,7 +41,8 @@ material = {
         {"id":"user-formal-hold", "role":"user", "content":"我觉得先不要提测，确保没有任何问题后再提测"},
         {"id":"user-expert-audit", "role":"user", "content":"你作为一名经验老道的数据库专家，这明显不是你应该犯的问题，请你吸取经验并仔细查找还有没有类似的问题"},
         {"id":"user-successful-reference", "role":"user", "content":"你可以看看别人公开仓库的代码（前提是别人已经成功提交）"},
-        {"id":"agent-audit-progress", "role":"assistant", "content":"这处容量问题本应在设计阶段就用“有效数据不变、持续更新”的负载检出。之前的验证覆盖不足，我会据此调整审查方式：除了结果正确，还要检查资源是否持续增长、失败前后状态是否一致，以及非法输入是否被意外接受。发现的每个问题都会保留失败用例和修复后的验证记录。"}
+        {"id":"agent-audit-progress", "role":"assistant", "content":"这处容量问题本应在设计阶段就用“有效数据不变、持续更新”的负载检出。之前的验证覆盖不足，我会据此调整审查方式：除了结果正确，还要检查资源是否持续增长、失败前后状态是否一致，以及非法输入是否被意外接受。发现的每个问题都会保留失败用例和修复后的验证记录。"},
+        {"id":"user-continued-successful-reference", "role":"user", "content":"你可以继续看看别人github的代码（前提对方通过），确保我们这次可以得到分数"}
     ],
     "agent_design": [
         "Committed B+ tree pages are immutable. Each SQL statement owns a new set of pages and a tail mark. On statement failure the new tail is discarded, preserving earlier successful statements in the transaction.",
@@ -48,7 +50,9 @@ material = {
         "Table data and primary-key directories remain on disk. A bounded page cache, bounded vector snapshot/KD tree, external sorting and spooled responses avoid loading the whole database or result set.",
         "Both search modes return exact results. Ordinary predicates are applied before candidate selection. KD bounds only prune strictly worse subtrees, retaining ties and primary-key ordering. Float32 storage/query conversion and ordered double accumulation are independently checked.",
         "Between transactions, committed history is compacted by streaming current rows to a separate fully synced database and atomically replacing the main file. The old database remains intact until replacement; the current row/page references are refreshed before any later statement executes.",
-        "Projected reads skip unused variable-length payloads. Response spill files finish flush/close/open before stdout publication. A failure after publication terminates the channel rather than appending a second JSON object."
+        "Projected reads skip unused variable-length payloads. Response spill files finish flush/close/open before stdout publication. A failure after publication terminates the channel rather than appending a second JSON object.",
+        "The continued reference review found a performance admission cliff caused by retaining unrelated document text. The snapshot now owns only vector/filter/sort working columns and loads uncached winner fields by stored row reference. Its budget remains 16 MiB.",
+        "Coordinates are stored once in eight-candidate blocks. Every lane accumulates dimensions in the same scalar float64 order without FMA. CPU dispatch has scalar, AVX2 and AVX-512 implementations. Direct numeric binding validates the entire vector grammar and finite float32 boundaries; raw NUL tails are explicitly rejected in both vector literals and JSONL frames."
     ],
     "experiments": reports,
     "agent_retrospective": [
@@ -59,6 +63,8 @@ material = {
         "A frozen public commit with author-published formal feedback was compiled as a reference. 1600 operations / 1629 requests across three tables agreed with both implementations and independent Python state. The original backslash escaping difference is recorded separately because the task does not specify that dialect choice. No public reference code or learning material was incorporated into the database core.",
         "The expanded capacity test used the actual 2 GiB memory budget with 2621440000 bytes of business text. Compaction was interrupted exactly before and after file replacement. Recovery was then repeatedly interrupted at the real truncation syscall, twice before and twice after it, without readiness between interruptions. Committed rows survived and uncommitted changes were rolled back. ASan, UBSan and library assertions covered the protocol, state machine, large tree, compaction and all 120 column layouts.",
         "The final file-opening audit reproduced two data-preservation defects: unknown nonempty files were initialized as empty, and an injected allocation failure while decoding the latest catalog caused rollback to an older committed root and truncation. Unknown formats now fail without changing bytes. Only recognized interrupted-empty-initialization patterns are retried. Recovery validates candidates newest-first and propagates allocation/schema failures without downgrading acknowledged state. Both failures have retained red cases and passing production/sanitizer regressions.",
+        "The renewed user request led to controlled same-toolchain performance comparisons with the publicly documented successful commit. Before the change, 1024-byte text exhausted the whole-row snapshot and caused much slower disk queries. A working-set pread probe reproduced that cause, then passed with projected snapshots. Blocked exact distance and direct numeric parsing were tested separately before integration.",
+        "The final controlled replay rotates the frozen 977fb6d baseline, candidate and successful reference on the same runner for three rounds. For 16/1024-byte text, candidate query medians were 0.5805/0.5625 seconds versus frozen baseline 1.7874/14.6414 and reference 0.2580/0.3162. Candidate still trails the reference. These are not official E, rank or scores; raw io.stat is retained without claiming official isolated-device B.",
         "Local benchmark times and CI results are not formal platform scores. The nine retained formal inputs are unavailable. Formal admission and ranking require the platform to evaluate the locked submission."
     ],
     "limitations": [
