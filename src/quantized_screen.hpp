@@ -78,6 +78,7 @@ private:
         return scalar;
     }
 public:
+    size_t bytes() const { return sizeof(QuantizedScreen) + codes_.capacity() + norms_.capacity() * sizeof(int32_t) + groups_ * 4 + 2048; }
     static bool supported(size_t dimensions) {
         if (dimensions < 32 || dimensions > 4096 || std::fegetround() != FE_TONEAREST) return false;
 #ifdef MVD_BATCH_X86

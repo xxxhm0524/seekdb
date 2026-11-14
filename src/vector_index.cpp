@@ -86,9 +86,28 @@ std::unique_ptr<VectorIndex> VectorIndex::create(Storage& store, const Table& ta
     if (!index->uniform_ && index->dimensions_ >= 32)
         index->screen_ = QuantizedScreen::create(count, index->dimensions_, budget - used,
             [&](size_t row, size_t d) { return index->coordinate(row, d); });
+    // Follow the successful reference's TypedScanCache::finish layout choice:
+    // certificate reranking consumes individual source vectors, so retain
+    // contiguous rows when the auxiliary index and preparation scratch fit.
+    if (index->screen_ && index->screen_->bytes() <= budget - used) {
+        const size_t spare = budget - used - index->screen_->bytes();
+        if (index->dimensions_ <= spare / (batch::width * sizeof(float))) try {
+            std::vector<float> scratch(index->dimensions_ * batch::width);
+            if (scratch.capacity() * sizeof(float) <= spare) {
+                for (size_t first = 0; first < blocks; ++first) {
+                    auto* values = index->coordinates_.data() + first * index->dimensions_ * batch::width;
+                    for (size_t lane = 0; lane < batch::width; ++lane)
+                        for (size_t d = 0; d < index->dimensions_; ++d) scratch[lane * index->dimensions_ + d] = values[d * batch::width + lane];
+                    std::copy(scratch.begin(), scratch.end(), values);
+                }
+                index->rowwise_ = true;
+            }
+        } catch (const std::bad_alloc&) {} // Allocation precedes any layout edit.
+    }
     return index;
 }
 float VectorIndex::coordinate(size_t entry, size_t dimension) const {
+    if (rowwise_) return coordinates_[entry * dimensions_ + dimension];
     return coordinates_[(entry / batch::width) * dimensions_ * batch::width + dimension * batch::width + entry % batch::width];
 }
 void VectorIndex::cluster(size_t column) {
@@ -159,8 +178,8 @@ int VectorIndex::build(size_t begin, size_t end) {
 }
 std::vector<VectorIndex::Hit> VectorIndex::search(const std::vector<float>& query, size_t k,
                     const std::function<bool(const Row&)>& predicate, size_t begin, size_t end,
-                    SearchStats* stats, bool screening) const {
-    if (stats) *stats = {};
+                    SearchStats* stats, bool screening) {
+    if (stats) { *stats = {}; stats->rowwise_source = rowwise_; }
     auto better = [&](const Hit& a, const Hit& b) {
         return a.distance == b.distance ? entries_[a.entry].key < entries_[b.entry].key : a.distance < b.distance;
     };
@@ -207,6 +226,19 @@ std::vector<VectorIndex::Hit> VectorIndex::search(const std::vector<float>& quer
     };
     if (nodes_.empty()) {
         const auto kernel = batch::select();
+        if (rowwise_) {
+            // A complete scan has different locality needs. Reblock once per
+            // immutable snapshot, preserving the original full-scan kernel
+            // instead of paying per-query packing on an uncertified workload.
+            std::vector<float> packed(batch::width * dimensions_);
+            for (size_t first = 0; first < coordinates_.size(); first += packed.size()) {
+                auto* values = coordinates_.data() + first;
+                for (size_t lane = 0; lane < batch::width; ++lane)
+                    for (size_t d = 0; d < dimensions_; ++d) packed[d * batch::width + lane] = values[lane * dimensions_ + d];
+                std::copy(packed.begin(), packed.end(), values);
+            }
+            rowwise_ = false; if (stats) stats->source_reblocked = true;
+        }
         for (size_t first = begin / batch::width * batch::width; first < end; first += batch::width) {
             unsigned mask = 0;
             if (!predicate && first >= begin && end - first >= batch::width) mask = UINT32_MAX;
@@ -214,7 +246,7 @@ std::vector<VectorIndex::Hit> VectorIndex::search(const std::vector<float>& quer
                 if (first + lane >= begin && (!predicate || predicate(entries_[first + lane].row))) mask |= 1U << lane;
             if (!mask) continue;
             double distances[batch::width];
-            kernel.evaluate(coordinates_.data() + (first / batch::width) * dimensions_ * batch::width, query.data(), dimensions_, distances);
+            kernel.evaluate(coordinates_.data() + first * dimensions_, query.data(), dimensions_, distances);
             for (size_t lane = 0; lane < batch::width; ++lane) if (mask & (1U << lane)) consider(first + lane, distances[lane]);
         }
     }
@@ -262,7 +294,10 @@ std::optional<std::vector<VectorIndex::Hit>> VectorIndex::screen_search(const st
     };
     for (size_t i = 0; i < count; ++i) {
         const size_t entry = candidates[i].entry; double sum = 0;
-        for (size_t d = 0; d < dimensions_; ++d) { double delta = double(coordinate(entry, d)) - double(query[d]); sum += delta * delta; }
+        if (rowwise_) {
+            const float* values = coordinates_.data() + entry * dimensions_;
+            for (size_t d = 0; d < dimensions_; ++d) { double delta = double(values[d]) - double(query[d]); sum += delta * delta; }
+        } else for (size_t d = 0; d < dimensions_; ++d) { double delta = double(coordinate(entry, d)) - double(query[d]); sum += delta * delta; }
         Hit hit{entry, std::sqrt(sum)}; if (stats) ++stats->exact_rows;
         if (hits.size() < k) { hits.push_back(hit); std::push_heap(hits.begin(), hits.end(), better); }
         else if (better(hit, hits.front())) {

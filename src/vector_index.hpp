@@ -9,7 +9,7 @@ class VectorIndex {
 public:
     struct Entry { int64_t key; Ref ref; Row row; };
     struct Hit { size_t entry; double distance; };
-    struct SearchStats { bool screen_attempted = false, screen_certified = false; size_t screened_rows = 0, exact_rows = 0; };
+    struct SearchStats { bool screen_attempted = false, screen_certified = false, rowwise_source = false, source_reblocked = false; size_t screened_rows = 0, exact_rows = 0; };
 private:
     struct Node {
         size_t begin = 0, end = 0;
@@ -27,6 +27,7 @@ private:
     std::vector<Node> nodes_;
     std::optional<size_t> clustered_column_;
     bool uniform_ = true;
+    bool rowwise_ = false;
     std::unique_ptr<QuantizedScreen> screen_;
     int build(size_t begin, size_t end);
     float coordinate(size_t entry, size_t dimension) const;
@@ -45,6 +46,6 @@ public:
     std::optional<std::pair<size_t, size_t>> equal_bounds(size_t column, const Value& value) const;
     std::vector<Hit> search(const std::vector<float>& query, size_t k,
                            const std::function<bool(const Row&)>& matches = {}, size_t begin = 0, size_t end = SIZE_MAX,
-                           SearchStats* stats = nullptr, bool screening = true) const;
+                           SearchStats* stats = nullptr, bool screening = true);
 };
 }

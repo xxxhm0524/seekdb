@@ -52,7 +52,7 @@ int main(int argc, char** argv) try {
         }
     }
     std::uniform_real_distribution<float> random(-1, 1);
-    double screened_seconds = 0, full_seconds = 0; size_t timed_exact_rows = 0, timed_screened_rows = 0;
+    double screened_seconds = 0, full_seconds = 0; size_t timed_exact_rows = 0, timed_screened_rows = 0, timed_rowwise_queries = 0, reblocks = 0;
     for (size_t dimensions : {3u, 33u, 128u, 1024u, 4096u}) {
         const size_t count = dimensions == 128 ? 10000 : 257;
         auto path = directory / std::to_string(dimensions); std::filesystem::create_directory(path);
@@ -84,7 +84,10 @@ int main(int argc, char** argv) try {
                 if (filter == 2) predicate = [](const Row& row) { return std::get<int64_t>(row[2]) >= 0; };
                 VectorIndex::SearchStats stats;
                 auto actual = index->search(query, k, predicate, begin, end, &stats);
-                auto expected = index->search(query, k, predicate, begin, end, nullptr, false);
+                VectorIndex::SearchStats control;
+                auto expected = index->search(query, k, predicate, begin, end, &control, false);
+                reblocks += stats.source_reblocked + control.source_reblocked;
+                require(!control.source_reblocked || control.rowwise_source, "reblocked an already blocked snapshot");
                 same(actual, expected); ++searches_checked;
                 certified += stats.screen_certified; fallbacks += stats.screen_attempted && !stats.screen_certified;
             }
@@ -96,6 +99,10 @@ int main(int argc, char** argv) try {
             std::vector<std::vector<VectorIndex::Hit>> expected;
             for (const auto& query : queries) expected.push_back(index->search(query, 10, {}, 0, count, nullptr, false));
             full_seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
+            // Recreate the same deterministic row/key order so this measures
+            // the reference's contiguous-source certificate layout as used.
+            index.reset(); index = VectorIndex::create(storage, table, {true, true, true, true}, 0);
+            require(bool(index), "recreated timed cache refused");
             start = std::chrono::steady_clock::now();
             for (size_t i = 0; i < queries.size(); ++i) {
                 VectorIndex::SearchStats stats; same(index->search(queries[i], 10, {}, 0, count, &stats), expected[i]);
@@ -103,10 +110,12 @@ int main(int argc, char** argv) try {
                     require(stats.screen_certified && stats.exact_rows <= 32, "normal workload did not certify bounded candidates");
                 }
                 timed_exact_rows += stats.exact_rows; timed_screened_rows += stats.screened_rows;
+                timed_rowwise_queries += stats.rowwise_source;
             }
             screened_seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
             if (QuantizedScreen::supported(dimensions))
                 require(timed_exact_rows < queries.size() * 32, "normal screening did not avoid remaining exact candidates");
+            if (QuantizedScreen::supported(dimensions)) require(timed_rowwise_queries == queries.size(), "contiguous-source candidate path was not exercised");
         }
         // Unsupported rounding modes must decline the certificate, without mutation.
         const int previous = std::fegetround(); std::fesetround(FE_DOWNWARD);
@@ -135,7 +144,7 @@ int main(int argc, char** argv) try {
     std::cout << "{\"passed\":true,\"bound_checks\":" << bounds_checked << ",\"searches_checked\":" << searches_checked
               << ",\"certified\":" << certified << ",\"fallbacks\":" << fallbacks << ",\"timed_full_seconds\":" << full_seconds
               << ",\"timed_screen_seconds\":" << screened_seconds << ",\"timed_exact_rows\":" << timed_exact_rows
-              << ",\"timed_screened_rows\":" << timed_screened_rows << "}\n";
+              << ",\"timed_screened_rows\":" << timed_screened_rows << ",\"timed_rowwise_queries\":" << timed_rowwise_queries << ",\"full_scan_reblocks\":" << reblocks << "}\n";
 } catch (const std::exception& error) {
     std::cout << Json({{"passed", false}, {"error", error.what()}}).dump() << '\n'; return 1;
 }
