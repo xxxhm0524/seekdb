@@ -14,7 +14,13 @@ with tempfile.TemporaryDirectory(prefix='mvd-wide-boundary-') as directory:
  def literal(s):return "'"+s.replace("'","''")+"'"
  try:
   for number,width in enumerate([16360,16361,16362,16368,25000,32760,65535]):
-   name='t'+str(number);text=('😀界éx'*(width//4+1))[:width]
+   name='t'+str(number);text='x'+'😀'*(width-1)
+   if width>=25000:
+    # The first VARCHAR begins at byte 20 in a 65520-byte page payload.
+    # One ASCII prefix shifts the four-byte codepoints across the seam.
+    try:text.encode('utf-8')[:65500].decode('utf-8')
+    except UnicodeDecodeError:pass
+    else:raise AssertionError('fixture failed to split a UTF-8 codepoint')
    # PK is physically after the possibly split text; internal row IDs remain independent.
    sql('CREATE TABLE '+name+'(s VARCHAR(%d),id BIGINT PRIMARY KEY,v VECTOR(2))'%width)
    sql('BEGIN');sql('INSERT INTO '+name+' VALUES '+','.join('('+literal(text)+',%d,[%d,0])'%(i,i) for i in [-5,0,9]),affected_rows=3);sql('COMMIT')
@@ -38,6 +44,6 @@ with tempfile.TemporaryDirectory(prefix='mvd-wide-boundary-') as directory:
   oversized='CREATE TABLE too_large(id BIGINT PRIMARY KEY,'+','.join('s%d VARCHAR(65535)'%i for i in range(70))+')'
   assert not c.request(oversized)['ok'];checks+=1
  finally:c.close()
-report=dict(passed=True,checks=checks,widths=[16360,16361,16362,16368,25000,32760,65535],vector_dimension=16384,pk_after_text=True,utf8_across_pages=True)
+report=dict(passed=True,checks=checks,widths=[16360,16361,16362,16368,25000,32760,65535],vector_dimension=16384,pk_after_text=True,utf8_across_pages=True,forced_utf8_split=True)
 if a.output:a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(report,indent=2)+'\n',encoding='utf-8')
 print(json.dumps(report))
