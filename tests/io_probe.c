@@ -13,6 +13,25 @@
 
 static uint64_t database_read_bytes;
 static uint64_t response_flush_failures;
+static int fd_has_suffix(int fd, const char* suffix);
+static uint64_t catalog_allocation_failures;
+static int fail_next_allocation;
+extern void* __libc_malloc(size_t);
+void* malloc(size_t size) {
+    if (fail_next_allocation) {
+        fail_next_allocation = 0;
+        ++catalog_allocation_failures;
+        errno = ENOMEM;
+        return NULL;
+    }
+    return __libc_malloc(size);
+}
+static void arm_catalog_failure(int fd, uint64_t offset, ssize_t result) {
+    const char* selected = getenv("MVD_FAIL_CATALOG_OFFSET");
+    if (selected && !catalog_allocation_failures && result > 2 &&
+        offset == strtoull(selected, NULL, 10) && fd_has_suffix(fd, "/database.mvd"))
+        fail_next_allocation = 1;
+}
 static int fd_has_suffix(int fd, const char* suffix) {
     char path[4096], link[64];
     snprintf(link, sizeof link, "/proc/self/fd/%d", fd);
@@ -29,6 +48,7 @@ ssize_t pread(int fd, void* out, size_t n, off_t offset) {
     ssize_t result = real_pread(fd, out, n, offset);
     int saved = errno;
     if (result > 0 && fd_has_suffix(fd, "/database.mvd")) database_read_bytes += (uint64_t)result;
+    arm_catalog_failure(fd, (uint64_t)offset, result);
     errno = saved;
     return result;
 }
@@ -38,6 +58,7 @@ ssize_t pread64(int fd, void* out, size_t n, off64_t offset) {
     ssize_t result = real_pread64(fd, out, n, offset);
     int saved = errno;
     if (result > 0 && fd_has_suffix(fd, "/database.mvd")) database_read_bytes += (uint64_t)result;
+    arm_catalog_failure(fd, (uint64_t)offset, result);
     errno = saved;
     return result;
 }
@@ -119,7 +140,8 @@ __attribute__((destructor)) static void report_reads(void) {
     if (!path) return;
     FILE* file = fopen(path, "w");
     if (!file) return;
-    fprintf(file, "{\"database_read_bytes\":%llu,\"response_flush_failures\":%llu}\n",
-            (unsigned long long)database_read_bytes, (unsigned long long)response_flush_failures);
+    fprintf(file, "{\"database_read_bytes\":%llu,\"response_flush_failures\":%llu,\"catalog_allocation_failures\":%llu}\n",
+            (unsigned long long)database_read_bytes, (unsigned long long)response_flush_failures,
+            (unsigned long long)catalog_allocation_failures);
     fclose(file);
 }
