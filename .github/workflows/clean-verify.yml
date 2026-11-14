@@ -36,6 +36,10 @@ jobs:
         env:
           MVD_DOCKER_IMAGE: mvd-clean
         run: python3 tests/space_reuse.py --output results/linux-space-reuse
+      - name: All fixed and variable column layouts
+        env:
+          MVD_DOCKER_IMAGE: mvd-clean
+        run: python3 tests/column_layouts.py --output results/linux-column-layouts
       - name: Database exceeds cgroup memory budget
         env:
           MVD_DOCKER_IMAGE: mvd-clean
@@ -102,6 +106,7 @@ jobs:
           python3 tests/client.py --output results/asan-public
           python3 tests/invariants.py --output results/asan-invariants
           python3 tests/space_reuse.py --output results/asan-space
+          python3 tests/column_layouts.py --output results/asan-column-layouts
       - name: Preserve sanitizer reports
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
