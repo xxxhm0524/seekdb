@@ -25,7 +25,7 @@ def main():
     data = strict(material.decode("utf-8"))
     assert isinstance(data, dict)
     assert data["synthetic"] is False
-    assert len([x for x in data["conversations"] if x["role"] == "user"]) == 2
+    assert len([x for x in data["conversations"] if x["role"] == "user"]) >= 2
     assert data["experiments"]
     dependencies = strict((ROOT/"third_party/DEPENDENCIES.json").read_text(encoding="utf-8"))
     for name in ["json.hpp", "json.LICENSE.MIT"]:

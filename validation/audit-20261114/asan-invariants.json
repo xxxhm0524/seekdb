@@ -1,0 +1,41 @@
+{
+  "passed": true,
+  "tests": [
+    {
+      "test": "value_boundaries",
+      "passed": true,
+      "details": {
+        "invalid_values_rejected": 21,
+        "unicode_and_bigint": true
+      },
+      "seconds": 0.07641027799999733
+    },
+    {
+      "test": "state_machine",
+      "passed": true,
+      "details": {
+        "operations": 500,
+        "rows": 56
+      },
+      "seconds": 1.7106634929999984
+    },
+    {
+      "test": "btree_depth",
+      "passed": true,
+      "details": {
+        "rows": 60000,
+        "database_bytes": 6784261
+      },
+      "seconds": 28.511429367000005
+    },
+    {
+      "test": "external_sort",
+      "passed": true,
+      "details": {
+        "sorted_rows": 9000,
+        "response_bytes": 8145955
+      },
+      "seconds": 4.798858727999999
+    }
+  ]
+}

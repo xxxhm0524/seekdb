@@ -1,6 +1,7 @@
 {
   "format": "actual-clean-rewrite-evidence-v1",
   "synthetic": false,
+  "own_formal_evaluation": "Not submitted. The user explicitly deferred formal submission pending further review. Formal feedback about the public reference belongs only to that third party.",
   "date": "2026-11-14",
   "scope": "All user instructions for the clean rewrite are included verbatim below. Agent responses and tool results are selected factual records. The older implementation and older conversations are outside this rewrite. Hidden reasoning, credentials, unrelated conversations and generated test databases are omitted.",
   "attribution": "The implementation, technical explanations and test design below are Agent work. The user supplied the task and the explicit decision to replace the earlier implementation. No student explanation of database mechanisms or experiments has been invented, and Agent work must not be treated as proof of student understanding.",
@@ -29,77 +30,225 @@
       "id": "agent-linux-progress",
       "role": "assistant",
       "content": "完整 Linux 容器验证已通过，包括把约 164 MB 业务数据放进 96 MiB 内存容器后进行查询、提交、回滚和强杀恢复。接下来整理运行说明、真实的 conversation.json 和提交包，再将验证版本合入规定的 2026-competition-round2 分支。"
+    },
+    {
+      "id": "user-formal-hold",
+      "role": "user",
+      "content": "我觉得先不要提测，确保没有任何问题后再提测"
+    },
+    {
+      "id": "user-expert-audit",
+      "role": "user",
+      "content": "你作为一名经验老道的数据库专家，这明显不是你应该犯的问题，请你吸取经验并仔细查找还有没有类似的问题"
+    },
+    {
+      "id": "user-successful-reference",
+      "role": "user",
+      "content": "你可以看看别人公开仓库的代码（前提是别人已经成功提交）"
+    },
+    {
+      "id": "agent-audit-progress",
+      "role": "assistant",
+      "content": "这处容量问题本应在设计阶段就用“有效数据不变、持续更新”的负载检出。之前的验证覆盖不足，我会据此调整审查方式：除了结果正确，还要检查资源是否持续增长、失败前后状态是否一致，以及非法输入是否被意外接受。发现的每个问题都会保留失败用例和修复后的验证记录。"
     }
   ],
   "agent_design": [
     "Committed B+ tree pages are immutable. Each SQL statement owns a new set of pages and a tail mark. On statement failure the new tail is discarded, preserving earlier successful statements in the transaction.",
     "Commit writes all data and pages, syncs the file, publishes a checksummed alternate root, and syncs again before acknowledging success. Recovery selects a valid root and truncates only uncommitted tail data; it does not replay updates into committed pages.",
     "Table data and primary-key directories remain on disk. A bounded page cache, bounded vector snapshot/KD tree, external sorting and spooled responses avoid loading the whole database or result set.",
-    "Both search modes return exact results. Ordinary predicates are applied before candidate selection. KD bounds only prune strictly worse subtrees, retaining ties and primary-key ordering. Float32 storage/query conversion and ordered double accumulation are independently checked."
+    "Both search modes return exact results. Ordinary predicates are applied before candidate selection. KD bounds only prune strictly worse subtrees, retaining ties and primary-key ordering. Float32 storage/query conversion and ordered double accumulation are independently checked.",
+    "Between transactions, committed history is compacted by streaming current rows to a separate fully synced database and atomically replacing the main file. The old database remains intact until replacement; the current row/page references are refreshed before any later statement executes.",
+    "Projected reads skip unused variable-length payloads. Response spill files finish flush/close/open before stdout publication. A failure after publication terminates the channel rather than appending a second JSON object."
   ],
   "experiments": [
     {
-      "id": "linux-benchmark",
-      "source_commit": "793df48ad26f093d3459ae453376ae8f538bb58e",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43567187796",
-      "output": "{\n  \"passed\": true,\n  \"rows\": 10000,\n  \"dimensions\": 128,\n  \"queries\": 1000,\n  \"seed\": 194709,\n  \"write_seconds\": 1.8037056959999944,\n  \"query_prepare_seconds\": 0.11472833999999921,\n  \"query_seconds\": 1.8506158900000003,\n  \"recall\": {\n    \"unfiltered\": 1.0,\n    \"filtered\": 1.0\n  },\n  \"database_bytes\": 7223152,\n  \"numpy_version\": \"2.2.6\",\n  \"note\": \"Local task-shaped measurement, not platform scores or official T/B/M accounting.\"\n}"
+      "id": "asan-column-layouts",
+      "stage": "verified_current_logic",
+      "source_commit": "c396ecd5957460100327eb5c49cdd80b89d2a158",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43572567753",
+      "output": "{\n  \"passed\": true,\n  \"column_orders\": 120,\n  \"transaction_read_and_rollback\": true,\n  \"embedded_nul_and_unicode\": true\n}"
     },
     {
-      "id": "linux-capacity",
-      "source_commit": "793df48ad26f093d3459ae453376ae8f538bb58e",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43567187796",
-      "output": "{\n  \"passed\": true,\n  \"rows\": 5000,\n  \"logical_payload_bytes\": 163840000,\n  \"database_bytes\": 170394077,\n  \"memory_limit_bytes\": 100663296,\n  \"container_memory_peak_bytes\": 100663296,\n  \"seconds\": 5.997774501000009\n}"
+      "id": "asan-invariants",
+      "stage": "verified_current_logic",
+      "source_commit": "c396ecd5957460100327eb5c49cdd80b89d2a158",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43572567753",
+      "output": "{\n  \"passed\": true,\n  \"tests\": [\n    {\n      \"test\": \"value_boundaries\",\n      \"passed\": true,\n      \"details\": {\n        \"invalid_values_rejected\": 21,\n        \"unicode_and_bigint\": true\n      },\n      \"seconds\": 0.07641027799999733\n    },\n    {\n      \"test\": \"state_machine\",\n      \"passed\": true,\n      \"details\": {\n        \"operations\": 500,\n        \"rows\": 56\n      },\n      \"seconds\": 1.7106634929999984\n    },\n    {\n      \"test\": \"btree_depth\",\n      \"passed\": true,\n      \"details\": {\n        \"rows\": 60000,\n        \"database_bytes\": 6784261\n      },\n      \"seconds\": 28.511429367000005\n    },\n    {\n      \"test\": \"external_sort\",\n      \"passed\": true,\n      \"details\": {\n        \"sorted_rows\": 9000,\n        \"response_bytes\": 8145955\n      },\n      \"seconds\": 4.798858727999999\n    }\n  ]\n}"
     },
     {
-      "id": "linux-crash-commit",
-      "source_commit": "793df48ad26f093d3459ae453376ae8f538bb58e",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43567187796",
-      "output": "{\n  \"passed\": true,\n  \"commit_interruptions\": [\n    {\n      \"delay_seconds\": 0,\n      \"acknowledged\": false,\n      \"recovered_generation\": 0\n    },\n    {\n      \"delay_seconds\": 0.0001,\n      \"acknowledged\": false,\n      \"recovered_generation\": 0\n    },\n    {\n      \"delay_seconds\": 0.0005,\n      \"acknowledged\": false,\n      \"recovered_generation\": 0\n    },\n    {\n      \"delay_seconds\": 0.001,\n      \"acknowledged\": true,\n      \"recovered_generation\": 4\n    },\n    {\n      \"delay_seconds\": 0.003,\n      \"acknowledged\": true,\n      \"recovered_generation\": 5\n    },\n    {\n      \"delay_seconds\": 0.01,\n      \"acknowledged\": true,\n      \"recovered_generation\": 6\n    },\n    {\n      \"delay_seconds\": 0.03,\n      \"acknowledged\": true,\n      \"recovered_generation\": 7\n    },\n    {\n      \"delay_seconds\": 0,\n      \"acknowledged\": false,\n      \"recovered_generation\": 7\n    },\n    {\n      \"delay_seconds\": 0.0001,\n      \"acknowledged\": false,\n      \"recovered_generation\": 7\n    },\n    {\n      \"delay_seconds\": 0.0005,\n      \"acknowledged\": false,\n      \"recovered_generation\": 7\n    },\n    {\n      \"delay_seconds\": 0.001,\n      \"acknowledged\": false,\n      \"recovered_generation\": 7\n    },\n    {\n      \"delay_seconds\": 0.003,\n      \"acknowledged\": true,\n      \"recovered_generation\": 12\n    },\n    {\n      \"delay_seconds\": 0.01,\n      \"acknowledged\": true,\n      \"recovered_generation\": 13\n    },\n    {\n      \"delay_seconds\": 0.03,\n      \"acknowledged\": true,\n      \"recovered_generation\": 14\n    }\n  ],\n  \"startup_interruptions\": 15,\n  \"startup_kills_before_ready\": 6,\n  \"committed_rows\": 3501\n}"
+      "id": "asan-public",
+      "stage": "verified_current_logic",
+      "source_commit": "c396ecd5957460100327eb5c49cdd80b89d2a158",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43572567753",
+      "output": "{\n  \"passed\": true,\n  \"cases\": [\n    {\n      \"id\": \"sql_crud\",\n      \"passed\": true,\n      \"seconds\": 0.14764107799999238\n    },\n    {\n      \"id\": \"sql_comparisons\",\n      \"passed\": true,\n      \"seconds\": 0.03823128600001269\n    },\n    {\n      \"id\": \"sql_ordering\",\n      \"passed\": true,\n      \"seconds\": 0.03925720000000865\n    },\n    {\n      \"id\": \"sql_empty\",\n      \"passed\": true,\n      \"seconds\": 0.038214079999988826\n    },\n    {\n      \"id\": \"sql_primary_key\",\n      \"passed\": true,\n      \"seconds\": 0.033236233000025095\n    },\n    {\n      \"id\": \"sql_unicode\",\n      \"passed\": true,\n      \"seconds\": 0.03794472300000962\n    },\n    {\n      \"id\": \"sql_bigint\",\n      \"passed\": true,\n      \"seconds\": 0.04390902100001881\n    },\n    {\n      \"id\": \"sql_unsupported\",\n      \"passed\": true,\n      \"seconds\": 0.045915711000020565\n    },\n    {\n      \"id\": \"storage_restart\",\n      \"passed\": true,\n      \"seconds\": 0.0792381530000057\n    },\n    {\n      \"id\": \"vector_euclidean\",\n      \"passed\": true,\n      \"seconds\": 0.029038662999994358\n    },\n    {\n      \"id\": \"transaction_commit\",\n      \"passed\": true,\n      \"seconds\": 0.032887866000010035\n    },\n    {\n      \"id\": \"transaction_rollback\",\n      \"passed\": true,\n      \"seconds\": 0.04075967500000388\n    },\n    {\n      \"id\": \"storage_mutations\",\n      \"passed\": true,\n      \"seconds\": 0.06171760400002313\n    },\n    {\n      \"id\": \"storage_multiple_tables\",\n      \"passed\": true,\n      \"seconds\": 0.07740110899999308\n    },\n    {\n      \"id\": \"vector_ties_and_filter\",\n      \"passed\": true,\n      \"seconds\": 0.03366331200001582\n    },\n    {\n      \"id\": \"vector_float32\",\n      \"passed\": true,\n      \"seconds\": 0.029775591999992912\n    },\n    {\n      \"id\": \"vector_index_maintenance\",\n      \"passed\": true,\n      \"seconds\": 0.09116850500001306\n    },\n    {\n      \"id\": \"transaction_failed_insert\",\n      \"passed\": true,\n      \"seconds\": 0.08447756099999992\n    },\n    {\n      \"id\": \"transaction_autocommit_atomic\",\n      \"passed\": true,\n      \"seconds\": 0.0993949930000042\n    },\n    {\n      \"id\": \"transaction_shutdown_rollback\",\n      \"passed\": true,\n      \"seconds\": 0.07327731100002666\n    }\n  ],\n  \"scope\": \"official assertions with portable local transport; not an official score\"\n}"
     },
     {
-      "id": "linux-invariants",
-      "source_commit": "793df48ad26f093d3459ae453376ae8f538bb58e",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43567187796",
-      "output": "{\n  \"passed\": true,\n  \"tests\": [\n    {\n      \"test\": \"value_boundaries\",\n      \"passed\": true,\n      \"details\": {\n        \"invalid_values_rejected\": 21,\n        \"unicode_and_bigint\": true\n      },\n      \"seconds\": 0.4182059860000038\n    },\n    {\n      \"test\": \"state_machine\",\n      \"passed\": true,\n      \"details\": {\n        \"operations\": 500,\n        \"rows\": 56\n      },\n      \"seconds\": 8.814985485000008\n    },\n    {\n      \"test\": \"btree_depth\",\n      \"passed\": true,\n      \"details\": {\n        \"rows\": 60000,\n        \"database_bytes\": 307569875\n      },\n      \"seconds\": 5.2498649839999985\n    },\n    {\n      \"test\": \"external_sort\",\n      \"passed\": true,\n      \"details\": {\n        \"sorted_rows\": 9000,\n        \"response_bytes\": 8145955\n      },\n      \"seconds\": 0.9944584930000104\n    }\n  ]\n}"
+      "id": "asan-space",
+      "stage": "verified_current_logic",
+      "source_commit": "c396ecd5957460100327eb5c49cdd80b89d2a158",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43572567753",
+      "output": "{\n  \"passed\": true,\n  \"live_payload_bytes\": 13107200,\n  \"maximum_database_bytes\": 79076368,\n  \"sizes\": [\n    26500112,\n    39644176,\n    52788240,\n    65932304,\n    79076368,\n    26299408,\n    39443472,\n    52587536,\n    65731600,\n    78875664,\n    26299408,\n    39443472,\n    52587536,\n    65731600,\n    78875664,\n    26299408\n  ]\n}"
     },
     {
-      "id": "linux-official",
-      "source_commit": "793df48ad26f093d3459ae453376ae8f538bb58e",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43567187796",
-      "output": "{\n  \"scope\": \"public-protocol-check\",\n  \"passed\": true,\n  \"cases\": [\n    {\n      \"id\": \"sql_crud\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 330\n    },\n    {\n      \"id\": \"sql_comparisons\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 226\n    },\n    {\n      \"id\": \"sql_ordering\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 234\n    },\n    {\n      \"id\": \"sql_empty\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 190\n    },\n    {\n      \"id\": \"sql_primary_key\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 214\n    },\n    {\n      \"id\": \"sql_unicode\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 220\n    },\n    {\n      \"id\": \"sql_bigint\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 185\n    },\n    {\n      \"id\": \"sql_unsupported\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 193\n    },\n    {\n      \"id\": \"storage_restart\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 369\n    },\n    {\n      \"id\": \"vector_euclidean\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 188\n    },\n    {\n      \"id\": \"transaction_commit\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 223\n    },\n    {\n      \"id\": \"transaction_rollback\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 197\n    },\n    {\n      \"id\": \"storage_mutations\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 342\n    },\n    {\n      \"id\": \"storage_multiple_tables\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 336\n    },\n    {\n      \"id\": \"vector_ties_and_filter\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 228\n    },\n    {\n      \"id\": \"vector_float32\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 190\n    },\n    {\n      \"id\": \"vector_index_maintenance\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 340\n    },\n    {\n      \"id\": \"transaction_failed_insert\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 403\n    },\n    {\n      \"id\": \"transaction_autocommit_atomic\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 334\n    },\n    {\n      \"id\": \"transaction_shutdown_rollback\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 372\n    }\n  ],\n  \"note\": \"Local diagnostic only; no performance/Agent scores or platform callbacks.\"\n}"
-    },
-    {
-      "id": "linux-portable",
-      "source_commit": "793df48ad26f093d3459ae453376ae8f538bb58e",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43567187796",
-      "output": "{\n  \"passed\": true,\n  \"cases\": [\n    {\n      \"id\": \"sql_crud\",\n      \"passed\": true,\n      \"seconds\": 0.19382784500000128\n    },\n    {\n      \"id\": \"sql_comparisons\",\n      \"passed\": true,\n      \"seconds\": 0.20064357500000085\n    },\n    {\n      \"id\": \"sql_ordering\",\n      \"passed\": true,\n      \"seconds\": 0.18425314499999956\n    },\n    {\n      \"id\": \"sql_empty\",\n      \"passed\": true,\n      \"seconds\": 0.1835186299999947\n    },\n    {\n      \"id\": \"sql_primary_key\",\n      \"passed\": true,\n      \"seconds\": 0.18353344899999513\n    },\n    {\n      \"id\": \"sql_unicode\",\n      \"passed\": true,\n      \"seconds\": 0.18648570300000245\n    },\n    {\n      \"id\": \"sql_bigint\",\n      \"passed\": true,\n      \"seconds\": 0.18619271000000026\n    },\n    {\n      \"id\": \"sql_unsupported\",\n      \"passed\": true,\n      \"seconds\": 0.1808631340000062\n    },\n    {\n      \"id\": \"storage_restart\",\n      \"passed\": true,\n      \"seconds\": 0.3531078979999904\n    },\n    {\n      \"id\": \"vector_euclidean\",\n      \"passed\": true,\n      \"seconds\": 0.18180260100000112\n    },\n    {\n      \"id\": \"transaction_commit\",\n      \"passed\": true,\n      \"seconds\": 0.18862611099999071\n    },\n    {\n      \"id\": \"transaction_rollback\",\n      \"passed\": true,\n      \"seconds\": 0.191528237\n    },\n    {\n      \"id\": \"storage_mutations\",\n      \"passed\": true,\n      \"seconds\": 0.35371236599999634\n    },\n    {\n      \"id\": \"storage_multiple_tables\",\n      \"passed\": true,\n      \"seconds\": 0.3465488079999943\n    },\n    {\n      \"id\": \"vector_ties_and_filter\",\n      \"passed\": true,\n      \"seconds\": 0.18591096900000537\n    },\n    {\n      \"id\": \"vector_float32\",\n      \"passed\": true,\n      \"seconds\": 0.17962968400000534\n    },\n    {\n      \"id\": \"vector_index_maintenance\",\n      \"passed\": true,\n      \"seconds\": 0.3527456870000094\n    },\n    {\n      \"id\": \"transaction_failed_insert\",\n      \"passed\": true,\n      \"seconds\": 0.3518318650000083\n    },\n    {\n      \"id\": \"transaction_autocommit_atomic\",\n      \"passed\": true,\n      \"seconds\": 0.3599096429999946\n    },\n    {\n      \"id\": \"transaction_shutdown_rollback\",\n      \"passed\": true,\n      \"seconds\": 0.3534084519999965\n    }\n  ],\n  \"scope\": \"official assertions with portable local transport; not an official score\"\n}"
-    },
-    {
-      "id": "linux-vector-edges",
-      "source_commit": "793df48ad26f093d3459ae453376ae8f538bb58e",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43567187796",
-      "output": "{\n  \"passed\": true,\n  \"variants\": [\n    {\n      \"passed\": true,\n      \"queries\": 504,\n      \"rows\": 257,\n      \"dimensions\": 33,\n      \"vector_cache_mib\": \"16\"\n    },\n    {\n      \"passed\": true,\n      \"queries\": 504,\n      \"rows\": 257,\n      \"dimensions\": 33,\n      \"vector_cache_mib\": \"0\"\n    }\n  ]\n}"
-    },
-    {
-      "id": "float-conversion-red",
-      "source": "local portable transport with unchanged official assertions",
-      "output": "{\n  \"passed\": false,\n  \"tests\": [\n    {\n      \"test\": \"value_boundaries\",\n      \"passed\": false,\n      \"error\": \"(\\\"INSERT INTO unicode_table VALUES (0,3,'max','[3.4028235e38,-3.4028235e38]');\\\", {'error': {'code': 'invalid_vector', 'message': 'vector value overflows finite float32'}, 'id': 20, 'ok': False})\",\n      \"traceback\": \"Traceback (most recent call last):\\n  File \\\"D:\\\\oceanbase\\\\minivectordb-clean\\\\tests\\\\invariants.py\\\", line 204, in main\\n    details = test(root / name)\\n  File \\\"D:\\\\oceanbase\\\\minivectordb-clean\\\\tests\\\\invariants.py\\\", line 148, in value_boundaries\\n    db.execute(\\\"INSERT INTO unicode_table VALUES (0,3,'max','[3.4028235e38,-3.4028235e38]');\\\")\\n    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\n  File \\\"D:\\\\oceanbase\\\\minivectordb-clean\\\\tests\\\\client.py\\\", line 72, in execute\\n    assert response[\\\"ok\\\"] is ok, (sql, response)\\n           ^^^^^^^^^^^^^^^^^^^^\\nAssertionError: (\\\"INSERT INTO unicode_table VALUES (0,3,'max','[3.4028235e38,-3.4028235e38]');\\\", {'error': {'code': 'invalid_vector', 'message': 'vector value overflows finite float32'}, 'id': 20, 'ok': False})\\n\",\n      \"seconds\": 0.041338999988511205\n    },\n    {\n      \"test\": \"state_machine\",\n      \"passed\": true,\n      \"details\": {\n        \"operations\": 500,\n        \"rows\": 56\n      },\n      \"seconds\": 1.4870910000172444\n    },\n    {\n      \"test\": \"btree_depth\",\n      \"passed\": true,\n      \"details\": {\n        \"rows\": 3000,\n        \"database_bytes\": 2048864\n      },\n      \"seconds\": 0.26677839999319986\n    },\n    {\n      \"test\": \"external_sort\",\n      \"passed\": true,\n      \"details\": {\n        \"sorted_rows\": 1000,\n        \"response_bytes\": 905077\n      },\n      \"seconds\": 0.13329929998144507\n    }\n  ]\n}"
+      "id": "dialect-backslash-observation",
+      "stage": "retained_development_observation",
+      "source_commit": "pre-fix development build; see preserved original report",
+      "source": "validation/audit-20261114/dialect-backslash-observation.json",
+      "output": "{\n  \"passed\": false,\n  \"error\": \"('SELECT id,bucket,txt,v FROM a ORDER BY id;', {'columns': ['id', 'bucket', 'txt', 'v'], 'id': 47, 'ok': True, 'rows': [[-9223372036854775808, 0, '边界😀', [0.0, 0.0, 0.0]], [-26, 1, '😀', [-3.836583375930786, -0.8139609098434448, -2.8786957263946533]], [-25, 1, '😀', [-3.836583375930786, -0.8139609098434448, -2.8786957263946533]], [112, -1, 'x\\\\\\\\y', [0.35404759645462036, -3.9948065280914307, -1.0232404470443726]], [9223372036854775807, 0, '边界😀', [0.0, 0.0, 0.0]]]}, {'id': 47, 'ok': True, 'columns': ['id', 'bucket', 'txt', 'v'], 'rows': [[-9223372036854775808, 0, '边界😀', [0, 0, 0]], [-26, 1, '😀', [-3.8365834, -0.8139609, -2.8786957]], [-25, 1, '😀', [-3.8365834, -0.8139609, -2.8786957]], [112, -1, 'x\\\\\\\\\\\\\\\\y', [0.3540476, -3.9948065, -1.0232404]], [9223372036854775807, 0, '边界😀', [0, 0, 0]]]}, [[-9223372036854775808, 0, '边界😀', [0.0, 0.0, 0.0]], [-26, 1, '😀', [-3.836583375930786, -0.8139609098434448, -2.8786957263946533]], [-25, 1, '😀', [-3.836583375930786, -0.8139609098434448, -2.8786957263946533]], [112, -1, 'x\\\\\\\\y', [0.35404759645462036, -3.9948065280914307, -1.0232404470443726]], [9223372036854775807, 0, '边界😀', [0.0, 0.0, 0.0]]])\",\n  \"traceback\": \"Traceback (most recent call last):\\n  File \\\"/home/runner/work/seekdb/seekdb/tests/reference_differential.py\\\", line 166, in <module>\\n    result=run(out,binary,manifest)\\n           ^^^^^^^^^^^^^^^^^^^^^^^^\\n  File \\\"/home/runner/work/seekdb/seekdb/tests/reference_differential.py\\\", line 149, in run\\n    if step%31==0:checkpoint()\\n                  ^^^^^^^^^^^^\\n  File \\\"/home/runner/work/seekdb/seekdb/tests/reference_differential.py\\\", line 85, in checkpoint\\n    execute(f\\\"SELECT id,bucket,txt,v FROM {table} ORDER BY id;\\\",rows=expected,columns=[\\\"id\\\",\\\"bucket\\\",\\\"txt\\\",\\\"v\\\"])\\n  File \\\"/home/runner/work/seekdb/seekdb/tests/reference_differential.py\\\", line 76, in execute\\n    assert equal(left.get(\\\"rows\\\"),rows) and equal(right.get(\\\"rows\\\"),rows),(sql,left,right,rows)\\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\nAssertionError: ('SELECT id,bucket,txt,v FROM a ORDER BY id;', {'columns': ['id', 'bucket', 'txt', 'v'], 'id': 47, 'ok': True, 'rows': [[-9223372036854775808, 0, '边界😀', [0.0, 0.0, 0.0]], [-26, 1, '😀', [-3.836583375930786, -0.8139609098434448, -2.8786957263946533]], [-25, 1, '😀', [-3.836583375930786, -0.8139609098434448, -2.8786957263946533]], [112, -1, 'x\\\\\\\\y', [0.35404759645462036, -3.9948065280914307, -1.0232404470443726]], [9223372036854775807, 0, '边界😀', [0.0, 0.0, 0.0]]]}, {'id': 47, 'ok': True, 'columns': ['id', 'bucket', 'txt', 'v'], 'rows': [[-9223372036854775808, 0, '边界😀', [0, 0, 0]], [-26, 1, '😀', [-3.8365834, -0.8139609, -2.8786957]], [-25, 1, '😀', [-3.8365834, -0.8139609, -2.8786957]], [112, -1, 'x\\\\\\\\\\\\\\\\y', [0.3540476, -3.9948065, -1.0232404]], [9223372036854775807, 0, '边界😀', [0, 0, 0]]]}, [[-9223372036854775808, 0, '边界😀', [0.0, 0.0, 0.0]], [-26, 1, '😀', [-3.836583375930786, -0.8139609098434448, -2.8786957263946533]], [-25, 1, '😀', [-3.836583375930786, -0.8139609098434448, -2.8786957263946533]], [112, -1, 'x\\\\\\\\y', [0.35404759645462036, -3.9948065280914307, -1.0232404470443726]], [9223372036854775807, 0, '边界😀', [0.0, 0.0, 0.0]]])\\n\"\n}"
     },
     {
       "id": "float-conversion-green",
-      "source": "local portable transport with unchanged official assertions",
+      "stage": "retained_development_observation",
+      "source_commit": "pre-fix development build; see preserved original report",
+      "source": "validation/audit-20261114/float-conversion-green.json",
       "output": "{\n  \"passed\": true,\n  \"tests\": [\n    {\n      \"test\": \"value_boundaries\",\n      \"passed\": true,\n      \"details\": {\n        \"invalid_values_rejected\": 21,\n        \"unicode_and_bigint\": true\n      },\n      \"seconds\": 0.0591052999952808\n    },\n    {\n      \"test\": \"state_machine\",\n      \"passed\": true,\n      \"details\": {\n        \"operations\": 500,\n        \"rows\": 56\n      },\n      \"seconds\": 1.5583212999918032\n    },\n    {\n      \"test\": \"btree_depth\",\n      \"passed\": true,\n      \"details\": {\n        \"rows\": 3000,\n        \"database_bytes\": 2048864\n      },\n      \"seconds\": 0.2537016999849584\n    },\n    {\n      \"test\": \"external_sort\",\n      \"passed\": true,\n      \"details\": {\n        \"sorted_rows\": 1000,\n        \"response_bytes\": 905077\n      },\n      \"seconds\": 0.12293640000279993\n    }\n  ]\n}"
+    },
+    {
+      "id": "float-conversion-red",
+      "stage": "retained_development_observation",
+      "source_commit": "pre-fix development build; see preserved original report",
+      "source": "validation/audit-20261114/float-conversion-red.json",
+      "output": "{\n  \"passed\": false,\n  \"tests\": [\n    {\n      \"test\": \"value_boundaries\",\n      \"passed\": false,\n      \"error\": \"(\\\"INSERT INTO unicode_table VALUES (0,3,'max','[3.4028235e38,-3.4028235e38]');\\\", {'error': {'code': 'invalid_vector', 'message': 'vector value overflows finite float32'}, 'id': 20, 'ok': False})\",\n      \"traceback\": \"Traceback (most recent call last):\\n  File \\\"D:\\\\oceanbase\\\\minivectordb-clean\\\\tests\\\\invariants.py\\\", line 204, in main\\n    details = test(root / name)\\n  File \\\"D:\\\\oceanbase\\\\minivectordb-clean\\\\tests\\\\invariants.py\\\", line 148, in value_boundaries\\n    db.execute(\\\"INSERT INTO unicode_table VALUES (0,3,'max','[3.4028235e38,-3.4028235e38]');\\\")\\n    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\n  File \\\"D:\\\\oceanbase\\\\minivectordb-clean\\\\tests\\\\client.py\\\", line 72, in execute\\n    assert response[\\\"ok\\\"] is ok, (sql, response)\\n           ^^^^^^^^^^^^^^^^^^^^\\nAssertionError: (\\\"INSERT INTO unicode_table VALUES (0,3,'max','[3.4028235e38,-3.4028235e38]');\\\", {'error': {'code': 'invalid_vector', 'message': 'vector value overflows finite float32'}, 'id': 20, 'ok': False})\\n\",\n      \"seconds\": 0.041338999988511205\n    },\n    {\n      \"test\": \"state_machine\",\n      \"passed\": true,\n      \"details\": {\n        \"operations\": 500,\n        \"rows\": 56\n      },\n      \"seconds\": 1.4870910000172444\n    },\n    {\n      \"test\": \"btree_depth\",\n      \"passed\": true,\n      \"details\": {\n        \"rows\": 3000,\n        \"database_bytes\": 2048864\n      },\n      \"seconds\": 0.26677839999319986\n    },\n    {\n      \"test\": \"external_sort\",\n      \"passed\": true,\n      \"details\": {\n        \"sorted_rows\": 1000,\n        \"response_bytes\": 905077\n      },\n      \"seconds\": 0.13329929998144507\n    }\n  ]\n}"
+    },
+    {
+      "id": "linux-benchmark",
+      "stage": "verified_current_logic",
+      "source_commit": "c396ecd5957460100327eb5c49cdd80b89d2a158",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43572567753",
+      "output": "{\n  \"passed\": true,\n  \"rows\": 10000,\n  \"dimensions\": 128,\n  \"queries\": 1000,\n  \"seed\": 194709,\n  \"write_seconds\": 1.66532687199998,\n  \"query_prepare_seconds\": 0.11000462599997718,\n  \"query_seconds\": 2.105588470999976,\n  \"recall\": {\n    \"unfiltered\": 1.0,\n    \"filtered\": 1.0\n  },\n  \"database_bytes\": 7223194,\n  \"numpy_version\": \"2.2.6\",\n  \"note\": \"Local task-shaped measurement, not platform scores or official T/B/M accounting.\"\n}"
+    },
+    {
+      "id": "linux-capacity-2g",
+      "stage": "verified_current_logic",
+      "source_commit": "c396ecd5957460100327eb5c49cdd80b89d2a158",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43572567753",
+      "output": "{\n  \"passed\": true,\n  \"rows\": 40000,\n  \"logical_payload_bytes\": 2621440000,\n  \"database_bytes\": 2681860599,\n  \"memory_limit_bytes\": 2147483648,\n  \"container_memory_peak_bytes\": 2147483648,\n  \"seconds\": 64.82487829600001\n}"
+    },
+    {
+      "id": "linux-capacity",
+      "stage": "verified_current_logic",
+      "source_commit": "c396ecd5957460100327eb5c49cdd80b89d2a158",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43572567753",
+      "output": "{\n  \"passed\": true,\n  \"rows\": 5000,\n  \"logical_payload_bytes\": 163840000,\n  \"database_bytes\": 170394100,\n  \"memory_limit_bytes\": 100663296,\n  \"container_memory_peak_bytes\": 100663296,\n  \"seconds\": 4.282184911000002\n}"
+    },
+    {
+      "id": "linux-column-layouts",
+      "stage": "verified_current_logic",
+      "source_commit": "c396ecd5957460100327eb5c49cdd80b89d2a158",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43572567753",
+      "output": "{\n  \"passed\": true,\n  \"column_orders\": 120,\n  \"transaction_read_and_rollback\": true,\n  \"embedded_nul_and_unicode\": true\n}"
+    },
+    {
+      "id": "linux-compaction-crash",
+      "stage": "verified_current_logic",
+      "source_commit": "c396ecd5957460100327eb5c49cdd80b89d2a158",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43572567753",
+      "output": "{\n  \"passed\": true,\n  \"cases\": [\n    {\n      \"stage\": \"before_replace\",\n      \"stopped_before_response\": true,\n      \"recovery_passed\": true\n    },\n    {\n      \"stage\": \"after_replace\",\n      \"stopped_before_response\": true,\n      \"recovery_passed\": true\n    },\n    {\n      \"stage\": \"before_replace\",\n      \"stopped_before_response\": true,\n      \"recovery_passed\": true\n    },\n    {\n      \"stage\": \"after_replace\",\n      \"stopped_before_response\": true,\n      \"recovery_passed\": true\n    }\n  ]\n}"
+    },
+    {
+      "id": "linux-crash-commit",
+      "stage": "verified_current_logic",
+      "source_commit": "c396ecd5957460100327eb5c49cdd80b89d2a158",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43572567753",
+      "output": "{\n  \"passed\": true,\n  \"commit_interruptions\": [\n    {\n      \"delay_seconds\": 0,\n      \"acknowledged\": false,\n      \"recovered_generation\": 0\n    },\n    {\n      \"delay_seconds\": 0.0001,\n      \"acknowledged\": false,\n      \"recovered_generation\": 0\n    },\n    {\n      \"delay_seconds\": 0.0005,\n      \"acknowledged\": false,\n      \"recovered_generation\": 0\n    },\n    {\n      \"delay_seconds\": 0.001,\n      \"acknowledged\": true,\n      \"recovered_generation\": 4\n    },\n    {\n      \"delay_seconds\": 0.003,\n      \"acknowledged\": true,\n      \"recovered_generation\": 5\n    },\n    {\n      \"delay_seconds\": 0.01,\n      \"acknowledged\": true,\n      \"recovered_generation\": 6\n    },\n    {\n      \"delay_seconds\": 0.03,\n      \"acknowledged\": true,\n      \"recovered_generation\": 7\n    },\n    {\n      \"delay_seconds\": 0,\n      \"acknowledged\": false,\n      \"recovered_generation\": 7\n    },\n    {\n      \"delay_seconds\": 0.0001,\n      \"acknowledged\": false,\n      \"recovered_generation\": 7\n    },\n    {\n      \"delay_seconds\": 0.0005,\n      \"acknowledged\": false,\n      \"recovered_generation\": 7\n    },\n    {\n      \"delay_seconds\": 0.001,\n      \"acknowledged\": true,\n      \"recovered_generation\": 11\n    },\n    {\n      \"delay_seconds\": 0.003,\n      \"acknowledged\": true,\n      \"recovered_generation\": 12\n    },\n    {\n      \"delay_seconds\": 0.01,\n      \"acknowledged\": true,\n      \"recovered_generation\": 13\n    },\n    {\n      \"delay_seconds\": 0.03,\n      \"acknowledged\": true,\n      \"recovered_generation\": 14\n    }\n  ],\n  \"startup_interruptions\": 15,\n  \"startup_kills_before_ready\": 6,\n  \"committed_rows\": 4001\n}"
+    },
+    {
+      "id": "linux-invariants",
+      "stage": "verified_current_logic",
+      "source_commit": "c396ecd5957460100327eb5c49cdd80b89d2a158",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43572567753",
+      "output": "{\n  \"passed\": true,\n  \"tests\": [\n    {\n      \"test\": \"value_boundaries\",\n      \"passed\": true,\n      \"details\": {\n        \"invalid_values_rejected\": 21,\n        \"unicode_and_bigint\": true\n      },\n      \"seconds\": 0.36137571999998386\n    },\n    {\n      \"test\": \"state_machine\",\n      \"passed\": true,\n      \"details\": {\n        \"operations\": 500,\n        \"rows\": 56\n      },\n      \"seconds\": 7.934717670999987\n    },\n    {\n      \"test\": \"btree_depth\",\n      \"passed\": true,\n      \"details\": {\n        \"rows\": 60000,\n        \"database_bytes\": 6784261\n      },\n      \"seconds\": 5.916089922000026\n    },\n    {\n      \"test\": \"external_sort\",\n      \"passed\": true,\n      \"details\": {\n        \"sorted_rows\": 9000,\n        \"response_bytes\": 8145955\n      },\n      \"seconds\": 0.8564323399999978\n    }\n  ]\n}"
+    },
+    {
+      "id": "linux-official",
+      "stage": "verified_current_logic",
+      "source_commit": "c396ecd5957460100327eb5c49cdd80b89d2a158",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43572567753",
+      "output": "{\n  \"scope\": \"public-protocol-check\",\n  \"passed\": true,\n  \"cases\": [\n    {\n      \"id\": \"sql_crud\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 170\n    },\n    {\n      \"id\": \"sql_comparisons\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 177\n    },\n    {\n      \"id\": \"sql_ordering\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 158\n    },\n    {\n      \"id\": \"sql_empty\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 164\n    },\n    {\n      \"id\": \"sql_primary_key\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 162\n    },\n    {\n      \"id\": \"sql_unicode\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 162\n    },\n    {\n      \"id\": \"sql_bigint\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 193\n    },\n    {\n      \"id\": \"sql_unsupported\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 158\n    },\n    {\n      \"id\": \"storage_restart\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 295\n    },\n    {\n      \"id\": \"vector_euclidean\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 157\n    },\n    {\n      \"id\": \"transaction_commit\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 161\n    },\n    {\n      \"id\": \"transaction_rollback\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 159\n    },\n    {\n      \"id\": \"storage_mutations\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 297\n    },\n    {\n      \"id\": \"storage_multiple_tables\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 301\n    },\n    {\n      \"id\": \"vector_ties_and_filter\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 164\n    },\n    {\n      \"id\": \"vector_float32\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 159\n    },\n    {\n      \"id\": \"vector_index_maintenance\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 300\n    },\n    {\n      \"id\": \"transaction_failed_insert\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 293\n    },\n    {\n      \"id\": \"transaction_autocommit_atomic\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 290\n    },\n    {\n      \"id\": \"transaction_shutdown_rollback\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 292\n    }\n  ],\n  \"note\": \"Local diagnostic only; no performance/Agent scores or platform callbacks.\"\n}"
+    },
+    {
+      "id": "linux-portable",
+      "stage": "verified_current_logic",
+      "source_commit": "c396ecd5957460100327eb5c49cdd80b89d2a158",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43572567753",
+      "output": "{\n  \"passed\": true,\n  \"cases\": [\n    {\n      \"id\": \"sql_crud\",\n      \"passed\": true,\n      \"seconds\": 0.13885133700000551\n    },\n    {\n      \"id\": \"sql_comparisons\",\n      \"passed\": true,\n      \"seconds\": 0.17053925599998365\n    },\n    {\n      \"id\": \"sql_ordering\",\n      \"passed\": true,\n      \"seconds\": 0.16820626599999855\n    },\n    {\n      \"id\": \"sql_empty\",\n      \"passed\": true,\n      \"seconds\": 0.1363263380000035\n    },\n    {\n      \"id\": \"sql_primary_key\",\n      \"passed\": true,\n      \"seconds\": 0.16477271900001256\n    },\n    {\n      \"id\": \"sql_unicode\",\n      \"passed\": true,\n      \"seconds\": 0.13693889600000375\n    },\n    {\n      \"id\": \"sql_bigint\",\n      \"passed\": true,\n      \"seconds\": 0.13309383999998659\n    },\n    {\n      \"id\": \"sql_unsupported\",\n      \"passed\": true,\n      \"seconds\": 0.16409644199998752\n    },\n    {\n      \"id\": \"storage_restart\",\n      \"passed\": true,\n      \"seconds\": 0.2528986449999877\n    },\n    {\n      \"id\": \"vector_euclidean\",\n      \"passed\": true,\n      \"seconds\": 0.13383863399999996\n    },\n    {\n      \"id\": \"transaction_commit\",\n      \"passed\": true,\n      \"seconds\": 0.1350528559999873\n    },\n    {\n      \"id\": \"transaction_rollback\",\n      \"passed\": true,\n      \"seconds\": 0.13616376199999536\n    },\n    {\n      \"id\": \"storage_mutations\",\n      \"passed\": true,\n      \"seconds\": 0.2878178489999925\n    },\n    {\n      \"id\": \"storage_multiple_tables\",\n      \"passed\": true,\n      \"seconds\": 0.24734366199999158\n    },\n    {\n      \"id\": \"vector_ties_and_filter\",\n      \"passed\": true,\n      \"seconds\": 0.13843645400001492\n    },\n    {\n      \"id\": \"vector_float32\",\n      \"passed\": true,\n      \"seconds\": 0.13626910199999998\n    },\n    {\n      \"id\": \"vector_index_maintenance\",\n      \"passed\": true,\n      \"seconds\": 0.3188923499999987\n    },\n    {\n      \"id\": \"transaction_failed_insert\",\n      \"passed\": true,\n      \"seconds\": 0.2886031859999889\n    },\n    {\n      \"id\": \"transaction_autocommit_atomic\",\n      \"passed\": true,\n      \"seconds\": 0.25157404800000904\n    },\n    {\n      \"id\": \"transaction_shutdown_rollback\",\n      \"passed\": true,\n      \"seconds\": 0.2821328519999895\n    }\n  ],\n  \"scope\": \"official assertions with portable local transport; not an official score\"\n}"
+    },
+    {
+      "id": "linux-projection-io",
+      "stage": "verified_current_logic",
+      "source_commit": "c396ecd5957460100327eb5c49cdd80b89d2a158",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43572567753",
+      "output": "{\n  \"passed\": true,\n  \"rows\": 5000,\n  \"live_text_bytes\": 163840000,\n  \"database_read_bytes\": 350552\n}"
+    },
+    {
+      "id": "linux-reference-differential",
+      "stage": "verified_current_logic",
+      "source_commit": "c396ecd5957460100327eb5c49cdd80b89d2a158",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43572567753",
+      "output": "{\n  \"passed\": true,\n  \"reference_commit\": \"dfee55b84284f4c39d2df45951cdbcb1d1baf1a2\",\n  \"reference_evidence\": {\n    \"source\": \"author-published user-supplied platform feedback\",\n    \"url\": \"https://github.com/juanzhi-gcb/seekdb/blob/42f69e8320dcd8c802614f10cfb0699aa7551d2c/agent/conversation.json\",\n    \"json_pointer\": \"/experiments/43/output\",\n    \"mysql\": \"passed\",\n    \"agent_prompt_raw_score\": 6.5,\n    \"independently_authenticated_platform_record\": false\n  },\n  \"operations\": 1600,\n  \"compared_requests\": 1629,\n  \"independent_state_checked\": true,\n  \"tables\": 3,\n  \"scope\": \"Task-defined operations with explicit distance aliases and unambiguous single-quoted SQL strings.\",\n  \"dialect_observation\": \"The frozen reference preserves backslashes; this implementation recognizes MySQL-style backslash escapes. The task kit does not specify that dialect choice. The original mismatch is retained; this corpus avoids that ambiguous case rather than using the reference as an unconditional oracle.\"\n}"
+    },
+    {
+      "id": "linux-response-failure",
+      "stage": "verified_current_logic",
+      "source_commit": "c396ecd5957460100327eb5c49cdd80b89d2a158",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43572567753",
+      "output": "{\n  \"passed\": true,\n  \"injected_failures\": 1,\n  \"complete_error_response\": true,\n  \"persistent_rows_preserved\": 11\n}"
+    },
+    {
+      "id": "linux-space-reuse",
+      "stage": "verified_current_logic",
+      "source_commit": "c396ecd5957460100327eb5c49cdd80b89d2a158",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43572567753",
+      "output": "{\n  \"passed\": true,\n  \"live_payload_bytes\": 13107200,\n  \"maximum_database_bytes\": 79076368,\n  \"sizes\": [\n    26500112,\n    39644176,\n    52788240,\n    65932304,\n    79076368,\n    26299408,\n    39443472,\n    52587536,\n    65731600,\n    78875664,\n    26299408,\n    39443472,\n    52587536,\n    65731600,\n    78875664,\n    26299408\n  ]\n}"
+    },
+    {
+      "id": "linux-vector-edges",
+      "stage": "verified_current_logic",
+      "source_commit": "c396ecd5957460100327eb5c49cdd80b89d2a158",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43572567753",
+      "output": "{\n  \"passed\": true,\n  \"variants\": [\n    {\n      \"passed\": true,\n      \"queries\": 504,\n      \"rows\": 257,\n      \"dimensions\": 33,\n      \"vector_cache_mib\": \"16\"\n    },\n    {\n      \"passed\": true,\n      \"queries\": 504,\n      \"rows\": 257,\n      \"dimensions\": 33,\n      \"vector_cache_mib\": \"0\"\n    }\n  ]\n}"
+    },
+    {
+      "id": "red-projection-io",
+      "stage": "retained_development_observation",
+      "source_commit": "pre-fix development build; see preserved original report",
+      "source": "validation/audit-20261114/red-projection-io.json",
+      "output": "{\n  \"passed\": false,\n  \"error\": \"TopK read 164558312 bytes, including unprojected wide text\"\n}"
+    },
+    {
+      "id": "red-response-flush",
+      "stage": "retained_development_observation",
+      "source_commit": "pre-fix development build; see preserved original report",
+      "source": "validation/audit-20261114/red-response-flush.json",
+      "output": "{\n  \"passed\": false,\n  \"error\": \"partial response instead of one JSON error: Expecting ',' delimiter: line 2 column 1 (char 138)\"\n}"
+    },
+    {
+      "id": "red-space-growth",
+      "stage": "retained_development_observation",
+      "source_commit": "pre-fix development build; see preserved original report",
+      "source": "validation/audit-20261114/red-space-growth.json",
+      "output": "{\n  \"passed\": false,\n  \"error\": \"fixed 12.5 MiB payload grew to 92220410 bytes after 6 updates\"\n}"
+    },
+    {
+      "id": "red-vector-grammar",
+      "stage": "retained_development_observation",
+      "source_commit": "pre-fix development build; see preserved original report",
+      "source": "validation/audit-20261114/red-vector-grammar.json",
+      "output": "{\n  \"passed\": false,\n  \"tests\": [\n    {\n      \"test\": \"value_boundaries\",\n      \"passed\": false,\n      \"error\": \"(\\\"INSERT INTO unicode_table VALUES(0,1,'x',[1 2,0]);\\\", {'affected_rows': 1, 'id': 14, 'ok': True})\",\n      \"traceback\": \"Traceback (most recent call last):\\n  File \\\"D:\\\\oceanbase\\\\minivectordb-clean\\\\tests\\\\invariants.py\\\", line 218, in main\\n    details = test(root / name)\\n  File \\\"D:\\\\oceanbase\\\\minivectordb-clean\\\\tests\\\\invariants.py\\\", line 153, in value_boundaries\\n    db.execute(\\\"INSERT INTO unicode_table VALUES(0,1,'x',\\\" + vector + \\\");\\\", ok=False)\\n    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\n  File \\\"D:\\\\oceanbase\\\\minivectordb-clean\\\\tests\\\\client.py\\\", line 72, in execute\\n    assert response[\\\"ok\\\"] is ok, (sql, response)\\n           ^^^^^^^^^^^^^^^^^^^^\\nAssertionError: (\\\"INSERT INTO unicode_table VALUES(0,1,'x',[1 2,0]);\\\", {'affected_rows': 1, 'id': 14, 'ok': True})\\n\",\n      \"seconds\": 0.043192399985855445\n    },\n    {\n      \"test\": \"state_machine\",\n      \"passed\": true,\n      \"details\": {\n        \"operations\": 500,\n        \"rows\": 56\n      },\n      \"seconds\": 1.9215814000053797\n    },\n    {\n      \"test\": \"btree_depth\",\n      \"passed\": true,\n      \"details\": {\n        \"rows\": 3000,\n        \"database_bytes\": 2061171\n      },\n      \"seconds\": 0.28944309998769313\n    },\n    {\n      \"test\": \"external_sort\",\n      \"passed\": true,\n      \"details\": {\n        \"sorted_rows\": 1000,\n        \"response_bytes\": 905077\n      },\n      \"seconds\": 0.1226322999864351\n    }\n  ]\n}"
     }
   ],
   "agent_retrospective": [
     "The first newly written version passed the 20 public cases, but that was not treated as formal admission. Independent state-machine, large-tree, external-sort, SIGKILL, hostile float32 and low-memory tests were then run.",
     "An added boundary test initially failed for the finite float32 decimal 3.4028235e38. Comparing the input double directly to FLT_MAX incorrectly rejected a value that rounds to finite float32. The threshold was changed to the overflow rounding midpoint. The failing record and successful retest are preserved below.",
     "The low-memory test actually stored 163840000 payload bytes in a container limited to 100663296 bytes. This is evidence for external-memory handling, not a claim based on an in-memory simulation.",
+    "The user's objection led to a broader lifecycle audit. Four real defects were reproduced: unbounded committed history, token concatenation accepting malformed vectors, unneeded wide-text reads, and partial JSON publication when the spill file's final flush failed. The preserved red reports and passing regressions support the fixes; they do not retroactively establish that the earlier candidate was bug-free.",
+    "A frozen public commit with author-published formal feedback was compiled as a reference. 1600 operations / 1629 requests across three tables agreed with both implementations and independent Python state. The original backslash escaping difference is recorded separately because the task does not specify that dialect choice. No public reference code or learning material was incorporated into the database core.",
+    "The expanded capacity test used the actual 2 GiB memory budget with 2621440000 bytes of business text. Compaction was interrupted exactly before and after file replacement. ASan, UBSan and library assertions covered the protocol, state machine, large tree, compaction and all 120 column layouts.",
     "Local benchmark times and CI results are not formal platform scores. The nine retained formal inputs are unavailable. Formal admission and ranking require the platform to evaluate the locked submission."
   ],
   "limitations": [
     "No real student technical interpretation was supplied during this autonomous rewrite; no such interpretation is synthesized here.",
-    "No online compaction of committed historical pages; random updates of small rows can amplify writes and file growth.",
+    "Compaction runs between transactions and needs temporary space for both old and new files; long transactions still need space for their uncommitted tails.",
     "The active catalog, one SQL request and one decoded row must individually fit memory. The database as a whole need not fit memory.",
     "For tables beyond the vector cache budget, exact disk scans preserve correctness and recall but can be slower."
   ]

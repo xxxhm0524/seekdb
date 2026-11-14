@@ -1,0 +1,39 @@
+{
+  "passed": false,
+  "tests": [
+    {
+      "test": "value_boundaries",
+      "passed": false,
+      "error": "(\"INSERT INTO unicode_table VALUES(0,1,'x',[1 2,0]);\", {'affected_rows': 1, 'id': 14, 'ok': True})",
+      "traceback": "Traceback (most recent call last):\n  File \"D:\\oceanbase\\minivectordb-clean\\tests\\invariants.py\", line 218, in main\n    details = test(root / name)\n  File \"D:\\oceanbase\\minivectordb-clean\\tests\\invariants.py\", line 153, in value_boundaries\n    db.execute(\"INSERT INTO unicode_table VALUES(0,1,'x',\" + vector + \");\", ok=False)\n    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\oceanbase\\minivectordb-clean\\tests\\client.py\", line 72, in execute\n    assert response[\"ok\"] is ok, (sql, response)\n           ^^^^^^^^^^^^^^^^^^^^\nAssertionError: (\"INSERT INTO unicode_table VALUES(0,1,'x',[1 2,0]);\", {'affected_rows': 1, 'id': 14, 'ok': True})\n",
+      "seconds": 0.043192399985855445
+    },
+    {
+      "test": "state_machine",
+      "passed": true,
+      "details": {
+        "operations": 500,
+        "rows": 56
+      },
+      "seconds": 1.9215814000053797
+    },
+    {
+      "test": "btree_depth",
+      "passed": true,
+      "details": {
+        "rows": 3000,
+        "database_bytes": 2061171
+      },
+      "seconds": 0.28944309998769313
+    },
+    {
+      "test": "external_sort",
+      "passed": true,
+      "details": {
+        "sorted_rows": 1000,
+        "response_bytes": 905077
+      },
+      "seconds": 0.1226322999864351
+    }
+  ]
+}

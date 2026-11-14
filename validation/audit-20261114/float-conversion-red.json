@@ -1,0 +1,39 @@
+{
+  "passed": false,
+  "tests": [
+    {
+      "test": "value_boundaries",
+      "passed": false,
+      "error": "(\"INSERT INTO unicode_table VALUES (0,3,'max','[3.4028235e38,-3.4028235e38]');\", {'error': {'code': 'invalid_vector', 'message': 'vector value overflows finite float32'}, 'id': 20, 'ok': False})",
+      "traceback": "Traceback (most recent call last):\n  File \"D:\\oceanbase\\minivectordb-clean\\tests\\invariants.py\", line 204, in main\n    details = test(root / name)\n  File \"D:\\oceanbase\\minivectordb-clean\\tests\\invariants.py\", line 148, in value_boundaries\n    db.execute(\"INSERT INTO unicode_table VALUES (0,3,'max','[3.4028235e38,-3.4028235e38]');\")\n    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\oceanbase\\minivectordb-clean\\tests\\client.py\", line 72, in execute\n    assert response[\"ok\"] is ok, (sql, response)\n           ^^^^^^^^^^^^^^^^^^^^\nAssertionError: (\"INSERT INTO unicode_table VALUES (0,3,'max','[3.4028235e38,-3.4028235e38]');\", {'error': {'code': 'invalid_vector', 'message': 'vector value overflows finite float32'}, 'id': 20, 'ok': False})\n",
+      "seconds": 0.041338999988511205
+    },
+    {
+      "test": "state_machine",
+      "passed": true,
+      "details": {
+        "operations": 500,
+        "rows": 56
+      },
+      "seconds": 1.4870910000172444
+    },
+    {
+      "test": "btree_depth",
+      "passed": true,
+      "details": {
+        "rows": 3000,
+        "database_bytes": 2048864
+      },
+      "seconds": 0.26677839999319986
+    },
+    {
+      "test": "external_sort",
+      "passed": true,
+      "details": {
+        "sorted_rows": 1000,
+        "response_bytes": 905077
+      },
+      "seconds": 0.13329929998144507
+    }
+  ]
+}

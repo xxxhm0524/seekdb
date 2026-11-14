@@ -51,6 +51,7 @@ Windows/MSYS2 使用 `mingw32-make`，生成 `minivectordb.exe`；正式验收�
 | `src/sql.*` | SQL 词法分析与语法树；解析完整语句后才执行 |
 | `src/model.*` | BIGINT、Unicode、float32 校验，二进制记录编码 |
 | `src/storage.*`、`src/btree.cpp` | 文件 I/O、有界页缓存、磁盘 B+ 树、提交根 |
+| `src/compaction.cpp`、`src/record_reader.cpp` | 历史页回收、按需读取记录列 |
 | `src/engine.*` | 自动提交、显式事务、语句原子性与 DDL |
 | `src/query.cpp` | 条件绑定、投影、TopK、外部归并排序 |
 | `src/vector_index.*` | 有界向量快照、KD 树与精确下界剪枝 |
@@ -70,23 +71,25 @@ B+ 树叶页保存有符号 BIGINT 主键到记录位置的映射。树页按需
 
 恢复选择代号最新且校验有效的提交根，读取 catalog，截断未提交尾部，清理本实现的临时文件；有界向量索引的恢复准备在 ready 前完成。恢复不回写已提交页，因此重复终止恢复不会把已提交页改坏。崩溃测试针对进程强杀；不声称覆盖外部篡改或硬盘损坏。
 
+文件超过 64 MiB 且明显大于当前有效数据和树页估算时，在事务之间回收已提交历史：流式复制当前可见记录到 `/data/.compact-work`，完整提交并同步新库，再原子替换主文件。替换前后的精确强杀已验证；未完成的临时库在恢复时清理。`live_bytes` 计数随语句一起提交和回滚，早期本重写格式缺少计数时，可从叶页引用恢复。
+
 ## 查询与内存
 
-支持 CREATE TABLE、CREATE VECTOR INDEX、INSERT（含多行和完整列名重排）、SELECT、UPDATE、DELETE、BEGIN、COMMIT、ROLLBACK。支持 BIGINT、VARCHAR(n)、VECTOR(n)，每表一个 BIGINT 主键、最多一个向量列；支持比较运算、AND、多列 ORDER BY、LIMIT、列别名和 L2_DISTANCE。不支持的 JOIN、聚合、子查询、ALTER、NULL、主键更新及嵌套事务返回错误。
+支持 CREATE TABLE、CREATE VECTOR INDEX、INSERT（含多行和完整列名重排）、SELECT、UPDATE、DELETE、BEGIN、COMMIT、ROLLBACK。支持 BIGINT、VARCHAR(n)、VECTOR(n)，每表一个 BIGINT 主键、最多一个向量列；支持比较运算、AND、多列 ORDER BY、LIMIT、列别名和 L2_DISTANCE。距离表达式未写 AS 时返回列名 `l2_distance`。不支持的 JOIN、聚合、子查询、ALTER、NULL、主键更新及嵌套事务返回错误。
 
 VARCHAR 长度按 Unicode 码点计算；合法 UTF-8 的字节字典序与码点顺序一致。BIGINT 不经浮点中转。向量和查询向量均先转换成有限 float32，再以 double 按维度顺序累加平方距离，返回欧氏距离；编译禁用 FMA 收缩，未启用 fast-math。有限 float32 的转换临界值按舍入后的结果判断，而非误用 `FLT_MAX` 作为十进制输入上界。
 
-过滤先于 TopK。距离和普通排序出现并列时，按主键升序确定次序。小 LIMIT 使用有界堆；大 LIMIT 或无 LIMIT 的排序分批写运行段，最多同时归并 32 个文件。查询响应超过 256 KiB 后在 `/data` 暂存，避免结果集一直留在堆中。
+过滤先于 TopK。距离和普通排序出现并列时，按主键升序确定次序。磁盘路径仅读取投影、过滤和排序所需列，跳过无关大字段。小 LIMIT 使用有界堆；大 LIMIT 或无 LIMIT 的排序分批写运行段，最多同时归并 32 个文件。查询响应超过 256 KiB 后在 `/data` 暂存；先完成暂存文件收尾，再输出 JSON 前缀，避免最终 flush 失败时混入半条成功响应。
 
 页缓存默认 4 MiB。向量快照及 KD 树共用默认 16 MiB 预算；超过预算的表使用磁盘精确扫描，不加载整表。KD 树用 float32 包围盒计算 L2 下界，只排除下界严格大于当前最差距离的子树，保留并列主键规则。`exact` 和 `ann` 都提供精确结果；本实现没有以降低召回率换速度。任何修改或事务控制都会清除派生快照，防止回滚后的地址复用造成陈旧结果。
 
 自测可通过 `MVD_PAGE_CACHE_MIB`（0–64；0 表示最小 8 页）和 `MVD_VECTOR_CACHE_MIB`（0–64；0 关闭快照）降低缓存。正式默认值不随测试输入改变。
 
-catalog、单条 SQL 输入和单条记录仍需能放入内存；分页和外部排序用于处理总数据量超过内存的数据库。当前未做在线压缩和已提交历史页回收，随机小记录更新有明显写放大；不兼容之前实现的数据格式。这些限制没有通过隐藏异常或省略持久化来规避。
+catalog、单条 SQL 输入和单条记录仍需能放入内存；分页和外部排序用于处理总数据量超过内存的数据库。回收发生在事务之间，需要同时保存旧库和新库；长事务的未提交尾部仍需额外磁盘空间。不兼容原先单体实现的数据格式。
 
 ## 验证
 
-Linux 容器 CI：[完整验证 793df48](https://github.com/xxxhm0524/seekdb/actions/runs/43567187796)。具体 JSON 报告在 `validation/`。这些是公开用例与独立扩展测试，不能替代平台的 29 个正式用例或正式得分。
+Linux 容器 CI：[深入审查 c396ecd](https://github.com/xxxhm0524/seekdb/actions/runs/43572567753)。18 份通过报告、失败回归记录和来源见 `validation/audit-20261114/`，问题与审查结论见 [审查记录](docs/AUDIT_20261114.md)。这些不能替代平台的 29 个正式用例或正式得分。
 
 * 未修改的官方驱动和公开断言：20/20。
 * 500 步独立随机状态机，覆盖查询、失败语句、提交、回滚和强杀。
@@ -95,7 +98,10 @@ Linux 容器 CI：[完整验证 793df48](https://github.com/xxxhm0524/seekdb/act
 * KD 路径及关闭向量缓存的磁盘路径：共 1008 次极端 float32 查询，与独立顺序累加 oracle 比较。
 * 14 次提交中断，核对双表原子性、确认提交持久性和未确认提交的全有或全无；另有 15 次启动中断。
 * 96 MiB cgroup 容器中写入 163840000 字节业务负载，数据库约 170 MB，完成查询、提交、回滚和强杀恢复。
-* 10000 行 × 128 维，1000 次 TopK10，一半含普通列过滤：两组 Recall@10 均为 1.0。Linux CI 的写入约 1.80 秒、查询约 1.85 秒；时间包含本地驱动开销，不是官方性能分。
+* 正式 2 GiB 内存预算下写入 2621440000 字节业务文本；120 种列排列、响应 ENOSPC 和原子替换故障注入通过。
+* ASan、UBSan 和标准库边界断言未报错。
+* 与有公开正式通过记录的固定版本完成 1600 步 / 1629 请求对拍，并由独立状态模型核对。
+* 10000 行 × 128 维，1000 次 TopK10，一半含普通列过滤：两组 Recall@10 均为 1.0。Linux CI 的写入约 1.67 秒、查询约 2.11 秒；时间包含本地驱动开销，不是官方性能分。
 
 ```bash
 python3 protocol_check/run.py --image minivectordb-clean --output results/official
@@ -113,4 +119,4 @@ python3 tests/contract.py
 
 正式提交使用已登记仓库的 `2026-competition-round2` 分支和完整 40 位 SHA。根目录 `conversation.json` 与 `agent/conversation.json` 内容相同，均为 UTF-8 JSON 对象，低于 128 KiB。材料保留本次重写的真实用户发言、明确归属 Agent 的实现说明和实际测试输出，不把 Agent 的工作伪装为学生自己的解释。
 
-查阅过公开的 [juanzhi-gcb/seekdb](https://github.com/juanzhi-gcb/seekdb/tree/2026-competition-round2) 及其独立复核记录，用于核查协议、常见边界和验证方式；未复制其数据库实现或任何人的学习材料。公开 README 中报告的正式成绩仅属于原作者。
+对照使用 [juanzhi-gcb/seekdb 的固定成功版本 dfee55b8](https://github.com/juanzhi-gcb/seekdb/tree/dfee55b84284f4c39d2df45951cdbcb1d1baf1a2)，39 个文件按哈希验证后仅作为测试程序编译，未并入数据库核心。作者公开记录称该版正式 MySQL 通过、Prompt 原始分 6.5 有效；来源及无法独立认证对方平台账户的边界均在审查记录中说明。双方反斜杠转义约定的差异单独保留，对拍覆盖题目明确的公共语义。未复制对方学习材料。

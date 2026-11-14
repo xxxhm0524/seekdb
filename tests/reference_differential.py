@@ -153,7 +153,7 @@ def run(output,binary,manifest,operations=1600):
         state=copy.deepcopy(committed);checkpoint()
         return dict(passed=True,reference_commit=manifest["commit"],reference_evidence=manifest["formal_result_evidence"],
                     operations=operations,compared_requests=requests,independent_state_checked=True,tables=len(tables),
-                    scope="Task-defined operations with explicit distance aliases and unambiguous single-quoted SQL strings.",
+                    scope="Task-defined CRUD, transactions and queries, including aliased and unnamed distance headings, using unambiguous single-quoted SQL strings.",
                     dialect_observation="The frozen reference preserves backslashes; this implementation recognizes MySQL-style backslash escapes. The task kit does not specify that dialect choice. The original mismatch is retained; this corpus avoids that ambiguous case rather than using the reference as an unconditional oracle.")
     finally:
         trace.close();ours.kill();reference.kill()

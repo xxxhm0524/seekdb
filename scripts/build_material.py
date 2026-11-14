@@ -2,31 +2,30 @@
 import hashlib
 import json
 from pathlib import Path
-import shutil
 
 ROOT = Path(__file__).resolve().parents[1]
-CI = ROOT/"results/ci-43567187796"
-artifact = CI/"artifact"
-validation = ROOT/"validation"
-validation.mkdir(exist_ok=True)
+validation = ROOT/"validation/audit-20261114"
+status = json.loads((validation/"ci-source.json").read_text(encoding="utf-8"))
+assert status["head_sha"] == "c396ecd5957460100327eb5c49cdd80b89d2a158" and status["conclusion"] == "success"
 reports = []
-for path in sorted(artifact.rglob("*.json")):
-    if path.name not in ["report.json", "result.json"]:
-        continue
+passed_count = 0
+for path in sorted(validation.glob("*.json")):
+    if path.name == "ci-source.json": continue
     value = json.loads(path.read_text(encoding="utf-8"))
-    assert value.get("passed") is True
-    name = path.parent.name
-    target = validation/(name+".json")
-    shutil.copyfile(path, target)
-    reports.append(dict(id=name, source_commit="793df48ad26f093d3459ae453376ae8f538bb58e",
-                        source="https://github.com/xxxhm0524/seekdb/actions/runs/43567187796",
+    name = path.stem
+    current = name.startswith(("linux-", "asan-"))
+    if current:
+        assert value.get("passed") is True
+        passed_count += 1
+    reports.append(dict(id=name, stage="verified_current_logic" if current else "retained_development_observation",
+                        source_commit=status["head_sha"] if current else "pre-fix development build; see preserved original report",
+                        source=status["html_url"] if current else path.relative_to(ROOT).as_posix(),
                         output=json.dumps(value, ensure_ascii=False, indent=2)))
-status = json.loads((CI/"status.json").read_text(encoding="utf-8"))
-assert status["head_sha"] == "793df48ad26f093d3459ae453376ae8f538bb58e" and status["conclusion"] == "success"
-shutil.copyfile(CI/"status.json", validation/"ci-source.json")
+assert passed_count == 18
 material = {
     "format": "actual-clean-rewrite-evidence-v1",
     "synthetic": False,
+    "own_formal_evaluation": "Not submitted. The user explicitly deferred formal submission pending further review. Formal feedback about the public reference belongs only to that third party.",
     "date": "2026-11-14",
     "scope": "All user instructions for the clean rewrite are included verbatim below. Agent responses and tool results are selected factual records. The older implementation and older conversations are outside this rewrite. Hidden reasoning, credentials, unrelated conversations and generated test databases are omitted.",
     "attribution": "The implementation, technical explanations and test design below are Agent work. The user supplied the task and the explicit decision to replace the earlier implementation. No student explanation of database mechanisms or experiments has been invented, and Agent work must not be treated as proof of student understanding.",
@@ -35,32 +34,37 @@ material = {
         {"id":"user-rewrite", "role":"user", "content":"我觉得你在之前代码的基础上完成不如完全重新完成，那里已经成为了史山代码"},
         {"id":"agent-rewrite", "role":"assistant", "content":"可以，改为从零重写。我会在新的独立目录中实现，旧代码保留作备份；只使用官方规则、协议和测试来建立验收标准。新实现会把 SQL、存储、事务恢复和向量查询分开，便于逐层验证。"},
         {"id":"agent-red-loop", "role":"assistant", "content":"验收循环已跑通：官方空壳程序在 20 个公开用例中全部返回 NOT_IMPLEMENTED，测试能明确检出功能缺失。Windows 下官方驱动的进程通信层无法运行，我补了本地通信适配，断言仍使用未修改的官方比较器；后续还会在 Linux 容器中复测。"},
-        {"id":"agent-linux-progress", "role":"assistant", "content":"完整 Linux 容器验证已通过，包括把约 164 MB 业务数据放进 96 MiB 内存容器后进行查询、提交、回滚和强杀恢复。接下来整理运行说明、真实的 conversation.json 和提交包，再将验证版本合入规定的 2026-competition-round2 分支。"}
+        {"id":"agent-linux-progress", "role":"assistant", "content":"完整 Linux 容器验证已通过，包括把约 164 MB 业务数据放进 96 MiB 内存容器后进行查询、提交、回滚和强杀恢复。接下来整理运行说明、真实的 conversation.json 和提交包，再将验证版本合入规定的 2026-competition-round2 分支。"},
+        {"id":"user-formal-hold", "role":"user", "content":"我觉得先不要提测，确保没有任何问题后再提测"},
+        {"id":"user-expert-audit", "role":"user", "content":"你作为一名经验老道的数据库专家，这明显不是你应该犯的问题，请你吸取经验并仔细查找还有没有类似的问题"},
+        {"id":"user-successful-reference", "role":"user", "content":"你可以看看别人公开仓库的代码（前提是别人已经成功提交）"},
+        {"id":"agent-audit-progress", "role":"assistant", "content":"这处容量问题本应在设计阶段就用“有效数据不变、持续更新”的负载检出。之前的验证覆盖不足，我会据此调整审查方式：除了结果正确，还要检查资源是否持续增长、失败前后状态是否一致，以及非法输入是否被意外接受。发现的每个问题都会保留失败用例和修复后的验证记录。"}
     ],
     "agent_design": [
         "Committed B+ tree pages are immutable. Each SQL statement owns a new set of pages and a tail mark. On statement failure the new tail is discarded, preserving earlier successful statements in the transaction.",
         "Commit writes all data and pages, syncs the file, publishes a checksummed alternate root, and syncs again before acknowledging success. Recovery selects a valid root and truncates only uncommitted tail data; it does not replay updates into committed pages.",
         "Table data and primary-key directories remain on disk. A bounded page cache, bounded vector snapshot/KD tree, external sorting and spooled responses avoid loading the whole database or result set.",
-        "Both search modes return exact results. Ordinary predicates are applied before candidate selection. KD bounds only prune strictly worse subtrees, retaining ties and primary-key ordering. Float32 storage/query conversion and ordered double accumulation are independently checked."
+        "Both search modes return exact results. Ordinary predicates are applied before candidate selection. KD bounds only prune strictly worse subtrees, retaining ties and primary-key ordering. Float32 storage/query conversion and ordered double accumulation are independently checked.",
+        "Between transactions, committed history is compacted by streaming current rows to a separate fully synced database and atomically replacing the main file. The old database remains intact until replacement; the current row/page references are refreshed before any later statement executes.",
+        "Projected reads skip unused variable-length payloads. Response spill files finish flush/close/open before stdout publication. A failure after publication terminates the channel rather than appending a second JSON object."
     ],
     "experiments": reports,
     "agent_retrospective": [
         "The first newly written version passed the 20 public cases, but that was not treated as formal admission. Independent state-machine, large-tree, external-sort, SIGKILL, hostile float32 and low-memory tests were then run.",
         "An added boundary test initially failed for the finite float32 decimal 3.4028235e38. Comparing the input double directly to FLT_MAX incorrectly rejected a value that rounds to finite float32. The threshold was changed to the overflow rounding midpoint. The failing record and successful retest are preserved below.",
         "The low-memory test actually stored 163840000 payload bytes in a container limited to 100663296 bytes. This is evidence for external-memory handling, not a claim based on an in-memory simulation.",
+        "The user's objection led to a broader lifecycle audit. Four real defects were reproduced: unbounded committed history, token concatenation accepting malformed vectors, unneeded wide-text reads, and partial JSON publication when the spill file's final flush failed. The preserved red reports and passing regressions support the fixes; they do not retroactively establish that the earlier candidate was bug-free.",
+        "A frozen public commit with author-published formal feedback was compiled as a reference. 1600 operations / 1629 requests across three tables agreed with both implementations and independent Python state. The original backslash escaping difference is recorded separately because the task does not specify that dialect choice. No public reference code or learning material was incorporated into the database core.",
+        "The expanded capacity test used the actual 2 GiB memory budget with 2621440000 bytes of business text. Compaction was interrupted exactly before and after file replacement. ASan, UBSan and library assertions covered the protocol, state machine, large tree, compaction and all 120 column layouts.",
         "Local benchmark times and CI results are not formal platform scores. The nine retained formal inputs are unavailable. Formal admission and ranking require the platform to evaluate the locked submission."
     ],
     "limitations": [
         "No real student technical interpretation was supplied during this autonomous rewrite; no such interpretation is synthesized here.",
-        "No online compaction of committed historical pages; random updates of small rows can amplify writes and file growth.",
+        "Compaction runs between transactions and needs temporary space for both old and new files; long transactions still need space for their uncommitted tails.",
         "The active catalog, one SQL request and one decoded row must individually fit memory. The database as a whole need not fit memory.",
         "For tables beyond the vector cache budget, exact disk scans preserve correctness and recall but can be slower."
     ]
 }
-for name in ["float-conversion-red", "float-conversion-green"]:
-    value = json.loads((ROOT/"results"/name/"report.json").read_text(encoding="utf-8"))
-    material["experiments"].append(dict(id=name, source="local portable transport with unchanged official assertions",
-                                         output=json.dumps(value, ensure_ascii=False, indent=2)))
 data = (json.dumps(material, ensure_ascii=False, indent=2, allow_nan=False)+"\n").encode("utf-8")
 assert len(data) <= 128*1024
 (ROOT/"agent").mkdir(exist_ok=True)
