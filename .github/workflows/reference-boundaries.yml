@@ -31,6 +31,8 @@ jobs:
           chmod +x build/reference
       - name: Full-process protocol SQL transaction and vector boundaries
         run: python3 tests/reference_boundaries.py --reference-bin build/reference --ours-bin build/ours --output results/reference-boundaries
+      - name: Official response-byte budget with float32-bit truth
+        run: python3 tests/reference_response_budget.py --reference-bin build/reference --ours-bin build/ours --output results/vector-response-budget
       - name: Reproduce the frozen predecessor failures with the same oracle
         run: |
           git fetch --no-tags --depth=1 origin 2b96adab6659952701b876a4468e4011ac05793f
