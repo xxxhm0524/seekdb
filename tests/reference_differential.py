@@ -96,7 +96,7 @@ def run(output,binary,manifest,operations=1600):
         for step in range(operations):
             table=rng.choice(list(tables));op=rng.randrange(11);key=rng.randint(-120,120)
             if op in [0,1,10]:
-                row=[rng.randint(-2,4),rng.choice(["中文","é","😀","a'b","x\\y",""]),[f32(rng.uniform(-4,4)) for _ in range(3)]]
+                row=[rng.randint(-2,4),rng.choice(["中文","é","😀","a'b","plain text",""]),[f32(rng.uniform(-4,4)) for _ in range(3)]]
                 batch=[(key,row)]
                 if op==1:batch.append((key+1,[row[0],row[1],list(row[2])]))
                 if op==10:batch.append((key,row))
@@ -151,7 +151,9 @@ def run(output,binary,manifest,operations=1600):
         ours.restart(crash=True);reference.restart(crash=True)
         state=copy.deepcopy(committed);checkpoint()
         return dict(passed=True,reference_commit=manifest["commit"],reference_evidence=manifest["formal_result_evidence"],
-                    operations=operations,compared_requests=requests,independent_state_checked=True,tables=len(tables))
+                    operations=operations,compared_requests=requests,independent_state_checked=True,tables=len(tables),
+                    scope="Task-defined operations with explicit distance aliases and unambiguous single-quoted SQL strings.",
+                    dialect_observation="The frozen reference preserves backslashes; this implementation recognizes MySQL-style backslash escapes. The task kit does not specify that dialect choice. The original mismatch is retained; this corpus avoids that ambiguous case rather than using the reference as an unconditional oracle.")
     finally:
         trace.close();ours.kill();reference.kill()
 

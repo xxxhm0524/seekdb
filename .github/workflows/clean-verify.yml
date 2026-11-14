@@ -86,6 +86,7 @@ jobs:
             results/**/cases.json
             results/**/*.log
             results/provenance/*.txt
+            results/**/requests.jsonl
           if-no-files-found: warn
   sanitizers:
     runs-on: ubuntu-24.04
