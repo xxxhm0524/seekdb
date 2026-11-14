@@ -1,0 +1,42 @@
+name: Successful reference boundary comparison
+on:
+  push:
+    branches: ['audit/reference-boundaries-20261114']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  boundaries:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Build unchanged production candidate
+        run: |
+          docker build --platform linux/amd64 -t mvd-edge .
+          mkdir -p build/reference-download
+          docker run --rm --entrypoint cat mvd-edge /app/minivectordb > build/ours
+          chmod +x build/ours
+      - name: Fetch frozen qualified reference by exact file hashes
+        run: |
+          python3 - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,'tests')
+          from reference_differential import fetch_reference
+          fetch_reference(Path('build/reference-download'))
+          PY
+          docker build --platform linux/amd64 -f tests/reference-controlled.Dockerfile -t mvd-edge-reference build/reference-download/reference-source
+          docker run --rm --entrypoint cat mvd-edge-reference /app/minivectordb > build/reference
+          chmod +x build/reference
+      - name: Full-process protocol SQL transaction and vector boundaries
+        run: python3 tests/reference_boundaries.py --reference-bin build/reference --ours-bin build/ours --output results/reference-boundaries
+      - name: Preserve every observation and discrepancy
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: reference-boundaries-${{ github.sha }}
+          path: |
+            results/**/report.json
+            results/**/requests.jsonl
+            results/**/*.log
