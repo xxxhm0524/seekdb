@@ -1,0 +1,7 @@
+{
+  "passed": true,
+  "injected_failures": 1,
+  "complete_error_response": true,
+  "large_composite_id_preserved": true,
+  "persistent_rows_preserved": 11
+}

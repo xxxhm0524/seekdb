@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "valid_requests": 44,
+  "invalid_frames": 5,
+  "maximum_container_depth": 8192,
+  "source": "STDIO_PROTOCOL 1.5: opaque JSON id",
+  "success_sql_error_shutdown_and_unknown_metadata": true,
+  "malformed_deep_frames_not_executed": true
+}

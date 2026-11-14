@@ -1,0 +1,575 @@
+{
+  "all_requirements_have_passing_evidence": true,
+  "requirements": [
+    {
+      "id": "P01",
+      "clause": "STDIO_PROTOCOL §1.1–2",
+      "requirement": "UTF-8、完整单行 JSON 对象和物理 LF",
+      "reports": [
+        "linux-protocol-contract.json",
+        "asan-protocol-contract.json"
+      ],
+      "kind": "test",
+      "passing_evidence": [
+        {
+          "report": "linux-protocol-contract.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "a43f3d152974b259459cbc5b427e451acef02c70c7f26b1f784468837b8dd647"
+        },
+        {
+          "report": "asan-protocol-contract.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "a43f3d152974b259459cbc5b427e451acef02c70c7f26b1f784468837b8dd647"
+        }
+      ]
+    },
+    {
+      "id": "P02",
+      "clause": "STDIO_PROTOCOL §1.3、§9",
+      "requirement": "每条响应及时刷新，交互式等待而非预写全部输入",
+      "reports": [
+        "linux-official.json",
+        "linux-protocol-contract.json"
+      ],
+      "kind": "test",
+      "passing_evidence": [
+        {
+          "report": "linux-official.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "382d4a296df4f12213480357a92ac4aef95cae539126f79ef62aabf8f5e80aa4"
+        },
+        {
+          "report": "linux-protocol-contract.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "a43f3d152974b259459cbc5b427e451acef02c70c7f26b1f784468837b8dd647"
+        }
+      ]
+    },
+    {
+      "id": "P03",
+      "clause": "STDIO_PROTOCOL §1.4、§1.6",
+      "requirement": "stdout 没有日志、空行、提示符或额外状态行",
+      "reports": [
+        "linux-official.json",
+        "linux-protocol-contract.json"
+      ],
+      "kind": "test",
+      "passing_evidence": [
+        {
+          "report": "linux-official.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "382d4a296df4f12213480357a92ac4aef95cae539126f79ef62aabf8f5e80aa4"
+        },
+        {
+          "report": "linux-protocol-contract.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "a43f3d152974b259459cbc5b427e451acef02c70c7f26b1f784468837b8dd647"
+        }
+      ]
+    },
+    {
+      "id": "P04",
+      "clause": "STDIO_PROTOCOL §1.5",
+      "requirement": "每个请求恰好一个响应",
+      "reports": [
+        "linux-official.json",
+        "linux-protocol-contract.json"
+      ],
+      "kind": "test",
+      "passing_evidence": [
+        {
+          "report": "linux-official.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "382d4a296df4f12213480357a92ac4aef95cae539126f79ef62aabf8f5e80aa4"
+        },
+        {
+          "report": "linux-protocol-contract.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "a43f3d152974b259459cbc5b427e451acef02c70c7f26b1f784468837b8dd647"
+        }
+      ]
+    },
+    {
+      "id": "P05",
+      "clause": "STDIO_PROTOCOL §1.5、§3 id",
+      "requirement": "所有响应路径按值和 JSON 类型保留 id，包括超 64 位整数与深层嵌套编号",
+      "reports": [
+        "linux-protocol-ids.json",
+        "asan-protocol-ids.json",
+        "linux-nested-ids.json",
+        "asan-nested-ids.json"
+      ],
+      "kind": "test",
+      "passing_evidence": [
+        {
+          "report": "linux-protocol-ids.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "82ee83eef15513b27fa1712e9639bcd08a96ce209b5dcae6e9bfa13c1e352ff5"
+        },
+        {
+          "report": "asan-protocol-ids.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "82ee83eef15513b27fa1712e9639bcd08a96ce209b5dcae6e9bfa13c1e352ff5"
+        },
+        {
+          "report": "linux-nested-ids.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "e583561635749f58ae0eadb6b8a948d33fc407107818ed91d1f8442988859994"
+        },
+        {
+          "report": "asan-nested-ids.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "e583561635749f58ae0eadb6b8a948d33fc407107818ed91d1f8442988859994"
+        }
+      ]
+    },
+    {
+      "id": "P06",
+      "clause": "STDIO_PROTOCOL §1.7",
+      "requirement": "响应没有 NaN、Infinity、重复对象键",
+      "reports": [
+        "linux-protocol-contract.json",
+        "linux-vector-response-budget.json"
+      ],
+      "kind": "test",
+      "passing_evidence": [
+        {
+          "report": "linux-protocol-contract.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "a43f3d152974b259459cbc5b427e451acef02c70c7f26b1f784468837b8dd647"
+        },
+        {
+          "report": "linux-vector-response-budget.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "6fec3bd77cfbb7c3079b88986cc97d401bb9c9c7418877a9e0b9442cfb758ee5"
+        }
+      ]
+    },
+    {
+      "id": "P07",
+      "clause": "STDIO_PROTOCOL §2",
+      "requirement": "输入前主动发出准确 ready；恢复完成后才就绪",
+      "reports": [
+        "linux-official.json",
+        "linux-crash-commit.json",
+        "linux-recovery-boundaries.json"
+      ],
+      "kind": "test",
+      "passing_evidence": [
+        {
+          "report": "linux-official.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "382d4a296df4f12213480357a92ac4aef95cae539126f79ef62aabf8f5e80aa4"
+        },
+        {
+          "report": "linux-crash-commit.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "b949e7cb1eb2f6551a8329aa6bbb0e33d45efd35bf7b6643b38af36d7c2473f4"
+        },
+        {
+          "report": "linux-recovery-boundaries.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "8b94c6b9e7320f65eec49185b140a22d45e5edc86dfd686c6a59ac943c450be3"
+        }
+      ]
+    },
+    {
+      "id": "P08",
+      "clause": "STDIO_PROTOCOL §3 请求字段",
+      "requirement": "校验 execute、sql、search_mode 的值和类型",
+      "reports": [
+        "linux-protocol-ids.json",
+        "linux-protocol-contract.json"
+      ],
+      "kind": "test",
+      "passing_evidence": [
+        {
+          "report": "linux-protocol-ids.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "82ee83eef15513b27fa1712e9639bcd08a96ce209b5dcae6e9bfa13c1e352ff5"
+        },
+        {
+          "report": "linux-protocol-contract.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "a43f3d152974b259459cbc5b427e451acef02c70c7f26b1f784468837b8dd647"
+        }
+      ]
+    },
+    {
+      "id": "P09",
+      "clause": "STDIO_PROTOCOL §3 完整解析",
+      "requirement": "先验证整帧及深层容器再执行；分号和换行在 SQL 字符串内保持原值",
+      "reports": [
+        "linux-protocol-contract.json",
+        "linux-complete-input.json",
+        "linux-nested-ids.json"
+      ],
+      "kind": "test",
+      "passing_evidence": [
+        {
+          "report": "linux-protocol-contract.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "a43f3d152974b259459cbc5b427e451acef02c70c7f26b1f784468837b8dd647"
+        },
+        {
+          "report": "linux-complete-input.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "fabd5acb9b75cdbfae90f8f976545550f4279510b74d6832ee4cce3954d3b7e1"
+        },
+        {
+          "report": "linux-nested-ids.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "e583561635749f58ae0eadb6b8a948d33fc407107818ed91d1f8442988859994"
+        }
+      ]
+    },
+    {
+      "id": "P10",
+      "clause": "STDIO_PROTOCOL §3 查询成功",
+      "requirement": "columns 与 rows 顺序一致，二维数组，空集为 []",
+      "reports": [
+        "linux-official.json",
+        "linux-protocol-contract.json"
+      ],
+      "kind": "test",
+      "passing_evidence": [
+        {
+          "report": "linux-official.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "382d4a296df4f12213480357a92ac4aef95cae539126f79ef62aabf8f5e80aa4"
+        },
+        {
+          "report": "linux-protocol-contract.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "a43f3d152974b259459cbc5b427e451acef02c70c7f26b1f784468837b8dd647"
+        }
+      ]
+    },
+    {
+      "id": "P11",
+      "clause": "STDIO_PROTOCOL §3 修改成功",
+      "requirement": "DML affected_rows 是实际整数；DDL/TX 可省略可选字段",
+      "reports": [
+        "linux-protocol-contract.json",
+        "linux-reference-boundaries.json"
+      ],
+      "kind": "test",
+      "passing_evidence": [
+        {
+          "report": "linux-protocol-contract.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "a43f3d152974b259459cbc5b427e451acef02c70c7f26b1f784468837b8dd647"
+        },
+        {
+          "report": "linux-reference-boundaries.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "2f070442fee4e3ad1eb6b55272a02b4deb80b13fa6682ec432b7dea5a23972fb"
+        }
+      ]
+    },
+    {
+      "id": "P12",
+      "clause": "STDIO_PROTOCOL §3 执行失败",
+      "requirement": "ok 是布尔值，error.code 非空；预期 SQL 错误后进程可继续",
+      "reports": [
+        "linux-protocol-contract.json",
+        "linux-invariants.json",
+        "linux-token-kinds.json"
+      ],
+      "kind": "test",
+      "passing_evidence": [
+        {
+          "report": "linux-protocol-contract.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "a43f3d152974b259459cbc5b427e451acef02c70c7f26b1f784468837b8dd647"
+        },
+        {
+          "report": "linux-invariants.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "a9a34f093c7d5b8aa7a3d2c233770591698d9958a96908927e13235a2a87ddfa"
+        },
+        {
+          "report": "linux-token-kinds.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "b845b29cd2e641263bd28e3f640111a968b443eb98b75f704dfdbb78136f5a39"
+        }
+      ]
+    },
+    {
+      "id": "P13",
+      "clause": "STDIO_PROTOCOL §3 数据类型",
+      "requirement": "BIGINT 不经浮点或字符串，向量数组和距离都是有限数值",
+      "conditional_scope": "赛题不要求 SQL NULL；不支持的 NULL 语法返回错误。id:null 已在 P05 验证。",
+      "reports": [
+        "linux-protocol-contract.json",
+        "linux-sql-numeric-forms.json",
+        "linux-vector-response-budget.json"
+      ],
+      "kind": "test",
+      "passing_evidence": [
+        {
+          "report": "linux-protocol-contract.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "a43f3d152974b259459cbc5b427e451acef02c70c7f26b1f784468837b8dd647"
+        },
+        {
+          "report": "linux-sql-numeric-forms.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "467167cbfd34ef65b161e9b7c8f56152e90bee04db1bf1c46d20664563f98cf7"
+        },
+        {
+          "report": "linux-vector-response-budget.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "6fec3bd77cfbb7c3079b88986cc97d401bb9c9c7418877a9e0b9442cfb758ee5"
+        }
+      ]
+    },
+    {
+      "id": "P14",
+      "clause": "STDIO_PROTOCOL §4",
+      "requirement": "shutdown 回滚未提交事务，原编号确认，flush 后退出 0，无尾随输出",
+      "reports": [
+        "linux-official.json",
+        "linux-protocol-contract.json",
+        "linux-protocol-ids.json"
+      ],
+      "kind": "test",
+      "passing_evidence": [
+        {
+          "report": "linux-official.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "382d4a296df4f12213480357a92ac4aef95cae539126f79ef62aabf8f5e80aa4"
+        },
+        {
+          "report": "linux-protocol-contract.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "a43f3d152974b259459cbc5b427e451acef02c70c7f26b1f784468837b8dd647"
+        },
+        {
+          "report": "linux-protocol-ids.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "82ee83eef15513b27fa1712e9639bcd08a96ce209b5dcae6e9bfa13c1e352ff5"
+        }
+      ]
+    },
+    {
+      "id": "P15",
+      "clause": "STDIO_PROTOCOL §4 持久性",
+      "requirement": "确认提交不依赖 shutdown，异常重启保留已确认数据",
+      "reports": [
+        "linux-crash-commit.json",
+        "linux-commit-publish.json",
+        "linux-capacity-2g.json"
+      ],
+      "kind": "test",
+      "passing_evidence": [
+        {
+          "report": "linux-crash-commit.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "b949e7cb1eb2f6551a8329aa6bbb0e33d45efd35bf7b6643b38af36d7c2473f4"
+        },
+        {
+          "report": "linux-commit-publish.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "1f40697314754c687fdffbb6c67d01ca55f50d4afd9e98b3d630f32bce0c6463"
+        },
+        {
+          "report": "linux-capacity-2g.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "b83b44cea9df8e4982991db94f63674269bd29c4535476b4fb7e8f8c01e37eda"
+        }
+      ]
+    },
+    {
+      "id": "P16",
+      "clause": "STDIO_PROTOCOL §6",
+      "requirement": "驱动 restart/mode 指令正确包装，每个用例独立目录，重启复用目录",
+      "reports": [
+        "linux-official.json",
+        "linux-protocol-contract.json"
+      ],
+      "kind": "test",
+      "passing_evidence": [
+        {
+          "report": "linux-official.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "382d4a296df4f12213480357a92ac4aef95cae539126f79ef62aabf8f5e80aa4"
+        },
+        {
+          "report": "linux-protocol-contract.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "a43f3d152974b259459cbc5b427e451acef02c70c7f26b1f784468837b8dd647"
+        }
+      ]
+    },
+    {
+      "id": "P17",
+      "clause": "STDIO_PROTOCOL §7、§9",
+      "requirement": "默认 Docker JSONL 入口、只读根、断网、2 CPU/2 GiB 和权限限制",
+      "reports": [
+        "linux-official.json",
+        "linux-capacity-2g.json"
+      ],
+      "kind": "test",
+      "passing_evidence": [
+        {
+          "report": "linux-official.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "382d4a296df4f12213480357a92ac4aef95cae539126f79ef62aabf8f5e80aa4"
+        },
+        {
+          "report": "linux-capacity-2g.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "b83b44cea9df8e4982991db94f63674269bd29c4535476b4fb7e8f8c01e37eda"
+        }
+      ]
+    },
+    {
+      "id": "P18",
+      "clause": "protocol_check/config.json max_response_bytes",
+      "requirement": "给定 1 万行×128维向量回归中，结果在 16 MiB 内且全部 float32 位模式往返不变",
+      "reports": [
+        "linux-vector-response-budget.json"
+      ],
+      "kind": "test",
+      "passing_evidence": [
+        {
+          "report": "linux-vector-response-budget.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "6fec3bd77cfbb7c3079b88986cc97d401bb9c9c7418877a9e0b9442cfb758ee5"
+        }
+      ]
+    },
+    {
+      "id": "P19",
+      "clause": "赛题关闭与事务语义；补充 EOF 验证",
+      "requirement": "EOF 回滚未提交数据且没有额外输出",
+      "reports": [
+        "linux-protocol-contract.json",
+        "asan-protocol-contract.json"
+      ],
+      "kind": "test",
+      "passing_evidence": [
+        {
+          "report": "linux-protocol-contract.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "a43f3d152974b259459cbc5b427e451acef02c70c7f26b1f784468837b8dd647"
+        },
+        {
+          "report": "asan-protocol-contract.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "a43f3d152974b259459cbc5b427e451acef02c70c7f26b1f784468837b8dd647"
+        }
+      ]
+    },
+    {
+      "id": "P20",
+      "clause": "STDIO_PROTOCOL §1.5、§3 成功/失败",
+      "requirement": "响应暂存失败只返回一条完整错误，编号类型仍保留",
+      "reports": [
+        "linux-response-failure.json"
+      ],
+      "kind": "test",
+      "passing_evidence": [
+        {
+          "report": "linux-response-failure.json",
+          "commit": "9716ef5ad8b5fd82dd8ab3e5389a7820f9655b30",
+          "ci_url": "https://github.com/xxxhm0524/seekdb/actions/runs/43607590405",
+          "run_id": 43607590405,
+          "report_sha256": "318d88975c37cef2f3879d62e61d27aa5064be4c20f02c43f8d18c5e32e45dd0"
+        }
+      ]
+    }
+  ],
+  "scope": "Finite tests and explicit source review. Formal admission, scores and unpublished limits remain unverified. Release provenance is verified separately after final publication."
+}

@@ -1,0 +1,19 @@
+{
+  "passed": true,
+  "variants": [
+    {
+      "passed": true,
+      "queries": 504,
+      "rows": 257,
+      "dimensions": 33,
+      "vector_cache_mib": "16"
+    },
+    {
+      "passed": true,
+      "queries": 504,
+      "rows": 257,
+      "dimensions": 33,
+      "vector_cache_mib": "0"
+    }
+  ]
+}

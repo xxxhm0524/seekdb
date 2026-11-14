@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "final_rows": 5202,
+  "full_state_checks": 7,
+  "failed_statement_kinds": 4,
+  "payload_widths": [
+    0,
+    1,
+    63,
+    4095,
+    4096,
+    65500,
+    65512,
+    65536,
+    65537,
+    70000
+  ],
+  "late_errors_preserve_file_bytes": true,
+  "prior_transaction_statement_survives": true
+}

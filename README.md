@@ -4,9 +4,13 @@
 
 赛题：[完成一个轻量向量数据库](https://oceanbase.yuque.com/org-wiki-obtech-vh7w9r/hc3pio/lg8enxlmwg69unt6)。官方题包基点：`f4d4e26653af823a7601668802f80e374ad6643c`。`STDIO_PROTOCOL.md`、`mysqltest/` 和 `protocol_check/` 保持官方内容。
 
+最近一次复核见[全题要求与 MySQL 逐用例结果](docs/ALL_REQUIREMENTS_20261114.md)：54 份 Linux/Sanitizer 报告通过，20 个官方公开样例全部 PASS；64 条追溯要求中的 4 条平台专属项仍待确认。复核补上深层 JSON 编号与 SQL 操作符类型检查，保留失败证据。正式提测按用户决定暂缓。
+
 ## 构建与运行
 
 正式目标为 Linux x86_64。两层基础镜像均按 digest 固定，JSON 依赖已随源码交付；编译阶段不联网，运行阶段无需网络。标准库静态链接，运行镜像不安装额外软件包。
+
+语言为 C++20，正式构建使用 GCC 13.5.0，运行基础为 Ubuntu 24.04；具体镜像摘要和依赖哈希见 Dockerfile 与 `third_party/DEPENDENCIES.json`。
 
 ```bash
 docker build --platform linux/amd64 -t minivectordb-clean .
@@ -17,6 +21,8 @@ docker run --rm -i --read-only --network=none \
 ```
 
 容器以前台 JSONL 模式启动，主动输出 `{"type":"ready"}`。不开放端口、不使用 TTY。每条响应换行并立即 flush，stdout 不包含日志。完整格式见 [STDIO_PROTOCOL.md](STDIO_PROTOCOL.md)。
+
+预期 SQL 错误返回 `ok:false` 和非空 `error.code`，保留请求编号，随后继续接收请求；失败语句不能留下部分修改。不可继续的文件 I/O 或分配错误会在尚未开始响应时返回结构化错误并退出，启动失败只向 stderr 记录原因；恢复保留已确认提交的根，不以旧根掩盖资源错误。
 
 ```json
 {"id":1,"op":"execute","sql":"CREATE TABLE docs(id BIGINT PRIMARY KEY,tag VARCHAR(8),v VECTOR(2));"}
@@ -104,7 +110,7 @@ catalog、单条 SQL 输入和单条记录仍需能放入内存；分页和外�
 
 ## 验证
 
-Linux 容器 CI：[本轮完整回归 65aa862](https://github.com/xxxhm0524/seekdb/actions/runs/43598504397)。47 份完整回归及相关差分、数值与性能证据见 `validation/edge-review-20261114/`，每份报告标明提交、CI URL 和哈希。20 项协议条款均有实际通过报告映射。此前证据按原提交保留；新发现及旧版重放见 [边界差分审查](docs/REFERENCE_BOUNDARIES_20261114.md)。这些不能替代平台的 29 个正式用例或正式得分。
+Linux 容器 CI：[当前完整回归 9716ef5](https://github.com/xxxhm0524/seekdb/actions/runs/43607590405)。54 份通过报告、64 条要求映射及源码哈希见 `validation/full-review-20261114/`。历史核心 65aa862 的 47 份回归和数值/性能记录保留在 `validation/edge-review-20261114/`，各有原始提交和来源。新发现见[全题复核](docs/ALL_REQUIREMENTS_20261114.md)，原始边界失败见[差分审查](docs/REFERENCE_BOUNDARIES_20261114.md)。这些不能替代平台的 29 个正式用例或正式得分。
 
 * 未修改的官方驱动和公开断言：20/20。
 * 500 步独立随机状态机，覆盖查询、失败语句、提交、回滚和强杀。
@@ -124,7 +130,7 @@ Linux 容器 CI：[本轮完整回归 65aa862](https://github.com/xxxhm0524/seek
 * 57 条生产协议检查覆盖 3001 位整数、复合编号、300009 字节字符串编号及成功/错误/提交/关闭/暂存路径；协议逐条场景覆盖分段 UTF-8、整行完成前不提前响应、无效帧不执行 SQL 前缀、错误后继续、退出/EOF 与目录隔离。
 * 与完整通过版进行 439 次边界观察，无参考成功而本版失败或独立真值失败。相同扫描器重放旧 `2b96ada` 可重现 81 次失败观察。
 * 10000 行 × 128 维的完整向量结果由 25393654 字节降为 14330893 字节，低于判题器 16777216 字节限制，128 万个分量全部保持 float32 位模式往返一致。
-* 10000 行 × 128 维、1000 次 TopK10，两组 Recall@10 为 1.0。修复后的同机三轮，16/1024 字节正文查询中位数约 0.3759/0.3776 秒，对照约 0.3685/0.4435 秒。短正文仍有差距；1 KiB 正文查询约快 14.9%。输入在计时外，时间含驱动开销，不推算正式性能分或排名。
+* 10000 行 × 128 维、1000 次 TopK10，两组 Recall@10 为 1.0。历史核心 65aa862 的同机三轮，16/1024 字节正文查询中位数约 0.3759/0.3776 秒，对照约 0.3685/0.4435 秒；这不是最新解析器修复的重测时间。短正文仍有差距；历史 1 KiB 正文查询约快 14.9%。输入在计时外，时间含驱动开销，不推算正式性能分或排名。
 
 ```bash
 python3 protocol_check/run.py --image minivectordb-clean --output results/official

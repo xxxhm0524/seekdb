@@ -1,0 +1,124 @@
+{
+  "passed": true,
+  "observations": 439,
+  "qualifying_failures": [],
+  "differences": [
+    {
+      "category": "limits",
+      "sql": "SELECT id,L2_DISTANCE(v,'[0,0,0]') AS d FROM t WHERE n>=0 ORDER BY d LIMIT 18446744073709551615;",
+      "ours": {
+        "id": 51,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "ok": true,
+        "rows": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            2,
+            1
+          ],
+          [
+            3,
+            1
+          ]
+        ]
+      },
+      "reference": {
+        "id": 51,
+        "ok": false,
+        "error": {
+          "code": "SYNTAX",
+          "message": "BIGINT outside signed 64-bit range or invalid syntax"
+        }
+      },
+      "different": true,
+      "qualifying_failure": false,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "limits",
+      "sql": "SELECT id,L2_DISTANCE(v,'[0,0,0]') AS d FROM t WHERE n>=0 ORDER BY d LIMIT 18446744073709551615;",
+      "ours": {
+        "id": 129,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "ok": true,
+        "rows": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            2,
+            1
+          ],
+          [
+            3,
+            1
+          ]
+        ]
+      },
+      "reference": {
+        "id": 129,
+        "ok": false,
+        "error": {
+          "code": "SYNTAX",
+          "message": "BIGINT outside signed 64-bit range or invalid syntax"
+        }
+      },
+      "different": true,
+      "qualifying_failure": false,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "error_id",
+      "input": {
+        "id": {
+          "large": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+        },
+        "op": "execute",
+        "sql": "SELECT missing FROM t;"
+      },
+      "ours": {
+        "id": {
+          "large": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+        },
+        "error": {
+          "code": "unknown_column",
+          "message": "unknown column: missing"
+        },
+        "ok": false
+      },
+      "reference": {
+        "id": {
+          "large": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+        },
+        "ok": false,
+        "error": {
+          "code": "SCHEMA",
+          "message": "unknown column: missing"
+        }
+      },
+      "different": true,
+      "qualifying_failure": false
+    }
+  ],
+  "independent_truth_failures": [],
+  "source_reference_commit": "dfee55b84284f4c39d2df45951cdbcb1d1baf1a2",
+  "scope": "Actual frozen reference and candidate processes; not an official platform admission or score."
+}

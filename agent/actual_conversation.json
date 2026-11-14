@@ -83,5 +83,25 @@
     "id": "agent-protocol-method-correction",
     "role": "assistant",
     "content": "确实应该逐条排查。这是我的验证遗漏：此前把“与旧解析器一致”当成了正确性依据，没有为协议里的“保留 JSON 类型”单独设置断言，导致两个实现共享的缺陷也能通过对拍。\n\n我会把 `STDIO_PROTOCOL.md` 逐条整理成验收矩阵，列明测试、边界和验证证据，补齐缺项后再更新候选版本。正确性以协议和独立解析器为准，参考代码用于补充对照。"
+  },
+  {
+    "id": "user-full-requirements-audit",
+    "role": "user",
+    "content": "你现在确定已经完全符合赛题要求的全部协议和要求了吗，请你仔细检查一次"
+  },
+  {
+    "id": "agent-full-audit-depth-gap",
+    "role": "assistant",
+    "content": "复核又发现一处协议缺口：合法 JSON 编号嵌套到 65 层时，程序会拒绝请求，并把编号回成 `null`。这来自借鉴解析器时保留的固定深度上限，公开协议没有规定这个限制。"
+  },
+  {
+    "id": "agent-full-audit-token-gap",
+    "role": "assistant",
+    "content": "SQL 复核还发现：`WHERE n '=' 20` 会把字符串 '=' 当作比较运算符执行，UPDATE、DELETE 也受影响。这是操作符位置漏查词法类型造成的，已建立失败用例，接下来补上检查，并验证错误语句不会留下修改。"
+  },
+  {
+    "id": "user-mysql-admission-emphasis",
+    "role": "user",
+    "content": "请你确定mysol的样例要不通过，否则不得分"
   }
 ]

@@ -1,0 +1,29 @@
+{
+  "source_url": "https://oceanbase.yuque.com/org-wiki-obtech-vh7w9r/hc3pio/lg8enxlmwg69unt6",
+  "retrieved_date": "2026-11-14",
+  "current_markdown_sha256": "dbf5568e0c3a383f14c272e97dae036e904201ccad00b37f05138f7315a1e376",
+  "previous_markdown_sha256": "b9557464913a1684aeccca750153e14ef2e1f154457ff90bcd907f70fa0cfa83",
+  "normalization": "strip Markdown syntax, links targets, list ordinals and code language fences; retain alphanumeric text including code",
+  "differences": [
+    {
+      "tag": "insert",
+      "previous": "组织方可提供统一解析辅助代码具体依赖范围随题包公布22SQL与向量检索示例以下为本题约定的SQL子集",
+      "current": "组织方可提供统一解析辅助代码具体依赖范围随题包公布提包会放出部分mysqltest测试例子可以参考httpsgithubcomoceanbaseseekdbtree2026competitionround2mysqltest22SQL与向量检索示例以下为本题约定的SQL子集"
+    },
+    {
+      "tag": "replace",
+      "previous": "平台测量的端到端时间不能由选手程序自行上报成绩查询允许exact或ann模式在提交配置中固定所有查询均须",
+      "current": "平台测量的端到端时间不能由选手程序自行上报成绩查询默认为exact模式所有查询均须返回数量正确无重复且符合"
+    },
+    {
+      "tag": "delete",
+      "previous": "端时间不能由选手程序自行上报成绩查询允许exact或ann模式在提交配置中固定所有查询均须返回数量正确无重复",
+      "current": "时间不能由选手程序自行上报成绩查询默认为exact模式所有查询均须返回数量正确无重复且符合过滤条件的"
+    },
+    {
+      "tag": "delete",
+      "previous": "选手程序自行上报成绩查询允许exact或ann模式在提交配置中固定所有查询均须返回数量正确无重复且符合过滤条件的记录",
+      "current": "不能由选手程序自行上报成绩查询默认为exact模式所有查询均须返回数量正确无重复且符合过滤条件的记录"
+    }
+  ]
+}

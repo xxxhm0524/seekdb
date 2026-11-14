@@ -1,0 +1,5 @@
+{
+  "passed": false,
+  "error": "('opaque ID changed', 12, {'id': None, 'error': {'code': 'invalid_request', 'message': 'malformed JSON request'}, 'ok': False})",
+  "traceback": "Traceback (most recent call last):\n  File \"D:\\oceanbase\\minivectordb-requirements-audit\\tests\\protocol_nested_ids.py\", line 67, in <module>\n    try: result = run(out)\n                  ~~~^^^^^\n  File \"D:\\oceanbase\\minivectordb-requirements-audit\\tests\\protocol_nested_ids.py\", line 40, in run\n    assert send(ident)['rows'] == [[7]]\n           ~~~~^^^^^^^\n  File \"D:\\oceanbase\\minivectordb-requirements-audit\\tests\\protocol_nested_ids.py\", line 30, in send\n    assert response.get('id') == json.loads(identifier), ('opaque ID changed', checks, response)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ('opaque ID changed', 12, {'id': None, 'error': {'code': 'invalid_request', 'message': 'malformed JSON request'}, 'ok': False})\n"
+}

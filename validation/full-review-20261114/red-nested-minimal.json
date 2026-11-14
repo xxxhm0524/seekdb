@@ -1,0 +1,59 @@
+{
+  "baseline": "7becc49614f25ac67bdcd1385402e37bc31cdb7c",
+  "results": [
+    {
+      "depth": 64,
+      "leaf": "0",
+      "id_preserved": true,
+      "error_code": "unsupported"
+    },
+    {
+      "depth": 65,
+      "leaf": "0",
+      "id_preserved": false,
+      "error_code": "invalid_request"
+    },
+    {
+      "depth": 128,
+      "leaf": "0",
+      "id_preserved": false,
+      "error_code": "invalid_request"
+    },
+    {
+      "depth": 64,
+      "leaf": "null",
+      "id_preserved": true,
+      "error_code": "unsupported"
+    },
+    {
+      "depth": 65,
+      "leaf": "null",
+      "id_preserved": false,
+      "error_code": "invalid_request"
+    },
+    {
+      "depth": 128,
+      "leaf": "null",
+      "id_preserved": false,
+      "error_code": "invalid_request"
+    },
+    {
+      "depth": 64,
+      "leaf": "\"text\"",
+      "id_preserved": true,
+      "error_code": "unsupported"
+    },
+    {
+      "depth": 65,
+      "leaf": "\"text\"",
+      "id_preserved": false,
+      "error_code": "invalid_request"
+    },
+    {
+      "depth": 128,
+      "leaf": "\"text\"",
+      "id_preserved": false,
+      "error_code": "invalid_request"
+    }
+  ]
+}

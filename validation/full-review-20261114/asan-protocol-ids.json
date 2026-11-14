@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "requests_checked": 57,
+  "maximum_integer_digits": 3001,
+  "large_string_id_bytes": 300009,
+  "success_error_commit_shutdown_and_spooled": true,
+  "statement_failure_atomic": true,
+  "raw_nul_not_executed": true
+}

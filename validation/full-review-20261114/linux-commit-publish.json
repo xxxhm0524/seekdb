@@ -1,0 +1,33 @@
+{
+  "passed": true,
+  "precise_commit_interruptions": [
+    {
+      "stage": "before_root",
+      "recovered_generation": 0,
+      "tables_atomic": true,
+      "acknowledged": false
+    },
+    {
+      "stage": "after_root",
+      "recovered_generation": 1,
+      "tables_atomic": true,
+      "acknowledged": false
+    },
+    {
+      "stage": "before_sync",
+      "recovered_generation": 1,
+      "tables_atomic": true,
+      "acknowledged": false
+    },
+    {
+      "stage": "after_sync",
+      "recovered_generation": 1,
+      "tables_atomic": true,
+      "acknowledged": false
+    }
+  ],
+  "acknowledged_sync_count": 1,
+  "batched_5000_rows_write_calls": 66,
+  "process_crash_model": true,
+  "limitation": "Tests terminate a process in a surviving kernel; they do not establish machine-power-loss ordering."
+}

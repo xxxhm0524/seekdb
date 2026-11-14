@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "queries_checked": 213,
+  "dimensions": [
+    3,
+    33,
+    128
+  ],
+  "rows_per_table": 321,
+  "unicode_and_nul": true,
+  "all_comparisons": true,
+  "cache_reordering": true,
+  "rollback_and_restart": true
+}

@@ -1,0 +1,8 @@
+{
+  "passed": true,
+  "invalid_statements_rejected": 140,
+  "positive_comparisons": 14,
+  "no_side_effects": true,
+  "previous_transaction_statement_commits": true,
+  "restart": true
+}

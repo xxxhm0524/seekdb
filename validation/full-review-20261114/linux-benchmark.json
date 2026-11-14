@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "rows": 10000,
+  "dimensions": 128,
+  "queries": 1000,
+  "seed": 194709,
+  "write_seconds": 0.7498359590000234,
+  "query_prepare_seconds": 0.153881202000008,
+  "query_seconds": 0.2527917049999928,
+  "recall": {
+    "unfiltered": 1.0,
+    "filtered": 1.0
+  },
+  "database_bytes": 7033365,
+  "numpy_version": "2.2.6",
+  "note": "Local task-shaped measurement, not platform scores or official T/B/M accounting."
+}

@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "reference_commit": "dfee55b84284f4c39d2df45951cdbcb1d1baf1a2",
+  "reference_evidence": {
+    "source": "author-published user-supplied platform feedback",
+    "url": "https://github.com/juanzhi-gcb/seekdb/blob/42f69e8320dcd8c802614f10cfb0699aa7551d2c/agent/conversation.json",
+    "json_pointer": "/experiments/43/output",
+    "mysql": "passed",
+    "agent_prompt_raw_score": 6.5,
+    "independently_authenticated_platform_record": false
+  },
+  "operations": 1600,
+  "compared_requests": 1629,
+  "independent_state_checked": true,
+  "tables": 3,
+  "scope": "Task-defined CRUD, transactions and queries, including aliased and unnamed distance headings, using unambiguous single-quoted SQL strings.",
+  "dialect_observation": "The frozen reference preserves backslashes; this implementation recognizes MySQL-style backslash escapes. The task kit does not specify that dialect choice. The original mismatch is retained; this corpus avoids that ambiguous case rather than using the reference as an unconditional oracle."
+}

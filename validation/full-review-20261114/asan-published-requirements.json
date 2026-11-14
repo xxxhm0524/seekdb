@@ -1,0 +1,45 @@
+{
+  "passed": true,
+  "variants": [
+    {
+      "passed": true,
+      "cache_mib": 16,
+      "requests": 293,
+      "scenarios": [
+        "schema_bigint_pk_single_vector_duplicate_names_positive_widths_and_unsupported_types",
+        "unicode_codepoint_length_and_order_ties_bigint_precision_projection_and_all_comparisons",
+        "invalid_vectors_rejected_without_mutation",
+        "all_named_unsupported_features_rejected_and_no_prefix_execution",
+        "exact_and_ann_before_index_all_filtered_empty_short_k_and_ties",
+        "same_requirements_after_index",
+        "read_own_insert_update_delete_index_and_failed_statement_in_transaction",
+        "rollback_restores_rows_and_index",
+        "confirmed_commit_after_failed_statement_survives_sigkill",
+        "uncommitted_delete_does_not_survive_sigkill",
+        "ddl_rollback_and_normal_restart"
+      ],
+      "oracle": "Python signed integers, Unicode codepoints, explicit state and stored-float32 L2",
+      "no_reference_database_as_truth": true
+    },
+    {
+      "passed": true,
+      "cache_mib": 0,
+      "requests": 293,
+      "scenarios": [
+        "schema_bigint_pk_single_vector_duplicate_names_positive_widths_and_unsupported_types",
+        "unicode_codepoint_length_and_order_ties_bigint_precision_projection_and_all_comparisons",
+        "invalid_vectors_rejected_without_mutation",
+        "all_named_unsupported_features_rejected_and_no_prefix_execution",
+        "exact_and_ann_before_index_all_filtered_empty_short_k_and_ties",
+        "same_requirements_after_index",
+        "read_own_insert_update_delete_index_and_failed_statement_in_transaction",
+        "rollback_restores_rows_and_index",
+        "confirmed_commit_after_failed_statement_survives_sigkill",
+        "uncommitted_delete_does_not_survive_sigkill",
+        "ddl_rollback_and_normal_restart"
+      ],
+      "oracle": "Python signed integers, Unicode codepoints, explicit state and stored-float32 L2",
+      "no_reference_database_as_truth": true
+    }
+  ]
+}

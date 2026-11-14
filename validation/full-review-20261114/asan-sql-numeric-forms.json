@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "production_checks": 157,
+  "sql_number_spellings": 22,
+  "quoted_and_unquoted": true,
+  "formfeed_and_comments": true,
+  "malformed_rejected": 16,
+  "float32_bits_checked": true,
+  "late_error_and_restart": true
+}

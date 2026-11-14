@@ -1,0 +1,5 @@
+{
+  "passed": false,
+  "error": "(\"SELECT id FROM t WHERE n '=' 20;\", {'id': 4, 'columns': ['id'], 'ok': True, 'rows': [[2]]})",
+  "traceback": "Traceback (most recent call last):\n  File \"D:\\oceanbase\\minivectordb-requirements-audit\\tests\\sql_token_kinds.py\", line 44, in <module>\n    try: result = run(out)\n                  ~~~^^^^^\n  File \"D:\\oceanbase\\minivectordb-requirements-audit\\tests\\sql_token_kinds.py\", line 25, in run\n    db.execute(sql, ok=False); rejected += 1\n    ~~~~~~~~~~^^^^^^^^^^^^^^^\n  File \"D:\\oceanbase\\minivectordb-requirements-audit\\tests\\client.py\", line 86, in execute\n    assert response[\"ok\"] is ok, (sql, response)\n           ^^^^^^^^^^^^^^^^^^^^\nAssertionError: (\"SELECT id FROM t WHERE n '=' 20;\", {'id': 4, 'columns': ['id'], 'ok': True, 'rows': [[2]]})\n"
+}
