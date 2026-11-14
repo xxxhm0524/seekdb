@@ -23,6 +23,8 @@ jobs:
       - name: Separate parsing staging commit and cold automatic writes
         run: |
           python3 tests/write_phase_profile.py --reference-image minivectordb:phase-reference --candidate-image minivectordb:phase-candidate --rounds 5 --output protocol-results/write-phase-profile.json
+      - name: Cross-page payload larger than twice the container budget
+        run: python3 tests/cross_page_resource_probe.py --image minivectordb:phase-candidate --output protocol-results/cross-page-resource.json
       - name: Upload CPU and elapsed-time localization
         if: always()
         uses: actions/upload-artifact@v4
