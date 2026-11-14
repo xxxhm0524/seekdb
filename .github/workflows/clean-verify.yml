@@ -64,6 +64,8 @@ jobs:
           MVD_BIN="$PWD/build/minivectordb" python3 tests/crash_commit.py --output results/linux-crash-commit
       - name: Interrupt compaction exactly at replacement boundaries
         run: MVD_BIN="$PWD/build/minivectordb" python3 tests/compaction_crash.py --output results/linux-compaction-crash
+      - name: Consecutive interruptions inside recovery truncation
+        run: MVD_BIN="$PWD/build/minivectordb" python3 tests/recovery_boundaries.py --output results/linux-recovery-boundaries
       - name: Measure projected query file reads
         run: MVD_BIN="$PWD/build/minivectordb" python3 tests/projection_io.py --output results/linux-projection-io
       - name: Atomic error response on final flush failure

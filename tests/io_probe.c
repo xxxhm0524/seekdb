@@ -73,6 +73,36 @@ static void stop_at(const char* stage) {
     close(fd);
     raise(SIGSTOP);
 }
+static void recovery_stop(int fd, const char* stage) {
+    const char* selected = getenv("MVD_RECOVERY_STOP");
+    const char* marker = getenv("MVD_RECOVERY_MARKER");
+    if (!selected || !marker || strcmp(selected, stage) || !fd_has_suffix(fd, "/database.mvd")) return;
+    int signal_fd = open(marker, O_WRONLY | O_CREAT | O_TRUNC, 0600);
+    if (signal_fd < 0) _exit(123);
+    if (write(signal_fd, stage, strlen(stage)) < 0) _exit(124);
+    close(signal_fd);
+    raise(SIGSTOP);
+}
+int ftruncate(int fd, off_t length) {
+    static int (*real_ftruncate)(int, off_t);
+    if (!real_ftruncate) real_ftruncate = dlsym(RTLD_NEXT, "ftruncate");
+    recovery_stop(fd, "before_truncate");
+    int result = real_ftruncate(fd, length);
+    int saved = errno;
+    if (!result) recovery_stop(fd, "after_truncate");
+    errno = saved;
+    return result;
+}
+int ftruncate64(int fd, off64_t length) {
+    static int (*real_ftruncate64)(int, off64_t);
+    if (!real_ftruncate64) real_ftruncate64 = dlsym(RTLD_NEXT, "ftruncate64");
+    recovery_stop(fd, "before_truncate");
+    int result = real_ftruncate64(fd, length);
+    int saved = errno;
+    if (!result) recovery_stop(fd, "after_truncate");
+    errno = saved;
+    return result;
+}
 int rename(const char* from, const char* to) {
     static int (*real_rename)(const char*, const char*);
     if (!real_rename) real_rename = dlsym(RTLD_NEXT, "rename");
