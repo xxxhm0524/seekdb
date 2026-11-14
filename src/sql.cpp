@@ -132,6 +132,8 @@ class Parser {
         do {
             Condition c; c.column = identifier();
             if (end()) fail("syntax_error", "missing comparison operator");
+            if (tokens[at].quoted || tokens[at].identifier || tokens[at].delimited)
+                fail("syntax_error", "comparison operator must be an unquoted symbol");
             c.op = tokens[at++].text;
             if (c.op != "=" && c.op != "<" && c.op != ">" && c.op != "<=" && c.op != ">=" && c.op != "!=" && c.op != "<>")
                 fail("unsupported", "unsupported comparison operator");

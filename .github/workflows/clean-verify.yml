@@ -1,7 +1,7 @@
 name: Clean MiniVectorDB verification
 on:
   push:
-    branches: ['rewrite/minivectordb-clean-20261114', 'audit/minivectordb-space-20261114', 'review/scored-reference-20261114', 'review/faster-than-scored-20261114', 'audit/reference-boundaries-20261114', '2026-competition-round2']
+    branches: ['rewrite/minivectordb-clean-20261114', 'audit/minivectordb-space-20261114', 'review/scored-reference-20261114', 'review/faster-than-scored-20261114', 'audit/reference-boundaries-20261114', 'audit/full-requirements-20261114', '2026-competition-round2']
   workflow_dispatch:
 permissions:
   contents: read
@@ -14,7 +14,9 @@ jobs:
       - name: Build locked Linux image
         run: docker build --pull --platform linux/amd64 -t mvd-clean .
       - name: Submission contract
-        run: python3 tests/contract.py
+        run: |
+          mkdir -p results/linux-submission-contract
+          python3 tests/contract.py | tee results/linux-submission-contract/report.json
       - name: Preserve image and source provenance
         run: |
           mkdir -p results/provenance
@@ -40,6 +42,18 @@ jobs:
         env:
           MVD_DOCKER_IMAGE: mvd-clean
         run: python3 tests/protocol_contract.py --output results/linux-protocol-contract
+      - name: Opaque nested JSON values without an artificial depth limit
+        env:
+          MVD_DOCKER_IMAGE: mvd-clean
+        run: python3 tests/protocol_nested_ids.py --output results/linux-nested-ids
+      - name: SQL operators retain lexical token types
+        env:
+          MVD_DOCKER_IMAGE: mvd-clean
+        run: python3 tests/sql_token_kinds.py --output results/linux-token-kinds
+      - name: Published SQL type index and transaction requirements
+        env:
+          MVD_DOCKER_IMAGE: mvd-clean
+        run: python3 tests/published_requirements.py --output results/linux-published-requirements
       - name: Successful-reference SQL decimal spellings
         env:
           MVD_DOCKER_IMAGE: mvd-clean
@@ -176,6 +190,9 @@ jobs:
           python3 tests/protocol_complete_input.py --output results/asan-complete-input
           python3 tests/protocol_ids.py --output results/asan-protocol-ids
           python3 tests/protocol_contract.py --output results/asan-protocol-contract
+          python3 tests/protocol_nested_ids.py --output results/asan-nested-ids
+          python3 tests/sql_token_kinds.py --output results/asan-token-kinds
+          python3 tests/published_requirements.py --output results/asan-published-requirements
           python3 tests/sql_numeric_forms.py --output results/asan-sql-numeric-forms
           python3 tests/order_alias_boundaries.py --output results/asan-order-aliases
           python3 tests/cache_column_sets.py --output results/asan-cache-column-sets

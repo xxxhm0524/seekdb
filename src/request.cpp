@@ -7,6 +7,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
+#include <set>
 #include <stdexcept>
 #if defined(__x86_64__) && defined(__GNUC__)
 #include <immintrin.h>
@@ -113,17 +114,12 @@ class Parser {
         }
         bad();
     }
-    Value value(unsigned depth) {
-        if(depth>64) bad();
+    Value scalar() {
         space(); const auto start=pos;
         if(pos==input.size()) bad();
         Value v; v.kind=input[pos];
         if(v.kind=='"') v.text=string();
-        else if(v.kind=='{') object(depth+1);
-        else if(v.kind=='[') {
-            ++pos;
-            if(!take(']')) { do { value(depth+1); } while(take(',')); if(!take(']')) bad(); }
-        } else if(v.kind=='t'||v.kind=='f'||v.kind=='n') {
+        else if(v.kind=='t'||v.kind=='f'||v.kind=='n') {
             const std::string_view literal=v.kind=='t'?"true":v.kind=='f'?"false":"null";
             if(input.substr(pos,literal.size())!=literal) bad();
             pos+=literal.size();
@@ -148,13 +144,53 @@ class Parser {
            !std::isfinite(std::strtod(std::string(v.raw).c_str(),nullptr))) bad();
         return v;
     }
-    std::map<std::string,Value> object(unsigned depth) {
+    Value value() {
+        space();
+        if(pos==input.size()) bad();
+        if(input[pos]!='{' && input[pos]!='[') return scalar();
+        const auto start=pos;
+        Value result; result.kind=input[pos];
+        // An explicit stack validates opaque container values without a fixed
+        // nesting limit or recursion on the C++ call stack. Nested objects still
+        // reject duplicate decoded keys before any SQL may execute.
+        enum State { ArrayFirst, ArrayValue, ArrayNext, ObjectFirst, ObjectKey, ObjectNext };
+        struct Frame { State state; std::set<std::string> keys; };
+        std::vector<Frame> frames;
+        auto atom=[&] {
+            space(); if(pos==input.size()) bad();
+            if(input[pos]=='[') { ++pos; frames.push_back({ArrayFirst,{}}); }
+            else if(input[pos]=='{') { ++pos; frames.push_back({ObjectFirst,{}}); }
+            else scalar();
+        };
+        atom();
+        while(!frames.empty()) {
+            const auto state=frames.back().state;
+            if(state==ArrayFirst || state==ArrayValue) {
+                if(state==ArrayFirst && take(']')) { frames.pop_back(); continue; }
+                frames.back().state=ArrayNext; atom();
+            } else if(state==ArrayNext) {
+                if(take(']')) frames.pop_back();
+                else { if(!take(',')) bad(); frames.back().state=ArrayValue; }
+            } else if(state==ObjectFirst || state==ObjectKey) {
+                if(state==ObjectFirst && take('}')) { frames.pop_back(); continue; }
+                auto key=string();
+                if(!frames.back().keys.insert(std::move(key)).second || !take(':')) bad();
+                frames.back().state=ObjectNext; atom();
+            } else {
+                if(take('}')) frames.pop_back();
+                else { if(!take(',')) bad(); frames.back().state=ObjectKey; }
+            }
+        }
+        result.raw=input.substr(start,pos-start);
+        return result;
+    }
+    std::map<std::string,Value> object() {
         if(!take('{')) bad();
         std::map<std::string,Value> result;
         if(!take('}')) {
             do {
                 auto key=string(); if(!take(':')) bad();
-                auto v=value(depth);
+                auto v=value();
                 if(!result.emplace(std::move(key),std::move(v)).second) bad();
             } while(take(','));
             if(!take('}')) bad();
@@ -163,7 +199,7 @@ class Parser {
     }
 public:
     explicit Parser(std::string_view s):input(s) {}
-    auto parse() { auto result=object(0);space();if(pos!=input.size()) bad();return result; }
+    auto parse() { auto result=object();space();if(pos!=input.size()) bad();return result; }
 };
 }
 namespace mvd {
