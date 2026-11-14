@@ -1,0 +1,39 @@
+name: Development write CPU profile
+on:
+  push:
+    branches: ['profile/faster-write-20261114']
+    paths: ['.github/workflows/write-profile.yml','tests/write_profile.py']
+permissions:
+  contents: read
+jobs:
+  profile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Instrument the unchanged candidate core
+        run: |
+          mkdir -p build
+          docker run --rm --network=none -v "$PWD:/src:ro" -v "$PWD/build:/out" -w /src \
+            gcc:13.5.0-bookworm@sha256:8c0fe724784c6d617cb582f79ddaf5dd2233aaba2fb7a14e0b9d03348fea8088 \
+            sh -c 'g++ -Isrc -Ithird_party -std=c++20 -O3 -g -DNDEBUG -ffp-contract=off -pg -static-libstdc++ -static-libgcc src/*.cpp -o /out/profile'
+      - name: Driver and frozen independent input generator
+        run: |
+          /usr/bin/python3 -m venv build/oracle-venv
+          build/oracle-venv/bin/python -m pip install numpy==2.2.6
+          build/oracle-venv/bin/python tests/write_profile.py --binary build/profile --output results/write-profile
+      - name: Preserve CPU attribution
+        run: |
+          gprof -s build/profile results/write-profile/*/gmon.out
+          gprof -b -p build/profile gmon.sum > results/write-profile/flat.txt
+          gprof -b -q build/profile gmon.sum > results/write-profile/callgraph.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: write-profile-${{ github.sha }}
+          path: |
+            results/**/report.json
+            results/**/flat.txt
+            results/**/callgraph.txt
+            results/**/gmon.out
+            results/**/*.log
