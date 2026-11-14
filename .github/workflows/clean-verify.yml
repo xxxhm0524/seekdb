@@ -69,6 +69,8 @@ jobs:
         env:
           MVD_DOCKER_IMAGE: mvd-clean
         run: python3 tests/capacity.py --output results/linux-capacity-2g --rows 40000 --payload 65536 --memory-mib 2048
+      - name: Compare a publicly documented successful implementation
+        run: MVD_BIN="$PWD/build/minivectordb" python3 tests/reference_differential.py --output results/linux-reference-differential
       - name: Preserve reports and stderr
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

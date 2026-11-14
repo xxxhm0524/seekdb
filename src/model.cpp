@@ -53,7 +53,10 @@ Value parse_value(const Column& c, const std::string& text, bool quoted) {
         const double overflow = std::ldexp(2.0 - std::ldexp(1.0, -24), 127);
         if (!std::isfinite(d) || std::abs(d) >= overflow)
             fail("invalid_vector", "vector value overflows finite float32");
-        float f = static_cast<float>(d);
+        const double maximum = static_cast<double>(std::numeric_limits<float>::max());
+        float f = d > maximum ? std::numeric_limits<float>::max()
+                : d < -maximum ? -std::numeric_limits<float>::max()
+                : static_cast<float>(d);
         if (!std::isfinite(f)) fail("invalid_vector", "vector value is not finite float32");
         v.push_back(f);
     }
