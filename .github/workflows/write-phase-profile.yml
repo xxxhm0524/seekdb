@@ -1,0 +1,31 @@
+name: write-phase-profile
+on:
+  push:
+    branches: [diagnostic/write-profile-20261114]
+jobs:
+  locked-runtime-phases:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify unchanged production sources
+        run: |
+          git fetch --depth=1 origin 93c634b832293763b07f9665e142c2b10e8f8efc
+          git diff --exit-code 93c634b832293763b07f9665e142c2b10e8f8efc HEAD -- src Makefile Dockerfile
+      - name: Build locked paired runtimes
+        run: |
+          python3 -m pip install --break-system-packages numpy
+          docker build --network=none -t minivectordb:phase-candidate .
+          git fetch --depth=1 origin f3b13767c3c6a2f3532fd22839f67786043f759b
+          mvd_reference=$(mktemp -d)
+          git archive f3b13767c3c6a2f3532fd22839f67786043f759b src Makefile Dockerfile .dockerignore docker/licenses/GCC-RUNTIME-EXCEPTION-3.1.txt | tar -x -C "$mvd_reference"
+          docker build --network=none -t minivectordb:phase-reference "$mvd_reference"
+      - name: Separate parsing staging commit and cold automatic writes
+        run: |
+          python3 tests/write_phase_profile.py --reference-image minivectordb:phase-reference --candidate-image minivectordb:phase-candidate --rounds 5 --output protocol-results/write-phase-profile.json
+      - name: Upload CPU and elapsed-time localization
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: write-phase-profile
+          path: protocol-results
