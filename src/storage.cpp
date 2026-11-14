@@ -148,14 +148,34 @@ static size_t cache_pages() {
     }
     return std::max(size_t(8), mib * 1024 * 1024 / PAGE_SIZE);
 }
+static Page commit_header(uint64_t generation, Ref catalog, uint64_t end, const std::string& bytes) {
+    Page header{}; std::memcpy(header.data(), "MVDCP001", 8);
+    write_le(header.data() + 8, generation, 8);
+    write_le(header.data() + 16, catalog.offset, 8); write_le(header.data() + 24, catalog.length, 8);
+    write_le(header.data() + 32, end, 8); write_le(header.data() + 40, checksum(bytes.data(), bytes.size()), 8);
+    write_le(header.data() + 4088, checksum(header.data(), 4088), 8);
+    return header;
+}
+static bool incomplete_first_initialization(const File& file, uint64_t size) {
+    if (!size) return true;
+    if (size < PAGE_SIZE * 2 || size > PAGE_SIZE * 2 + 2) return false;
+    std::array<unsigned char, PAGE_SIZE * 2 + 2> bytes{};
+    file.read(0, bytes.data(), static_cast<size_t>(size));
+    for (size_t i = 0; i < PAGE_SIZE; ++i) if (bytes[i]) return false;
+    Page expected = commit_header(1, Ref{PAGE_SIZE * 2, 2}, PAGE_SIZE * 2 + 2, "[]");
+    for (size_t i = 0; i < PAGE_SIZE; ++i)
+        if (bytes[PAGE_SIZE + i] && bytes[PAGE_SIZE + i] != expected[i]) return false;
+    if (size > PAGE_SIZE * 2 && bytes[PAGE_SIZE * 2] != '[') return false;
+    if (size > PAGE_SIZE * 2 + 1 && bytes[PAGE_SIZE * 2 + 1] != ']') return false;
+    return true;
+}
 Storage::Storage(const std::filesystem::path& dir) : directory_(dir), file_(dir / "database.mvd"), cache_pages_(cache_pages()) {
     const uint64_t file_size = file_.size();
-    bool found = false, has_signature = false;
+    bool found = false;
     for (unsigned slot = 0; slot < 2; ++slot) {
         if (file_size < (slot + 1) * PAGE_SIZE) continue;
         Page h{}; file_.read(slot * PAGE_SIZE, h.data(), h.size());
         if (std::memcmp(h.data(), "MVDCP001", 8)) continue;
-        has_signature = true;
         if (read_le(h.data() + 4088, 8) != checksum(h.data(), 4088)) continue;
         uint64_t gen = read_le(h.data() + 8, 8), off = read_le(h.data() + 16, 8);
         uint64_t len = read_le(h.data() + 24, 8), end = read_le(h.data() + 32, 8);
@@ -171,7 +191,8 @@ Storage::Storage(const std::filesystem::path& dir) : directory_(dir), file_(dir 
     }
     if (!found) {
         // An incomplete first initialization has never acknowledged any SQL.
-        if (has_signature && file_size > PAGE_SIZE * 2 + 2) throw IoError("no valid committed database root");
+        if (!incomplete_first_initialization(file_, file_size))
+            throw IoError("unrecognized or damaged nonempty database; refusing initialization");
         file_.truncate(PAGE_SIZE * 2); end_ = durable_end_ = PAGE_SIZE * 2;
         commit({});
     } else file_.truncate(durable_end_);
@@ -242,11 +263,7 @@ void Storage::commit(const Catalog& catalog) {
     Ref ref = append(bytes);
     for (auto& [offset, cached] : pages_) flush_page(offset, cached);
     file_.sync();
-    Page header{}; std::memcpy(header.data(), "MVDCP001", 8);
-    write_le(header.data() + 8, generation_ + 1, 8);
-    write_le(header.data() + 16, ref.offset, 8); write_le(header.data() + 24, ref.length, 8);
-    write_le(header.data() + 32, end_, 8); write_le(header.data() + 40, checksum(bytes.data(), bytes.size()), 8);
-    write_le(header.data() + 4088, checksum(header.data(), 4088), 8);
+    Page header = commit_header(generation_ + 1, ref, end_, bytes);
     file_.write(((generation_ + 1) % 2) * PAGE_SIZE, header.data(), header.size());
     file_.sync();
     ++generation_; durable_end_ = end_; committed.swap(next);

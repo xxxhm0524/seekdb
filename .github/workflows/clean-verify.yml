@@ -62,6 +62,8 @@ jobs:
           docker run --rm --entrypoint cat mvd-clean /app/minivectordb > build/minivectordb
           chmod +x build/minivectordb
           MVD_BIN="$PWD/build/minivectordb" python3 tests/crash_commit.py --output results/linux-crash-commit
+      - name: Refuse unknown files and recover incomplete first initialization
+        run: MVD_BIN="$PWD/build/minivectordb" python3 tests/open_safety.py --output results/linux-open-safety
       - name: Interrupt compaction exactly at replacement boundaries
         run: MVD_BIN="$PWD/build/minivectordb" python3 tests/compaction_crash.py --output results/linux-compaction-crash
       - name: Consecutive interruptions inside recovery truncation
@@ -110,6 +112,7 @@ jobs:
           python3 tests/invariants.py --output results/asan-invariants
           python3 tests/space_reuse.py --output results/asan-space
           python3 tests/column_layouts.py --output results/asan-column-layouts
+          python3 tests/open_safety.py --output results/asan-open-safety
       - name: Preserve sanitizer reports
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
