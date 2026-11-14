@@ -16,7 +16,7 @@ BoundExpr bind_expr(const Table& table, const Expr& expr) {
     if (expr.vector) {
         if (table.columns[b.column].type != Type::Vector) fail("type_error", "L2_DISTANCE requires a VECTOR column");
         b.query = std::get<std::vector<float>>(parse_value(table.columns[b.column], expr.vector->text, expr.vector->quoted));
-        if (b.name.empty()) b.name = "L2_DISTANCE(" + table.columns[b.column].name + ", '" + expr.vector->text + "')";
+        if (b.name.empty()) b.name = "l2_distance";
     } else if (b.name.empty()) b.name = table.columns[b.column].name;
     return b;
 }

@@ -166,6 +166,8 @@ def value_boundaries(directory):
         for sql in ["ALTER TABLE unicode_table ADD x BIGINT;", "SELECT COUNT(*) FROM unicode_table;", "BEGIN; BEGIN;", "UPDATE unicode_table SET id=12;", "DELETE FROM unicode_table WHERE n=0 OR n=1;"]:
             db.execute(sql, ok=False)
         assert db.execute("SELECT * FROM unicode_table;")["rows"] == r
+        distance = db.execute("SELECT L2_DISTANCE(v,'[0,0]') FROM unicode_table;")
+        assert distance["columns"] == ["l2_distance"]
         for request_id in [9007199254740993, -9223372036854775808, "test", None, {"nested": [1, 2]}]:
             response = db.send(dict(id=request_id, op="execute", sql="SELECT id FROM unicode_table;"))
             assert response["ok"]

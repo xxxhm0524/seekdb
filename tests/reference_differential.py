@@ -93,6 +93,7 @@ def run(output,binary,manifest,operations=1600):
                 state[table][key]=row
             execute(f"CREATE VECTOR INDEX {table}_v ON {table}(v);")
         committed=copy.deepcopy(state)
+        execute("SELECT L2_DISTANCE(v,'[0,0,0]') FROM a ORDER BY id;",rows=[[0.0],[0.0]],columns=["l2_distance"])
         for step in range(operations):
             table=rng.choice(list(tables));op=rng.randrange(11);key=rng.randint(-120,120)
             if op in [0,1,10]:
