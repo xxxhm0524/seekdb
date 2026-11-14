@@ -31,7 +31,7 @@ def equal(actual,expected):
         return type(actual) in (int,float) and math.isclose(actual,expected,rel_tol=1e-5,abs_tol=1e-5)
     return type(actual) is type(expected) and actual==expected
 
-def build_reference(output):
+def fetch_reference(output):
     manifest=json.loads((ROOT/"tests/reference-successful-version.json").read_text(encoding="utf-8"))
     source=output/"reference-source";source.mkdir()
     commit=manifest["commit"]
@@ -45,6 +45,10 @@ def build_reference(output):
         path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(data)
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
         list(pool.map(download,manifest["file_sha256"].items()))
+    return source,manifest
+
+def build_reference(output):
+    source,manifest=fetch_reference(output)
     binary=output/"reference-minivectordb"
     sources=sorted(str(p) for p in (source/"src").rglob("*.cpp"))
     with (output/"reference-build.log").open("wb") as log:

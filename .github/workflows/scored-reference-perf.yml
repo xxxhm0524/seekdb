@@ -1,0 +1,30 @@
+name: Scored reference paired performance review
+on:
+  push:
+    branches: ['review/scored-reference-20261114']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  paired:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Build current candidate
+        run: docker build --platform linux/amd64 -t mvd-candidate .
+      - name: Locked independent oracle dependency
+        run: |
+          /usr/bin/python3 -m venv build/oracle-venv
+          build/oracle-venv/bin/python -m pip install numpy==2.2.6
+      - name: Paired small and full-width text workloads
+        run: build/oracle-venv/bin/python tests/paired_reference_perf.py --image mvd-candidate --output results/scored-reference-paired
+      - name: Preserve paired reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: paired-${{ github.sha }}
+          path: |
+            results/**/report.json
+            results/**/rounds.json
+            results/**/*.log
