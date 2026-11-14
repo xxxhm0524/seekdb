@@ -35,6 +35,8 @@ std::unique_ptr<VectorIndex> VectorIndex::create(Storage& store, const Table& ta
     size_t coordinate_bytes = blocks * index->dimensions_ * batch::width * sizeof(float);
     if (index->dimensions_ > budget / (2 * sizeof(float))) return nullptr;
     size_t scratch = index->dimensions_ * 2 * sizeof(float);
+    size_t initial_bytes = coordinate_bytes + count * sizeof(Entry) + index->columns_.capacity() / 8 + scratch + 64;
+    if (initial_bytes > budget) return nullptr;
     index->coordinates_.resize(coordinate_bytes / sizeof(float));
     index->entries_.reserve(static_cast<size_t>(table.count));
     size_t used = index->entries_.capacity() * sizeof(Entry) + index->coordinates_.capacity() * sizeof(float)
