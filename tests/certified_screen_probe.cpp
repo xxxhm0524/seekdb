@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
 #ifdef MVD_BATCH_X86
     __builtin_cpu_init();
     if (__builtin_cpu_supports("avx2")) kernels.push_back(2);
-    if (__builtin_cpu_supports("avx512vnni") && __builtin_cpu_supports("avx512vl") && __builtin_cpu_supports("avx2")) kernels.push_back(3);
+    if (__builtin_cpu_supports("avx512vnni") && __builtin_cpu_supports("avx512f")) kernels.push_back(3);
 #endif
     for (size_t dimensions : {32u, 33u, 128u, 1024u, 4096u}) for (unsigned trial = 0; trial < 12; ++trial) {
         constexpr size_t count = 257;

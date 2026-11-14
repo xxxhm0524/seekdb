@@ -231,7 +231,7 @@ std::optional<std::vector<VectorIndex::Hit>> VectorIndex::screen_search(const st
     const auto encoded = screen_->query(query);
     for (size_t first = begin / QuantizedScreen::width * QuantizedScreen::width; first < end; first += QuantizedScreen::width) {
         unsigned mask = 0;
-        if (!predicate && first >= begin && end - first >= QuantizedScreen::width) mask = (1U << QuantizedScreen::width) - 1;
+        if (!predicate && first >= begin && end - first >= QuantizedScreen::width) mask = UINT32_MAX;
         else for (size_t lane = 0; lane < QuantizedScreen::width && first + lane < end; ++lane)
             if (first + lane >= begin && (!predicate || predicate(entries_[first + lane].row))) mask |= 1U << lane;
         if (!mask) continue;

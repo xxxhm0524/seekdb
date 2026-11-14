@@ -15,7 +15,7 @@ namespace mvd {
 // authority, and every returned distance still uses the full binary64 loop.
 class QuantizedScreen {
 public:
-    static constexpr size_t width = 8;
+    static constexpr size_t width = 32;
     struct Query { std::vector<int8_t> codes; int32_t norm = 0, sum = 0; double error = 0; };
 private:
     size_t dimensions_ = 0, groups_ = 0;
@@ -37,37 +37,42 @@ private:
         for (size_t lane = 0; lane < width; ++lane) output[lane] = 0;
         for (size_t group = 0; group < groups; ++group)
             for (size_t lane = 0; lane < width; ++lane)
-                for (size_t d = 0; d < 4; ++d) output[lane] += int32_t(rows[group * 32 + lane * 4 + d]) * int32_t(query[group * 4 + d]);
+                for (size_t d = 0; d < 4; ++d) output[lane] += int32_t(rows[group * width * 4 + lane * 4 + d]) * int32_t(query[group * 4 + d]);
     }
 #ifdef MVD_BATCH_X86
     __attribute__((target("avx2"))) static void avx2(const uint8_t* rows, const int8_t* query, size_t groups, int32_t* output) {
-        auto sum = _mm256_setzero_si256(); const auto ones = _mm256_set1_epi16(1), low_mask = _mm256_set1_epi8(127);
+        __m256i sums[width / 8]; for (auto& sum : sums) sum = _mm256_setzero_si256();
+        const auto ones = _mm256_set1_epi16(1), low_mask = _mm256_set1_epi8(127);
         for (size_t group = 0; group < groups; ++group) {
             int32_t packed; std::memcpy(&packed, query + group * 4, 4);
-            const auto values = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(rows + group * 32));
             // Split the unsigned row byte into <=127 and <=128 components.
             // Each signed-16 pair is <=32512 in magnitude; maddubs cannot
             // saturate. Combine only after widening each pair sum to int32.
             const auto q = _mm256_set1_epi32(packed);
-            const auto low = _mm256_maddubs_epi16(_mm256_and_si256(values, low_mask), q);
-            const auto high = _mm256_maddubs_epi16(_mm256_andnot_si256(low_mask, values), q);
-            sum = _mm256_add_epi32(sum, _mm256_add_epi32(_mm256_madd_epi16(low, ones), _mm256_madd_epi16(high, ones)));
+            for (size_t part = 0; part < width / 8; ++part) {
+                const auto values = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(rows + group * width * 4 + part * 32));
+                const auto low = _mm256_maddubs_epi16(_mm256_and_si256(values, low_mask), q);
+                const auto high = _mm256_maddubs_epi16(_mm256_andnot_si256(low_mask, values), q);
+                sums[part] = _mm256_add_epi32(sums[part], _mm256_add_epi32(_mm256_madd_epi16(low, ones), _mm256_madd_epi16(high, ones)));
+            }
         }
-        _mm256_storeu_si256(reinterpret_cast<__m256i*>(output), sum);
+        for (size_t part = 0; part < width / 8; ++part) _mm256_storeu_si256(reinterpret_cast<__m256i*>(output + part * 8), sums[part]);
     }
-    __attribute__((target("avx512vnni,avx512vl,avx2"))) static void vnni(const uint8_t* rows, const int8_t* query, size_t groups, int32_t* output) {
-        auto sum = _mm256_setzero_si256();
+    __attribute__((target("avx512f,avx512vnni"))) static void vnni(const uint8_t* rows, const int8_t* query, size_t groups, int32_t* output) {
+        __m512i sums[width / 16]; for (auto& sum : sums) sum = _mm512_setzero_si512();
         for (size_t group = 0; group < groups; ++group) {
             int32_t packed; std::memcpy(&packed, query + group * 4, 4);
-            sum = _mm256_dpbusd_epi32(sum, _mm256_loadu_si256(reinterpret_cast<const __m256i*>(rows + group * 32)), _mm256_set1_epi32(packed));
+            const auto q = _mm512_set1_epi32(packed);
+            for (size_t part = 0; part < width / 16; ++part)
+                sums[part] = _mm512_dpbusd_epi32(sums[part], _mm512_loadu_si512(rows + group * width * 4 + part * 64), q);
         }
-        _mm256_storeu_si256(reinterpret_cast<__m256i*>(output), sum);
+        for (size_t part = 0; part < width / 16; ++part) _mm512_storeu_si512(output + part * 16, sums[part]);
     }
 #endif
     static Function select() {
 #ifdef MVD_BATCH_X86
         __builtin_cpu_init();
-        if (__builtin_cpu_supports("avx512vnni") && __builtin_cpu_supports("avx512vl") && __builtin_cpu_supports("avx2")) return vnni;
+        if (__builtin_cpu_supports("avx512vnni") && __builtin_cpu_supports("avx512f")) return vnni;
         if (__builtin_cpu_supports("avx2")) return avx2;
 #endif
         return scalar;
@@ -86,10 +91,10 @@ public:
         if (!supported(dimensions)) return nullptr;
         const size_t groups = (dimensions + 3) / 4, blocks = (count + width - 1) / width;
         const size_t fixed = sizeof(QuantizedScreen) + groups * 4 + 2048;
-        if (fixed > budget || blocks > (budget - fixed) / (groups * 32 + width * sizeof(int32_t))) return nullptr;
+        if (fixed > budget || blocks > (budget - fixed) / (groups * width * 4 + width * sizeof(int32_t))) return nullptr;
         auto index = std::make_unique<QuantizedScreen>(); index->dimensions_ = dimensions; index->groups_ = groups;
         index->function_ = select();
-        index->codes_.assign(blocks * groups * 32, 128); index->norms_.assign(blocks * width, 0);
+        index->codes_.assign(blocks * groups * width * 4, 128); index->norms_.assign(blocks * width, 0);
         if (fixed + index->codes_.capacity() + index->norms_.capacity() * sizeof(int32_t) > budget) return nullptr;
         double maximum = 0;
         for (size_t row = 0; row < count; ++row) for (size_t d = 0; d < dimensions; ++d)
@@ -100,7 +105,7 @@ public:
             double error = 0; int32_t norm = 0;
             for (size_t d = 0; d < dimensions; ++d) {
                 const double value = coordinate(row, d); const int code = index->encode(value);
-                index->codes_[(row / width) * groups * 32 + (d / 4) * 32 + (row % width) * 4 + d % 4] = uint8_t(code + 128);
+                index->codes_[(row / width) * groups * width * 4 + (d / 4) * width * 4 + (row % width) * 4 + d % 4] = uint8_t(code + 128);
                 norm += code * code; error = index->add_error(error, value, code);
             }
             index->norms_[row] = norm; index->maximum_error_ = std::max(index->maximum_error_, up(std::sqrt(error)));
@@ -121,7 +126,7 @@ public:
         if (implementation == 2) function = avx2;
         if (implementation == 3) function = vnni;
 #endif
-        function(codes_.data() + (first / width) * groups_ * 32, query.codes.data(), groups_, output.data());
+        function(codes_.data() + (first / width) * groups_ * width * 4, query.codes.data(), groups_, output.data());
         for (size_t lane = 0; lane < width; ++lane)
             output[lane] = norms_[first + lane] + query.norm + 256 * query.sum - 2 * output[lane];
     }
