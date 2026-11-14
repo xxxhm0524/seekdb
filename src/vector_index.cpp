@@ -1,5 +1,6 @@
 #include "vector_index.hpp"
 #include "exact_batch.hpp"
+#include <bit>
 #include <cstdlib>
 #include <numeric>
 #include <queue>
@@ -19,7 +20,8 @@ bool VectorIndex::covers(const std::vector<bool>& wanted) const {
     for (size_t i = 0; i < wanted.size(); ++i) if (wanted[i] && !columns_[i]) return false;
     return true;
 }
-std::unique_ptr<VectorIndex> VectorIndex::create(Storage& store, const Table& table, const std::vector<bool>& wanted) {
+std::unique_ptr<VectorIndex> VectorIndex::create(Storage& store, const Table& table, const std::vector<bool>& wanted,
+                                               std::optional<size_t> cluster_column) {
     size_t budget = vector_budget(), column = table.columns.size();
     for (size_t i = 0; i < table.columns.size(); ++i) if (table.columns[i].type == Type::Vector) column = i;
     if (!budget || column == table.columns.size()) return nullptr;
@@ -51,6 +53,8 @@ std::unique_ptr<VectorIndex> VectorIndex::create(Storage& store, const Table& ta
         size_t position = index->entries_.size();
         if (position >= count) throw IoError("inconsistent vector snapshot row count");
         const auto& vector = std::get<std::vector<float>>(row[column]);
+        if (index->uniform_ && position) for (size_t d = 0; d < index->dimensions_; ++d)
+            if (vector[d] != index->coordinate(0, d)) { index->uniform_ = false; break; }
         for (size_t d = 0; d < index->dimensions_; ++d)
             index->coordinates_[(position / batch::width) * index->dimensions_ * batch::width + d * batch::width + position % batch::width] = vector[d];
         row[column] = int64_t(0); // The float32 payload is owned once by coordinates_.
@@ -64,6 +68,9 @@ std::unique_ptr<VectorIndex> VectorIndex::create(Storage& store, const Table& ta
     });
     if (!complete) return nullptr;
     if (index->entries_.size() != count) throw IoError("inconsistent vector snapshot row count");
+    if (cluster_column && *cluster_column < table.columns.size() && index->columns_[*cluster_column] &&
+        table.columns[*cluster_column].type != Type::Vector &&
+        count <= (budget - used) / sizeof(size_t)) index->cluster(*cluster_column);
     if (!table.indexes.empty() && !index->entries_.empty() && index->dimensions_ < 32) {
         size_t n = index->entries_.size(), dimensions = table.columns[column].width;
         // A full binary tree splitting down to 32-point leaves has fewer than
@@ -75,10 +82,48 @@ std::unique_ptr<VectorIndex> VectorIndex::create(Storage& store, const Table& ta
             index->nodes_.reserve(max_nodes); index->build(0, n);
         }
     }
+    if (!index->uniform_ && index->dimensions_ >= 32)
+        index->screen_ = QuantizedScreen::create(count, index->dimensions_, budget - used,
+            [&](size_t row, size_t d) { return index->coordinate(row, d); });
     return index;
 }
 float VectorIndex::coordinate(size_t entry, size_t dimension) const {
     return coordinates_[(entry / batch::width) * dimensions_ * batch::width + dimension * batch::width + entry % batch::width];
+}
+void VectorIndex::cluster(size_t column) {
+    // One permutation plus one vector of scratch; all allocations precede edits.
+    std::vector<size_t> permutation(entries_.size());
+    std::vector<float> scratch(dimensions_);
+    std::iota(permutation.begin(), permutation.end(), 0);
+    std::sort(permutation.begin(), permutation.end(), [&](size_t a, size_t b) {
+        const auto& x = entries_[a].row[column]; const auto& y = entries_[b].row[column];
+        return x == y ? entries_[a].key < entries_[b].key : x < y;
+    });
+    auto set = [&](size_t entry, size_t d, float value) {
+        coordinates_[(entry / batch::width) * dimensions_ * batch::width + d * batch::width + entry % batch::width] = value;
+    };
+    for (size_t i = 0; i < permutation.size(); ++i) if (permutation[i] != i) {
+        Entry saved = std::move(entries_[i]);
+        for (size_t d = 0; d < dimensions_; ++d) scratch[d] = coordinate(i, d);
+        size_t to = i;
+        while (permutation[to] != i) {
+            size_t from = permutation[to]; entries_[to] = std::move(entries_[from]);
+            for (size_t d = 0; d < dimensions_; ++d) set(to, d, coordinate(from, d));
+            permutation[to] = to; to = from;
+        }
+        entries_[to] = std::move(saved);
+        for (size_t d = 0; d < dimensions_; ++d) set(to, d, scratch[d]);
+        permutation[to] = to;
+    }
+    clustered_column_ = column;
+}
+std::optional<std::pair<size_t, size_t>> VectorIndex::equal_bounds(size_t column, const Value& value) const {
+    if (clustered_column_ != column) return {};
+    auto first = std::lower_bound(entries_.begin(), entries_.end(), value,
+        [&](const Entry& entry, const Value& v) { return entry.row[column] < v; });
+    auto last = std::upper_bound(first, entries_.end(), value,
+        [&](const Value& v, const Entry& entry) { return v < entry.row[column]; });
+    return std::pair<size_t, size_t>{first - entries_.begin(), last - entries_.begin()};
 }
 Row VectorIndex::materialize(size_t entry) const {
     Row row = entries_.at(entry).row;
@@ -112,21 +157,32 @@ int VectorIndex::build(size_t begin, size_t end) {
     return id;
 }
 std::vector<VectorIndex::Hit> VectorIndex::search(const std::vector<float>& query, size_t k,
-                    const std::function<bool(const Row&)>& predicate) const {
+                    const std::function<bool(const Row&)>& predicate, size_t begin, size_t end,
+                    SearchStats* stats, bool screening) const {
+    if (stats) *stats = {};
     auto better = [&](const Hit& a, const Hit& b) {
         return a.distance == b.distance ? entries_[a.entry].key < entries_[b.entry].key : a.distance < b.distance;
     };
     std::priority_queue<Hit, std::vector<Hit>, decltype(better)> heap(better);
-    if (!k) return {};
+    end = std::min(end, entries_.size());
+    if (!k || begin >= end) return {};
     if (query.size() != dimensions_) fail("invalid_vector", "incorrect indexed query dimension");
+    if (screening && screen_ && k <= 16 && end - begin >= 256 && QuantizedScreen::supported(dimensions_)) {
+        if (stats) stats->screen_attempted = true;
+        if (auto result = screen_search(query, k, predicate, begin, end, stats)) {
+            if (stats) stats->screen_certified = true;
+            return *result;
+        }
+    }
     auto consider = [&](size_t i, double distance) {
+        if (stats) ++stats->exact_rows;
         Hit hit{i, distance};
         if (heap.size() < k) heap.push(hit);
         else if (better(hit, heap.top())) { heap.pop(); heap.push(hit); }
     };
     auto visit = [&](size_t i) {
         const auto& e = entries_[i];
-        if (!predicate(e.row)) return;
+        if (i < begin || i >= end || (predicate && !predicate(e.row))) return;
         double sum = 0;
         for (size_t d = 0; d < query.size(); ++d) { double diff = double(coordinate(i, d)) - double(query[d]); sum += diff * diff; }
         consider(i, std::sqrt(sum));
@@ -150,10 +206,11 @@ std::vector<VectorIndex::Hit> VectorIndex::search(const std::vector<float>& quer
     };
     if (nodes_.empty()) {
         const auto kernel = batch::select();
-        for (size_t first = 0; first < entries_.size(); first += batch::width) {
+        for (size_t first = begin / batch::width * batch::width; first < end; first += batch::width) {
             unsigned mask = 0;
-            for (size_t lane = 0; lane < batch::width && first + lane < entries_.size(); ++lane)
-                if (predicate(entries_[first + lane].row)) mask |= 1U << lane;
+            if (!predicate && first >= begin && end - first >= batch::width) mask = UINT32_MAX;
+            else for (size_t lane = 0; lane < batch::width && first + lane < end; ++lane)
+                if (first + lane >= begin && (!predicate || predicate(entries_[first + lane].row))) mask |= 1U << lane;
             if (!mask) continue;
             double distances[batch::width];
             kernel.evaluate(coordinates_.data() + (first / batch::width) * dimensions_ * batch::width, query.data(), dimensions_, distances);
@@ -164,5 +221,52 @@ std::vector<VectorIndex::Hit> VectorIndex::search(const std::vector<float>& quer
     std::vector<Hit> hits; hits.reserve(heap.size());
     while (!heap.empty()) { hits.push_back(heap.top()); heap.pop(); }
     std::reverse(hits.begin(), hits.end()); return hits;
+}
+std::optional<std::vector<VectorIndex::Hit>> VectorIndex::screen_search(const std::vector<float>& query, size_t k,
+        const std::function<bool(const Row&)>& predicate, size_t begin, size_t end, SearchStats* stats) const {
+    constexpr size_t capacity = 64;
+    struct Estimate { int32_t score; size_t entry; };
+    auto less = [](const Estimate& a, const Estimate& b) { return a.score < b.score; };
+    std::array<Estimate, capacity> candidates{}; size_t count = 0, selected = 0;
+    const auto encoded = screen_->query(query);
+    for (size_t first = begin / QuantizedScreen::width * QuantizedScreen::width; first < end; first += QuantizedScreen::width) {
+        unsigned mask = 0;
+        if (!predicate && first >= begin && end - first >= QuantizedScreen::width) mask = (1U << QuantizedScreen::width) - 1;
+        else for (size_t lane = 0; lane < QuantizedScreen::width && first + lane < end; ++lane)
+            if (first + lane >= begin && (!predicate || predicate(entries_[first + lane].row))) mask |= 1U << lane;
+        if (!mask) continue;
+        selected += std::popcount(mask);
+        if (stats) stats->screened_rows += std::popcount(mask);
+        std::array<int32_t, QuantizedScreen::width> estimates{};
+        screen_->scores(encoded, first, estimates);
+        if (count == capacity && *std::min_element(estimates.begin(), estimates.end()) >= candidates[0].score) continue;
+        for (size_t lane = 0; lane < QuantizedScreen::width; ++lane) if (mask & (1U << lane)) {
+            const int32_t score = estimates[lane];
+            Estimate candidate{score, first + lane};
+            if (count < capacity) {
+                candidates[count++] = candidate; std::push_heap(candidates.begin(), candidates.begin() + count, less);
+            } else if (less(candidate, candidates[0])) {
+                std::pop_heap(candidates.begin(), candidates.end(), less); candidates.back() = candidate;
+                std::push_heap(candidates.begin(), candidates.end(), less);
+            }
+        }
+    }
+    auto better = [&](const Hit& a, const Hit& b) {
+        return a.distance == b.distance ? entries_[a.entry].key < entries_[b.entry].key : a.distance < b.distance;
+    };
+    std::vector<Hit> hits; hits.reserve(count);
+    for (size_t i = 0; i < count; ++i) {
+        const size_t entry = candidates[i].entry; double sum = 0;
+        for (size_t d = 0; d < dimensions_; ++d) { double delta = double(coordinate(entry, d)) - double(query[d]); sum += delta * delta; }
+        hits.push_back({entry, std::sqrt(sum)}); if (stats) ++stats->exact_rows;
+    }
+    std::sort(hits.begin(), hits.end(), better);
+    if (hits.size() > k) hits.resize(k);
+    // Strict > protects both exact-distance and rounded-sqrt ties. Any unknown
+    // bound, close boundary or unsupported environment retains the full path.
+    // The capacity-th estimate is no greater than every excluded estimate,
+    // since the heap threshold only decreases while scanning.
+    if (selected <= capacity || (hits.size() == k && screen_->lower(encoded, candidates[0].score) > screen_->reference_upper(hits.back().distance))) return hits;
+    return {};
 }
 }

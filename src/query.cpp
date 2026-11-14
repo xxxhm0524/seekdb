@@ -228,13 +228,30 @@ Result Engine::select(const Statement& s) {
             if (vector_index_) for (size_t i = 0; i < desired.size(); ++i) desired[i] = desired[i] || vector_index_->columns()[i];
             if (!refused(desired)) {
                 vector_index_.reset(); // Keep the shared budget during rebuilding.
-                vector_index_ = VectorIndex::create(storage_, table, desired);
+                std::optional<size_t> cluster_column;
+                for (const auto& p : predicates) if (p.column != table.primary && p.op != "!=" && p.op != "<>") {
+                    cluster_column = p.column; break;
+                }
+                vector_index_ = VectorIndex::create(storage_, table, desired, cluster_column);
                 if (!vector_index_) { refused_vector_root_ = table.root; refused_vector_table_ = table.name; refused_vector_columns_ = std::move(desired); }
             }
         }
         if (vector_index_ && vector_index_->covers(cache_needed) && ordering.size() == 1 && ordering[0].distance && !s.order[0].descending && limit <= 65536) {
-            auto hits = vector_index_->search(ordering[0].query, static_cast<size_t>(limit),
-                                              [&](const Row& row) { return matches(row, predicates); });
+            size_t begin = 0, end = vector_index_->entries().size(); bool complete = true;
+            for (const auto& p : predicates) {
+                auto bounds = vector_index_->equal_bounds(p.column, p.value);
+                if (!bounds) { complete = false; continue; }
+                const auto [lo, hi] = *bounds;
+                if (p.op == "=") { begin = std::max(begin, lo); end = std::min(end, hi); }
+                else if (p.op == "<") end = std::min(end, lo);
+                else if (p.op == "<=") end = std::min(end, hi);
+                else if (p.op == ">") begin = std::max(begin, hi);
+                else if (p.op == ">=") begin = std::max(begin, lo);
+                else complete = false;
+            }
+            std::function<bool(const Row&)> filter;
+            if (!complete) filter = [&](const Row& row) { return matches(row, predicates); };
+            auto hits = vector_index_->search(ordering[0].query, static_cast<size_t>(limit), filter, begin, end);
             bool projection_cached = vector_index_->covers(wanted);
             for (const auto& hit : hits) {
                 const auto& entry = vector_index_->entries()[hit.entry];

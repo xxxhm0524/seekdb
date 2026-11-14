@@ -1,7 +1,7 @@
 name: Scored reference paired performance review
 on:
   push:
-    branches: ['review/scored-reference-20261114']
+    branches: ['review/scored-reference-20261114', 'review/faster-than-scored-20261114']
     paths: ['src/**','tests/paired_reference_perf.py','tests/reference_differential.py','tests/reference-controlled.Dockerfile','Dockerfile','Makefile','.github/workflows/scored-reference-perf.yml']
   workflow_dispatch:
 permissions:
@@ -19,7 +19,7 @@ jobs:
           /usr/bin/python3 -m venv build/oracle-venv
           build/oracle-venv/bin/python -m pip install numpy==2.2.6
       - name: Paired small and full-width text workloads
-        run: build/oracle-venv/bin/python tests/paired_reference_perf.py --image mvd-candidate --output results/scored-reference-paired --baseline-commit 977fb6d6e4f7dc2865ab5ba847ae3c489ba27100
+        run: build/oracle-venv/bin/python tests/paired_reference_perf.py --image mvd-candidate --output results/scored-reference-paired --baseline-commit bcd4a3f9bfefbbe940694b498f2b1f5c1fc35a6b
       - name: Preserve paired reports
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

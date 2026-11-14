@@ -24,26 +24,26 @@ int main() {
 #endif
     std::mt19937 rng(91371);size_t checked=0;
     for(size_t dimensions:{1u,2u,3u,7u,33u,128u})for(int trial=0;trial<32;++trial){
-        std::vector<float> block(dimensions*8),query(dimensions),row(dimensions);
+        std::vector<float> block(dimensions*mvd::batch::width),query(dimensions),row(dimensions);
         for(float&x:block)x=std::bit_cast<float>(uint32_t(rng())&0xfeffffffU);
         for(float&x:query)x=trial%3?std::bit_cast<float>(uint32_t(rng())&0xfeffffffU):0.0f;
         block[0]=std::numeric_limits<float>::max();block[1]=-block[0];
         block[2]=std::numeric_limits<float>::denorm_min();block[3]=-0.0f;
         for(const auto&kernel:kernels){
-            std::array<double,8> output{};kernel.evaluate(block.data(),query.data(),dimensions,output.data());
-            for(size_t lane=0;lane<8;++lane){
-                for(size_t d=0;d<dimensions;++d)row[d]=block[d*8+lane];
+            std::array<double,mvd::batch::width> output{};kernel.evaluate(block.data(),query.data(),dimensions,output.data());
+            for(size_t lane=0;lane<mvd::batch::width;++lane){
+                for(size_t d=0;d<dimensions;++d)row[d]=block[d*mvd::batch::width+lane];
                 double expected=point(row.data(),query.data(),dimensions);
                 if(std::bit_cast<uint64_t>(expected)!=std::bit_cast<uint64_t>(output[lane]))throw std::runtime_error("batch distance bit mismatch");
                 ++checked;
             }
         }
     }
-    constexpr size_t count=10000,dimensions=128,queries=200;
+    constexpr size_t count=10016,dimensions=128,queries=200;
     std::uniform_real_distribution<float> distribution(-1,1);
     std::vector<float> rows(count*dimensions),blocked(count*dimensions),q(queries*dimensions);
     for(float&x:rows)x=distribution(rng);for(float&x:q)x=distribution(rng);
-    for(size_t i=0;i<count;++i)for(size_t d=0;d<dimensions;++d)blocked[(i/8)*dimensions*8+d*8+i%8]=rows[i*dimensions+d];
+    for(size_t i=0;i<count;++i)for(size_t d=0;d<dimensions;++d)blocked[(i/mvd::batch::width)*dimensions*mvd::batch::width+d*mvd::batch::width+i%mvd::batch::width]=rows[i*dimensions+d];
     auto start=std::chrono::steady_clock::now();double checksum=0;
     for(size_t k=0;k<queries;++k)for(size_t i=0;i<count;++i)checksum+=point(rows.data()+i*dimensions,q.data()+k*dimensions,dimensions);
     double scalar_seconds=std::chrono::duration<double>(std::chrono::steady_clock::now()-start).count();
@@ -51,8 +51,8 @@ int main() {
     bool first=true;
     for(const auto&kernel:kernels){
         start=std::chrono::steady_clock::now();double result=0;
-        for(size_t k=0;k<queries;++k)for(size_t i=0;i<count;i+=8){
-            std::array<double,8> output{};kernel.evaluate(blocked.data()+(i/8)*dimensions*8,q.data()+k*dimensions,dimensions,output.data());
+        for(size_t k=0;k<queries;++k)for(size_t i=0;i<count;i+=mvd::batch::width){
+            std::array<double,mvd::batch::width> output{};kernel.evaluate(blocked.data()+(i/mvd::batch::width)*dimensions*mvd::batch::width,q.data()+k*dimensions,dimensions,output.data());
             for(double value:output)result+=value;
         }
         double seconds=std::chrono::duration<double>(std::chrono::steady_clock::now()-start).count();

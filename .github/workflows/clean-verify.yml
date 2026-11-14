@@ -1,7 +1,7 @@
 name: Clean MiniVectorDB verification
 on:
   push:
-    branches: ['rewrite/minivectordb-clean-20261114', 'audit/minivectordb-space-20261114', 'review/scored-reference-20261114', '2026-competition-round2']
+    branches: ['rewrite/minivectordb-clean-20261114', 'audit/minivectordb-space-20261114', 'review/scored-reference-20261114', 'review/faster-than-scored-20261114', '2026-competition-round2']
   workflow_dispatch:
 permissions:
   contents: read
@@ -48,6 +48,10 @@ jobs:
         env:
           MVD_DOCKER_IMAGE: mvd-clean
         run: python3 tests/cache_column_sets.py --output results/linux-cache-column-sets
+      - name: Clustered scalar ranges and Unicode filters
+        env:
+          MVD_DOCKER_IMAGE: mvd-clean
+        run: python3 tests/cache_ranges.py --output results/linux-cache-ranges
       - name: Database exceeds cgroup memory budget
         env:
           MVD_DOCKER_IMAGE: mvd-clean
@@ -70,6 +74,14 @@ jobs:
           docker run --rm --entrypoint cat mvd-clean /app/minivectordb > build/minivectordb
           chmod +x build/minivectordb
           MVD_BIN="$PWD/build/minivectordb" python3 tests/crash_commit.py --output results/linux-crash-commit
+      - name: Production-toolchain integer certificates and exact fallback
+        run: |
+          mkdir -p results/linux-certified-screen
+          docker run --rm --network=none -v "$PWD:/src:ro" -v "$PWD/build:/out" -w /src \
+            gcc:13.5.0-bookworm@sha256:8c0fe724784c6d617cb582f79ddaf5dd2233aaba2fb7a14e0b9d03348fea8088 \
+            g++ -Isrc -Ithird_party -std=c++20 -O3 -DNDEBUG -ffp-contract=off -static-libstdc++ -static-libgcc \
+            tests/certified_screen_probe.cpp src/vector_index.cpp src/storage.cpp src/record_reader.cpp src/model.cpp src/btree.cpp src/compaction.cpp src/vector_literal.cpp -o /out/certified-screen-probe
+          build/certified-screen-probe results/linux-certified-screen-data | tee results/linux-certified-screen/report.json
       - name: Refuse unknown files and recover incomplete first initialization
         run: MVD_BIN="$PWD/build/minivectordb" python3 tests/open_safety.py --output results/linux-open-safety
       - name: Interrupt compaction exactly at replacement boundaries
@@ -125,6 +137,17 @@ jobs:
           python3 tests/open_safety.py --output results/asan-open-safety
           python3 tests/protocol_complete_input.py --output results/asan-complete-input
           python3 tests/cache_column_sets.py --output results/asan-cache-column-sets
+          python3 tests/cache_ranges.py --output results/asan-cache-ranges
+      - name: Sanitized integer certificates and exact fallback
+        env:
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: |
+          mkdir -p results/asan-certified-screen
+          g++ -Isrc -Ithird_party -std=c++20 -O1 -g -ffp-contract=off -D_GLIBCXX_ASSERTIONS \
+            -fsanitize=address,undefined -fno-omit-frame-pointer \
+            tests/certified_screen_probe.cpp src/vector_index.cpp src/storage.cpp src/record_reader.cpp src/model.cpp src/btree.cpp src/compaction.cpp src/vector_literal.cpp -o build/certified-screen-probe-asan
+          build/certified-screen-probe-asan results/asan-certified-screen-data | tee results/asan-certified-screen/report.json
       - name: Preserve sanitizer reports
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
