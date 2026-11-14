@@ -151,6 +151,7 @@ def value_boundaries(directory):
             db.execute("INSERT INTO unicode_table VALUES(0,1,'x'," + quote(vector) + ");", ok=False)
         for vector in ["[1 2,0]", "[1,'2']", '[1,"2"]', "[1 e2,0]", "[1,]", "[,1]", "[[1],0]", "[true,0]"]:
             db.execute("INSERT INTO unicode_table VALUES(0,1,'x'," + vector + ");", ok=False)
+        db.execute("INSERT INTO unicode_table VALUES(0,1,'x'," + quote('[0,0]\x00trailing') + ");",ok=False)
         for bad in ["9223372036854775808", "-9223372036854775809", "1.5", "1e2", "'1'"]:
             db.execute(f"INSERT INTO unicode_table VALUES (0,{bad},'x','[0,0]');", ok=False)
         db.execute("INSERT INTO unicode_table VALUES (0,2,'中😀éa','[0,0]');", ok=False)

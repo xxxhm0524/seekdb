@@ -2,7 +2,7 @@ name: Exact batch distance feasibility
 on:
   push:
     branches: ['review/scored-reference-20261114']
-    paths: ['src/exact_batch.hpp','tests/exact_batch_probe.cpp','.github/workflows/exact-batch-probe.yml']
+    paths: ['src/exact_batch.hpp','src/vector_literal.*','tests/exact_batch_probe.cpp','tests/vector_literal_probe.cpp','.github/workflows/exact-batch-probe.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -18,7 +18,16 @@ jobs:
             gcc:13.5.0-bookworm@sha256:8c0fe724784c6d617cb582f79ddaf5dd2233aaba2fb7a14e0b9d03348fea8088 \
             g++ -std=c++20 -O3 -DNDEBUG -ffp-contract=off -static-libstdc++ -static-libgcc tests/exact_batch_probe.cpp -o /out/probe
           results/exact-batch/probe | tee results/exact-batch/report.json
+      - name: Vector literal grammar and float32 conversion parity
+        run: |
+          mkdir -p results/vector-literal
+          docker run --rm --network=none -v "$PWD:/src:ro" -v "$PWD/results/vector-literal:/out" -w /src \
+            gcc:13.5.0-bookworm@sha256:8c0fe724784c6d617cb582f79ddaf5dd2233aaba2fb7a14e0b9d03348fea8088 \
+            g++ -Isrc -Ithird_party -std=c++20 -O3 -DNDEBUG -ffp-contract=off -static-libstdc++ -static-libgcc tests/vector_literal_probe.cpp src/vector_literal.cpp -o /out/probe
+          results/vector-literal/probe | tee results/vector-literal/report.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: exact-batch-${{ github.sha }}
-          path: results/exact-batch/report.json
+          path: |
+            results/exact-batch/report.json
+            results/vector-literal/report.json

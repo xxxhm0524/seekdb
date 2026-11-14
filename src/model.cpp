@@ -1,4 +1,5 @@
 #include "model.hpp"
+#include "vector_literal.hpp"
 #include <bit>
 #include <charconv>
 #include <cstring>
@@ -41,27 +42,7 @@ Value parse_value(const Column& c, const std::string& text, bool quoted) {
         if (utf8_length(text) > c.width) fail("value_too_long", "VARCHAR exceeds its Unicode length");
         return text;
     }
-    Json a;
-    try { a = Json::parse(text); }
-    catch (const Json::exception&) { fail("invalid_vector", "invalid vector literal"); }
-    if (!a.is_array() || a.size() != c.width) fail("invalid_vector", "incorrect vector dimension");
-    std::vector<float> v; v.reserve(a.size());
-    for (const auto& x : a) {
-        if (!x.is_number()) fail("invalid_vector", "vector elements must be numeric");
-        double d = x.get<double>();
-        // Round-to-nearest float32 remains finite slightly above FLT_MAX.
-        // The midpoint to the next exponent, not FLT_MAX itself, is overflow.
-        const double overflow = std::ldexp(2.0 - std::ldexp(1.0, -24), 127);
-        if (!std::isfinite(d) || std::abs(d) >= overflow)
-            fail("invalid_vector", "vector value overflows finite float32");
-        const double maximum = static_cast<double>(std::numeric_limits<float>::max());
-        float f = d > maximum ? std::numeric_limits<float>::max()
-                : d < -maximum ? -std::numeric_limits<float>::max()
-                : static_cast<float>(d);
-        if (!std::isfinite(f)) fail("invalid_vector", "vector value is not finite float32");
-        v.push_back(f);
-    }
-    return v;
+    return parse_vector_literal(text, c.width);
 }
 static void put(std::string& s, uint64_t v, unsigned n) {
     for (unsigned i = 0; i < n; ++i) s.push_back(static_cast<char>(v >> (8 * i)));
