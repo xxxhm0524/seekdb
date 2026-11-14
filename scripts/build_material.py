@@ -4,10 +4,10 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-validation = ROOT/"validation/final-20261114"
+validation = ROOT/"validation/hardened-20261114"
 history = ROOT/"validation/audit-20261114"
 status = json.loads((validation/"ci-source.json").read_text(encoding="utf-8"))
-assert status["head_sha"] == "cf04b2446863f5abe3bbfbc312f49586de021d1a" and status["conclusion"] == "success"
+assert status["head_sha"] == "efca704aeaa0935e327e82f80a827d64b6e53402" and status["conclusion"] == "success"
 reports = []
 passed_count = 0
 paths = list(validation.glob("*.json")) + [p for p in history.glob("*.json") if not p.name.startswith(("linux-", "asan-", "ci-source"))]
@@ -23,7 +23,7 @@ for path in sorted(paths):
                         source_commit=status["head_sha"] if current else "pre-fix development build; see preserved original report",
                         source=status["html_url"] if current else path.relative_to(ROOT).as_posix(),
                         output=json.dumps(value, ensure_ascii=False, indent=2)))
-assert passed_count == 19
+assert passed_count == 22
 material = {
     "format": "actual-clean-rewrite-evidence-v1",
     "synthetic": False,
@@ -58,6 +58,7 @@ material = {
         "The user's objection led to a broader lifecycle audit. Four real defects were reproduced: unbounded committed history, token concatenation accepting malformed vectors, unneeded wide-text reads, and partial JSON publication when the spill file's final flush failed. The preserved red reports and passing regressions support the fixes; they do not retroactively establish that the earlier candidate was bug-free.",
         "A frozen public commit with author-published formal feedback was compiled as a reference. 1600 operations / 1629 requests across three tables agreed with both implementations and independent Python state. The original backslash escaping difference is recorded separately because the task does not specify that dialect choice. No public reference code or learning material was incorporated into the database core.",
         "The expanded capacity test used the actual 2 GiB memory budget with 2621440000 bytes of business text. Compaction was interrupted exactly before and after file replacement. Recovery was then repeatedly interrupted at the real truncation syscall, twice before and twice after it, without readiness between interruptions. Committed rows survived and uncommitted changes were rolled back. ASan, UBSan and library assertions covered the protocol, state machine, large tree, compaction and all 120 column layouts.",
+        "The final file-opening audit reproduced two data-preservation defects: unknown nonempty files were initialized as empty, and an injected allocation failure while decoding the latest catalog caused rollback to an older committed root and truncation. Unknown formats now fail without changing bytes. Only recognized interrupted-empty-initialization patterns are retried. Recovery validates candidates newest-first and propagates allocation/schema failures without downgrading acknowledged state. Both failures have retained red cases and passing production/sanitizer regressions.",
         "Local benchmark times and CI results are not formal platform scores. The nine retained formal inputs are unavailable. Formal admission and ranking require the platform to evaluate the locked submission."
     ],
     "limitations": [

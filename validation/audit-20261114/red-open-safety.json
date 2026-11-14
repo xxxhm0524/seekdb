@@ -1,0 +1,8 @@
+{
+  "passed": false,
+  "error": "unknown file was opened as an empty database",
+  "observed_file_bytes_before": 18,
+  "observed_file_bytes_after": 8194,
+  "original_sha256": "859f5272d593a781daa9cc407553425a5bf9921eecf66e280e69ad177bedb1c0",
+  "after_sha256": "d4eb2bfdc1e316f63b5181ce9085884040ffd2c27c9e9a4af2e04e28c6ee157b"
+}

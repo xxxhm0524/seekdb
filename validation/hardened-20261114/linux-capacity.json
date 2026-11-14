@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "rows": 5000,
+  "logical_payload_bytes": 163840000,
+  "database_bytes": 170394100,
+  "memory_limit_bytes": 100663296,
+  "container_memory_peak_bytes": 100663296,
+  "seconds": 5.226578057000012
+}
