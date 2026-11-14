@@ -1,5 +1,3 @@
 * text=auto eol=lf
 *.zip binary
 *.png binary
-third_party/rapidjson/** -text
-third_party/rapidjson.LICENSE -text

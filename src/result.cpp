@@ -41,16 +41,17 @@ void RowOutput::write(std::ostream& out) {
     while (input_) { input_.read(bytes.data(), bytes.size()); out.write(bytes.data(), input_.gcount()); }
     if (!input_.eof()) throw IoError("read response temporary file");
 }
-void Result::write(const Json& id, std::ostream& out, bool& output_started) {
-    fields["id"] = id; fields["ok"] = true;
-    if (!rows) {
-        std::string body = fields.dump(); output_started = true; out << body;
-    }
-    else {
-        std::string head = fields.dump(); head.pop_back();
-        rows->prepare();
-        output_started = true;
-        out << head << ",\"rows\":["; rows->write(out); out << "]}";
+void Result::write(std::string_view id, std::ostream& out, bool& output_started) {
+    fields["ok"] = true;
+    std::string body = fields.dump();
+    if (rows) { body.pop_back(); rows->prepare(); }
+    // Only the parser's validated raw value is streamed here. This preserves
+    // arbitrary-precision integers and composite IDs without reinterpreting them.
+    output_started = true;
+    out << "{\"id\":" << id << ',';
+    out.write(body.data() + 1, static_cast<std::streamsize>(body.size() - 1));
+    if (rows) {
+        out << ",\"rows\":["; rows->write(out); out << "]}";
     }
     out << '\n' << std::flush;
 }

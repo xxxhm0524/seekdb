@@ -87,10 +87,13 @@ class Parser {
         return tokens[at++].text;
     }
     uint64_t unsigned_integer() {
-        if (end() || tokens[at].quoted) fail("syntax_error", "expected unsigned integer");
+        if (end() || tokens[at].quoted || tokens[at].identifier || tokens[at].delimited) fail("syntax_error", "expected unsigned integer");
         auto s = tokens[at++].text;
-        uint64_t v = 0; auto r = std::from_chars(s.data(), s.data() + s.size(), v);
-        if (r.ec != std::errc{} || r.ptr != s.data() + s.size()) fail("invalid_value", "invalid unsigned integer");
+        const bool negative = !s.empty() && s[0] == '-';
+        const char* first = s.data();
+        if (!s.empty() && (s[0] == '+' || s[0] == '-')) ++first;
+        uint64_t v = 0; auto r = std::from_chars(first, s.data() + s.size(), v);
+        if (r.ec != std::errc{} || r.ptr != s.data() + s.size() || first == r.ptr || (negative && v)) fail("invalid_value", "invalid unsigned integer");
         return v;
     }
     Literal literal() {
@@ -102,10 +105,8 @@ class Parser {
                 if (end() || tokens[at].quoted || tokens[at].identifier || tokens[at].delimited)
                     fail("invalid_vector", "vector elements must be numeric literals");
                 const std::string number = tokens[at++].text;
-                try {
-                    Json value = Json::parse(number);
-                    if (!value.is_number()) fail("invalid_vector", "vector elements must be numeric literals");
-                } catch (const Json::exception&) { fail("invalid_vector", "invalid numeric vector literal"); }
+                // Preserve one numeric token per component; the typed vector
+                // binder validates SQL decimal syntax after dimension binding.
                 s += number;
                 if (take("]")) break;
                 need(","); s += ",";

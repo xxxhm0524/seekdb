@@ -31,11 +31,6 @@ def main():
     for name in ["json.hpp", "json.LICENSE.MIT"]:
         assert hashlib.sha256((ROOT/"third_party"/name).read_bytes()).hexdigest() == dependencies["nlohmann/json"][name+".sha256"]
     assert hashlib.sha256((ROOT/"third_party/GCC-RUNTIME-EXCEPTION-3.1.txt").read_bytes()).hexdigest() == dependencies["gcc-runtime-exception"]["GCC-RUNTIME-EXCEPTION-3.1.txt.sha256"]
-    rapid = dependencies["Tencent/rapidjson"]
-    assert rapid["commit"] == "297637bc0a0f00dc504dbc1a47ebdaa577f8ae19"
-    assert len(rapid["file_sha256"]) == 39
-    for name, expected in rapid["file_sha256"].items():
-        assert hashlib.sha256((ROOT/"third_party"/name).read_bytes()).hexdigest() == expected, "RapidJSON dependency changed: " + name
     # Official files must match the frozen upstream commit, including assertions.
     manifest = strict((ROOT/"validation/official-kit-sha256.json").read_text(encoding="utf-8"))
     assert manifest["upstream_commit"] == "f4d4e26653af823a7601668802f80e374ad6643c"

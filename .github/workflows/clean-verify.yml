@@ -1,7 +1,7 @@
 name: Clean MiniVectorDB verification
 on:
   push:
-    branches: ['rewrite/minivectordb-clean-20261114', 'audit/minivectordb-space-20261114', 'review/scored-reference-20261114', 'review/faster-than-scored-20261114', '2026-competition-round2']
+    branches: ['rewrite/minivectordb-clean-20261114', 'audit/minivectordb-space-20261114', 'review/scored-reference-20261114', 'review/faster-than-scored-20261114', 'audit/reference-boundaries-20261114', '2026-competition-round2']
   workflow_dispatch:
 permissions:
   contents: read
@@ -32,6 +32,14 @@ jobs:
         env:
           MVD_DOCKER_IMAGE: mvd-clean
         run: python3 tests/protocol_complete_input.py --output results/linux-complete-input
+      - name: Arbitrary-precision and composite request identifiers
+        env:
+          MVD_DOCKER_IMAGE: mvd-clean
+        run: python3 tests/protocol_ids.py --output results/linux-protocol-ids
+      - name: Successful-reference SQL decimal spellings
+        env:
+          MVD_DOCKER_IMAGE: mvd-clean
+        run: python3 tests/sql_numeric_forms.py --output results/linux-sql-numeric-forms
       - name: Independent invariants and real SIGKILL
         env:
           MVD_DOCKER_IMAGE: mvd-clean
@@ -119,6 +127,8 @@ jobs:
         run: python3 tests/capacity.py --output results/linux-capacity-2g --rows 40000 --payload 65536 --memory-mib 2048
       - name: Compare a publicly documented successful implementation
         run: MVD_BIN="$PWD/build/minivectordb" python3 tests/reference_differential.py --output results/linux-reference-differential
+      - name: Qualified reference boundary comparison
+        run: MVD_BIN="$PWD/build/minivectordb" python3 tests/reference_boundaries.py --reference-bin results/linux-reference-differential/reference-minivectordb --output results/linux-reference-boundaries
       - name: Preserve reports and stderr
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -154,6 +164,8 @@ jobs:
           python3 tests/column_layouts.py --output results/asan-column-layouts
           python3 tests/open_safety.py --output results/asan-open-safety
           python3 tests/protocol_complete_input.py --output results/asan-complete-input
+          python3 tests/protocol_ids.py --output results/asan-protocol-ids
+          python3 tests/sql_numeric_forms.py --output results/asan-sql-numeric-forms
           python3 tests/cache_column_sets.py --output results/asan-cache-column-sets
           python3 tests/cache_ranges.py --output results/asan-cache-ranges
           python3 tests/insert_batches.py --output results/asan-insert-batches

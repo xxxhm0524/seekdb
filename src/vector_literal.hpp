@@ -3,5 +3,5 @@
 #include <string_view>
 #include <vector>
 namespace mvd {
-std::vector<float> parse_vector_literal(std::string_view text, uint32_t dimensions);
+std::vector<float> parse_vector_literal(std::string_view text, uint32_t dimensions, bool sql_literals = false);
 }

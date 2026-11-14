@@ -42,7 +42,7 @@ Value parse_value(const Column& c, const std::string& text, bool quoted) {
         if (utf8_length(text) > c.width) fail("value_too_long", "VARCHAR exceeds its Unicode length");
         return text;
     }
-    return parse_vector_literal(text, c.width);
+    return parse_vector_literal(text, c.width, true);
 }
 static void put(std::string& s, uint64_t v, unsigned n) {
     for (unsigned i = 0; i < n; ++i) s.push_back(static_cast<char>(v >> (8 * i)));

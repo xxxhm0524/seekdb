@@ -1,7 +1,7 @@
 name: Exact batch distance feasibility
 on:
   push:
-    branches: ['review/scored-reference-20261114', 'review/faster-than-scored-20261114']
+    branches: ['review/scored-reference-20261114', 'review/faster-than-scored-20261114', 'audit/reference-boundaries-20261114']
     paths: ['src/exact_batch.hpp','src/vector_literal.*','tests/exact_batch_probe.cpp','tests/vector_literal_probe.cpp','.github/workflows/exact-batch-probe.yml']
   workflow_dispatch:
 permissions:

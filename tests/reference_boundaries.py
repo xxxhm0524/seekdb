@@ -55,7 +55,11 @@ def run(out, reference_binary, ours_binary=None):
         left, right = request(ours, value), request(reference, value)
         mismatch = left['ok'] != right['ok']
         if left['ok'] and right['ok']:
-            mismatch |= not close(left.get('rows'), right.get('rows')) or left.get('columns') != right.get('columns') or left.get('affected_rows') != right.get('affected_rows')
+            mismatch |= not close(left.get('rows'), right.get('rows')) or left.get('columns') != right.get('columns')
+            # DDL/TX may omit affected_rows; the official protocol permits that.
+            # Require this field only for INSERT/UPDATE/DELETE acknowledgements.
+            if sql.lstrip().split(None,1)[0].upper() in ['INSERT','UPDATE','DELETE']:
+                mismatch |= left.get('affected_rows') != right.get('affected_rows')
         qualifying = right['ok'] and (not left['ok'] or mismatch)
         truth_bad = expected is not None and (left['ok'] is not expected or right['ok'] is not expected)
         if rows is not None:
@@ -87,7 +91,7 @@ def run(out, reference_binary, ours_binary=None):
                 for quoted in [False, True]:
                     literal = '['+number+',0,0]'; literal = "'"+literal+"'" if quoted else literal
                     execute(f'SELECT id,L2_DISTANCE(v,{literal}) AS d FROM t ORDER BY d LIMIT 3;', 'vector_numeric')
-            for limit in ['0','1','+1','0002','16','17','18446744073709551615','-1','1.0','1e1']:
+            for limit in ['0','-0','-000','1','+1','0002','16','17','18446744073709551615','-1','1.0','1e1']:
                 execute(f"SELECT id,L2_DISTANCE(v,'[0,0,0]') AS d FROM t WHERE n>=0 ORDER BY d LIMIT {limit};",'limits')
             for sql in [
                 'SELECT id AS k,n FROM t ORDER BY k DESC LIMIT 3;',
@@ -104,6 +108,8 @@ def run(out, reference_binary, ours_binary=None):
                 'SELECT t.id FROM t;',
                 'SELECT id FROM t # comment',
             ]: execute(sql,'select_grammar')
+            for literal in ["'[1,\f0,0]'", "'[1/*ordinary*/,0,0]'", "'[1,--line\n0,0]'", "'[1 2,0]'", "'[1/**/2,0]'", "'[1,0,]'", "'[\"1\",0,0]'", "'[NaN,0,0]'"]:
+                execute(f'SELECT id,L2_DISTANCE(v,{literal}) AS d FROM t ORDER BY d LIMIT 3;','vector_lexical_boundaries')
         for i, width in enumerate(['+3','0003','3','0','-1','4294967296']):
             execute(f'CREATE TABLE ext{i}(id BIGINT PRIMARY KEY,v VECTOR({width}));','schema_extents')
         # Transactions include DDL and an error after an earlier successful write.

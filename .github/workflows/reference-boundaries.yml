@@ -31,6 +31,28 @@ jobs:
           chmod +x build/reference
       - name: Full-process protocol SQL transaction and vector boundaries
         run: python3 tests/reference_boundaries.py --reference-bin build/reference --ours-bin build/ours --output results/reference-boundaries
+      - name: Reproduce the frozen predecessor failures with the same oracle
+        run: |
+          git fetch --no-tags --depth=1 origin 2b96adab6659952701b876a4468e4011ac05793f
+          mkdir -p build/frozen-source
+          git archive 2b96adab6659952701b876a4468e4011ac05793f | tar -x -C build/frozen-source
+          docker build --platform linux/amd64 -t mvd-edge-frozen build/frozen-source
+          docker run --rm --entrypoint cat mvd-edge-frozen /app/minivectordb > build/frozen
+          chmod +x build/frozen
+          if python3 tests/reference_boundaries.py --reference-bin build/reference --ours-bin build/frozen --output results/pre-fix; then
+            echo 'Expected the unchanged predecessor to reproduce the recorded boundary failures'
+            exit 1
+          fi
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          path=Path('results/pre-fix/report.json')
+          value=json.loads(path.read_text())
+          assert value['passed'] is False and value['qualifying_failures']
+          path.rename(path.with_name('baseline-red.json'))
+          out=Path('results/baseline-regression-check');out.mkdir()
+          (out/'report.json').write_text(json.dumps({'passed':True,'expected_failure_reproduced':True,'qualifying_failure_observations':len(value['qualifying_failures']),'baseline_commit':'2b96adab6659952701b876a4468e4011ac05793f'},indent=2))
+          PY
       - name: Preserve every observation and discrepancy
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -39,4 +61,5 @@ jobs:
           path: |
             results/**/report.json
             results/**/requests.jsonl
+            results/**/baseline-red.json
             results/**/*.log

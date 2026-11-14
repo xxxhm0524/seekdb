@@ -7,9 +7,11 @@
 #endif
 
 namespace {
-void error_response(const mvd::Json& id, const std::string& code, const std::string& message) {
-    std::cout << mvd::Json({{"id", id}, {"ok", false}, {"error", {{"code", code}, {"message", message}}}}).dump()
-              << '\n' << std::flush;
+void error_response(std::string_view id, const std::string& code, const std::string& message) {
+    const std::string body = mvd::Json({{"ok", false}, {"error", {{"code", code}, {"message", message}}}}).dump();
+    std::cout << "{\"id\":" << id << ',';
+    std::cout.write(body.data() + 1, static_cast<std::streamsize>(body.size() - 1));
+    std::cout << '\n' << std::flush;
 }
 }
 int main(int argc, char** argv) {
@@ -28,21 +30,18 @@ int main(int argc, char** argv) {
         std::cout << "{\"type\":\"ready\"}\n" << std::flush;
         std::string line;
         while (std::getline(std::cin, line)) {
-            mvd::Json id = nullptr;
+            std::string_view id = "null";
             bool output_started = false;
             try {
-                mvd::Json request;
-                try { request = mvd::parse_request_json(line); }
-                catch (const mvd::Error&) { throw; }
-                catch (const mvd::Json::exception&) { mvd::fail("invalid_request", "malformed JSON"); }
-                if (!request.is_object() || !request.contains("id")) mvd::fail("invalid_request", "request must contain an id");
-                id = request["id"];
-                if (!request.contains("op") || !request["op"].is_string()) mvd::fail("invalid_request", "request requires string op");
-                std::string op = request["op"].get<std::string>();
+                auto request = mvd::parse_request_fields(line);
+                if (!request.contains("id")) mvd::fail("invalid_request", "request must contain an id");
+                id = request.at("id").raw;
+                if (!request.contains("op") || request.at("op").kind != '"') mvd::fail("invalid_request", "request requires string op");
+                const std::string& op = request.at("op").text;
                 if (op == "shutdown") { engine.shutdown(); mvd::Result{}.write(id, std::cout, output_started); return std::cout ? 0 : 1; }
-                if (op != "execute" || !request.contains("sql") || !request["sql"].is_string()) mvd::fail("invalid_request", "expected execute with SQL string");
-                if (request.contains("search_mode") && !request["search_mode"].is_string()) mvd::fail("invalid_request", "search_mode must be a string");
-                auto result = engine.execute(request["sql"].get_ref<const std::string&>(), request.value("search_mode", "exact"));
+                if (op != "execute" || !request.contains("sql") || request.at("sql").kind != '"') mvd::fail("invalid_request", "expected execute with SQL string");
+                if (request.contains("search_mode") && request.at("search_mode").kind != '"') mvd::fail("invalid_request", "search_mode must be a string");
+                auto result = engine.execute(request.at("sql").text, request.contains("search_mode") ? request.at("search_mode").text : "exact");
                 result.write(id, std::cout, output_started);
             } catch (const mvd::Error& error) {
                 if (output_started) { std::cerr << error.what() << '\n'; return 1; }

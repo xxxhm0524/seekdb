@@ -27,6 +27,6 @@ public:
 struct Result {
     Json fields = Json::object();
     std::unique_ptr<RowOutput> rows;
-    void write(const Json& id, std::ostream& out, bool& output_started);
+    void write(std::string_view id, std::ostream& out, bool& output_started);
 };
 }
