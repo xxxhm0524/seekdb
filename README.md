@@ -1,0 +1,116 @@
+# MiniVectorDB — clean rewrite
+
+这是从官方 `2026-competition-round2` 空白题包重新实现的 C++20 数据库。原先几个目录的数据库源码没有进入本实现。SQL、磁盘 B+ 树、事务、恢复、查询执行、外部排序和向量索引均自行编写；唯一第三方源码是固定版本的通用 JSON 库 nlohmann/json 3.11.3。
+
+赛题：[完成一个轻量向量数据库](https://oceanbase.yuque.com/org-wiki-obtech-vh7w9r/hc3pio/lg8enxlmwg69unt6)。官方题包基点：`f4d4e26653af823a7601668802f80e374ad6643c`。`STDIO_PROTOCOL.md`、`mysqltest/` 和 `protocol_check/` 保持官方内容。
+
+## 构建与运行
+
+正式目标为 Linux x86_64。两层基础镜像均按 digest 固定，JSON 依赖已随源码交付；编译阶段不联网，运行阶段无需网络。标准库静态链接，运行镜像不安装额外软件包。
+
+```bash
+docker build --platform linux/amd64 -t minivectordb-clean .
+mkdir -p data
+docker run --rm -i --read-only --network=none \
+  --cpus=2 --memory=2g --memory-swap=2g --pids-limit=128 \
+  -v "$PWD/data:/data" minivectordb-clean
+```
+
+容器以前台 JSONL 模式启动，主动输出 `{"type":"ready"}`。不开放端口、不使用 TTY。每条响应换行并立即 flush，stdout 不包含日志。完整格式见 [STDIO_PROTOCOL.md](STDIO_PROTOCOL.md)。
+
+```json
+{"id":1,"op":"execute","sql":"CREATE TABLE docs(id BIGINT PRIMARY KEY,tag VARCHAR(8),v VECTOR(2));"}
+{"id":2,"op":"execute","sql":"INSERT INTO docs VALUES(1,'中文','[3,4]'),(2,'x','[0,0]');"}
+{"id":3,"op":"execute","sql":"SELECT id,tag FROM docs ORDER BY id;"}
+{"id":4,"op":"execute","sql":"SELECT id,L2_DISTANCE(v,'[0,0]') AS distance FROM docs ORDER BY distance LIMIT 2;","search_mode":"exact"}
+{"id":5,"op":"execute","sql":"BEGIN;"}
+{"id":6,"op":"execute","sql":"UPDATE docs SET v='[1,0]' WHERE id=1;"}
+{"id":7,"op":"execute","sql":"ROLLBACK;"}
+{"id":8,"op":"execute","sql":"BEGIN;"}
+{"id":9,"op":"execute","sql":"DELETE FROM docs WHERE id=2;"}
+{"id":10,"op":"execute","sql":"COMMIT;"}
+{"id":11,"op":"shutdown"}
+```
+
+再次使用相同挂载目录启动，`SELECT * FROM docs;` 应只返回主键 1，向量为 `[3,4]`。测试中也直接终止数据库进程，以检查已经确认提交的数据不依赖 shutdown。
+
+本地编译需要支持 C++20 的 g++ 与 make，无需 CMake 或包管理器：
+
+```bash
+make -j2
+./minivectordb --data-dir ./data
+```
+
+Windows/MSYS2 使用 `mingw32-make`，生成 `minivectordb.exe`；正式验收仍使用 Linux 镜像。
+
+## 模块与职责
+
+| 文件 | 职责 |
+| --- | --- |
+| `src/main.cpp` | JSONL 校验、请求分派、握手与进程退出 |
+| `src/sql.*` | SQL 词法分析与语法树；解析完整语句后才执行 |
+| `src/model.*` | BIGINT、Unicode、float32 校验，二进制记录编码 |
+| `src/storage.*`、`src/btree.cpp` | 文件 I/O、有界页缓存、磁盘 B+ 树、提交根 |
+| `src/engine.*` | 自动提交、显式事务、语句原子性与 DDL |
+| `src/query.cpp` | 条件绑定、投影、TopK、外部归并排序 |
+| `src/vector_index.*` | 有界向量快照、KD 树与精确下界剪枝 |
+| `src/result.*` | 大响应在数据目录暂存，完整生成后才输出 |
+
+没有数据库引擎或向量检索引擎依赖。依赖版本、校验和及许可证位于 `third_party/`。
+
+## 存储与恢复
+
+持久文件为 `/data/database.mvd`。前两个 4096 字节页是交替使用的提交根，包含版本、递增代号、catalog 位置、有效文件末尾和 FNV-1a 64 位校验。之后是追加的记录、对齐的 B+ 树页和 catalog；BIGINT 与 float32 使用明确的小端编码，字符串按字节保存 UTF-8。
+
+B+ 树叶页保存有符号 BIGINT 主键到记录位置的映射。树页按需读取；不在内存维护全表主键目录。更新采用写时复制：只允许修改当前 SQL 语句自己创建的树页，已提交页及先前成功语句的页保持不可变。删除保留合法的路由边界，空叶页允许后续重插。
+
+每条修改语句先复制小型 catalog，记录文件回退位置，再执行到新的树根。失败时丢弃本语句新页并截断到回退位置；事务中此前成功的语句仍然可读、可提交。显式 ROLLBACK 恢复上次提交根并回收未提交尾部。未显式 BEGIN 时，一条修改语句就是一个自动提交事务。
+
+提交顺序固定为：写记录和 catalog → 写出脏树页 → `fdatasync` → 写另一份提交根 → 再次 `fdatasync` → 返回成功。提交期间的 I/O 异常会结束进程，不在提交结果可能已生效时尝试反向回滚。Windows 自测使用 `_commit`。
+
+恢复选择代号最新且校验有效的提交根，读取 catalog，截断未提交尾部，清理本实现的临时文件；有界向量索引的恢复准备在 ready 前完成。恢复不回写已提交页，因此重复终止恢复不会把已提交页改坏。崩溃测试针对进程强杀；不声称覆盖外部篡改或硬盘损坏。
+
+## 查询与内存
+
+支持 CREATE TABLE、CREATE VECTOR INDEX、INSERT（含多行和完整列名重排）、SELECT、UPDATE、DELETE、BEGIN、COMMIT、ROLLBACK。支持 BIGINT、VARCHAR(n)、VECTOR(n)，每表一个 BIGINT 主键、最多一个向量列；支持比较运算、AND、多列 ORDER BY、LIMIT、列别名和 L2_DISTANCE。不支持的 JOIN、聚合、子查询、ALTER、NULL、主键更新及嵌套事务返回错误。
+
+VARCHAR 长度按 Unicode 码点计算；合法 UTF-8 的字节字典序与码点顺序一致。BIGINT 不经浮点中转。向量和查询向量均先转换成有限 float32，再以 double 按维度顺序累加平方距离，返回欧氏距离；编译禁用 FMA 收缩，未启用 fast-math。有限 float32 的转换临界值按舍入后的结果判断，而非误用 `FLT_MAX` 作为十进制输入上界。
+
+过滤先于 TopK。距离和普通排序出现并列时，按主键升序确定次序。小 LIMIT 使用有界堆；大 LIMIT 或无 LIMIT 的排序分批写运行段，最多同时归并 32 个文件。查询响应超过 256 KiB 后在 `/data` 暂存，避免结果集一直留在堆中。
+
+页缓存默认 4 MiB。向量快照及 KD 树共用默认 16 MiB 预算；超过预算的表使用磁盘精确扫描，不加载整表。KD 树用 float32 包围盒计算 L2 下界，只排除下界严格大于当前最差距离的子树，保留并列主键规则。`exact` 和 `ann` 都提供精确结果；本实现没有以降低召回率换速度。任何修改或事务控制都会清除派生快照，防止回滚后的地址复用造成陈旧结果。
+
+自测可通过 `MVD_PAGE_CACHE_MIB`（0–64；0 表示最小 8 页）和 `MVD_VECTOR_CACHE_MIB`（0–64；0 关闭快照）降低缓存。正式默认值不随测试输入改变。
+
+catalog、单条 SQL 输入和单条记录仍需能放入内存；分页和外部排序用于处理总数据量超过内存的数据库。当前未做在线压缩和已提交历史页回收，随机小记录更新有明显写放大；不兼容之前实现的数据格式。这些限制没有通过隐藏异常或省略持久化来规避。
+
+## 验证
+
+Linux 容器 CI：[完整验证 793df48](https://github.com/xxxhm0524/seekdb/actions/runs/43567187796)。具体 JSON 报告在 `validation/`。这些是公开用例与独立扩展测试，不能替代平台的 29 个正式用例或正式得分。
+
+* 未修改的官方驱动和公开断言：20/20。
+* 500 步独立随机状态机，覆盖查询、失败语句、提交、回滚和强杀。
+* 60000 个打乱的主键：多层分裂、极小页缓存、全删回滚、删除与重插、跨缓存的晚期失败。
+* 外部排序和约 8 MB 大响应；Unicode、BIGINT 极值、非法向量和 float32 临界舍入。
+* KD 路径及关闭向量缓存的磁盘路径：共 1008 次极端 float32 查询，与独立顺序累加 oracle 比较。
+* 14 次提交中断，核对双表原子性、确认提交持久性和未确认提交的全有或全无；另有 15 次启动中断。
+* 96 MiB cgroup 容器中写入 163840000 字节业务负载，数据库约 170 MB，完成查询、提交、回滚和强杀恢复。
+* 10000 行 × 128 维，1000 次 TopK10，一半含普通列过滤：两组 Recall@10 均为 1.0。Linux CI 的写入约 1.80 秒、查询约 1.85 秒；时间包含本地驱动开销，不是官方性能分。
+
+```bash
+python3 protocol_check/run.py --image minivectordb-clean --output results/official
+python3 tests/client.py --output results/local-public
+python3 tests/invariants.py --output results/local-invariants
+# 下列 oracle 测试需要 NumPy；CI 单独使用锁定的 2.2.6，不进入运行镜像
+python3 tests/benchmark.py --output results/local-benchmark
+python3 tests/vector_edges.py --output results/local-vector-edges
+MVD_DOCKER_IMAGE=minivectordb-clean python3 tests/capacity.py --output results/capacity
+python3 tests/crash_commit.py --output results/crash-commit
+python3 tests/contract.py
+```
+
+## 提交材料
+
+正式提交使用已登记仓库的 `2026-competition-round2` 分支和完整 40 位 SHA。根目录 `conversation.json` 与 `agent/conversation.json` 内容相同，均为 UTF-8 JSON 对象，低于 128 KiB。材料保留本次重写的真实用户发言、明确归属 Agent 的实现说明和实际测试输出，不把 Agent 的工作伪装为学生自己的解释。
+
+查阅过公开的 [juanzhi-gcb/seekdb](https://github.com/juanzhi-gcb/seekdb/tree/2026-competition-round2) 及其独立复核记录，用于核查协议、常见边界和验证方式；未复制其数据库实现或任何人的学习材料。公开 README 中报告的正式成绩仅属于原作者。

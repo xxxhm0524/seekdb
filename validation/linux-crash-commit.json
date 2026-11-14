@@ -1,0 +1,78 @@
+{
+  "passed": true,
+  "commit_interruptions": [
+    {
+      "delay_seconds": 0,
+      "acknowledged": false,
+      "recovered_generation": 0
+    },
+    {
+      "delay_seconds": 0.0001,
+      "acknowledged": false,
+      "recovered_generation": 0
+    },
+    {
+      "delay_seconds": 0.0005,
+      "acknowledged": false,
+      "recovered_generation": 0
+    },
+    {
+      "delay_seconds": 0.001,
+      "acknowledged": true,
+      "recovered_generation": 4
+    },
+    {
+      "delay_seconds": 0.003,
+      "acknowledged": true,
+      "recovered_generation": 5
+    },
+    {
+      "delay_seconds": 0.01,
+      "acknowledged": true,
+      "recovered_generation": 6
+    },
+    {
+      "delay_seconds": 0.03,
+      "acknowledged": true,
+      "recovered_generation": 7
+    },
+    {
+      "delay_seconds": 0,
+      "acknowledged": false,
+      "recovered_generation": 7
+    },
+    {
+      "delay_seconds": 0.0001,
+      "acknowledged": false,
+      "recovered_generation": 7
+    },
+    {
+      "delay_seconds": 0.0005,
+      "acknowledged": false,
+      "recovered_generation": 7
+    },
+    {
+      "delay_seconds": 0.001,
+      "acknowledged": false,
+      "recovered_generation": 7
+    },
+    {
+      "delay_seconds": 0.003,
+      "acknowledged": true,
+      "recovered_generation": 12
+    },
+    {
+      "delay_seconds": 0.01,
+      "acknowledged": true,
+      "recovered_generation": 13
+    },
+    {
+      "delay_seconds": 0.03,
+      "acknowledged": true,
+      "recovered_generation": 14
+    }
+  ],
+  "startup_interruptions": 15,
+  "startup_kills_before_ready": 6,
+  "committed_rows": 3501
+}

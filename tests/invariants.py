@@ -167,6 +167,9 @@ def value_boundaries(directory):
         for request_id in [9007199254740993, -9223372036854775808, "test", None, {"nested": [1, 2]}]:
             response = db.send(dict(id=request_id, op="execute", sql="SELECT id FROM unicode_table;"))
             assert response["ok"]
+        db.execute("CREATE TABLE `select` (`l2_distance` BIGINT PRIMARY KEY,`from` VARCHAR(3));")
+        db.execute("INSERT INTO `select` VALUES(1,'中😀');")
+        assert db.execute("SELECT l2_distance,`from` FROM `select`;")["rows"] == [[1,"中😀"]]
         db.restart(crash=True)
         assert db.execute("SELECT * FROM unicode_table;")["rows"] == r
         return {"invalid_values_rejected": 21, "unicode_and_bigint": True}

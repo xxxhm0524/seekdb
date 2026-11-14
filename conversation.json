@@ -1,0 +1,106 @@
+{
+  "format": "actual-clean-rewrite-evidence-v1",
+  "synthetic": false,
+  "date": "2026-11-14",
+  "scope": "All user instructions for the clean rewrite are included verbatim below. Agent responses and tool results are selected factual records. The older implementation and older conversations are outside this rewrite. Hidden reasoning, credentials, unrelated conversations and generated test databases are omitted.",
+  "attribution": "The implementation, technical explanations and test design below are Agent work. The user supplied the task and the explicit decision to replace the earlier implementation. No student explanation of database mechanisms or experiments has been invented, and Agent work must not be treated as proof of student understanding.",
+  "conversations": [
+    {
+      "id": "user-task",
+      "role": "user",
+      "content": "/goal [https://oceanbase.yuque.com/org-wiki-obtech-vh7w9r/hc3pio/lg8enxlmwg69unt6](https://oceanbase.yuque.com/org-wiki-obtech-vh7w9r/hc3pio/lg8enxlmwg69unt6)请你独立完成这道赛题，之前对话写的代码有很多问题，来来回回修改了10次也无法得分。对此你也可以看别人执行成功并得分的github的公开仓库中的代码"
+    },
+    {
+      "id": "user-rewrite",
+      "role": "user",
+      "content": "我觉得你在之前代码的基础上完成不如完全重新完成，那里已经成为了史山代码"
+    },
+    {
+      "id": "agent-rewrite",
+      "role": "assistant",
+      "content": "可以，改为从零重写。我会在新的独立目录中实现，旧代码保留作备份；只使用官方规则、协议和测试来建立验收标准。新实现会把 SQL、存储、事务恢复和向量查询分开，便于逐层验证。"
+    },
+    {
+      "id": "agent-red-loop",
+      "role": "assistant",
+      "content": "验收循环已跑通：官方空壳程序在 20 个公开用例中全部返回 NOT_IMPLEMENTED，测试能明确检出功能缺失。Windows 下官方驱动的进程通信层无法运行，我补了本地通信适配，断言仍使用未修改的官方比较器；后续还会在 Linux 容器中复测。"
+    },
+    {
+      "id": "agent-linux-progress",
+      "role": "assistant",
+      "content": "完整 Linux 容器验证已通过，包括把约 164 MB 业务数据放进 96 MiB 内存容器后进行查询、提交、回滚和强杀恢复。接下来整理运行说明、真实的 conversation.json 和提交包，再将验证版本合入规定的 2026-competition-round2 分支。"
+    }
+  ],
+  "agent_design": [
+    "Committed B+ tree pages are immutable. Each SQL statement owns a new set of pages and a tail mark. On statement failure the new tail is discarded, preserving earlier successful statements in the transaction.",
+    "Commit writes all data and pages, syncs the file, publishes a checksummed alternate root, and syncs again before acknowledging success. Recovery selects a valid root and truncates only uncommitted tail data; it does not replay updates into committed pages.",
+    "Table data and primary-key directories remain on disk. A bounded page cache, bounded vector snapshot/KD tree, external sorting and spooled responses avoid loading the whole database or result set.",
+    "Both search modes return exact results. Ordinary predicates are applied before candidate selection. KD bounds only prune strictly worse subtrees, retaining ties and primary-key ordering. Float32 storage/query conversion and ordered double accumulation are independently checked."
+  ],
+  "experiments": [
+    {
+      "id": "linux-benchmark",
+      "source_commit": "793df48ad26f093d3459ae453376ae8f538bb58e",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43567187796",
+      "output": "{\n  \"passed\": true,\n  \"rows\": 10000,\n  \"dimensions\": 128,\n  \"queries\": 1000,\n  \"seed\": 194709,\n  \"write_seconds\": 1.8037056959999944,\n  \"query_prepare_seconds\": 0.11472833999999921,\n  \"query_seconds\": 1.8506158900000003,\n  \"recall\": {\n    \"unfiltered\": 1.0,\n    \"filtered\": 1.0\n  },\n  \"database_bytes\": 7223152,\n  \"numpy_version\": \"2.2.6\",\n  \"note\": \"Local task-shaped measurement, not platform scores or official T/B/M accounting.\"\n}"
+    },
+    {
+      "id": "linux-capacity",
+      "source_commit": "793df48ad26f093d3459ae453376ae8f538bb58e",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43567187796",
+      "output": "{\n  \"passed\": true,\n  \"rows\": 5000,\n  \"logical_payload_bytes\": 163840000,\n  \"database_bytes\": 170394077,\n  \"memory_limit_bytes\": 100663296,\n  \"container_memory_peak_bytes\": 100663296,\n  \"seconds\": 5.997774501000009\n}"
+    },
+    {
+      "id": "linux-crash-commit",
+      "source_commit": "793df48ad26f093d3459ae453376ae8f538bb58e",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43567187796",
+      "output": "{\n  \"passed\": true,\n  \"commit_interruptions\": [\n    {\n      \"delay_seconds\": 0,\n      \"acknowledged\": false,\n      \"recovered_generation\": 0\n    },\n    {\n      \"delay_seconds\": 0.0001,\n      \"acknowledged\": false,\n      \"recovered_generation\": 0\n    },\n    {\n      \"delay_seconds\": 0.0005,\n      \"acknowledged\": false,\n      \"recovered_generation\": 0\n    },\n    {\n      \"delay_seconds\": 0.001,\n      \"acknowledged\": true,\n      \"recovered_generation\": 4\n    },\n    {\n      \"delay_seconds\": 0.003,\n      \"acknowledged\": true,\n      \"recovered_generation\": 5\n    },\n    {\n      \"delay_seconds\": 0.01,\n      \"acknowledged\": true,\n      \"recovered_generation\": 6\n    },\n    {\n      \"delay_seconds\": 0.03,\n      \"acknowledged\": true,\n      \"recovered_generation\": 7\n    },\n    {\n      \"delay_seconds\": 0,\n      \"acknowledged\": false,\n      \"recovered_generation\": 7\n    },\n    {\n      \"delay_seconds\": 0.0001,\n      \"acknowledged\": false,\n      \"recovered_generation\": 7\n    },\n    {\n      \"delay_seconds\": 0.0005,\n      \"acknowledged\": false,\n      \"recovered_generation\": 7\n    },\n    {\n      \"delay_seconds\": 0.001,\n      \"acknowledged\": false,\n      \"recovered_generation\": 7\n    },\n    {\n      \"delay_seconds\": 0.003,\n      \"acknowledged\": true,\n      \"recovered_generation\": 12\n    },\n    {\n      \"delay_seconds\": 0.01,\n      \"acknowledged\": true,\n      \"recovered_generation\": 13\n    },\n    {\n      \"delay_seconds\": 0.03,\n      \"acknowledged\": true,\n      \"recovered_generation\": 14\n    }\n  ],\n  \"startup_interruptions\": 15,\n  \"startup_kills_before_ready\": 6,\n  \"committed_rows\": 3501\n}"
+    },
+    {
+      "id": "linux-invariants",
+      "source_commit": "793df48ad26f093d3459ae453376ae8f538bb58e",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43567187796",
+      "output": "{\n  \"passed\": true,\n  \"tests\": [\n    {\n      \"test\": \"value_boundaries\",\n      \"passed\": true,\n      \"details\": {\n        \"invalid_values_rejected\": 21,\n        \"unicode_and_bigint\": true\n      },\n      \"seconds\": 0.4182059860000038\n    },\n    {\n      \"test\": \"state_machine\",\n      \"passed\": true,\n      \"details\": {\n        \"operations\": 500,\n        \"rows\": 56\n      },\n      \"seconds\": 8.814985485000008\n    },\n    {\n      \"test\": \"btree_depth\",\n      \"passed\": true,\n      \"details\": {\n        \"rows\": 60000,\n        \"database_bytes\": 307569875\n      },\n      \"seconds\": 5.2498649839999985\n    },\n    {\n      \"test\": \"external_sort\",\n      \"passed\": true,\n      \"details\": {\n        \"sorted_rows\": 9000,\n        \"response_bytes\": 8145955\n      },\n      \"seconds\": 0.9944584930000104\n    }\n  ]\n}"
+    },
+    {
+      "id": "linux-official",
+      "source_commit": "793df48ad26f093d3459ae453376ae8f538bb58e",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43567187796",
+      "output": "{\n  \"scope\": \"public-protocol-check\",\n  \"passed\": true,\n  \"cases\": [\n    {\n      \"id\": \"sql_crud\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 330\n    },\n    {\n      \"id\": \"sql_comparisons\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 226\n    },\n    {\n      \"id\": \"sql_ordering\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 234\n    },\n    {\n      \"id\": \"sql_empty\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 190\n    },\n    {\n      \"id\": \"sql_primary_key\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 214\n    },\n    {\n      \"id\": \"sql_unicode\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 220\n    },\n    {\n      \"id\": \"sql_bigint\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 185\n    },\n    {\n      \"id\": \"sql_unsupported\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 193\n    },\n    {\n      \"id\": \"storage_restart\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 369\n    },\n    {\n      \"id\": \"vector_euclidean\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 188\n    },\n    {\n      \"id\": \"transaction_commit\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 223\n    },\n    {\n      \"id\": \"transaction_rollback\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 197\n    },\n    {\n      \"id\": \"storage_mutations\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 342\n    },\n    {\n      \"id\": \"storage_multiple_tables\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 336\n    },\n    {\n      \"id\": \"vector_ties_and_filter\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 228\n    },\n    {\n      \"id\": \"vector_float32\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 190\n    },\n    {\n      \"id\": \"vector_index_maintenance\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 340\n    },\n    {\n      \"id\": \"transaction_failed_insert\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 403\n    },\n    {\n      \"id\": \"transaction_autocommit_atomic\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 334\n    },\n    {\n      \"id\": \"transaction_shutdown_rollback\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 372\n    }\n  ],\n  \"note\": \"Local diagnostic only; no performance/Agent scores or platform callbacks.\"\n}"
+    },
+    {
+      "id": "linux-portable",
+      "source_commit": "793df48ad26f093d3459ae453376ae8f538bb58e",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43567187796",
+      "output": "{\n  \"passed\": true,\n  \"cases\": [\n    {\n      \"id\": \"sql_crud\",\n      \"passed\": true,\n      \"seconds\": 0.19382784500000128\n    },\n    {\n      \"id\": \"sql_comparisons\",\n      \"passed\": true,\n      \"seconds\": 0.20064357500000085\n    },\n    {\n      \"id\": \"sql_ordering\",\n      \"passed\": true,\n      \"seconds\": 0.18425314499999956\n    },\n    {\n      \"id\": \"sql_empty\",\n      \"passed\": true,\n      \"seconds\": 0.1835186299999947\n    },\n    {\n      \"id\": \"sql_primary_key\",\n      \"passed\": true,\n      \"seconds\": 0.18353344899999513\n    },\n    {\n      \"id\": \"sql_unicode\",\n      \"passed\": true,\n      \"seconds\": 0.18648570300000245\n    },\n    {\n      \"id\": \"sql_bigint\",\n      \"passed\": true,\n      \"seconds\": 0.18619271000000026\n    },\n    {\n      \"id\": \"sql_unsupported\",\n      \"passed\": true,\n      \"seconds\": 0.1808631340000062\n    },\n    {\n      \"id\": \"storage_restart\",\n      \"passed\": true,\n      \"seconds\": 0.3531078979999904\n    },\n    {\n      \"id\": \"vector_euclidean\",\n      \"passed\": true,\n      \"seconds\": 0.18180260100000112\n    },\n    {\n      \"id\": \"transaction_commit\",\n      \"passed\": true,\n      \"seconds\": 0.18862611099999071\n    },\n    {\n      \"id\": \"transaction_rollback\",\n      \"passed\": true,\n      \"seconds\": 0.191528237\n    },\n    {\n      \"id\": \"storage_mutations\",\n      \"passed\": true,\n      \"seconds\": 0.35371236599999634\n    },\n    {\n      \"id\": \"storage_multiple_tables\",\n      \"passed\": true,\n      \"seconds\": 0.3465488079999943\n    },\n    {\n      \"id\": \"vector_ties_and_filter\",\n      \"passed\": true,\n      \"seconds\": 0.18591096900000537\n    },\n    {\n      \"id\": \"vector_float32\",\n      \"passed\": true,\n      \"seconds\": 0.17962968400000534\n    },\n    {\n      \"id\": \"vector_index_maintenance\",\n      \"passed\": true,\n      \"seconds\": 0.3527456870000094\n    },\n    {\n      \"id\": \"transaction_failed_insert\",\n      \"passed\": true,\n      \"seconds\": 0.3518318650000083\n    },\n    {\n      \"id\": \"transaction_autocommit_atomic\",\n      \"passed\": true,\n      \"seconds\": 0.3599096429999946\n    },\n    {\n      \"id\": \"transaction_shutdown_rollback\",\n      \"passed\": true,\n      \"seconds\": 0.3534084519999965\n    }\n  ],\n  \"scope\": \"official assertions with portable local transport; not an official score\"\n}"
+    },
+    {
+      "id": "linux-vector-edges",
+      "source_commit": "793df48ad26f093d3459ae453376ae8f538bb58e",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43567187796",
+      "output": "{\n  \"passed\": true,\n  \"variants\": [\n    {\n      \"passed\": true,\n      \"queries\": 504,\n      \"rows\": 257,\n      \"dimensions\": 33,\n      \"vector_cache_mib\": \"16\"\n    },\n    {\n      \"passed\": true,\n      \"queries\": 504,\n      \"rows\": 257,\n      \"dimensions\": 33,\n      \"vector_cache_mib\": \"0\"\n    }\n  ]\n}"
+    },
+    {
+      "id": "float-conversion-red",
+      "source": "local portable transport with unchanged official assertions",
+      "output": "{\n  \"passed\": false,\n  \"tests\": [\n    {\n      \"test\": \"value_boundaries\",\n      \"passed\": false,\n      \"error\": \"(\\\"INSERT INTO unicode_table VALUES (0,3,'max','[3.4028235e38,-3.4028235e38]');\\\", {'error': {'code': 'invalid_vector', 'message': 'vector value overflows finite float32'}, 'id': 20, 'ok': False})\",\n      \"traceback\": \"Traceback (most recent call last):\\n  File \\\"D:\\\\oceanbase\\\\minivectordb-clean\\\\tests\\\\invariants.py\\\", line 204, in main\\n    details = test(root / name)\\n  File \\\"D:\\\\oceanbase\\\\minivectordb-clean\\\\tests\\\\invariants.py\\\", line 148, in value_boundaries\\n    db.execute(\\\"INSERT INTO unicode_table VALUES (0,3,'max','[3.4028235e38,-3.4028235e38]');\\\")\\n    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\n  File \\\"D:\\\\oceanbase\\\\minivectordb-clean\\\\tests\\\\client.py\\\", line 72, in execute\\n    assert response[\\\"ok\\\"] is ok, (sql, response)\\n           ^^^^^^^^^^^^^^^^^^^^\\nAssertionError: (\\\"INSERT INTO unicode_table VALUES (0,3,'max','[3.4028235e38,-3.4028235e38]');\\\", {'error': {'code': 'invalid_vector', 'message': 'vector value overflows finite float32'}, 'id': 20, 'ok': False})\\n\",\n      \"seconds\": 0.041338999988511205\n    },\n    {\n      \"test\": \"state_machine\",\n      \"passed\": true,\n      \"details\": {\n        \"operations\": 500,\n        \"rows\": 56\n      },\n      \"seconds\": 1.4870910000172444\n    },\n    {\n      \"test\": \"btree_depth\",\n      \"passed\": true,\n      \"details\": {\n        \"rows\": 3000,\n        \"database_bytes\": 2048864\n      },\n      \"seconds\": 0.26677839999319986\n    },\n    {\n      \"test\": \"external_sort\",\n      \"passed\": true,\n      \"details\": {\n        \"sorted_rows\": 1000,\n        \"response_bytes\": 905077\n      },\n      \"seconds\": 0.13329929998144507\n    }\n  ]\n}"
+    },
+    {
+      "id": "float-conversion-green",
+      "source": "local portable transport with unchanged official assertions",
+      "output": "{\n  \"passed\": true,\n  \"tests\": [\n    {\n      \"test\": \"value_boundaries\",\n      \"passed\": true,\n      \"details\": {\n        \"invalid_values_rejected\": 21,\n        \"unicode_and_bigint\": true\n      },\n      \"seconds\": 0.0591052999952808\n    },\n    {\n      \"test\": \"state_machine\",\n      \"passed\": true,\n      \"details\": {\n        \"operations\": 500,\n        \"rows\": 56\n      },\n      \"seconds\": 1.5583212999918032\n    },\n    {\n      \"test\": \"btree_depth\",\n      \"passed\": true,\n      \"details\": {\n        \"rows\": 3000,\n        \"database_bytes\": 2048864\n      },\n      \"seconds\": 0.2537016999849584\n    },\n    {\n      \"test\": \"external_sort\",\n      \"passed\": true,\n      \"details\": {\n        \"sorted_rows\": 1000,\n        \"response_bytes\": 905077\n      },\n      \"seconds\": 0.12293640000279993\n    }\n  ]\n}"
+    }
+  ],
+  "agent_retrospective": [
+    "The first newly written version passed the 20 public cases, but that was not treated as formal admission. Independent state-machine, large-tree, external-sort, SIGKILL, hostile float32 and low-memory tests were then run.",
+    "An added boundary test initially failed for the finite float32 decimal 3.4028235e38. Comparing the input double directly to FLT_MAX incorrectly rejected a value that rounds to finite float32. The threshold was changed to the overflow rounding midpoint. The failing record and successful retest are preserved below.",
+    "The low-memory test actually stored 163840000 payload bytes in a container limited to 100663296 bytes. This is evidence for external-memory handling, not a claim based on an in-memory simulation.",
+    "Local benchmark times and CI results are not formal platform scores. The nine retained formal inputs are unavailable. Formal admission and ranking require the platform to evaluate the locked submission."
+  ],
+  "limitations": [
+    "No real student technical interpretation was supplied during this autonomous rewrite; no such interpretation is synthesized here.",
+    "No online compaction of committed historical pages; random updates of small rows can amplify writes and file growth.",
+    "The active catalog, one SQL request and one decoded row must individually fit memory. The database as a whole need not fit memory.",
+    "For tables beyond the vector cache budget, exact disk scans preserve correctness and recall but can be slower."
+  ]
+}

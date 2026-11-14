@@ -75,7 +75,7 @@ class Parser {
     bool take(const std::string& text) { if (is(text)) { ++at; return true; } return false; }
     void need(const std::string& text) { if (!take(text)) fail("syntax_error", "expected " + text); }
     std::string identifier() {
-        if (end() || !tokens[at].identifier) fail("syntax_error", "expected identifier");
+        if (end() || !tokens[at].identifier || tokens[at].text.empty()) fail("syntax_error", "expected identifier");
         return tokens[at++].text;
     }
     uint64_t unsigned_integer() {
@@ -99,7 +99,8 @@ class Parser {
     }
     Expr expr(bool alias) {
         Expr e;
-        if (take("l2_distance")) {
+        if (is("l2_distance") && at + 1 < tokens.size() && tokens[at+1].text == "(" && !tokens[at+1].quoted) {
+            ++at;
             need("("); e.column = identifier(); need(","); e.vector = literal(); need(")");
         } else e.column = identifier();
         if (alias && take("as")) e.alias = identifier();

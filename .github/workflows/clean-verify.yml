@@ -12,7 +12,16 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - name: Build locked Linux image
-        run: docker build --pull -t mvd-clean .
+        run: docker build --pull --platform linux/amd64 -t mvd-clean .
+      - name: Submission contract
+        run: python3 tests/contract.py
+      - name: Preserve image and source provenance
+        run: |
+          mkdir -p results/provenance
+          git rev-parse HEAD > results/provenance/commit.txt
+          docker image inspect --format '{{.Id}}' mvd-clean > results/provenance/image.txt
+          docker run --rm --entrypoint cat mvd-clean /app/build-info/compiler-version.txt > results/provenance/compiler.txt
+          docker run --rm --entrypoint cat mvd-clean /app/build-info/binary.sha256 > results/provenance/binary-sha256.txt
       - name: Official protocol and all public assertions
         run: python3 protocol_check/run.py --image mvd-clean --output results/linux-official
       - name: Portable transport against actual container
@@ -55,4 +64,5 @@ jobs:
             results/**/result.json
             results/**/cases.json
             results/**/*.log
+            results/provenance/*.txt
           if-no-files-found: warn
