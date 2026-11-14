@@ -1,25 +1,12 @@
 #include "engine.hpp"
+#include "request.hpp"
 #include <iostream>
-#include <set>
 #ifdef _WIN32
 #include <fcntl.h>
 #include <io.h>
 #endif
 
 namespace {
-mvd::Json strict_json(const std::string& line) {
-    if (line.find('\0') != std::string::npos) mvd::fail("invalid_request", "raw NUL in JSON request");
-    std::vector<std::set<std::string>> objects;
-    auto callback = [&](int, mvd::Json::parse_event_t event, mvd::Json& value) {
-        using Event = mvd::Json::parse_event_t;
-        if (event == Event::object_start) objects.emplace_back();
-        else if (event == Event::object_end) objects.pop_back();
-        else if (event == Event::key && !objects.back().insert(value.get<std::string>()).second)
-            mvd::fail("invalid_request", "duplicate JSON object key");
-        return true;
-    };
-    return mvd::Json::parse(line, callback);
-}
 void error_response(const mvd::Json& id, const std::string& code, const std::string& message) {
     std::cout << mvd::Json({{"id", id}, {"ok", false}, {"error", {{"code", code}, {"message", message}}}}).dump()
               << '\n' << std::flush;
@@ -45,7 +32,7 @@ int main(int argc, char** argv) {
             bool output_started = false;
             try {
                 mvd::Json request;
-                try { request = strict_json(line); }
+                try { request = mvd::parse_request_json(line); }
                 catch (const mvd::Error&) { throw; }
                 catch (const mvd::Json::exception&) { mvd::fail("invalid_request", "malformed JSON"); }
                 if (!request.is_object() || !request.contains("id")) mvd::fail("invalid_request", "request must contain an id");

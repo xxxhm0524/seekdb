@@ -92,6 +92,14 @@ jobs:
             g++ -Isrc -Ithird_party -std=c++20 -O3 -DNDEBUG -ffp-contract=off -static-libstdc++ -static-libgcc \
             tests/certified_screen_probe.cpp src/vector_index.cpp src/storage.cpp src/record_reader.cpp src/model.cpp src/btree.cpp src/compaction.cpp src/vector_literal.cpp -o /out/certified-screen-probe
           build/certified-screen-probe results/linux-certified-screen-data | tee results/linux-certified-screen/report.json
+      - name: Production-toolchain strict JSON decoder parity
+        run: |
+          mkdir -p results/linux-json-request
+          docker run --rm --network=none -v "$PWD:/src:ro" -v "$PWD/build:/out" -w /src \
+            gcc:13.5.0-bookworm@sha256:8c0fe724784c6d617cb582f79ddaf5dd2233aaba2fb7a14e0b9d03348fea8088 \
+            g++ -Isrc -Ithird_party -std=c++20 -O3 -DNDEBUG -ffp-contract=off -static-libstdc++ -static-libgcc \
+            tests/json_request_probe.cpp src/request.cpp src/model.cpp src/vector_literal.cpp -o /out/json-request-probe
+          build/json-request-probe | tee results/linux-json-request/report.json
       - name: Refuse unknown files and recover incomplete first initialization
         run: MVD_BIN="$PWD/build/minivectordb" python3 tests/open_safety.py --output results/linux-open-safety
       - name: Interrupt compaction exactly at replacement boundaries
@@ -160,6 +168,16 @@ jobs:
             -fsanitize=address,undefined -fno-omit-frame-pointer \
             tests/certified_screen_probe.cpp src/vector_index.cpp src/storage.cpp src/record_reader.cpp src/model.cpp src/btree.cpp src/compaction.cpp src/vector_literal.cpp -o build/certified-screen-probe-asan
           build/certified-screen-probe-asan results/asan-certified-screen-data | tee results/asan-certified-screen/report.json
+      - name: Sanitized strict JSON decoder parity
+        env:
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: |
+          mkdir -p results/asan-json-request
+          g++ -Isrc -Ithird_party -std=c++20 -O1 -g -ffp-contract=off -D_GLIBCXX_ASSERTIONS \
+            -fsanitize=address,undefined -fno-omit-frame-pointer \
+            tests/json_request_probe.cpp src/request.cpp src/model.cpp src/vector_literal.cpp -o build/json-request-probe-asan
+          build/json-request-probe-asan | tee results/asan-json-request/report.json
       - name: Preserve sanitizer reports
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
