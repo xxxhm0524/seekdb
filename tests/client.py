@@ -1,10 +1,13 @@
 """Portable transport; assertions are imported from the unmodified official kit."""
 import importlib.util
 import json
+import ctypes
+import math
 import os
 from pathlib import Path
 import queue
 import subprocess
+import struct
 import threading
 import time
 import uuid
@@ -15,6 +18,16 @@ spec = importlib.util.spec_from_file_location("official_assertions", ROOT / "pro
 official = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(official)
 CONFIG = json.loads((ROOT / "protocol_check/config.json").read_text())
+
+def vector_bits(values):
+    """Wire numbers must round-trip the stored float32, including signed zero."""
+    result=bytearray()
+    for value in values:
+        assert type(value) in (int,float) and math.isfinite(value), 'non-finite/non-numeric vector JSON'
+        converted=ctypes.c_float(value).value
+        assert math.isfinite(converted), 'vector JSON overflows float32'
+        result.extend(struct.pack('<f',converted))
+    return bytes(result)
 
 class Client:
     def __init__(self, directory, command=None, timeout=15, env=None):

@@ -1,6 +1,7 @@
 #include "model.hpp"
 #include "vector_literal.hpp"
 #include <bit>
+#include <array>
 #include <charconv>
 #include <cstring>
 
@@ -91,7 +92,36 @@ Row decode_row(const Table& t, const std::string& s) {
     if (at != s.size()) throw IoError("unexpected trailing row bytes");
     return row;
 }
-Json value_json(const Value& v) { return std::visit([](const auto& x) { return Json(x); }, v); }
+namespace {
+template<class Number> void append_number(std::string& output, Number value) {
+    std::array<char, 64> buffer{};
+    auto [end, error] = std::to_chars(buffer.data(), buffer.data() + buffer.size(), value);
+    if (error != std::errc{}) throw IoError("format JSON number");
+    output.append(buffer.data(), static_cast<size_t>(end - buffer.data()));
+}
+}
+void append_distance_json(std::string& output, double value) {
+    if (!std::isfinite(value)) throw IoError("non-finite distance result");
+    append_number(output, value);
+}
+void append_value_json(std::string& output, const Value& value) {
+    if (const auto* integer = std::get_if<int64_t>(&value)) append_number(output, *integer);
+    else if (const auto* text = std::get_if<std::string>(&value)) output += Json(*text).dump();
+    else {
+        output.push_back('['); bool first = true;
+        for (float component : std::get<std::vector<float>>(value)) {
+            if (!std::isfinite(component)) throw IoError("non-finite vector result");
+            if (!first) output.push_back(',');
+            first = false;
+            // Match the successful reference's float formatter: serialize the
+            // stored float32 as float32, rather than promoting it to a double
+            // JSON node. Shortest text round-trips every original float32 bit.
+            if (component == 0 && std::signbit(component)) output += "-0.0";
+            else append_number(output, component);
+        }
+        output.push_back(']');
+    }
+}
 Json catalog_json(const Catalog& tables) {
     Json a = Json::array();
     for (const auto& t : tables) {

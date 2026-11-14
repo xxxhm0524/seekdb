@@ -5,7 +5,7 @@ import math
 from pathlib import Path
 import struct
 import sys
-from client import Client
+from client import Client, vector_bits
 
 
 def f32(value): return struct.unpack('<f',struct.pack('<f',value))[0]
@@ -26,7 +26,7 @@ def run(directory):
                 literal='['+spelling+',0,0]';literal="'"+literal+"'" if quoted else literal
                 db.execute(f"INSERT INTO t VALUES({key},'number',{literal});")
                 row=db.execute(f'SELECT v FROM t WHERE id={key};')['rows'][0][0]
-                assert struct.pack('<f',row[0])==struct.pack('<f',value),(spelling,row,value)
+                assert vector_bits([row[0]])==vector_bits([value]),(spelling,row,value)
                 expected=math.sqrt(float(value)*float(value))
                 result=db.execute(f"SELECT L2_DISTANCE(v,'[0,0,0]') AS d FROM t WHERE id={key} ORDER BY d LIMIT +1;")['rows']
                 assert len(result)==1 and math.isclose(result[0][0],expected,rel_tol=1e-14,abs_tol=0)

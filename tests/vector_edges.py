@@ -5,7 +5,7 @@ import math
 from pathlib import Path
 import sys
 import numpy as np
-from client import Client
+from client import Client, vector_bits
 
 def run(directory, cache="16"):
     rng = np.random.default_rng(849203)
@@ -18,6 +18,7 @@ def run(directory, cache="16"):
     vectors[2] = np.float32(np.finfo(np.float32).max)
     vectors[3] = -vectors[2]
     vectors[4] = np.float32(np.nextafter(np.float32(0), np.float32(1)))
+    vectors[5,0] = np.float32(-0.0)
     queries = [np.zeros(dimensions, dtype=np.float32), vectors[2], vectors[3], vectors[4]]
     queries += [v.copy() for v in vectors[5:15]]
     keys = np.array([-(2**63), 2**63-1] + list(range(n-2)), dtype=np.int64)
@@ -31,6 +32,12 @@ def run(directory, cache="16"):
         for crash in [False, True]:
             if crash:
                 db.restart(crash=True)
+            projected=db.execute('SELECT id,v FROM t ORDER BY id;')['rows']
+            permutation=sorted(range(n),key=lambda i:int(keys[i]))
+            assert len(projected)==n
+            for row,i in zip(projected,permutation):
+                assert type(row[0]) is int and row[0]==int(keys[i])
+                assert vector_bits(row[1])==vectors[i].tobytes(),(cache,i)
             for q in queries:
                 d = np.zeros(n, dtype=np.float64)
                 for dim in range(dimensions):

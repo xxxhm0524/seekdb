@@ -36,6 +36,10 @@ jobs:
         env:
           MVD_DOCKER_IMAGE: mvd-clean
         run: python3 tests/protocol_ids.py --output results/linux-protocol-ids
+      - name: Clause-driven protocol contract matrix
+        env:
+          MVD_DOCKER_IMAGE: mvd-clean
+        run: python3 tests/protocol_contract.py --output results/linux-protocol-contract
       - name: Successful-reference SQL decimal spellings
         env:
           MVD_DOCKER_IMAGE: mvd-clean
@@ -133,6 +137,8 @@ jobs:
         run: MVD_BIN="$PWD/build/minivectordb" python3 tests/reference_differential.py --output results/linux-reference-differential
       - name: Qualified reference boundary comparison
         run: MVD_BIN="$PWD/build/minivectordb" python3 tests/reference_boundaries.py --reference-bin results/linux-reference-differential/reference-minivectordb --output results/linux-reference-boundaries
+      - name: Qualified reference protocol response byte budget
+        run: MVD_BIN="$PWD/build/minivectordb" python3 tests/reference_response_budget.py --reference-bin results/linux-reference-differential/reference-minivectordb --output results/linux-vector-response-budget
       - name: Preserve reports and stderr
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -169,6 +175,7 @@ jobs:
           python3 tests/open_safety.py --output results/asan-open-safety
           python3 tests/protocol_complete_input.py --output results/asan-complete-input
           python3 tests/protocol_ids.py --output results/asan-protocol-ids
+          python3 tests/protocol_contract.py --output results/asan-protocol-contract
           python3 tests/sql_numeric_forms.py --output results/asan-sql-numeric-forms
           python3 tests/order_alias_boundaries.py --output results/asan-order-aliases
           python3 tests/cache_column_sets.py --output results/asan-cache-column-sets

@@ -18,8 +18,7 @@ void RowOutput::append(const std::string& s) {
         if (!file_) throw IoError("write response temporary file");
     } else memory_ += s;
 }
-void RowOutput::add(const Json& row) {
-    std::string bytes = row.dump();
+void RowOutput::add(const std::string& bytes) {
     if (!first_) append(",");
     append(bytes); first_ = false;
 }

@@ -204,11 +204,14 @@ Result Engine::select(const Statement& s) {
         row[table.primary] = key; return row;
     };
     auto output = [&](const Row& row) {
-        Json values = Json::array();
+        std::string values = "["; bool first = true;
         for (const auto& p : projections) {
-            if (p.distance) values.push_back(distance(std::get<std::vector<float>>(row[p.column]), p.query));
-            else values.push_back(value_json(row[p.column]));
+            if (!first) values.push_back(',');
+            first = false;
+            if (p.distance) append_distance_json(values, distance(std::get<std::vector<float>>(row[p.column]), p.query));
+            else append_value_json(values, row[p.column]);
         }
+        values.push_back(']');
         result.rows->add(values);
     };
     bool vector_query = false;
@@ -260,15 +263,18 @@ Result Engine::select(const Statement& s) {
                 const auto& entry = vector_index_->entries()[hit.entry];
                 if (!projection_cached) { output(load(entry.key, entry.ref)); continue; }
                 std::optional<Row> row;
-                Json values = Json::array(); values.get_ref<Json::array_t&>().reserve(projections.size());
+                std::string values = "["; bool first = true;
                 for (const auto& p : projections) {
-                    if (p.distance && p.column == ordering[0].column && p.query == ordering[0].query) values.push_back(hit.distance);
+                    if (!first) values.push_back(',');
+                    first = false;
+                    if (p.distance && p.column == ordering[0].column && p.query == ordering[0].query) append_distance_json(values, hit.distance);
                     else if (p.column == ordering[0].column) {
                         if (!row) row = vector_index_->materialize(hit.entry);
-                        if (p.distance) values.push_back(distance(std::get<std::vector<float>>((*row)[p.column]), p.query));
-                        else values.push_back(value_json((*row)[p.column]));
-                    } else values.push_back(value_json(entry.row[p.column]));
+                        if (p.distance) append_distance_json(values, distance(std::get<std::vector<float>>((*row)[p.column]), p.query));
+                        else append_value_json(values, (*row)[p.column]);
+                    } else append_value_json(values, entry.row[p.column]);
                 }
+                values.push_back(']');
                 result.rows->add(values);
             }
             return result;

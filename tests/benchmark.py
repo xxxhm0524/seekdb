@@ -6,7 +6,7 @@ from pathlib import Path
 import sys
 import time
 import numpy as np
-from client import Client
+from client import Client, vector_bits
 
 def run(directory, count=10000, dimensions=128, queries=1000, seed=194709):
     rng = np.random.default_rng(seed)
@@ -63,7 +63,8 @@ def run(directory, count=10000, dimensions=128, queries=1000, seed=194709):
         assert db.execute("SELECT id FROM docs;")["rows"] == [[i] for i in range(count)]
         for key in rng.choice(count, min(count, 50), replace=False).tolist():
             row = db.execute(f"SELECT embedding,category,content FROM docs WHERE id={key};")["rows"][0]
-            assert row == [vectors[key].tolist(), f"group{groups[key]}", f"document {key}"]
+            assert vector_bits(row[0])==vectors[key].tobytes()
+            assert row[1:]==[f"group{groups[key]}",f"document {key}"]
         return dict(passed=True, rows=count, dimensions=dimensions, queries=queries, seed=seed,
                     write_seconds=write_seconds, query_prepare_seconds=prepare_seconds, query_seconds=query_seconds,
                     recall={name: sum(values)/len(values) for name, values in recalls.items()},

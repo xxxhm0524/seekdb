@@ -20,7 +20,7 @@ def run(directory, shim):
         response=None
         protocol_error=None
         try:
-            response=db.execute("SELECT payload FROM t ORDER BY id;",ok=None)
+            response=db.send(dict(id={'large':10**400},op='execute',sql="SELECT payload FROM t ORDER BY id;",search_mode='exact'))
         except Exception as error:
             protocol_error=str(error)
         db.process.wait(timeout=10)
@@ -33,7 +33,7 @@ def run(directory, shim):
             db.env.pop(key,None)
         db.start()
         assert db.execute("SELECT id FROM t;")["rows"]==[[k] for k in range(11)]
-        return dict(passed=True,injected_failures=probe["response_flush_failures"],complete_error_response=True,persistent_rows_preserved=11)
+        return dict(passed=True,injected_failures=probe["response_flush_failures"],complete_error_response=True,large_composite_id_preserved=True,persistent_rows_preserved=11)
     finally:
         db.kill()
 

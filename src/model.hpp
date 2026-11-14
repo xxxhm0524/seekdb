@@ -44,7 +44,8 @@ size_t utf8_length(const std::string& s);
 Value parse_value(const Column& column, const std::string& text, bool quoted);
 std::string encode_row(const Table& table, const Row& row);
 Row decode_row(const Table& table, const std::string& bytes);
-Json value_json(const Value& value);
+void append_value_json(std::string& output, const Value& value);
+void append_distance_json(std::string& output, double value);
 Json catalog_json(const Catalog& catalog);
 Catalog catalog_from_json(const Json& value);
 }

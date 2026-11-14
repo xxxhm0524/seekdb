@@ -20,7 +20,7 @@ class RowOutput {
 public:
     explicit RowOutput(const std::filesystem::path& directory) : path_(directory / "response.tmp") {}
     ~RowOutput();
-    void add(const Json& row);
+    void add(const std::string& encoded_row);
     void prepare();
     void write(std::ostream& output);
 };

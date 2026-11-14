@@ -8,7 +8,7 @@ import random
 import struct
 import sys
 import time
-from client import Client
+from client import Client, vector_bits
 
 def quote(s):
     return "'" + s.replace("\\", "\\\\").replace("'", "''") + "'"
@@ -19,7 +19,10 @@ def f32(x):
 def check_state(db, expected):
     actual = db.execute("SELECT * FROM docs ORDER BY id;")["rows"]
     wanted = [[key, *expected[key]] for key in sorted(expected)]
-    assert actual == wanted, (actual[:5], wanted[:5])
+    assert len(actual)==len(wanted)
+    for observed,expected_row in zip(actual,wanted):
+        assert type(observed[0]) is int and type(observed[1]) is int
+        assert observed[:3]==expected_row[:3] and vector_bits(observed[3])==vector_bits(expected_row[3]), (observed,expected_row)
     q = [0.125, -0.25, 2.0]
     for mode in ["exact", "ann"]:
         for bucket in [None, -1, 0, 2, 999]:
@@ -146,7 +149,8 @@ def value_boundaries(directory):
         db.execute("CREATE TABLE unicode_table (n BIGINT, id BIGINT PRIMARY KEY, s VARCHAR(3), v VECTOR(2));")
         db.execute("INSERT INTO unicode_table (s,id,v,n) VALUES ('中😀é',-9223372036854775808,'[16777217,1.401298464324817e-45]',9223372036854775807);")
         r = db.execute("SELECT * FROM unicode_table;")["rows"]
-        assert r == [[9223372036854775807, -9223372036854775808, "中😀é", [16777216.0, f32(1.401298464324817e-45)]]], r
+        assert r[0][:3] == [9223372036854775807, -9223372036854775808, "中😀é"],r
+        assert vector_bits(r[0][3])==vector_bits([16777216.0,f32(1.401298464324817e-45)]),r
         for vector in ["[NaN,0]", "[Infinity,0]", "[1e400,0]", "[1e39,0]", "[1]", "[1,2,3]", "[true,0]", "[null,0]", "['1',0]", "{\"0\":0}"]:
             db.execute("INSERT INTO unicode_table VALUES(0,1,'x'," + quote(vector) + ");", ok=False)
         for vector in ["[1 2,0]", "[1,'2']", '[1,"2"]', "[1 e2,0]", "[1,]", "[,1]", "[[1],0]", "[true,0]"]:
@@ -158,8 +162,7 @@ def value_boundaries(directory):
         # This decimal is above FLT_MAX as a double, but rounds to finite
         # FLT_MAX as float32. Only conversion overflow should be rejected.
         db.execute("INSERT INTO unicode_table VALUES (0,3,'max','[3.4028235e38,-3.4028235e38]');")
-        assert db.execute("SELECT v FROM unicode_table WHERE id=3;")["rows"] == [[
-            [f32(3.4028235e38), f32(-3.4028235e38)]]]
+        assert vector_bits(db.execute("SELECT v FROM unicode_table WHERE id=3;")["rows"][0][0])==vector_bits([f32(3.4028235e38),f32(-3.4028235e38)])
         db.execute("DELETE FROM unicode_table WHERE id=3;")
         db.execute("SELECT missing FROM unicode_table LIMIT 0;", ok=False)
         db.execute("SELECT id FROM unicode_table WHERE missing=1;", ok=False)
