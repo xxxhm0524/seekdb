@@ -62,6 +62,9 @@ jobs:
         run: MVD_BIN="$PWD/build/minivectordb" python3 tests/compaction_crash.py --output results/linux-compaction-crash
       - name: Measure projected query disk reads
         run: MVD_BIN="$PWD/build/minivectordb" python3 tests/projection_io.py --output results/linux-projection-io
+      - name: Atomic error response on final flush failure
+        if: ${{ !cancelled() }}
+        run: MVD_BIN="$PWD/build/minivectordb" python3 tests/response_failure.py --output results/linux-response-failure
       - name: Preserve reports and stderr
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
