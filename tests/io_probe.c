@@ -10,10 +10,16 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/uio.h>
+#include <time.h>
 
 static uint64_t database_read_bytes;
 static uint64_t response_flush_failures;
+static uint64_t database_sync_calls;
+static uint64_t database_sync_nanoseconds;
+static uint64_t database_write_calls;
+static uint64_t database_write_bytes;
 static int fd_has_suffix(int fd, const char* suffix);
+static void commit_stop(int fd, const char* stage);
 static uint64_t catalog_allocation_failures;
 static int fail_next_allocation;
 extern void* __libc_malloc(size_t);
@@ -70,6 +76,42 @@ static int fail_response_flush(int fd, size_t n) {
     }
     return 0;
 }
+ssize_t pwrite(int fd, const void* data, size_t n, off_t offset) {
+    static ssize_t (*real_pwrite)(int, const void*, size_t, off_t);
+    if (!real_pwrite) real_pwrite = dlsym(RTLD_NEXT, "pwrite");
+    if (offset < 8192 && n == 4096) commit_stop(fd, "before_root");
+    ssize_t result = real_pwrite(fd, data, n, offset); int saved = errno;
+    if (result > 0 && fd_has_suffix(fd, "/database.mvd")) { ++database_write_calls; database_write_bytes += result; }
+    if (offset < 8192 && n == 4096 && result == (ssize_t)n) commit_stop(fd, "after_root");
+    errno = saved; return result;
+}
+ssize_t pwrite64(int fd, const void* data, size_t n, off64_t offset) {
+    static ssize_t (*real_pwrite64)(int, const void*, size_t, off64_t);
+    if (!real_pwrite64) real_pwrite64 = dlsym(RTLD_NEXT, "pwrite64");
+    if (offset < 8192 && n == 4096) commit_stop(fd, "before_root");
+    ssize_t result = real_pwrite64(fd, data, n, offset); int saved = errno;
+    if (result > 0 && fd_has_suffix(fd, "/database.mvd")) { ++database_write_calls; database_write_bytes += result; }
+    if (offset < 8192 && n == 4096 && result == (ssize_t)n) commit_stop(fd, "after_root");
+    errno = saved; return result;
+}
+static uint64_t nanoseconds(void) {
+    struct timespec now; clock_gettime(CLOCK_MONOTONIC, &now);
+    return (uint64_t)now.tv_sec * 1000000000 + now.tv_nsec;
+}
+int fdatasync(int fd) {
+    static int (*real_sync)(int); if (!real_sync) real_sync = dlsym(RTLD_NEXT, "fdatasync");
+    commit_stop(fd, "before_sync"); uint64_t start = nanoseconds();
+    int result = real_sync(fd), saved = errno;
+    if (!result && fd_has_suffix(fd, "/database.mvd")) { ++database_sync_calls; database_sync_nanoseconds += nanoseconds() - start; }
+    if (!result) commit_stop(fd, "after_sync"); errno = saved; return result;
+}
+int fsync(int fd) {
+    static int (*real_sync)(int); if (!real_sync) real_sync = dlsym(RTLD_NEXT, "fsync");
+    commit_stop(fd, "before_sync"); uint64_t start = nanoseconds();
+    int result = real_sync(fd), saved = errno;
+    if (!result && fd_has_suffix(fd, "/database.mvd")) { ++database_sync_calls; database_sync_nanoseconds += nanoseconds() - start; }
+    if (!result) commit_stop(fd, "after_sync"); errno = saved; return result;
+}
 ssize_t write(int fd, const void* data, size_t n) {
     static ssize_t (*real_write)(int, const void*, size_t);
     if (!real_write) real_write = dlsym(RTLD_NEXT, "write");
@@ -93,6 +135,13 @@ static void stop_at(const char* stage) {
     if (write(fd, stage, strlen(stage)) < 0) _exit(122);
     close(fd);
     raise(SIGSTOP);
+}
+static void commit_stop(int fd, const char* stage) {
+    const char* selected = getenv("MVD_COMMIT_STOP"), *marker = getenv("MVD_COMMIT_MARKER"), *armed = getenv("MVD_COMMIT_ARM");
+    if (!selected || !marker || !armed || strcmp(selected, stage) || access(armed, F_OK) || !fd_has_suffix(fd, "/database.mvd")) return;
+    int signal_fd = open(marker, O_WRONLY | O_CREAT | O_TRUNC, 0600);
+    if (signal_fd < 0 || write(signal_fd, stage, strlen(stage)) < 0) _exit(125);
+    close(signal_fd); raise(SIGSTOP);
 }
 static void recovery_stop(int fd, const char* stage) {
     const char* selected = getenv("MVD_RECOVERY_STOP");
@@ -140,8 +189,9 @@ __attribute__((destructor)) static void report_reads(void) {
     if (!path) return;
     FILE* file = fopen(path, "w");
     if (!file) return;
-    fprintf(file, "{\"database_read_bytes\":%llu,\"response_flush_failures\":%llu,\"catalog_allocation_failures\":%llu}\n",
+    fprintf(file, "{\"database_read_bytes\":%llu,\"response_flush_failures\":%llu,\"catalog_allocation_failures\":%llu,\"database_write_calls\":%llu,\"database_write_bytes\":%llu,\"database_sync_calls\":%llu,\"database_sync_nanoseconds\":%llu}\n",
             (unsigned long long)database_read_bytes, (unsigned long long)response_flush_failures,
-            (unsigned long long)catalog_allocation_failures);
+            (unsigned long long)catalog_allocation_failures, (unsigned long long)database_write_calls,
+            (unsigned long long)database_write_bytes, (unsigned long long)database_sync_calls, (unsigned long long)database_sync_nanoseconds);
     fclose(file);
 }

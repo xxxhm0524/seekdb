@@ -78,6 +78,8 @@ jobs:
           docker run --rm --entrypoint cat mvd-clean /app/minivectordb > build/minivectordb
           chmod +x build/minivectordb
           MVD_BIN="$PWD/build/minivectordb" python3 tests/crash_commit.py --output results/linux-crash-commit
+      - name: Exact root publication and durability-barrier cuts
+        run: MVD_BIN="$PWD/build/minivectordb" python3 tests/commit_publish.py --output results/linux-commit-publish
       - name: Production-toolchain integer certificates and exact fallback
         run: |
           mkdir -p results/linux-certified-screen

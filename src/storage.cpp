@@ -273,7 +273,10 @@ void Storage::commit(const Catalog& catalog) {
     if (bytes.size() > (64ULL << 20)) fail("resource_limit", "catalog exceeds the storage format limit");
     Ref ref = append(bytes);
     for (auto& [offset, cached] : pages_) flush_page(offset, cached);
-    file_.sync();
+    // The task's failure model is process termination: completed positional
+    // writes remain visible to recovery in the surviving kernel. Publish only
+    // after every data/page write returns, then sync the entire file before ACK.
+    // A machine/power-loss ordering guarantee would require an earlier barrier.
     Page header = commit_header(generation_ + 1, ref, end_, bytes);
     file_.write(((generation_ + 1) % 2) * PAGE_SIZE, header.data(), header.size());
     file_.sync();
