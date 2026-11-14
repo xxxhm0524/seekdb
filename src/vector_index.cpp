@@ -224,7 +224,7 @@ std::vector<VectorIndex::Hit> VectorIndex::search(const std::vector<float>& quer
 }
 std::optional<std::vector<VectorIndex::Hit>> VectorIndex::screen_search(const std::vector<float>& query, size_t k,
         const std::function<bool(const Row&)>& predicate, size_t begin, size_t end, SearchStats* stats) const {
-    constexpr size_t capacity = 64;
+    constexpr size_t capacity = 32;
     struct Estimate { int32_t score; size_t entry; };
     auto less = [](const Estimate& a, const Estimate& b) { return a.score < b.score; };
     std::array<Estimate, capacity> candidates{}; size_t count = 0, selected = 0;

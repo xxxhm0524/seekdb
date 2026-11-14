@@ -24,7 +24,7 @@ private:
     std::vector<int32_t> norms_;
     static double up(double value) { return std::nextafter(value, std::numeric_limits<double>::infinity()); }
     static double down(double value) { return std::nextafter(value, -std::numeric_limits<double>::infinity()); }
-    int encode(double value) const { return int(std::clamp(std::round(value / scale_), -63.0, 63.0)); }
+    int encode(double value) const { return int(std::clamp(std::round(value / scale_), -127.0, 127.0)); }
     double add_error(double sum, double value, int code) const {
         const double represented = double(code) * scale_;
         const double allowance = (std::abs(value) + std::abs(represented)) * 0x1p-48 + std::numeric_limits<double>::min();
@@ -41,14 +41,17 @@ private:
     }
 #ifdef MVD_BATCH_X86
     __attribute__((target("avx2"))) static void avx2(const uint8_t* rows, const int8_t* query, size_t groups, int32_t* output) {
-        auto sum = _mm256_setzero_si256(); const auto ones = _mm256_set1_epi16(1);
+        auto sum = _mm256_setzero_si256(); const auto ones = _mm256_set1_epi16(1), low_mask = _mm256_set1_epi8(127);
         for (size_t group = 0; group < groups; ++group) {
             int32_t packed; std::memcpy(&packed, query + group * 4, 4);
             const auto values = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(rows + group * 32));
-            // codes in [1,127], query in [-63,63]: two products sum to at most
-            // 16002, so the signed-16 saturation in maddubs is never reached.
-            const auto pairs = _mm256_maddubs_epi16(values, _mm256_set1_epi32(packed));
-            sum = _mm256_add_epi32(sum, _mm256_madd_epi16(pairs, ones));
+            // Split the unsigned row byte into <=127 and <=128 components.
+            // Each signed-16 pair is <=32512 in magnitude; maddubs cannot
+            // saturate. Combine only after widening each pair sum to int32.
+            const auto q = _mm256_set1_epi32(packed);
+            const auto low = _mm256_maddubs_epi16(_mm256_and_si256(values, low_mask), q);
+            const auto high = _mm256_maddubs_epi16(_mm256_andnot_si256(low_mask, values), q);
+            sum = _mm256_add_epi32(sum, _mm256_add_epi32(_mm256_madd_epi16(low, ones), _mm256_madd_epi16(high, ones)));
         }
         _mm256_storeu_si256(reinterpret_cast<__m256i*>(output), sum);
     }
@@ -86,18 +89,18 @@ public:
         if (fixed > budget || blocks > (budget - fixed) / (groups * 32 + width * sizeof(int32_t))) return nullptr;
         auto index = std::make_unique<QuantizedScreen>(); index->dimensions_ = dimensions; index->groups_ = groups;
         index->function_ = select();
-        index->codes_.assign(blocks * groups * 32, 64); index->norms_.assign(blocks * width, 0);
+        index->codes_.assign(blocks * groups * 32, 128); index->norms_.assign(blocks * width, 0);
         if (fixed + index->codes_.capacity() + index->norms_.capacity() * sizeof(int32_t) > budget) return nullptr;
         double maximum = 0;
         for (size_t row = 0; row < count; ++row) for (size_t d = 0; d < dimensions; ++d)
             maximum = std::max(maximum, std::abs(double(coordinate(row, d))));
         if (!maximum) return nullptr;
-        index->scale_ = maximum / 63;
+        index->scale_ = maximum / 127;
         for (size_t row = 0; row < count; ++row) {
             double error = 0; int32_t norm = 0;
             for (size_t d = 0; d < dimensions; ++d) {
                 const double value = coordinate(row, d); const int code = index->encode(value);
-                index->codes_[(row / width) * groups * 32 + (d / 4) * 32 + (row % width) * 4 + d % 4] = uint8_t(code + 64);
+                index->codes_[(row / width) * groups * 32 + (d / 4) * 32 + (row % width) * 4 + d % 4] = uint8_t(code + 128);
                 norm += code * code; error = index->add_error(error, value, code);
             }
             index->norms_[row] = norm; index->maximum_error_ = std::max(index->maximum_error_, up(std::sqrt(error)));
@@ -120,7 +123,7 @@ public:
 #endif
         function(codes_.data() + (first / width) * groups_ * 32, query.codes.data(), groups_, output.data());
         for (size_t lane = 0; lane < width; ++lane)
-            output[lane] = norms_[first + lane] + query.norm + 128 * query.sum - 2 * output[lane];
+            output[lane] = norms_[first + lane] + query.norm + 256 * query.sum - 2 * output[lane];
     }
     double lower(const Query& query, int32_t squared_score) const {
         if (squared_score <= 0) return 0;

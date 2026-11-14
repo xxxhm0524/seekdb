@@ -100,7 +100,7 @@ int main(int argc, char** argv) {
             for (size_t i = 0; i < queries.size(); ++i) {
                 VectorIndex::SearchStats stats; same(index->search(queries[i], 10, {}, 0, count, &stats), expected[i]);
                 if (QuantizedScreen::supported(dimensions)) {
-                    require(stats.screen_certified && stats.exact_rows <= 64, "normal workload did not certify bounded candidates");
+                    require(stats.screen_certified && stats.exact_rows <= 32, "normal workload did not certify bounded candidates");
                 }
                 timed_exact_rows += stats.exact_rows; timed_screened_rows += stats.screened_rows;
             }

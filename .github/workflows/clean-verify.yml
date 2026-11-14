@@ -52,6 +52,10 @@ jobs:
         env:
           MVD_DOCKER_IMAGE: mvd-clean
         run: python3 tests/cache_ranges.py --output results/linux-cache-ranges
+      - name: Bounded insert batches and late statement failures
+        env:
+          MVD_DOCKER_IMAGE: mvd-clean
+        run: python3 tests/insert_batches.py --output results/linux-insert-batches
       - name: Database exceeds cgroup memory budget
         env:
           MVD_DOCKER_IMAGE: mvd-clean
@@ -138,6 +142,7 @@ jobs:
           python3 tests/protocol_complete_input.py --output results/asan-complete-input
           python3 tests/cache_column_sets.py --output results/asan-cache-column-sets
           python3 tests/cache_ranges.py --output results/asan-cache-ranges
+          python3 tests/insert_batches.py --output results/asan-insert-batches
       - name: Sanitized integer certificates and exact fallback
         env:
           ASAN_OPTIONS: detect_leaks=1:halt_on_error=1

@@ -93,15 +93,36 @@ Result Engine::execute(const std::string& sql, const std::string& mode) {
                 else for (const auto& name : s.insert_columns) order.push_back(t.column(name));
                 std::set<size_t> distinct(order.begin(), order.end());
                 if (order.size() != t.columns.size() || distinct.size() != order.size()) fail("column_count", "INSERT must specify each column exactly once");
+                // Batch only record bytes. Page ownership, statement rollback,
+                // commit barriers and acknowledgement ordering remain unchanged.
+                std::string batch;
+                struct Pending { int64_t key; uint32_t offset, length; };
+                std::vector<Pending> pending;
+                auto flush = [&] {
+                    if (pending.empty()) return;
+                    const Ref data = storage_.append(batch);
+                    for (const auto& item : pending) {
+                        tree.put(t.root, item.key, {data.offset + item.offset, item.length});
+                        ++t.count; t.live_bytes += item.length;
+                    }
+                    batch.clear(); pending.clear();
+                };
                 for (const auto& literals : s.values) {
                     if (literals.size() != order.size()) fail("column_count", "incorrect INSERT value count");
                     Row row(t.columns.size());
                     for (size_t i = 0; i < order.size(); ++i) row[order[i]] = parse_value(t.columns[order[i]], literals[i].text, literals[i].quoted);
                     int64_t key = std::get<int64_t>(row[t.primary]);
-                    if (tree.find(t.root, key)) fail("duplicate_key", "duplicate primary key");
-                    Ref ref = storage_.append(encode_row(t, row)); tree.put(t.root, key, ref); ++t.count;
-                    t.live_bytes += ref.length;
+                    std::string bytes = encode_row(t, row);
+                    if (bytes.size() > 65536) {
+                        flush(); Ref ref = storage_.append(bytes); tree.put(t.root, key, ref);
+                        ++t.count; t.live_bytes += ref.length;
+                    } else {
+                        if (bytes.size() > 65536 - batch.size() || pending.size() >= 1024) flush();
+                        pending.push_back({key, uint32_t(batch.size()), uint32_t(bytes.size())});
+                        batch += bytes;
+                    }
                 }
+                flush();
                 result.fields["affected_rows"] = s.values.size();
             } else {
                 auto predicates = bind_predicates(t, s.conditions);

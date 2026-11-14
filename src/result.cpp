@@ -2,11 +2,13 @@
 #include <array>
 namespace mvd {
 RowOutput::~RowOutput() {
-    input_.close(); file_.close(); std::error_code error; std::filesystem::remove(path_, error);
+    input_.close(); file_.close();
+    if (spill_created_) { std::error_code error; std::filesystem::remove(path_, error); }
 }
 void RowOutput::append(const std::string& s) {
     if (!file_.is_open() && memory_.size() + s.size() > 262144) {
         file_.open(path_, std::ios::binary | std::ios::trunc);
+        spill_created_ = true;
         if (!file_) throw IoError("open response temporary file");
         file_.write(memory_.data(), static_cast<std::streamsize>(memory_.size()));
         std::string().swap(memory_);

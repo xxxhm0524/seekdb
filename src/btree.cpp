@@ -1,9 +1,26 @@
 #include "storage.hpp"
 #include <bit>
+#include <cstring>
 
 namespace mvd {
 static constexpr size_t LEAF_MAX = (4088 - 16) / 24;
 static constexpr size_t INNER_MAX = (4088 - 16) / 16;
+static size_t page_count(const Page& p) {
+    if (p[0] != 1 && p[0] != 2) throw IoError("invalid B+ tree page kind");
+    const size_t count = read_le(p.data() + 2, 2);
+    if (count > (p[0] == 1 ? LEAF_MAX : INNER_MAX)) throw IoError("invalid B+ tree page count");
+    return count;
+}
+static size_t page_bound(const Page& p, size_t count, int64_t key, bool upper) {
+    size_t begin = 0, end = count; const size_t stride = p[0] == 1 ? 24 : 16;
+    while (begin < end) {
+        const size_t middle = begin + (end - begin) / 2;
+        const int64_t value = std::bit_cast<int64_t>(read_le(p.data() + 16 + middle * stride, 8));
+        if (value < key || (upper && value == key)) begin = middle + 1; else end = middle;
+    }
+    return begin;
+}
+static size_t child_position(size_t index) { return index ? 24 + (index - 1) * 16 : 8; }
 BTree::Node BTree::load(uint64_t offset) {
     auto p = store_.page(offset);
     if (p[0] != 1 && p[0] != 2) throw IoError("invalid B+ tree page kind");
@@ -40,14 +57,15 @@ uint64_t BTree::own(uint64_t offset) {
 }
 std::optional<Ref> BTree::find(uint64_t root, int64_t key) {
     while (root) {
-        auto n = load(root);
-        if (n.leaf) {
-            auto it = std::lower_bound(n.keys.begin(), n.keys.end(), key);
-            if (it == n.keys.end() || *it != key) return std::nullopt;
-            return n.rows[it - n.keys.begin()];
+        const auto p = store_.page(root); const size_t count = page_count(p);
+        const size_t pos = page_bound(p, count, key, p[0] != 1);
+        if (p[0] == 1) {
+            if (pos == count) return {};
+            const auto* entry = p.data() + 16 + pos * 24;
+            if (std::bit_cast<int64_t>(read_le(entry, 8)) != key) return {};
+            return Ref{read_le(entry + 8, 8), uint32_t(read_le(entry + 16, 4))};
         }
-        size_t child = std::upper_bound(n.keys.begin(), n.keys.end(), key) - n.keys.begin();
-        root = n.children.at(child);
+        root = read_le(p.data() + child_position(pos), 8);
     }
     return std::nullopt;
 }
@@ -56,18 +74,24 @@ std::optional<BTree::Split> BTree::put_node(uint64_t& root, int64_t key, Ref val
         root = store_.allocate_page(); owned_.insert(root);
         Node n; n.keys.push_back(key); n.rows.push_back(value); save(root, n); return std::nullopt;
     }
-    auto n = load(root); root = own(root);
-    if (n.leaf) {
-        size_t pos = std::lower_bound(n.keys.begin(), n.keys.end(), key) - n.keys.begin();
-        bool found = pos < n.keys.size() && n.keys[pos] == key;
-        if (found) {
-            if (!replace) fail("duplicate_key", "duplicate primary key");
-            n.rows[pos] = value;
-        } else {
-            if (replace) throw IoError("update of missing primary key");
-            n.keys.insert(n.keys.begin() + pos, key); n.rows.insert(n.rows.begin() + pos, value);
+    auto p = store_.page(root); const size_t count = page_count(p);
+    if (p[0] == 1) {
+        const size_t pos = page_bound(p, count, key, false);
+        const bool found = pos < count && std::bit_cast<int64_t>(read_le(p.data() + 16 + pos * 24, 8)) == key;
+        if (found && !replace) fail("duplicate_key", "duplicate primary key");
+        if (!found && replace) throw IoError("update of missing primary key");
+        root = own(root);
+        if (found || count < LEAF_MAX) {
+            auto* entry = p.data() + 16 + pos * 24;
+            if (!found) {
+                std::memmove(entry + 24, entry, (count - pos) * 24);
+                write_le(p.data() + 2, count + 1, 2);
+            }
+            write_le(entry, std::bit_cast<uint64_t>(key), 8); write_le(entry + 8, value.offset, 8);
+            write_le(entry + 16, value.length, 4); store_.set_page(root, p); return {};
         }
-        if (n.keys.size() <= LEAF_MAX) { save(root, n); return std::nullopt; }
+        auto n = load(root);
+        n.keys.insert(n.keys.begin() + pos, key); n.rows.insert(n.rows.begin() + pos, value);
         size_t middle = n.keys.size() / 2;
         Node right;
         right.keys.assign(n.keys.begin() + middle, n.keys.end());
@@ -76,12 +100,17 @@ std::optional<BTree::Split> BTree::put_node(uint64_t& root, int64_t key, Ref val
         uint64_t offset = store_.allocate_page(); owned_.insert(offset);
         save(root, n); save(offset, right); return Split{right.keys.front(), offset};
     }
-    size_t pos = std::upper_bound(n.keys.begin(), n.keys.end(), key) - n.keys.begin();
-    auto split = put_node(n.children[pos], key, value, replace);
-    if (split) {
-        n.keys.insert(n.keys.begin() + pos, split->key);
-        n.children.insert(n.children.begin() + pos + 1, split->right);
-    }
+    const size_t pos = page_bound(p, count, key, true);
+    const size_t pointer = child_position(pos); const uint64_t previous = read_le(p.data() + pointer, 8);
+    uint64_t child = previous; auto split = put_node(child, key, value, replace);
+    // An already-owned child may change without changing its address. Its
+    // parent's immutable separator bytes then need neither decoding nor saving.
+    if (!split && child == previous) return {};
+    root = own(root);
+    if (!split) { write_le(p.data() + pointer, child, 8); store_.set_page(root, p); return {}; }
+    auto n = load(root); n.children[pos] = child;
+    n.keys.insert(n.keys.begin() + pos, split->key);
+    n.children.insert(n.children.begin() + pos + 1, split->right);
     if (n.keys.size() <= INNER_MAX) { save(root, n); return std::nullopt; }
     size_t middle = n.keys.size() / 2;
     int64_t separator = n.keys[middle];

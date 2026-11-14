@@ -15,6 +15,7 @@ class RowOutput {
     std::string memory_;
     bool first_ = true;
     bool prepared_ = false;
+    bool spill_created_ = false;
     void append(const std::string& bytes);
 public:
     explicit RowOutput(const std::filesystem::path& directory) : path_(directory / "response.tmp") {}
