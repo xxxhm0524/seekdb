@@ -8,13 +8,13 @@ import sys
 import time
 from client import Client
 
-def run(directory, rows=5000):
+def run(directory, rows=5000, width=32768, memory_mib=96):
     assert os.environ.get("MVD_DOCKER_IMAGE"), "This test requires a real memory-limited Docker container"
-    memory = 96 * 1024 * 1024
-    db = Client(directory, timeout=60, env={"MVD_DOCKER_MEMORY": "96m", "MVD_VECTOR_CACHE_MIB": "0", "MVD_PAGE_CACHE_MIB": "1"})
-    payload = "x" * 32768
+    memory = memory_mib * 1024 * 1024
+    db = Client(directory, timeout=60, env={"MVD_DOCKER_MEMORY": f"{memory_mib}m", "MVD_VECTOR_CACHE_MIB": "0", "MVD_PAGE_CACHE_MIB": "1"})
+    payload = "x" * width
     try:
-        db.execute("CREATE TABLE t(id BIGINT PRIMARY KEY,content VARCHAR(32768),bucket BIGINT,v VECTOR(2));")
+        db.execute(f"CREATE TABLE t(id BIGINT PRIMARY KEY,content VARCHAR({width}),bucket BIGINT,v VECTOR(2));")
         start = time.monotonic()
         for base in range(0, rows, 10):
             values = ",".join(f"({key},'{payload}',{key%7},'[{key%23},{key%29}]')" for key in range(base, min(base+10, rows)))
@@ -50,9 +50,12 @@ if __name__ == "__main__":
     sys.stdout.reconfigure(encoding="utf-8")
     p = argparse.ArgumentParser()
     p.add_argument("--output", required=True)
+    p.add_argument("--rows", type=int, default=5000)
+    p.add_argument("--payload", type=int, default=32768)
+    p.add_argument("--memory-mib", type=int, default=96)
     args = p.parse_args()
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=False)
-    result = run(output/"data")
+    result = run(output/"data", args.rows, args.payload, args.memory_mib)
     (output/"report.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
     print(json.dumps(result), flush=True)

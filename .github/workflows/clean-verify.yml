@@ -60,11 +60,15 @@ jobs:
           MVD_BIN="$PWD/build/minivectordb" python3 tests/crash_commit.py --output results/linux-crash-commit
       - name: Interrupt compaction exactly at replacement boundaries
         run: MVD_BIN="$PWD/build/minivectordb" python3 tests/compaction_crash.py --output results/linux-compaction-crash
-      - name: Measure projected query disk reads
+      - name: Measure projected query file reads
         run: MVD_BIN="$PWD/build/minivectordb" python3 tests/projection_io.py --output results/linux-projection-io
       - name: Atomic error response on final flush failure
         if: ${{ !cancelled() }}
         run: MVD_BIN="$PWD/build/minivectordb" python3 tests/response_failure.py --output results/linux-response-failure
+      - name: Actual 2 GiB memory budget with larger persistent data
+        env:
+          MVD_DOCKER_IMAGE: mvd-clean
+        run: python3 tests/capacity.py --output results/linux-capacity-2g --rows 40000 --payload 65536 --memory-mib 2048
       - name: Preserve reports and stderr
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -76,4 +80,32 @@ jobs:
             results/**/cases.json
             results/**/*.log
             results/provenance/*.txt
+          if-no-files-found: warn
+  sanitizers:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Build with ASan UBSan and library assertions
+        run: |
+          mkdir -p build
+          g++ -Isrc -Ithird_party -std=c++20 -O1 -g -ffp-contract=off -D_GLIBCXX_ASSERTIONS \
+            -fsanitize=address,undefined -fno-omit-frame-pointer src/*.cpp -o build/minivectordb-asan
+      - name: Sanitized protocol state machine and large tree
+        env:
+          MVD_BIN: ${{ github.workspace }}/build/minivectordb-asan
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: |
+          python3 tests/client.py --output results/asan-public
+          python3 tests/invariants.py --output results/asan-invariants
+          python3 tests/space_reuse.py --output results/asan-space
+      - name: Preserve sanitizer reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: sanitizer-verification-${{ github.sha }}
+          path: |
+            results/**/report.json
+            results/**/*.log
           if-no-files-found: warn
