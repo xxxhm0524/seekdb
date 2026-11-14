@@ -255,19 +255,29 @@ std::optional<std::vector<VectorIndex::Hit>> VectorIndex::screen_search(const st
     auto better = [&](const Hit& a, const Hit& b) {
         return a.distance == b.distance ? entries_[a.entry].key < entries_[b.entry].key : a.distance < b.distance;
     };
-    std::vector<Hit> hits; hits.reserve(count);
+    std::sort(candidates.begin(), candidates.begin() + count, less);
+    std::vector<Hit> hits; hits.reserve(std::min(count, k));
+    auto finish = [&]() -> std::optional<std::vector<Hit>> {
+        std::sort(hits.begin(), hits.end(), better); return std::move(hits);
+    };
     for (size_t i = 0; i < count; ++i) {
         const size_t entry = candidates[i].entry; double sum = 0;
         for (size_t d = 0; d < dimensions_; ++d) { double delta = double(coordinate(entry, d)) - double(query[d]); sum += delta * delta; }
-        hits.push_back({entry, std::sqrt(sum)}); if (stats) ++stats->exact_rows;
+        Hit hit{entry, std::sqrt(sum)}; if (stats) ++stats->exact_rows;
+        if (hits.size() < k) { hits.push_back(hit); std::push_heap(hits.begin(), hits.end(), better); }
+        else if (better(hit, hits.front())) {
+            std::pop_heap(hits.begin(), hits.end(), better); hits.back() = hit;
+            std::push_heap(hits.begin(), hits.end(), better);
+        }
+        // Sorted selected scores precede every excluded score. Therefore the
+        // next selected score bounds BOTH the remaining shortlist and all
+        // excluded rows. Stop only when that entire suffix is certified worse.
+        const int32_t pending = i + 1 < count ? candidates[i + 1].score : candidates[count - 1].score;
+        if (hits.size() == k && screen_->lower(encoded, pending) > screen_->reference_upper(hits.front().distance)) return finish();
     }
-    std::sort(hits.begin(), hits.end(), better);
-    if (hits.size() > k) hits.resize(k);
     // Strict > protects both exact-distance and rounded-sqrt ties. Any unknown
     // bound, close boundary or unsupported environment retains the full path.
-    // The capacity-th estimate is no greater than every excluded estimate,
-    // since the heap threshold only decreases while scanning.
-    if (selected <= capacity || (hits.size() == k && screen_->lower(encoded, candidates[0].score) > screen_->reference_upper(hits.back().distance))) return hits;
+    if (selected <= capacity) return finish();
     return {};
 }
 }

@@ -38,7 +38,7 @@ static Json tree(std::mt19937& rng, unsigned depth = 0) {
     }
     }
 }
-int main() {
+int main() try {
     std::mt19937 rng(434291); size_t checked = 0, fast_count = 0;
     auto check = [&](const std::string& input) {
         bool old_ok = false, new_ok = false, fast = false; Json old_value, new_value;
@@ -75,4 +75,6 @@ int main() {
     require(checksum == 0, "request timing checksum");
     std::cout << "{\"passed\":true,\"parity_cases\":" << checked << ",\"fast_cases\":" << fast_count
               << ",\"large_string_bytes\":250000,\"timed_frames\":200,\"original_seconds\":" << old_seconds << ",\"fast_seconds\":" << new_seconds << "}\n";
+} catch (const std::exception& error) {
+    std::cout << Json({{"passed", false}, {"error", error.what()}}).dump() << '\n'; return 1;
 }

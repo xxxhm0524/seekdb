@@ -15,7 +15,7 @@ static void same(const std::vector<VectorIndex::Hit>& a, const std::vector<Vecto
     for (size_t i = 0; i < a.size(); ++i)
         require(a[i].entry == b[i].entry && std::bit_cast<uint64_t>(a[i].distance) == std::bit_cast<uint64_t>(b[i].distance), "certificate exact bits or ties");
 }
-int main(int argc, char** argv) {
+int main(int argc, char** argv) try {
     require(argc == 2, "usage: probe EMPTY_DIRECTORY");
     const std::filesystem::path directory = argv[1];
     require(!std::filesystem::exists(directory), "probe directory already exists");
@@ -105,6 +105,8 @@ int main(int argc, char** argv) {
                 timed_exact_rows += stats.exact_rows; timed_screened_rows += stats.screened_rows;
             }
             screened_seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
+            if (QuantizedScreen::supported(dimensions))
+                require(timed_exact_rows < queries.size() * 32, "normal screening did not avoid remaining exact candidates");
         }
         // Unsupported rounding modes must decline the certificate, without mutation.
         const int previous = std::fegetround(); std::fesetround(FE_DOWNWARD);
@@ -134,4 +136,6 @@ int main(int argc, char** argv) {
               << ",\"certified\":" << certified << ",\"fallbacks\":" << fallbacks << ",\"timed_full_seconds\":" << full_seconds
               << ",\"timed_screen_seconds\":" << screened_seconds << ",\"timed_exact_rows\":" << timed_exact_rows
               << ",\"timed_screened_rows\":" << timed_screened_rows << "}\n";
+} catch (const std::exception& error) {
+    std::cout << Json({{"passed", false}, {"error", error.what()}}).dump() << '\n'; return 1;
 }
