@@ -1,0 +1,273 @@
+{
+  "passed": true,
+  "rounds": [
+    {
+      "body_bytes": 16,
+      "round": 0,
+      "seed": 91271,
+      "ours": {
+        "passed": true,
+        "write_seconds": 0.4171994849999976,
+        "prepare_seconds": 0.13883867399999872,
+        "query_seconds": 0.38811793900001135,
+        "memory_peak_bytes": 23334912,
+        "raw_io_stat": "8:0 rbytes=0 wbytes=7868416 rios=0 wios=310 dbytes=0 dios=0\n",
+        "storage_bytes": 7033359,
+        "exact_ids_checked": 1000
+      },
+      "reference": {
+        "passed": true,
+        "write_seconds": 0.3833927979999885,
+        "prepare_seconds": 0.08366396700000678,
+        "query_seconds": 0.3662573130000055,
+        "memory_peak_bytes": 15863808,
+        "raw_io_stat": "8:0 rbytes=0 wbytes=6115328 rios=0 wios=110 dbytes=0 dios=0\n",
+        "storage_bytes": 6115328,
+        "exact_ids_checked": 1000
+      },
+      "frozen": {
+        "passed": true,
+        "write_seconds": 0.7392813800000226,
+        "prepare_seconds": 0.06060262200000466,
+        "query_seconds": 0.7008358740000062,
+        "memory_peak_bytes": 21635072,
+        "raw_io_stat": "8:0 rbytes=0 wbytes=8056832 rios=0 wios=312 dbytes=0 dios=0\n",
+        "storage_bytes": 7223133,
+        "exact_ids_checked": 1000
+      }
+    },
+    {
+      "body_bytes": 16,
+      "round": 1,
+      "seed": 91272,
+      "reference": {
+        "passed": true,
+        "write_seconds": 0.37794703800000207,
+        "prepare_seconds": 0.08189913699999352,
+        "query_seconds": 0.3684671999999978,
+        "memory_peak_bytes": 15474688,
+        "raw_io_stat": "8:0 rbytes=0 wbytes=6115328 rios=0 wios=110 dbytes=0 dios=0\n",
+        "storage_bytes": 6115328,
+        "exact_ids_checked": 1000
+      },
+      "frozen": {
+        "passed": true,
+        "write_seconds": 0.711115441000004,
+        "prepare_seconds": 0.06219467999997619,
+        "query_seconds": 0.7046070830000133,
+        "memory_peak_bytes": 21594112,
+        "raw_io_stat": "8:0 rbytes=0 wbytes=8056832 rios=0 wios=312 dbytes=0 dios=0\n",
+        "storage_bytes": 7223133,
+        "exact_ids_checked": 1000
+      },
+      "ours": {
+        "passed": true,
+        "write_seconds": 0.39098275599999965,
+        "prepare_seconds": 0.1382690589999811,
+        "query_seconds": 0.3759355119999839,
+        "memory_peak_bytes": 22867968,
+        "raw_io_stat": "8:0 rbytes=0 wbytes=7868416 rios=0 wios=310 dbytes=0 dios=0\n",
+        "storage_bytes": 7033359,
+        "exact_ids_checked": 1000
+      }
+    },
+    {
+      "body_bytes": 16,
+      "round": 2,
+      "seed": 91273,
+      "frozen": {
+        "passed": true,
+        "write_seconds": 0.710743946000008,
+        "prepare_seconds": 0.06099168399998689,
+        "query_seconds": 0.6839998110000067,
+        "memory_peak_bytes": 21413888,
+        "raw_io_stat": "8:0 rbytes=0 wbytes=8056832 rios=0 wios=312 dbytes=0 dios=0\n",
+        "storage_bytes": 7223133,
+        "exact_ids_checked": 1000
+      },
+      "ours": {
+        "passed": true,
+        "write_seconds": 0.4065738959999976,
+        "prepare_seconds": 0.13796428100002345,
+        "query_seconds": 0.3701758489999918,
+        "memory_peak_bytes": 23040000,
+        "raw_io_stat": "8:0 rbytes=0 wbytes=7868416 rios=0 wios=310 dbytes=0 dios=0\n",
+        "storage_bytes": 7033359,
+        "exact_ids_checked": 1000
+      },
+      "reference": {
+        "passed": true,
+        "write_seconds": 0.37775432500001216,
+        "prepare_seconds": 0.08419879100000571,
+        "query_seconds": 0.37022577500002285,
+        "memory_peak_bytes": 15015936,
+        "raw_io_stat": "8:0 rbytes=0 wbytes=6115328 rios=0 wios=110 dbytes=0 dios=0\n",
+        "storage_bytes": 6115328,
+        "exact_ids_checked": 1000
+      }
+    },
+    {
+      "body_bytes": 1024,
+      "round": 0,
+      "seed": 91271,
+      "ours": {
+        "passed": true,
+        "write_seconds": 0.548975071000001,
+        "prepare_seconds": 0.1426201669999898,
+        "query_seconds": 0.38180507100000227,
+        "memory_peak_bytes": 33992704,
+        "raw_io_stat": "8:0 rbytes=0 wbytes=18104320 rios=0 wios=311 dbytes=0 dios=0\n",
+        "storage_bytes": 17269555,
+        "exact_ids_checked": 1000
+      },
+      "reference": {
+        "passed": true,
+        "write_seconds": 0.5505291329999977,
+        "prepare_seconds": 0.15328231899999878,
+        "query_seconds": 0.44270956100001513,
+        "memory_peak_bytes": 32034816,
+        "raw_io_stat": "8:0 rbytes=0 wbytes=16355328 rios=0 wios=110 dbytes=0 dios=0\n",
+        "storage_bytes": 16355328,
+        "exact_ids_checked": 1000
+      },
+      "frozen": {
+        "passed": true,
+        "write_seconds": 0.9912838429999908,
+        "prepare_seconds": 0.06495551400001887,
+        "query_seconds": 0.7128240920000053,
+        "memory_peak_bytes": 32546816,
+        "raw_io_stat": "8:0 rbytes=0 wbytes=18194432 rios=0 wios=313 dbytes=0 dios=0\n",
+        "storage_bytes": 17362929,
+        "exact_ids_checked": 1000
+      }
+    },
+    {
+      "body_bytes": 1024,
+      "round": 1,
+      "seed": 91272,
+      "reference": {
+        "passed": true,
+        "write_seconds": 0.5835524690000398,
+        "prepare_seconds": 0.15338014700000713,
+        "query_seconds": 0.45721381300000985,
+        "memory_peak_bytes": 31784960,
+        "raw_io_stat": "8:0 rbytes=0 wbytes=16355328 rios=0 wios=110 dbytes=0 dios=0\n",
+        "storage_bytes": 16355328,
+        "exact_ids_checked": 1000
+      },
+      "frozen": {
+        "passed": true,
+        "write_seconds": 0.9757769189999976,
+        "prepare_seconds": 0.06415706300003876,
+        "query_seconds": 0.6893237209999938,
+        "memory_peak_bytes": 32690176,
+        "raw_io_stat": "8:0 rbytes=0 wbytes=18194432 rios=0 wios=313 dbytes=0 dios=0\n",
+        "storage_bytes": 17362929,
+        "exact_ids_checked": 1000
+      },
+      "ours": {
+        "passed": true,
+        "write_seconds": 0.5413548100000298,
+        "prepare_seconds": 0.1407642160000364,
+        "query_seconds": 0.3775935749999917,
+        "memory_peak_bytes": 33452032,
+        "raw_io_stat": "8:0 rbytes=0 wbytes=18104320 rios=0 wios=311 dbytes=0 dios=0\n",
+        "storage_bytes": 17269555,
+        "exact_ids_checked": 1000
+      }
+    },
+    {
+      "body_bytes": 1024,
+      "round": 2,
+      "seed": 91273,
+      "frozen": {
+        "passed": true,
+        "write_seconds": 0.9830588190000071,
+        "prepare_seconds": 0.0646655940000187,
+        "query_seconds": 0.6925121140000101,
+        "memory_peak_bytes": 32018432,
+        "raw_io_stat": "8:0 rbytes=0 wbytes=18194432 rios=0 wios=313 dbytes=0 dios=0\n",
+        "storage_bytes": 17362929,
+        "exact_ids_checked": 1000
+      },
+      "ours": {
+        "passed": true,
+        "write_seconds": 0.5357322360000012,
+        "prepare_seconds": 0.1419202310000287,
+        "query_seconds": 0.3709890900000232,
+        "memory_peak_bytes": 33710080,
+        "raw_io_stat": "8:0 rbytes=0 wbytes=18104320 rios=0 wios=311 dbytes=0 dios=0\n",
+        "storage_bytes": 17269555,
+        "exact_ids_checked": 1000
+      },
+      "reference": {
+        "passed": true,
+        "write_seconds": 0.5591338969999811,
+        "prepare_seconds": 0.1536184349999985,
+        "query_seconds": 0.4434723530000042,
+        "memory_peak_bytes": 32174080,
+        "raw_io_stat": "8:0 rbytes=0 wbytes=16355328 rios=0 wios=110 dbytes=0 dios=0\n",
+        "storage_bytes": 16355328,
+        "exact_ids_checked": 1000
+      }
+    }
+  ],
+  "medians": {
+    "16": {
+      "ours": {
+        "write_seconds": 0.4065738959999976,
+        "query_seconds": 0.3759355119999839,
+        "memory_peak_bytes": 23040000,
+        "storage_bytes": 7033359
+      },
+      "reference": {
+        "write_seconds": 0.37794703800000207,
+        "query_seconds": 0.3684671999999978,
+        "memory_peak_bytes": 15474688,
+        "storage_bytes": 6115328
+      },
+      "frozen": {
+        "write_seconds": 0.711115441000004,
+        "query_seconds": 0.7008358740000062,
+        "memory_peak_bytes": 21594112,
+        "storage_bytes": 7223133
+      },
+      "ours_over_reference_query_time": 1.0202685937852436,
+      "ours_over_frozen_query_time": 0.5364102009423971
+    },
+    "1024": {
+      "ours": {
+        "write_seconds": 0.5413548100000298,
+        "query_seconds": 0.3775935749999917,
+        "memory_peak_bytes": 33710080,
+        "storage_bytes": 17269555
+      },
+      "reference": {
+        "write_seconds": 0.5591338969999811,
+        "query_seconds": 0.4434723530000042,
+        "memory_peak_bytes": 32034816,
+        "storage_bytes": 16355328
+      },
+      "frozen": {
+        "write_seconds": 0.9830588190000071,
+        "query_seconds": 0.6925121140000101,
+        "memory_peak_bytes": 32546816,
+        "storage_bytes": 17362929
+      },
+      "ours_over_reference_query_time": 0.8514478353512787,
+      "ours_over_frozen_query_time": 0.5452519419753951
+    }
+  },
+  "reference_commit": "dfee55b84284f4c39d2df45951cdbcb1d1baf1a2",
+  "reference_evidence": {
+    "source": "author-published user-supplied platform feedback",
+    "url": "https://github.com/juanzhi-gcb/seekdb/blob/42f69e8320dcd8c802614f10cfb0699aa7551d2c/agent/conversation.json",
+    "json_pointer": "/experiments/43/output",
+    "mysql": "passed",
+    "agent_prompt_raw_score": 6.5,
+    "independently_authenticated_platform_record": false
+  },
+  "frozen_baseline_commit": "bcd4a3f9bfefbbe940694b498f2b1f5c1fc35a6b",
+  "environment": "Each server: same GCC 13.5 O3 toolchain and Ubuntu runtime; 2 CPU, 2 GiB, swap disabled, read-only root and no network. This controls the toolchain and is not the reference author's original Alpine/GCC 14 production image.",
+  "scope": "Input SQL and independent truth are prepared outside timers. Timers include request serialization, IPC, responses and server persistence. Query prep and oracle work are excluded. Memory peak includes prep and page cache. Raw io.stat is observational; no official B, E, rank or score is inferred."
+}

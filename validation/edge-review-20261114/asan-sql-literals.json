@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "roundtripped_literals": 528,
+  "malformed_rejected": 5,
+  "large_literal_bytes": 80000,
+  "unicode_and_nul": true,
+  "quoted_identifiers": true,
+  "rollback_and_restart": true
+}

@@ -1,0 +1,19 @@
+{
+  "passed": true,
+  "clause_scenarios": [
+    "ready_before_input_exact_object_and_no_chatter",
+    "fragmented_utf8_line_escaped_controls_semicolons_and_per_request_flush",
+    "query_columns_order_arrays_empty_rows_finite_distance_and_typed_bigint",
+    "signed_bigint_limits_and_beyond_double_precision",
+    "integer_affected_rows_nonfatal_sql_errors_and_statement_atomicity",
+    "complete_json_utf8_no_duplicates_nonfinite_or_raw_sql_prefix_execution",
+    "execute_search_modes_and_invalid_mode_rejection",
+    "shutdown_ack_flush_exit_zero_and_no_extra_stdout",
+    "shutdown_rolls_back_uncommitted_and_preserves_confirmed_commits",
+    "eof_rolls_back_and_emits_no_extra_response",
+    "independent_case_directory_is_empty"
+  ],
+  "malformed_frames_rejected": 10,
+  "independently_parsed_wire": true,
+  "max_response_bytes": 16777216
+}

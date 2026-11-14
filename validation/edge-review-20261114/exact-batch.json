@@ -1,0 +1,1 @@
+{"passed":true,"bit_checks":18432,"aos_scalar_seconds":0.17260650899999999,"kernels":[{"name":"scalar","seconds":0.077258643000000002,"checksum":18466360.485062122},{"name":"avx2","seconds":0.036216097000000003,"checksum":18466360.485062122},{"name":"avx512","seconds":0.035746576000000002,"checksum":18466360.485062122}]}

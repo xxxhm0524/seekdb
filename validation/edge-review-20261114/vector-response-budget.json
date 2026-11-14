@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "rows": 10000,
+  "dimensions": 128,
+  "configured_max_response_bytes": 16777216,
+  "actors": {
+    "ours": {
+      "ok": true,
+      "response_bytes": 14330893,
+      "within_official_limit": true,
+      "float32_bits_roundtrip": true
+    },
+    "reference": {
+      "ok": true,
+      "response_bytes": 14330893,
+      "within_official_limit": true,
+      "float32_bits_roundtrip": true
+    }
+  },
+  "scope": "Complete actual JSONL responses, checked with Python arbitrary-precision JSON and hardware float32 conversion; not an official score."
+}

@@ -1,0 +1,3358 @@
+{
+  "passed": false,
+  "observations": 439,
+  "qualifying_failures": [
+    {
+      "category": "protocol_id",
+      "input": {
+        "id": 18446744073709551616,
+        "op": "execute",
+        "sql": "SELECT id FROM t WHERE id=0;"
+      },
+      "ours": {
+        "columns": [
+          "id"
+        ],
+        "id": 1.8446744073709552e+19,
+        "ok": true,
+        "rows": [
+          [
+            0
+          ]
+        ]
+      },
+      "reference": {
+        "id": 18446744073709551616,
+        "ok": true,
+        "columns": [
+          "id"
+        ],
+        "rows": [
+          [
+            0
+          ]
+        ]
+      },
+      "different": false,
+      "qualifying_failure": true,
+      "independent_truth_failure": true
+    },
+    {
+      "category": "protocol_id",
+      "input": {
+        "id": 18446744073709551617,
+        "op": "execute",
+        "sql": "SELECT id FROM t WHERE id=0;"
+      },
+      "ours": {
+        "columns": [
+          "id"
+        ],
+        "id": 1.8446744073709552e+19,
+        "ok": true,
+        "rows": [
+          [
+            0
+          ]
+        ]
+      },
+      "reference": {
+        "id": 18446744073709551617,
+        "ok": true,
+        "columns": [
+          "id"
+        ],
+        "rows": [
+          [
+            0
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": true
+    },
+    {
+      "category": "protocol_id",
+      "input": {
+        "id": -9223372036854775809,
+        "op": "execute",
+        "sql": "SELECT id FROM t WHERE id=0;"
+      },
+      "ours": {
+        "columns": [
+          "id"
+        ],
+        "id": -9.223372036854776e+18,
+        "ok": true,
+        "rows": [
+          [
+            0
+          ]
+        ]
+      },
+      "reference": {
+        "id": -9223372036854775809,
+        "ok": true,
+        "columns": [
+          "id"
+        ],
+        "rows": [
+          [
+            0
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": true
+    },
+    {
+      "category": "protocol_id",
+      "input": {
+        "id": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,
+        "op": "execute",
+        "sql": "SELECT id FROM t WHERE id=0;"
+      },
+      "ours": {
+        "columns": [
+          "id"
+        ],
+        "id": 1e+100,
+        "ok": true,
+        "rows": [
+          [
+            0
+          ]
+        ]
+      },
+      "reference": {
+        "id": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,
+        "ok": true,
+        "columns": [
+          "id"
+        ],
+        "rows": [
+          [
+            0
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": true
+    },
+    {
+      "category": "protocol_id",
+      "input": {
+        "id": -10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,
+        "op": "execute",
+        "sql": "SELECT id FROM t WHERE id=0;"
+      },
+      "ours": {
+        "columns": [
+          "id"
+        ],
+        "id": -1e+100,
+        "ok": true,
+        "rows": [
+          [
+            0
+          ]
+        ]
+      },
+      "reference": {
+        "id": -10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,
+        "ok": true,
+        "columns": [
+          "id"
+        ],
+        "rows": [
+          [
+            0
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": true
+    },
+    {
+      "category": "protocol_id",
+      "input": {
+        "id": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,
+        "op": "execute",
+        "sql": "SELECT id FROM t WHERE id=0;"
+      },
+      "ours": {
+        "error": {
+          "code": "invalid_request",
+          "message": "malformed JSON"
+        },
+        "id": null,
+        "ok": false
+      },
+      "reference": {
+        "id": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,
+        "ok": true,
+        "columns": [
+          "id"
+        ],
+        "rows": [
+          [
+            0
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": true
+    },
+    {
+      "category": "protocol_id",
+      "input": {
+        "id": 1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,
+        "op": "execute",
+        "sql": "SELECT id FROM t WHERE id=0;"
+      },
+      "ours": {
+        "error": {
+          "code": "invalid_request",
+          "message": "malformed JSON"
+        },
+        "id": null,
+        "ok": false
+      },
+      "reference": {
+        "id": 1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,
+        "ok": true,
+        "columns": [
+          "id"
+        ],
+        "rows": [
+          [
+            0
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": true
+    },
+    {
+      "category": "protocol_id",
+      "input": {
+        "id": [
+          "id",
+          18446744073709551617
+        ],
+        "op": "execute",
+        "sql": "SELECT id FROM t WHERE id=0;"
+      },
+      "ours": {
+        "columns": [
+          "id"
+        ],
+        "id": [
+          "id",
+          1.8446744073709552e+19
+        ],
+        "ok": true,
+        "rows": [
+          [
+            0
+          ]
+        ]
+      },
+      "reference": {
+        "id": [
+          "id",
+          18446744073709551617
+        ],
+        "ok": true,
+        "columns": [
+          "id"
+        ],
+        "rows": [
+          [
+            0
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": true
+    },
+    {
+      "category": "protocol_id",
+      "input": {
+        "id": {
+          "n": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,
+          "list": [
+            true,
+            null,
+            "é"
+          ]
+        },
+        "op": "execute",
+        "sql": "SELECT id FROM t WHERE id=0;"
+      },
+      "ours": {
+        "error": {
+          "code": "invalid_request",
+          "message": "malformed JSON"
+        },
+        "id": null,
+        "ok": false
+      },
+      "reference": {
+        "id": {
+          "n": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,
+          "list": [
+            true,
+            null,
+            "é"
+          ]
+        },
+        "ok": true,
+        "columns": [
+          "id"
+        ],
+        "rows": [
+          [
+            0
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": true
+    },
+    {
+      "category": "unknown_metadata",
+      "input": {
+        "id": "metadata",
+        "op": "execute",
+        "sql": "SELECT id FROM t WHERE id=0;",
+        "extra": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+      },
+      "ours": {
+        "error": {
+          "code": "invalid_request",
+          "message": "malformed JSON"
+        },
+        "id": null,
+        "ok": false
+      },
+      "reference": {
+        "id": "metadata",
+        "ok": true,
+        "columns": [
+          "id"
+        ],
+        "rows": [
+          [
+            0
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true
+    },
+    {
+      "category": "unknown_metadata",
+      "input": {
+        "id": "metadata",
+        "op": "execute",
+        "sql": "SELECT id FROM t WHERE id=0;",
+        "extra": {
+          "nested": [
+            10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+          ]
+        }
+      },
+      "ours": {
+        "error": {
+          "code": "invalid_request",
+          "message": "malformed JSON"
+        },
+        "id": null,
+        "ok": false
+      },
+      "reference": {
+        "id": "metadata",
+        "ok": true,
+        "columns": [
+          "id"
+        ],
+        "rows": [
+          [
+            0
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,[+0,0,0]) AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid numeric vector literal"
+        },
+        "id": 7,
+        "ok": false
+      },
+      "reference": {
+        "id": 7,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            -3,
+            0
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,'[+0,0,0]') AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid vector number"
+        },
+        "id": 8,
+        "ok": false
+      },
+      "reference": {
+        "id": 8,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            -3,
+            0
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,[+1,0,0]) AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid numeric vector literal"
+        },
+        "id": 11,
+        "ok": false
+      },
+      "reference": {
+        "id": 11,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            -3,
+            1
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,'[+1,0,0]') AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid vector number"
+        },
+        "id": 12,
+        "ok": false
+      },
+      "reference": {
+        "id": 12,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            -3,
+            1
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,[.5,0,0]) AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid numeric vector literal"
+        },
+        "id": 15,
+        "ok": false
+      },
+      "reference": {
+        "id": 15,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            -3,
+            0.5
+          ],
+          [
+            0,
+            0.5
+          ],
+          [
+            1,
+            0.5
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,'[.5,0,0]') AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid vector number"
+        },
+        "id": 16,
+        "ok": false
+      },
+      "reference": {
+        "id": 16,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            -3,
+            0.5
+          ],
+          [
+            0,
+            0.5
+          ],
+          [
+            1,
+            0.5
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,[-.5,0,0]) AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid numeric vector literal"
+        },
+        "id": 17,
+        "ok": false
+      },
+      "reference": {
+        "id": 17,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            -3,
+            0.5
+          ],
+          [
+            2,
+            1.118033988749895
+          ],
+          [
+            3,
+            1.118033988749895
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,'[-.5,0,0]') AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid vector number"
+        },
+        "id": 18,
+        "ok": false
+      },
+      "reference": {
+        "id": 18,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            -3,
+            0.5
+          ],
+          [
+            2,
+            1.118033988749895
+          ],
+          [
+            3,
+            1.118033988749895
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,[+.5,0,0]) AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid numeric vector literal"
+        },
+        "id": 19,
+        "ok": false
+      },
+      "reference": {
+        "id": 19,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            -3,
+            0.5
+          ],
+          [
+            0,
+            0.5
+          ],
+          [
+            1,
+            0.5
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,'[+.5,0,0]') AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid vector number"
+        },
+        "id": 20,
+        "ok": false
+      },
+      "reference": {
+        "id": 20,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            -3,
+            0.5
+          ],
+          [
+            0,
+            0.5
+          ],
+          [
+            1,
+            0.5
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,[1.,0,0]) AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid numeric vector literal"
+        },
+        "id": 21,
+        "ok": false
+      },
+      "reference": {
+        "id": 21,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            -3,
+            1
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,'[1.,0,0]') AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "missing vector decimal digits"
+        },
+        "id": 22,
+        "ok": false
+      },
+      "reference": {
+        "id": 22,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            -3,
+            1
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,[-1.,0,0]) AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid numeric vector literal"
+        },
+        "id": 23,
+        "ok": false
+      },
+      "reference": {
+        "id": 23,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            -3,
+            1
+          ],
+          [
+            2,
+            1.4142135623730951
+          ],
+          [
+            3,
+            1.4142135623730951
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,'[-1.,0,0]') AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "missing vector decimal digits"
+        },
+        "id": 24,
+        "ok": false
+      },
+      "reference": {
+        "id": 24,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            -3,
+            1
+          ],
+          [
+            2,
+            1.4142135623730951
+          ],
+          [
+            3,
+            1.4142135623730951
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,[+1.,0,0]) AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid numeric vector literal"
+        },
+        "id": 25,
+        "ok": false
+      },
+      "reference": {
+        "id": 25,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            -3,
+            1
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,'[+1.,0,0]') AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid vector number"
+        },
+        "id": 26,
+        "ok": false
+      },
+      "reference": {
+        "id": 26,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            -3,
+            1
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,[01,0,0]) AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid numeric vector literal"
+        },
+        "id": 27,
+        "ok": false
+      },
+      "reference": {
+        "id": 27,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            -3,
+            1
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,'[01,0,0]') AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "missing vector separator"
+        },
+        "id": 28,
+        "ok": false
+      },
+      "reference": {
+        "id": 28,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            -3,
+            1
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,[001.25,0,0]) AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid numeric vector literal"
+        },
+        "id": 29,
+        "ok": false
+      },
+      "reference": {
+        "id": 29,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            0,
+            0.25
+          ],
+          [
+            1,
+            0.25
+          ],
+          [
+            -3,
+            1.25
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,'[001.25,0,0]') AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "missing vector separator"
+        },
+        "id": 30,
+        "ok": false
+      },
+      "reference": {
+        "id": 30,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            0,
+            0.25
+          ],
+          [
+            1,
+            0.25
+          ],
+          [
+            -3,
+            1.25
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,[+1e-2,0,0]) AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid numeric vector literal"
+        },
+        "id": 33,
+        "ok": false
+      },
+      "reference": {
+        "id": 33,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            -3,
+            0.009999999776482582
+          ],
+          [
+            0,
+            0.9900000002235174
+          ],
+          [
+            1,
+            0.9900000002235174
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,'[+1e-2,0,0]') AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid vector number"
+        },
+        "id": 34,
+        "ok": false
+      },
+      "reference": {
+        "id": 34,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            -3,
+            0.009999999776482582
+          ],
+          [
+            0,
+            0.9900000002235174
+          ],
+          [
+            1,
+            0.9900000002235174
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,[1.e2,0,0]) AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid numeric vector literal"
+        },
+        "id": 35,
+        "ok": false
+      },
+      "reference": {
+        "id": 35,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            0,
+            99
+          ],
+          [
+            1,
+            99
+          ],
+          [
+            -3,
+            100
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,'[1.e2,0,0]') AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "missing vector decimal digits"
+        },
+        "id": 36,
+        "ok": false
+      },
+      "reference": {
+        "id": 36,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            0,
+            99
+          ],
+          [
+            1,
+            99
+          ],
+          [
+            -3,
+            100
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "limits",
+      "sql": "SELECT id,L2_DISTANCE(v,'[0,0,0]') AS d FROM t WHERE n>=0 ORDER BY d LIMIT -0;",
+      "ours": {
+        "error": {
+          "code": "invalid_value",
+          "message": "invalid unsigned integer"
+        },
+        "id": 44,
+        "ok": false
+      },
+      "reference": {
+        "id": 44,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": []
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "limits",
+      "sql": "SELECT id,L2_DISTANCE(v,'[0,0,0]') AS d FROM t WHERE n>=0 ORDER BY d LIMIT -000;",
+      "ours": {
+        "error": {
+          "code": "invalid_value",
+          "message": "invalid unsigned integer"
+        },
+        "id": 45,
+        "ok": false
+      },
+      "reference": {
+        "id": 45,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": []
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "limits",
+      "sql": "SELECT id,L2_DISTANCE(v,'[0,0,0]') AS d FROM t WHERE n>=0 ORDER BY d LIMIT +1;",
+      "ours": {
+        "error": {
+          "code": "invalid_value",
+          "message": "invalid unsigned integer"
+        },
+        "id": 47,
+        "ok": false
+      },
+      "reference": {
+        "id": 47,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            0,
+            1
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "select_grammar",
+      "sql": "SELECT id,id FROM t ORDER BY id;",
+      "ours": {
+        "error": {
+          "code": "ambiguous_column",
+          "message": "ambiguous ORDER BY alias"
+        },
+        "id": 56,
+        "ok": false
+      },
+      "reference": {
+        "id": 56,
+        "ok": true,
+        "columns": [
+          "id",
+          "id"
+        ],
+        "rows": [
+          [
+            -3,
+            -3
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            2,
+            2
+          ],
+          [
+            3,
+            3
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "select_grammar",
+      "sql": "SELECT id,ID FROM t ORDER BY ID DESC;",
+      "ours": {
+        "error": {
+          "code": "ambiguous_column",
+          "message": "ambiguous ORDER BY alias"
+        },
+        "id": 57,
+        "ok": false
+      },
+      "reference": {
+        "id": 57,
+        "ok": true,
+        "columns": [
+          "id",
+          "id"
+        ],
+        "rows": [
+          [
+            3,
+            3
+          ],
+          [
+            2,
+            2
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            -3,
+            -3
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "select_grammar",
+      "sql": "SELECT n AS id,id FROM t ORDER BY id;",
+      "ours": {
+        "error": {
+          "code": "ambiguous_column",
+          "message": "ambiguous ORDER BY alias"
+        },
+        "id": 58,
+        "ok": false
+      },
+      "reference": {
+        "id": 58,
+        "ok": true,
+        "columns": [
+          "id",
+          "id"
+        ],
+        "rows": [
+          [
+            -7,
+            -3
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            7,
+            1
+          ],
+          [
+            7,
+            2
+          ],
+          [
+            9,
+            3
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "select_grammar",
+      "sql": "SELECT L2_DISTANCE(v,'[0,0,0]') AS id,id FROM t ORDER BY id LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "ambiguous_column",
+          "message": "ambiguous ORDER BY alias"
+        },
+        "id": 59,
+        "ok": false
+      },
+      "reference": {
+        "id": 59,
+        "ok": true,
+        "columns": [
+          "id",
+          "id"
+        ],
+        "rows": [
+          [
+            0,
+            -3
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_lexical_boundaries",
+      "sql": "SELECT id,L2_DISTANCE(v,'[1,\f0,0]') AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid vector number"
+        },
+        "id": 72,
+        "ok": false
+      },
+      "reference": {
+        "id": 72,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            -3,
+            1
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_lexical_boundaries",
+      "sql": "SELECT id,L2_DISTANCE(v,'[1/*ordinary*/,0,0]') AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "missing vector separator"
+        },
+        "id": 73,
+        "ok": false
+      },
+      "reference": {
+        "id": 73,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            -3,
+            1
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_lexical_boundaries",
+      "sql": "SELECT id,L2_DISTANCE(v,'[1,--line\n0,0]') AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid vector number"
+        },
+        "id": 74,
+        "ok": false
+      },
+      "reference": {
+        "id": 74,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            -3,
+            1
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,[+0,0,0]) AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid numeric vector literal"
+        },
+        "id": 85,
+        "ok": false
+      },
+      "reference": {
+        "id": 85,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            -3,
+            0
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,'[+0,0,0]') AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid vector number"
+        },
+        "id": 86,
+        "ok": false
+      },
+      "reference": {
+        "id": 86,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            -3,
+            0
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,[+1,0,0]) AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid numeric vector literal"
+        },
+        "id": 89,
+        "ok": false
+      },
+      "reference": {
+        "id": 89,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            -3,
+            1
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,'[+1,0,0]') AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid vector number"
+        },
+        "id": 90,
+        "ok": false
+      },
+      "reference": {
+        "id": 90,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            -3,
+            1
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,[.5,0,0]) AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid numeric vector literal"
+        },
+        "id": 93,
+        "ok": false
+      },
+      "reference": {
+        "id": 93,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            -3,
+            0.5
+          ],
+          [
+            0,
+            0.5
+          ],
+          [
+            1,
+            0.5
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,'[.5,0,0]') AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid vector number"
+        },
+        "id": 94,
+        "ok": false
+      },
+      "reference": {
+        "id": 94,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            -3,
+            0.5
+          ],
+          [
+            0,
+            0.5
+          ],
+          [
+            1,
+            0.5
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,[-.5,0,0]) AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid numeric vector literal"
+        },
+        "id": 95,
+        "ok": false
+      },
+      "reference": {
+        "id": 95,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            -3,
+            0.5
+          ],
+          [
+            2,
+            1.118033988749895
+          ],
+          [
+            3,
+            1.118033988749895
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,'[-.5,0,0]') AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid vector number"
+        },
+        "id": 96,
+        "ok": false
+      },
+      "reference": {
+        "id": 96,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            -3,
+            0.5
+          ],
+          [
+            2,
+            1.118033988749895
+          ],
+          [
+            3,
+            1.118033988749895
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,[+.5,0,0]) AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid numeric vector literal"
+        },
+        "id": 97,
+        "ok": false
+      },
+      "reference": {
+        "id": 97,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            -3,
+            0.5
+          ],
+          [
+            0,
+            0.5
+          ],
+          [
+            1,
+            0.5
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,'[+.5,0,0]') AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid vector number"
+        },
+        "id": 98,
+        "ok": false
+      },
+      "reference": {
+        "id": 98,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            -3,
+            0.5
+          ],
+          [
+            0,
+            0.5
+          ],
+          [
+            1,
+            0.5
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,[1.,0,0]) AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid numeric vector literal"
+        },
+        "id": 99,
+        "ok": false
+      },
+      "reference": {
+        "id": 99,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            -3,
+            1
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,'[1.,0,0]') AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "missing vector decimal digits"
+        },
+        "id": 100,
+        "ok": false
+      },
+      "reference": {
+        "id": 100,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            -3,
+            1
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,[-1.,0,0]) AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid numeric vector literal"
+        },
+        "id": 101,
+        "ok": false
+      },
+      "reference": {
+        "id": 101,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            -3,
+            1
+          ],
+          [
+            2,
+            1.4142135623730951
+          ],
+          [
+            3,
+            1.4142135623730951
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,'[-1.,0,0]') AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "missing vector decimal digits"
+        },
+        "id": 102,
+        "ok": false
+      },
+      "reference": {
+        "id": 102,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            -3,
+            1
+          ],
+          [
+            2,
+            1.4142135623730951
+          ],
+          [
+            3,
+            1.4142135623730951
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,[+1.,0,0]) AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid numeric vector literal"
+        },
+        "id": 103,
+        "ok": false
+      },
+      "reference": {
+        "id": 103,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            -3,
+            1
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,'[+1.,0,0]') AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid vector number"
+        },
+        "id": 104,
+        "ok": false
+      },
+      "reference": {
+        "id": 104,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            -3,
+            1
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,[01,0,0]) AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid numeric vector literal"
+        },
+        "id": 105,
+        "ok": false
+      },
+      "reference": {
+        "id": 105,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            -3,
+            1
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,'[01,0,0]') AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "missing vector separator"
+        },
+        "id": 106,
+        "ok": false
+      },
+      "reference": {
+        "id": 106,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            -3,
+            1
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,[001.25,0,0]) AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid numeric vector literal"
+        },
+        "id": 107,
+        "ok": false
+      },
+      "reference": {
+        "id": 107,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            0,
+            0.25
+          ],
+          [
+            1,
+            0.25
+          ],
+          [
+            -3,
+            1.25
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,'[001.25,0,0]') AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "missing vector separator"
+        },
+        "id": 108,
+        "ok": false
+      },
+      "reference": {
+        "id": 108,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            0,
+            0.25
+          ],
+          [
+            1,
+            0.25
+          ],
+          [
+            -3,
+            1.25
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,[+1e-2,0,0]) AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid numeric vector literal"
+        },
+        "id": 111,
+        "ok": false
+      },
+      "reference": {
+        "id": 111,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            -3,
+            0.009999999776482582
+          ],
+          [
+            0,
+            0.9900000002235174
+          ],
+          [
+            1,
+            0.9900000002235174
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,'[+1e-2,0,0]') AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid vector number"
+        },
+        "id": 112,
+        "ok": false
+      },
+      "reference": {
+        "id": 112,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            -3,
+            0.009999999776482582
+          ],
+          [
+            0,
+            0.9900000002235174
+          ],
+          [
+            1,
+            0.9900000002235174
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,[1.e2,0,0]) AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid numeric vector literal"
+        },
+        "id": 113,
+        "ok": false
+      },
+      "reference": {
+        "id": 113,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            0,
+            99
+          ],
+          [
+            1,
+            99
+          ],
+          [
+            -3,
+            100
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_numeric",
+      "sql": "SELECT id,L2_DISTANCE(v,'[1.e2,0,0]') AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "missing vector decimal digits"
+        },
+        "id": 114,
+        "ok": false
+      },
+      "reference": {
+        "id": 114,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            0,
+            99
+          ],
+          [
+            1,
+            99
+          ],
+          [
+            -3,
+            100
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "limits",
+      "sql": "SELECT id,L2_DISTANCE(v,'[0,0,0]') AS d FROM t WHERE n>=0 ORDER BY d LIMIT -0;",
+      "ours": {
+        "error": {
+          "code": "invalid_value",
+          "message": "invalid unsigned integer"
+        },
+        "id": 122,
+        "ok": false
+      },
+      "reference": {
+        "id": 122,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": []
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "limits",
+      "sql": "SELECT id,L2_DISTANCE(v,'[0,0,0]') AS d FROM t WHERE n>=0 ORDER BY d LIMIT -000;",
+      "ours": {
+        "error": {
+          "code": "invalid_value",
+          "message": "invalid unsigned integer"
+        },
+        "id": 123,
+        "ok": false
+      },
+      "reference": {
+        "id": 123,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": []
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "limits",
+      "sql": "SELECT id,L2_DISTANCE(v,'[0,0,0]') AS d FROM t WHERE n>=0 ORDER BY d LIMIT +1;",
+      "ours": {
+        "error": {
+          "code": "invalid_value",
+          "message": "invalid unsigned integer"
+        },
+        "id": 125,
+        "ok": false
+      },
+      "reference": {
+        "id": 125,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            0,
+            1
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "select_grammar",
+      "sql": "SELECT id,id FROM t ORDER BY id;",
+      "ours": {
+        "error": {
+          "code": "ambiguous_column",
+          "message": "ambiguous ORDER BY alias"
+        },
+        "id": 134,
+        "ok": false
+      },
+      "reference": {
+        "id": 134,
+        "ok": true,
+        "columns": [
+          "id",
+          "id"
+        ],
+        "rows": [
+          [
+            -3,
+            -3
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            2,
+            2
+          ],
+          [
+            3,
+            3
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "select_grammar",
+      "sql": "SELECT id,ID FROM t ORDER BY ID DESC;",
+      "ours": {
+        "error": {
+          "code": "ambiguous_column",
+          "message": "ambiguous ORDER BY alias"
+        },
+        "id": 135,
+        "ok": false
+      },
+      "reference": {
+        "id": 135,
+        "ok": true,
+        "columns": [
+          "id",
+          "id"
+        ],
+        "rows": [
+          [
+            3,
+            3
+          ],
+          [
+            2,
+            2
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            -3,
+            -3
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "select_grammar",
+      "sql": "SELECT n AS id,id FROM t ORDER BY id;",
+      "ours": {
+        "error": {
+          "code": "ambiguous_column",
+          "message": "ambiguous ORDER BY alias"
+        },
+        "id": 136,
+        "ok": false
+      },
+      "reference": {
+        "id": 136,
+        "ok": true,
+        "columns": [
+          "id",
+          "id"
+        ],
+        "rows": [
+          [
+            -7,
+            -3
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            7,
+            1
+          ],
+          [
+            7,
+            2
+          ],
+          [
+            9,
+            3
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "select_grammar",
+      "sql": "SELECT L2_DISTANCE(v,'[0,0,0]') AS id,id FROM t ORDER BY id LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "ambiguous_column",
+          "message": "ambiguous ORDER BY alias"
+        },
+        "id": 137,
+        "ok": false
+      },
+      "reference": {
+        "id": 137,
+        "ok": true,
+        "columns": [
+          "id",
+          "id"
+        ],
+        "rows": [
+          [
+            0,
+            -3
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_lexical_boundaries",
+      "sql": "SELECT id,L2_DISTANCE(v,'[1,\f0,0]') AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid vector number"
+        },
+        "id": 150,
+        "ok": false
+      },
+      "reference": {
+        "id": 150,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            -3,
+            1
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_lexical_boundaries",
+      "sql": "SELECT id,L2_DISTANCE(v,'[1/*ordinary*/,0,0]') AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "missing vector separator"
+        },
+        "id": 151,
+        "ok": false
+      },
+      "reference": {
+        "id": 151,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            -3,
+            1
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "vector_lexical_boundaries",
+      "sql": "SELECT id,L2_DISTANCE(v,'[1,--line\n0,0]') AS d FROM t ORDER BY d LIMIT 3;",
+      "ours": {
+        "error": {
+          "code": "invalid_vector",
+          "message": "invalid vector number"
+        },
+        "id": 152,
+        "ok": false
+      },
+      "reference": {
+        "id": 152,
+        "ok": true,
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            -3,
+            1
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "schema_extents",
+      "sql": "CREATE TABLE ext0(id BIGINT PRIMARY KEY,v VECTOR(+3));",
+      "ours": {
+        "error": {
+          "code": "invalid_value",
+          "message": "invalid unsigned integer"
+        },
+        "id": 158,
+        "ok": false
+      },
+      "reference": {
+        "id": 158,
+        "ok": true,
+        "affected_rows": 0
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "error_id",
+      "input": {
+        "id": {
+          "large": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+        },
+        "op": "execute",
+        "sql": "SELECT missing FROM t;"
+      },
+      "ours": {
+        "error": {
+          "code": "invalid_request",
+          "message": "malformed JSON"
+        },
+        "id": null,
+        "ok": false
+      },
+      "reference": {
+        "id": {
+          "large": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+        },
+        "ok": false,
+        "error": {
+          "code": "SCHEMA",
+          "message": "unknown column: missing"
+        }
+      },
+      "different": true,
+      "qualifying_failure": true
+    }
+  ],
+  "differences": [
+    {
+      "category": "limits",
+      "sql": "SELECT id,L2_DISTANCE(v,'[0,0,0]') AS d FROM t WHERE n>=0 ORDER BY d LIMIT 18446744073709551615;",
+      "ours": {
+        "columns": [
+          "id",
+          "d"
+        ],
+        "id": 51,
+        "ok": true,
+        "rows": [
+          [
+            0,
+            1.0
+          ],
+          [
+            1,
+            1.0
+          ],
+          [
+            2,
+            1.0
+          ],
+          [
+            3,
+            1.0
+          ]
+        ]
+      },
+      "reference": {
+        "id": 51,
+        "ok": false,
+        "error": {
+          "code": "SYNTAX",
+          "message": "BIGINT outside signed 64-bit range or invalid syntax"
+        }
+      },
+      "different": true,
+      "qualifying_failure": false,
+      "independent_truth_failure": false
+    },
+    {
+      "category": "limits",
+      "sql": "SELECT id,L2_DISTANCE(v,'[0,0,0]') AS d FROM t WHERE n>=0 ORDER BY d LIMIT 18446744073709551615;",
+      "ours": {
+        "columns": [
+          "id",
+          "d"
+        ],
+        "id": 129,
+        "ok": true,
+        "rows": [
+          [
+            0,
+            1.0
+          ],
+          [
+            1,
+            1.0
+          ],
+          [
+            2,
+            1.0
+          ],
+          [
+            3,
+            1.0
+          ]
+        ]
+      },
+      "reference": {
+        "id": 129,
+        "ok": false,
+        "error": {
+          "code": "SYNTAX",
+          "message": "BIGINT outside signed 64-bit range or invalid syntax"
+        }
+      },
+      "different": true,
+      "qualifying_failure": false,
+      "independent_truth_failure": false
+    }
+  ],
+  "independent_truth_failures": [
+    {
+      "category": "protocol_id",
+      "input": {
+        "id": 18446744073709551616,
+        "op": "execute",
+        "sql": "SELECT id FROM t WHERE id=0;"
+      },
+      "ours": {
+        "columns": [
+          "id"
+        ],
+        "id": 1.8446744073709552e+19,
+        "ok": true,
+        "rows": [
+          [
+            0
+          ]
+        ]
+      },
+      "reference": {
+        "id": 18446744073709551616,
+        "ok": true,
+        "columns": [
+          "id"
+        ],
+        "rows": [
+          [
+            0
+          ]
+        ]
+      },
+      "different": false,
+      "qualifying_failure": true,
+      "independent_truth_failure": true
+    },
+    {
+      "category": "protocol_id",
+      "input": {
+        "id": 18446744073709551617,
+        "op": "execute",
+        "sql": "SELECT id FROM t WHERE id=0;"
+      },
+      "ours": {
+        "columns": [
+          "id"
+        ],
+        "id": 1.8446744073709552e+19,
+        "ok": true,
+        "rows": [
+          [
+            0
+          ]
+        ]
+      },
+      "reference": {
+        "id": 18446744073709551617,
+        "ok": true,
+        "columns": [
+          "id"
+        ],
+        "rows": [
+          [
+            0
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": true
+    },
+    {
+      "category": "protocol_id",
+      "input": {
+        "id": -9223372036854775809,
+        "op": "execute",
+        "sql": "SELECT id FROM t WHERE id=0;"
+      },
+      "ours": {
+        "columns": [
+          "id"
+        ],
+        "id": -9.223372036854776e+18,
+        "ok": true,
+        "rows": [
+          [
+            0
+          ]
+        ]
+      },
+      "reference": {
+        "id": -9223372036854775809,
+        "ok": true,
+        "columns": [
+          "id"
+        ],
+        "rows": [
+          [
+            0
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": true
+    },
+    {
+      "category": "protocol_id",
+      "input": {
+        "id": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,
+        "op": "execute",
+        "sql": "SELECT id FROM t WHERE id=0;"
+      },
+      "ours": {
+        "columns": [
+          "id"
+        ],
+        "id": 1e+100,
+        "ok": true,
+        "rows": [
+          [
+            0
+          ]
+        ]
+      },
+      "reference": {
+        "id": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,
+        "ok": true,
+        "columns": [
+          "id"
+        ],
+        "rows": [
+          [
+            0
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": true
+    },
+    {
+      "category": "protocol_id",
+      "input": {
+        "id": -10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,
+        "op": "execute",
+        "sql": "SELECT id FROM t WHERE id=0;"
+      },
+      "ours": {
+        "columns": [
+          "id"
+        ],
+        "id": -1e+100,
+        "ok": true,
+        "rows": [
+          [
+            0
+          ]
+        ]
+      },
+      "reference": {
+        "id": -10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,
+        "ok": true,
+        "columns": [
+          "id"
+        ],
+        "rows": [
+          [
+            0
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": true
+    },
+    {
+      "category": "protocol_id",
+      "input": {
+        "id": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,
+        "op": "execute",
+        "sql": "SELECT id FROM t WHERE id=0;"
+      },
+      "ours": {
+        "error": {
+          "code": "invalid_request",
+          "message": "malformed JSON"
+        },
+        "id": null,
+        "ok": false
+      },
+      "reference": {
+        "id": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,
+        "ok": true,
+        "columns": [
+          "id"
+        ],
+        "rows": [
+          [
+            0
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": true
+    },
+    {
+      "category": "protocol_id",
+      "input": {
+        "id": 1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,
+        "op": "execute",
+        "sql": "SELECT id FROM t WHERE id=0;"
+      },
+      "ours": {
+        "error": {
+          "code": "invalid_request",
+          "message": "malformed JSON"
+        },
+        "id": null,
+        "ok": false
+      },
+      "reference": {
+        "id": 1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,
+        "ok": true,
+        "columns": [
+          "id"
+        ],
+        "rows": [
+          [
+            0
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": true
+    },
+    {
+      "category": "protocol_id",
+      "input": {
+        "id": [
+          "id",
+          18446744073709551617
+        ],
+        "op": "execute",
+        "sql": "SELECT id FROM t WHERE id=0;"
+      },
+      "ours": {
+        "columns": [
+          "id"
+        ],
+        "id": [
+          "id",
+          1.8446744073709552e+19
+        ],
+        "ok": true,
+        "rows": [
+          [
+            0
+          ]
+        ]
+      },
+      "reference": {
+        "id": [
+          "id",
+          18446744073709551617
+        ],
+        "ok": true,
+        "columns": [
+          "id"
+        ],
+        "rows": [
+          [
+            0
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": true
+    },
+    {
+      "category": "protocol_id",
+      "input": {
+        "id": {
+          "n": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,
+          "list": [
+            true,
+            null,
+            "é"
+          ]
+        },
+        "op": "execute",
+        "sql": "SELECT id FROM t WHERE id=0;"
+      },
+      "ours": {
+        "error": {
+          "code": "invalid_request",
+          "message": "malformed JSON"
+        },
+        "id": null,
+        "ok": false
+      },
+      "reference": {
+        "id": {
+          "n": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,
+          "list": [
+            true,
+            null,
+            "é"
+          ]
+        },
+        "ok": true,
+        "columns": [
+          "id"
+        ],
+        "rows": [
+          [
+            0
+          ]
+        ]
+      },
+      "different": true,
+      "qualifying_failure": true,
+      "independent_truth_failure": true
+    }
+  ],
+  "source_reference_commit": "dfee55b84284f4c39d2df45951cdbcb1d1baf1a2",
+  "scope": "Actual frozen reference and candidate processes; not an official platform admission or score."
+}

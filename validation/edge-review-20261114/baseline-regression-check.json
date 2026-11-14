@@ -1,0 +1,6 @@
+{
+  "passed": true,
+  "expected_failure_reproduced": true,
+  "qualifying_failure_observations": 81,
+  "baseline_commit": "2b96adab6659952701b876a4468e4011ac05793f"
+}

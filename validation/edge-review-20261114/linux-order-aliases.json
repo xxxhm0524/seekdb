@@ -1,0 +1,8 @@
+{
+  "passed": true,
+  "queries_checked": 22,
+  "duplicate_ordinary_projection": true,
+  "explicit_alias_precedence": true,
+  "explicit_duplicate_alias_rejected": true,
+  "index_rollback_and_restart": true
+}

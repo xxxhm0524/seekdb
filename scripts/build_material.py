@@ -1,98 +1,80 @@
-"""Build a truthful, bounded evidence document; never invent student dialogue."""
+"""Deterministic evidence from actual messages, qualified tests and red cases."""
 import hashlib
 import json
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-validation = ROOT/"validation/faster-review-20261114"
-history = ROOT/"validation/audit-20261114"
-provenance = json.loads((validation/"provenance.json").read_text(encoding="utf-8"))
-assert len(provenance) == 41
-assert sum(p["kind"] == "normal" for p in provenance.values()) == 37
-reports = []
-passed_count = 0
-paths = [validation/name for name in provenance] + list(validation.glob("red-*.json")) + [p for p in history.glob("*.json") if not p.name.startswith(("linux-", "asan-", "ci-source"))]
-for path in sorted(paths):
-    if path.name == "ci-source.json": continue
-    value = json.loads(path.read_text(encoding="utf-8"))
-    name = path.stem
-    current = path.parent == validation and path.name in provenance
-    if current:
-        assert value.get("passed") is True
-        passed_count += 1
-    reports.append(dict(id=name, stage=("verified_"+provenance[path.name]["kind"]) if current else "retained_development_observation",
-                        source_commit=provenance[path.name]["commit"] if current else "pre-fix development build; see preserved original report",
-                        source=provenance[path.name]["ci_url"] if current else path.relative_to(ROOT).as_posix(),
-                        output=json.dumps(value, ensure_ascii=False, indent=2)))
-assert passed_count == 41
-paired = json.loads((validation/"scored-reference-paired.json").read_text(encoding="utf-8"))
-comparison = []
-for width in ["16", "1024"]:
-    values = paired["medians"][width]
-    comparison.append(f"{width}-byte text: candidate write/query {values['ours']['write_seconds']:.6f}/{values['ours']['query_seconds']:.6f}s; successful reference {values['reference']['write_seconds']:.6f}/{values['reference']['query_seconds']:.6f}s; frozen bcd4a3f baseline {values['frozen']['write_seconds']:.6f}/{values['frozen']['query_seconds']:.6f}s.")
-material = {
-    "format": "actual-clean-rewrite-evidence-v1",
-    "synthetic": False,
-    "own_formal_evaluation": "Not submitted. The user explicitly deferred formal submission pending further review. Formal feedback about the public reference belongs only to that third party.",
-    "date": "2026-11-14",
-    "scope": "All user instructions for the clean rewrite are included verbatim below. Agent responses and tool results are selected factual records. The older implementation and older conversations are outside this rewrite. Hidden reasoning, credentials, unrelated conversations and generated test databases are omitted.",
-    "attribution": "The implementation, technical explanations and test design below are Agent work. The user supplied the task and the explicit decision to replace the earlier implementation. No student explanation of database mechanisms or experiments has been invented, and Agent work must not be treated as proof of student understanding.",
-    "conversations": [
-        {"id":"user-task", "role":"user", "content":"/goal [https://oceanbase.yuque.com/org-wiki-obtech-vh7w9r/hc3pio/lg8enxlmwg69unt6](https://oceanbase.yuque.com/org-wiki-obtech-vh7w9r/hc3pio/lg8enxlmwg69unt6)请你独立完成这道赛题，之前对话写的代码有很多问题，来来回回修改了10次也无法得分。对此你也可以看别人执行成功并得分的github的公开仓库中的代码"},
-        {"id":"user-rewrite", "role":"user", "content":"我觉得你在之前代码的基础上完成不如完全重新完成，那里已经成为了史山代码"},
-        {"id":"agent-rewrite", "role":"assistant", "content":"可以，改为从零重写。我会在新的独立目录中实现，旧代码保留作备份；只使用官方规则、协议和测试来建立验收标准。新实现会把 SQL、存储、事务恢复和向量查询分开，便于逐层验证。"},
-        {"id":"agent-red-loop", "role":"assistant", "content":"验收循环已跑通：官方空壳程序在 20 个公开用例中全部返回 NOT_IMPLEMENTED，测试能明确检出功能缺失。Windows 下官方驱动的进程通信层无法运行，我补了本地通信适配，断言仍使用未修改的官方比较器；后续还会在 Linux 容器中复测。"},
-        {"id":"agent-linux-progress", "role":"assistant", "content":"完整 Linux 容器验证已通过，包括把约 164 MB 业务数据放进 96 MiB 内存容器后进行查询、提交、回滚和强杀恢复。接下来整理运行说明、真实的 conversation.json 和提交包，再将验证版本合入规定的 2026-competition-round2 分支。"},
-        {"id":"user-formal-hold", "role":"user", "content":"我觉得先不要提测，确保没有任何问题后再提测"},
-        {"id":"user-expert-audit", "role":"user", "content":"你作为一名经验老道的数据库专家，这明显不是你应该犯的问题，请你吸取经验并仔细查找还有没有类似的问题"},
-        {"id":"user-successful-reference", "role":"user", "content":"你可以看看别人公开仓库的代码（前提是别人已经成功提交）"},
-        {"id":"agent-audit-progress", "role":"assistant", "content":"这处容量问题本应在设计阶段就用“有效数据不变、持续更新”的负载检出。之前的验证覆盖不足，我会据此调整审查方式：除了结果正确，还要检查资源是否持续增长、失败前后状态是否一致，以及非法输入是否被意外接受。发现的每个问题都会保留失败用例和修复后的验证记录。"},
-        {"id":"user-formal-hold-again", "role":"user", "content":"继续暂缓正式提测"},
-        {"id":"user-continued-successful-reference", "role":"user", "content":"你可以继续看看别人github的代码（前提对方通过），确保我们这次可以得到分数"},
-        {"id":"user-borrow-and-improve", "role":"user", "content":"你可以直接借鉴别人的代码，并且最好还能比他们的快"},
-        {"id":"user-continue-faster-review", "role":"user", "content":"继续"},
-        {"id":"user-direct-reference-question", "role":"user", "content":"你为什么不直接看别人的代码呢，这是符合比赛规定的"}
+ROOT=Path(__file__).resolve().parents[1]
+validation=ROOT/'validation/edge-review-20261114'
+provenance=json.loads((validation/'provenance.json').read_text(encoding='utf-8'))
+assert len(provenance)==53 and sum(p['kind']=='normal' for p in provenance.values())==47
+trace=json.loads((validation/'protocol-traceability.json').read_text(encoding='utf-8'))
+assert trace['all_requirements_have_passing_evidence'] and len(trace['requirements'])==20
+reports=[]
+for name,source in sorted(provenance.items()):
+    value=json.loads((validation/name).read_text(encoding='utf-8'));assert value['passed'] is True
+    reports.append(dict(id=Path(name).stem,stage='verified_'+source['kind'],source_commit=source['commit'],
+                        source=source['ci_url'],output=json.dumps(value,ensure_ascii=False,indent=2)))
+baseline=json.loads((validation/'red-predecessor-qualified-boundaries.json').read_text(encoding='utf-8'))
+budget=json.loads((validation/'red-vector-response-budget.json').read_text(encoding='utf-8'))
+assert baseline['passed'] is False and budget['passed'] is False
+groups={}
+for item in baseline['qualifying_failures']:groups[item['category']]=groups.get(item['category'],0)+1
+examples=[]
+for category in ['protocol_id','vector_numeric','limits','schema_extents','select_grammar']:
+    candidates=[x for x in baseline['qualifying_failures'] if x['category']==category]
+    if candidates:examples.append(candidates[0])
+red_summary={'passed':False,'baseline_commit':'2b96adab6659952701b876a4468e4011ac05793f',
+             'qualifying_failure_observations':len(baseline['qualifying_failures']),'by_category':groups,'actual_examples':examples,
+             'full_trace_file':'validation/edge-review-20261114/red-predecessor-qualified-boundaries.json'}
+reports.extend([
+    dict(id='red-predecessor-boundaries',stage='retained_actual_failure',source_commit=red_summary['baseline_commit'],
+         source='validation/edge-review-20261114/red-predecessor-qualified-boundaries.json',output=json.dumps(red_summary,ensure_ascii=False,indent=2)),
+    dict(id='red-vector-response-budget',stage='retained_actual_failure',source_commit='f7c1e39663ad21836fc811250574a0f971da399e',
+         source='https://github.com/xxxhm0524/seekdb/actions/runs/43597854434',output=json.dumps(budget,ensure_ascii=False,indent=2))])
+paired=json.loads((validation/'scored-reference-paired.json').read_text(encoding='utf-8'))
+comparisons=[]
+for width in ['16','1024']:
+    m=paired['medians'][width]
+    comparisons.append(f"{width}-byte text: candidate write/query {m['ours']['write_seconds']:.6f}/{m['ours']['query_seconds']:.6f}s; qualified reference {m['reference']['write_seconds']:.6f}/{m['reference']['query_seconds']:.6f}s. Matched development timing, not a platform score.")
+material={
+    'format':'actual-clean-rewrite-evidence-v2','synthetic':False,'date':'2026-11-14',
+    'own_formal_evaluation':'Not submitted. The user explicitly continued to defer formal evaluation. Author-published formal success belongs only to the public reference.',
+    'scope':'Selected actual user/assistant messages and factual tool evidence from this clean rewrite. Credentials, unrelated chats, hidden reasoning and generated test databases are omitted.',
+    'attribution':'Implementation, integration and test work are Agent work. The user requested reference-based boundary auditing and explicitly challenged missing clause-by-clause protocol verification. No student database explanation or experiment is invented. The request parser and several cache/certificate designs are adapted from the attributed frozen public version.',
+    'conversations':json.loads((ROOT/'agent/actual_conversation.json').read_text(encoding='utf-8')),
+    'agent_design':[
+        'B+ tree pages are immutable after their creating SQL statement. Each statement copies the catalog and owns a new tail/page set; failure rewinds only that statement, retaining earlier successful statements in the transaction.',
+        'All row/catalog/page writes finish before alternate-root publication; a complete-file sync finishes before success is acknowledged. The declared competition model is process termination in a surviving kernel, not machine-power-loss ordering. Recovery preserves the latest acknowledged root and propagates allocation/schema failures.',
+        'A bounded page cache, 16 MiB working-column snapshot, external sorting and response spooling support a database larger than memory. History is compacted between transactions using a separate synced file and atomic replacement.',
+        'Both search modes return exact results. Scalar, AVX2 and AVX-512 lanes preserve dimension-ordered double accumulation without FMA. Integer screening is auxiliary: original float32 values remain authoritative and an exclusion certificate must succeed, otherwise all eligible records are evaluated.',
+        'Physical filtering clusters and contiguous-source certificate layout follow the frozen successful implementation. A full scan reblocks once. Only explicit AS names participate in ORDER BY alias resolution; repeated ordinary projection labels are legal.',
+        'The request parser is adapted directly from juanzhi-gcb/seekdb dfee55b84284f4c39d2df45951cdbcb1d1baf1a2 src/protocol/jsonl.hpp, source hash f9d04476c94e565a2e8efff6845b9c869ac02e351d04a4ab40e564f18ca18f23. It validates the complete frame and nested objects before dispatch and returns raw ID spans. Success, error, commit, shutdown and spooled replies echo them without numeric reinterpretation.',
+        'SQL vector binding accepts SQL decimal signs, leading/trailing decimal points, leading zeros, formfeed and comments. Delimiters, dimensions and finite float32 overflow-rounding limits remain checked. Numeric tokens cannot be concatenated across whitespace or comments.',
+        'Projected float32 components use shortest float32 round-trip decimals instead of double JSON nodes. Signed zero is retained, emitted numbers are finite, BIGINT stays exact and L2 distances keep double precision. Response spills are sealed before the first output byte.'
     ],
-    "agent_design": [
-        "Committed B+ tree pages are immutable. Each SQL statement owns a new set of pages and a tail mark. On statement failure the new tail is discarded, preserving earlier successful statements in the transaction.",
-        "All record/catalog/page writes complete before publishing the alternate checksummed root; the whole file is then synced before success is acknowledged. Like the reference, this uses the specified process-crash model with a surviving kernel. Machine-power-loss ordering would require an additional earlier barrier and is not established by these tests. Recovery selects a valid root and truncates only uncommitted tail data.",
-        "Table data and primary-key directories remain on disk. A bounded page cache, bounded vector snapshot/KD tree, external sorting and spooled responses avoid loading the whole database or result set.",
-        "Both search modes return exact results. Ordinary predicates are applied before candidate selection. KD bounds only prune strictly worse subtrees, retaining ties and primary-key ordering. Float32 storage/query conversion and ordered double accumulation are independently checked.",
-        "Between transactions, committed history is compacted by streaming current rows to a separate fully synced database and atomically replacing the main file. The old database remains intact until replacement; the current row/page references are refreshed before any later statement executes.",
-        "Projected reads skip unused variable-length payloads. Response spill files finish flush/close/open before stdout publication. A failure after publication terminates the channel rather than appending a second JSON object.",
-        "The continued reference review found a performance admission cliff caused by retaining unrelated document text. The snapshot now owns only vector/filter/sort working columns and loads uncached winner fields by stored row reference. Its budget remains 16 MiB.",
-        "Coordinates are stored once in 32-candidate blocks. Every lane accumulates dimensions in the same scalar float64 order without FMA. CPU dispatch has scalar, AVX2 and AVX-512 implementations. Direct numeric binding validates the entire vector grammar and finite float32 boundaries; raw NUL tails are explicitly rejected in both vector literals and JSONL frames.",
-        "Following the user's request to borrow successful designs, working rows are physically clustered by a filter column and searched with binary bounds. A bounded int8 auxiliary index uses conservative triangle-inequality error certificates; every returned distance is computed from original float32 values with the existing ordered-double loop. Unsupported or unproved cases fall back to complete exact search. The remaining shortlist can be skipped only when its entire suffix is certified worse, including rounded-sqrt ties. The successful reference's TypedScanCache::finish also keeps source rows contiguous for certificate reranking; this layout choice is now used directly, with a one-time return to blocked layout when a full scan is needed.",
-        "INSERT groups at most 64 KiB of record bytes and 1024 positions; larger records bypass the group. B+ tree lookups and unsplit updates work directly on owned pages. The copy-on-write ownership and SQL-statement rewind boundaries remain unchanged.",
-        "A diagnostic Linux CPU profile identified per-character input decoding and copying. SQL quoted spans now use bulk copies while preserving escape handling. The pinned general-purpose RapidJSON decoder validates raw UTF-8 and JSON escapes, checks duplicate keys at every depth, uses owned SSE padding, and delegates float or out-of-range numeric frames to the original strict decoder. Neither JSON library executes database core functions."
+    'protocol_requirements':[{k:v for k,v in item.items() if k!='passing_evidence'} for item in trace['requirements']],
+    'experiments':reports,
+    'agent_retrospective':[
+        'The user correctly challenged the verification process. Previous parity used the old bounded-number DOM as its oracle. Shared integer ID precision/type loss could pass that test. The new oracle uses the protocol, Python arbitrary-precision JSON values/types and validated raw spans.',
+        f"The frozen predecessor produced {len(baseline['qualifying_failures'])} qualifying failure observations in a replay against the actual reference with the corrected harness. These repeat root causes across indexed/unindexed and quoted/unquoted variants, not 81 independent bugs. Optional DDL/TX affected_rows:0 differences are excluded according to the protocol.",
+        'Confirmed gaps were arbitrary-precision/composite IDs and large ignored metadata, SQL vector decimal spellings, signed nonnegative LIMIT/schema extents, and duplicate ordinary projections incorrectly treated as ambiguous aliases. Full failing traces are retained.',
+        'A real-wire comparison found 25393654 bytes for a 10000-row, 128-dimensional vector projection versus reference 14330893, exceeding the 16777216-byte limit. Corrected output is 14330893 bytes; all 1280000 float32 components round-trip to identical bits.',
+        'Projection checks compare stored float32 bit patterns after JSON decoding rather than one exact-double decimal spelling. BIGINT types and text stay exact; double-distance tolerances are unchanged. This preserves a lossless float32 check while permitting compact correct text.',
+        'The 20-item protocol matrix maps UTF-8/framing, ready timing, flush, ID types, duplicates/nonfinite rejection, fields, errors, row types, shutdown/EOF, durability, Docker restrictions and byte limits to actual report hashes. This is finite-test evidence, not a proof for all input trees.',
+        'The full CI has 47 passing reports: official 20/20, IDs, clause-driven protocol, numeric syntax, alias scopes, SIGKILL/syscall cuts, byte invariance, ASan/UBSan, large-tree/external-sort and actual 2 GiB memory with 2621440000 payload bytes.',
+        'The full-process boundary corpus has 439 observations with no qualifying gap or independent-truth failure. The old image is also replayed to prove the harness detects the original gaps.',
+        ' '.join(comparisons),
+        'Earlier evidence stays under original directories and commits. Old passing tests did not establish that the old candidate was protocol-complete; new failures are preserved.'
     ],
-    "experiments": reports,
-    "agent_retrospective": [
-        "The first newly written version passed the 20 public cases, but that was not treated as formal admission. Independent state-machine, large-tree, external-sort, SIGKILL, hostile float32 and low-memory tests were then run.",
-        "An added boundary test initially failed for the finite float32 decimal 3.4028235e38. Comparing the input double directly to FLT_MAX incorrectly rejected a value that rounds to finite float32. The threshold was changed to the overflow rounding midpoint. The failing record and successful retest are preserved below.",
-        "The low-memory test actually stored 163840000 payload bytes in a container limited to 100663296 bytes. This is evidence for external-memory handling, not a claim based on an in-memory simulation.",
-        "The user's objection led to a broader lifecycle audit. Four real defects were reproduced: unbounded committed history, token concatenation accepting malformed vectors, unneeded wide-text reads, and partial JSON publication when the spill file's final flush failed. The preserved red reports and passing regressions support the fixes; they do not retroactively establish that the earlier candidate was bug-free.",
-        "A frozen public commit with author-published formal feedback was compiled as a reference. 1600 operations / 1629 requests across three tables agreed with both implementations and independent Python state. The original backslash escaping difference is recorded separately because the task does not specify that dialect choice. Later clustering and certification designs were borrowed and reimplemented with explicit attribution; the reference's learning material was not copied.",
-        "The expanded capacity test used the actual 2 GiB memory budget with 2621440000 bytes of business text. Compaction was interrupted exactly before and after file replacement. Recovery was then repeatedly interrupted at the real truncation syscall, twice before and twice after it, without readiness between interruptions. Committed rows survived and uncommitted changes were rolled back. ASan, UBSan and library assertions covered the protocol, state machine, large tree, compaction and all 120 column layouts.",
-        "The final file-opening audit reproduced two data-preservation defects: unknown nonempty files were initialized as empty, and an injected allocation failure while decoding the latest catalog caused rollback to an older committed root and truncation. Unknown formats now fail without changing bytes. Only recognized interrupted-empty-initialization patterns are retried. Recovery validates candidates newest-first and propagates allocation/schema failures without downgrading acknowledged state. Both failures have retained red cases and passing production/sanitizer regressions.",
-        "The renewed user request led to controlled same-toolchain performance comparisons with the publicly documented successful commit. Before the change, 1024-byte text exhausted the whole-row snapshot and caused much slower disk queries. A working-set pread probe reproduced that cause, then passed with projected snapshots. Blocked exact distance and direct numeric parsing were tested separately before integration.",
-        "An earlier controlled replay rotated the original 977fb6d baseline, then-current candidate and successful reference for three rounds. Its candidate query medians were 0.5805/0.5625s, before the subsequent clustering, integer-certificate and parser changes. Those earlier observations are retained under the earlier review directory rather than relabeled as the final candidate.",
-        "The final comparison rotates the bcd4a3f baseline, candidate and successful reference on the same runner for three rounds using the same toolchain and resource limits. " + " ".join(comparison) + " These are measured development timings, not official E, rank or scores. The raw io.stat is retained without claiming official isolated-device B.",
-        "The added container byte-invariance test first failed because the host user could not read the container's mode-0600 file. Its hash is now read inside the owning container, without weakening production permissions or removing assertions. A secondary missing-binary failure followed the skipped extraction step; both failed records are retained and the full workflow was rerun.",
-        "Exact root-publication and sync syscall cuts preserve two-table atomicity. An ordinary acknowledged transaction performs one complete-file durability sync, and a 5000-row batched insertion performed 66 file writes. This is a process-crash experiment, not a power-loss experiment.",
-        "The quoted-span tests round-tripped 528 literals including an 80 KB value, backslashes, doubled delimiters, NUL and Unicode. The request decoder matched the established strict parser on 48279 valid/malformed cases, with float IDs and unusual exponents retaining the original decoder. The normal and sanitized production-source tests are listed below.",
-        "Local benchmark times and CI results are not formal platform scores. The nine retained formal inputs are unavailable. Formal admission and ranking require the platform to evaluate the locked submission."
-    ],
-    "limitations": [
-        "No real student technical interpretation was supplied during this autonomous rewrite; no such interpretation is synthesized here.",
-        "Compaction runs between transactions and needs temporary space for both old and new files; long transactions still need space for their uncommitted tails.",
-        "The active catalog, one SQL request and one decoded row must individually fit memory. The database as a whole need not fit memory.",
-        "For tables beyond the vector cache budget, exact disk scans preserve correctness and recall but can be slower."
+    'limitations':[
+        'The nine retained formal inputs are unavailable. Admission and competition points require platform evaluation of the locked commit; development CI is not a formal score.',
+        'Raw io.stat and file sizes are not inferred official isolated-device B. Timings and memory remain environment-dependent; superiority is not universal.',
+        'One catalog, one input and one row must fit memory. Compaction needs space for old and new files; long transactions need tail space.',
+        'The reference-style JSON parser has a nesting-depth guard. SQL NULL is outside the required SQL subset; null IDs are supported and tested.',
+        'No student technical interpretation is synthesized from autonomous Agent work.'
     ]
 }
-data = (json.dumps(material, ensure_ascii=False, indent=2, allow_nan=False)+"\n").encode("utf-8")
-assert len(data) <= 128*1024
-(ROOT/"agent").mkdir(exist_ok=True)
-for path in [ROOT/"conversation.json", ROOT/"agent/conversation.json"]:
-    path.write_bytes(data)
-print(json.dumps(dict(material_bytes=len(data), sha256=hashlib.sha256(data).hexdigest(), experiments=len(reports))))
+data=(json.dumps(material,ensure_ascii=False,indent=2,allow_nan=False)+'\n').encode('utf-8')
+assert len(data)<=128*1024
+for path in [ROOT/'conversation.json',ROOT/'agent/conversation.json']:path.write_bytes(data)
+print(json.dumps({'material_bytes':len(data),'sha256':hashlib.sha256(data).hexdigest(),'verified_reports':len(provenance),'experiments':len(reports),'protocol_requirements':len(trace['requirements'])}))
