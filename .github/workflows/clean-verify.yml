@@ -44,6 +44,10 @@ jobs:
         env:
           MVD_DOCKER_IMAGE: mvd-clean
         run: python3 tests/column_layouts.py --output results/linux-column-layouts
+      - name: Working-column cache transitions
+        env:
+          MVD_DOCKER_IMAGE: mvd-clean
+        run: python3 tests/cache_column_sets.py --output results/linux-cache-column-sets
       - name: Database exceeds cgroup memory budget
         env:
           MVD_DOCKER_IMAGE: mvd-clean
@@ -120,6 +124,7 @@ jobs:
           python3 tests/column_layouts.py --output results/asan-column-layouts
           python3 tests/open_safety.py --output results/asan-open-safety
           python3 tests/protocol_complete_input.py --output results/asan-complete-input
+          python3 tests/cache_column_sets.py --output results/asan-cache-column-sets
       - name: Preserve sanitizer reports
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
