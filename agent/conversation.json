@@ -52,20 +52,43 @@
       "content": "这处容量问题本应在设计阶段就用“有效数据不变、持续更新”的负载检出。之前的验证覆盖不足，我会据此调整审查方式：除了结果正确，还要检查资源是否持续增长、失败前后状态是否一致，以及非法输入是否被意外接受。发现的每个问题都会保留失败用例和修复后的验证记录。"
     },
     {
+      "id": "user-formal-hold-again",
+      "role": "user",
+      "content": "继续暂缓正式提测"
+    },
+    {
       "id": "user-continued-successful-reference",
       "role": "user",
       "content": "你可以继续看看别人github的代码（前提对方通过），确保我们这次可以得到分数"
+    },
+    {
+      "id": "user-borrow-and-improve",
+      "role": "user",
+      "content": "你可以直接借鉴别人的代码，并且最好还能比他们的快"
+    },
+    {
+      "id": "user-continue-faster-review",
+      "role": "user",
+      "content": "继续"
+    },
+    {
+      "id": "user-direct-reference-question",
+      "role": "user",
+      "content": "你为什么不直接看别人的代码呢，这是符合比赛规定的"
     }
   ],
   "agent_design": [
     "Committed B+ tree pages are immutable. Each SQL statement owns a new set of pages and a tail mark. On statement failure the new tail is discarded, preserving earlier successful statements in the transaction.",
-    "Commit writes all data and pages, syncs the file, publishes a checksummed alternate root, and syncs again before acknowledging success. Recovery selects a valid root and truncates only uncommitted tail data; it does not replay updates into committed pages.",
+    "All record/catalog/page writes complete before publishing the alternate checksummed root; the whole file is then synced before success is acknowledged. Like the reference, this uses the specified process-crash model with a surviving kernel. Machine-power-loss ordering would require an additional earlier barrier and is not established by these tests. Recovery selects a valid root and truncates only uncommitted tail data.",
     "Table data and primary-key directories remain on disk. A bounded page cache, bounded vector snapshot/KD tree, external sorting and spooled responses avoid loading the whole database or result set.",
     "Both search modes return exact results. Ordinary predicates are applied before candidate selection. KD bounds only prune strictly worse subtrees, retaining ties and primary-key ordering. Float32 storage/query conversion and ordered double accumulation are independently checked.",
     "Between transactions, committed history is compacted by streaming current rows to a separate fully synced database and atomically replacing the main file. The old database remains intact until replacement; the current row/page references are refreshed before any later statement executes.",
     "Projected reads skip unused variable-length payloads. Response spill files finish flush/close/open before stdout publication. A failure after publication terminates the channel rather than appending a second JSON object.",
     "The continued reference review found a performance admission cliff caused by retaining unrelated document text. The snapshot now owns only vector/filter/sort working columns and loads uncached winner fields by stored row reference. Its budget remains 16 MiB.",
-    "Coordinates are stored once in eight-candidate blocks. Every lane accumulates dimensions in the same scalar float64 order without FMA. CPU dispatch has scalar, AVX2 and AVX-512 implementations. Direct numeric binding validates the entire vector grammar and finite float32 boundaries; raw NUL tails are explicitly rejected in both vector literals and JSONL frames."
+    "Coordinates are stored once in 32-candidate blocks. Every lane accumulates dimensions in the same scalar float64 order without FMA. CPU dispatch has scalar, AVX2 and AVX-512 implementations. Direct numeric binding validates the entire vector grammar and finite float32 boundaries; raw NUL tails are explicitly rejected in both vector literals and JSONL frames.",
+    "Following the user's request to borrow successful designs, working rows are physically clustered by a filter column and searched with binary bounds. A bounded int8 auxiliary index uses conservative triangle-inequality error certificates; every returned distance is computed from original float32 values with the existing ordered-double loop. Unsupported or unproved cases fall back to complete exact search. The remaining shortlist can be skipped only when its entire suffix is certified worse, including rounded-sqrt ties. The successful reference's TypedScanCache::finish also keeps source rows contiguous for certificate reranking; this layout choice is now used directly, with a one-time return to blocked layout when a full scan is needed.",
+    "INSERT groups at most 64 KiB of record bytes and 1024 positions; larger records bypass the group. B+ tree lookups and unsplit updates work directly on owned pages. The copy-on-write ownership and SQL-statement rewind boundaries remain unchanged.",
+    "A diagnostic Linux CPU profile identified per-character input decoding and copying. SQL quoted spans now use bulk copies while preserving escape handling. The pinned general-purpose RapidJSON decoder validates raw UTF-8 and JSON escapes, checks duplicate keys at every depth, uses owned SSE padding, and delegates float or out-of-range numeric frames to the original strict decoder. Neither JSON library executes database core functions."
   ],
   "experiments": [
     {
@@ -134,226 +157,310 @@
     {
       "id": "asan-cache-column-sets",
       "stage": "verified_normal",
-      "source_commit": "9b6bb4d307172dbe6f4ad52d590e4916277f8cde",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43582428209",
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
       "output": "{\n  \"passed\": true,\n  \"rows\": 2500,\n  \"dimensions\": 33,\n  \"cache_mib\": 2,\n  \"queries_checked\": 50,\n  \"mixed_filter_columns\": true,\n  \"large_filter_refusal\": true,\n  \"winner_projection\": true,\n  \"rollback_and_restart\": true\n}"
+    },
+    {
+      "id": "asan-cache-ranges",
+      "stage": "verified_normal",
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
+      "output": "{\n  \"passed\": true,\n  \"queries_checked\": 213,\n  \"dimensions\": [\n    3,\n    33,\n    128\n  ],\n  \"rows_per_table\": 321,\n  \"unicode_and_nul\": true,\n  \"all_comparisons\": true,\n  \"cache_reordering\": true,\n  \"rollback_and_restart\": true\n}"
+    },
+    {
+      "id": "asan-certified-screen",
+      "stage": "verified_normal",
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
+      "output": "{\n  \"passed\": true,\n  \"bound_checks\": 61680,\n  \"searches_checked\": 1085,\n  \"certified\": 293,\n  \"fallbacks\": 36,\n  \"timed_full_seconds\": 0.336065,\n  \"timed_screen_seconds\": 0.0565353,\n  \"timed_exact_rows\": 2650,\n  \"timed_screened_rows\": 2000000,\n  \"timed_rowwise_queries\": 200,\n  \"full_scan_reblocks\": 4\n}"
     },
     {
       "id": "asan-column-layouts",
       "stage": "verified_normal",
-      "source_commit": "9b6bb4d307172dbe6f4ad52d590e4916277f8cde",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43582428209",
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
       "output": "{\n  \"passed\": true,\n  \"column_orders\": 120,\n  \"transaction_read_and_rollback\": true,\n  \"embedded_nul_and_unicode\": true\n}"
     },
     {
       "id": "asan-complete-input",
       "stage": "verified_normal",
-      "source_commit": "9b6bb4d307172dbe6f4ad52d590e4916277f8cde",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43582428209",
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
       "output": "{\n  \"passed\": true,\n  \"malformed_prefix_not_executed\": true,\n  \"escaped_nul_string_data_preserved\": true\n}"
+    },
+    {
+      "id": "asan-insert-batches",
+      "stage": "verified_normal",
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
+      "output": "{\n  \"passed\": true,\n  \"final_rows\": 5202,\n  \"full_state_checks\": 7,\n  \"failed_statement_kinds\": 4,\n  \"payload_widths\": [\n    0,\n    1,\n    63,\n    4095,\n    4096,\n    65500,\n    65512,\n    65536,\n    65537,\n    70000\n  ],\n  \"late_errors_preserve_file_bytes\": true,\n  \"prior_transaction_statement_survives\": true\n}"
     },
     {
       "id": "asan-invariants",
       "stage": "verified_normal",
-      "source_commit": "9b6bb4d307172dbe6f4ad52d590e4916277f8cde",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43582428209",
-      "output": "{\n  \"passed\": true,\n  \"tests\": [\n    {\n      \"test\": \"value_boundaries\",\n      \"passed\": true,\n      \"details\": {\n        \"invalid_values_rejected\": 21,\n        \"unicode_and_bigint\": true\n      },\n      \"seconds\": 0.082905487000005\n    },\n    {\n      \"test\": \"state_machine\",\n      \"passed\": true,\n      \"details\": {\n        \"operations\": 500,\n        \"rows\": 56\n      },\n      \"seconds\": 1.8999859640000096\n    },\n    {\n      \"test\": \"btree_depth\",\n      \"passed\": true,\n      \"details\": {\n        \"rows\": 60000,\n        \"database_bytes\": 6784261\n      },\n      \"seconds\": 34.10130178899999\n    },\n    {\n      \"test\": \"external_sort\",\n      \"passed\": true,\n      \"details\": {\n        \"sorted_rows\": 9000,\n        \"response_bytes\": 8145955\n      },\n      \"seconds\": 6.4587977389999764\n    }\n  ]\n}"
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
+      "output": "{\n  \"passed\": true,\n  \"tests\": [\n    {\n      \"test\": \"value_boundaries\",\n      \"passed\": true,\n      \"details\": {\n        \"invalid_values_rejected\": 21,\n        \"unicode_and_bigint\": true\n      },\n      \"seconds\": 0.05912537599999723\n    },\n    {\n      \"test\": \"state_machine\",\n      \"passed\": true,\n      \"details\": {\n        \"operations\": 500,\n        \"rows\": 56\n      },\n      \"seconds\": 2.182907224999994\n    },\n    {\n      \"test\": \"btree_depth\",\n      \"passed\": true,\n      \"details\": {\n        \"rows\": 60000,\n        \"database_bytes\": 36327590\n      },\n      \"seconds\": 8.684145428999997\n    },\n    {\n      \"test\": \"external_sort\",\n      \"passed\": true,\n      \"details\": {\n        \"sorted_rows\": 9000,\n        \"response_bytes\": 8145955\n      },\n      \"seconds\": 2.9578937769999953\n    }\n  ]\n}"
+    },
+    {
+      "id": "asan-json-request",
+      "stage": "verified_normal",
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
+      "output": "{\n  \"passed\": true,\n  \"parity_cases\": 48279,\n  \"fast_cases\": 29951,\n  \"large_string_bytes\": 250000,\n  \"timed_frames\": 200,\n  \"original_seconds\": 116.638,\n  \"fast_seconds\": 0.255295\n}"
     },
     {
       "id": "asan-open-safety",
       "stage": "verified_normal",
-      "source_commit": "9b6bb4d307172dbe6f4ad52d590e4916277f8cde",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43582428209",
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
       "output": "{\n  \"passed\": true,\n  \"unknown_files_rejected\": [\n    {\n      \"case\": \"short\",\n      \"original_sha256\": \"859f5272d593a781daa9cc407553425a5bf9921eecf66e280e69ad177bedb1c0\",\n      \"preserved\": true\n    },\n    {\n      \"case\": \"large\",\n      \"original_sha256\": \"2027580a968affeaf4af8ea22d44cbdd1d87b435bdf4af430a5ed503f069775b\",\n      \"preserved\": true\n    },\n    {\n      \"case\": \"other_version\",\n      \"original_sha256\": \"d6275ef0c3bd717d3fced1126e72e59d4886d145b00071996a2ea401f9f4c971\",\n      \"preserved\": true\n    }\n  ],\n  \"incomplete_initialization_variants\": 13\n}"
     },
     {
       "id": "asan-public",
       "stage": "verified_normal",
-      "source_commit": "9b6bb4d307172dbe6f4ad52d590e4916277f8cde",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43582428209",
-      "output": "{\n  \"passed\": true,\n  \"cases\": [\n    {\n      \"id\": \"sql_crud\",\n      \"passed\": true,\n      \"seconds\": 0.17179570099999353\n    },\n    {\n      \"id\": \"sql_comparisons\",\n      \"passed\": true,\n      \"seconds\": 0.04442583200000172\n    },\n    {\n      \"id\": \"sql_ordering\",\n      \"passed\": true,\n      \"seconds\": 0.044051540000012324\n    },\n    {\n      \"id\": \"sql_empty\",\n      \"passed\": true,\n      \"seconds\": 0.04055468300001053\n    },\n    {\n      \"id\": \"sql_primary_key\",\n      \"passed\": true,\n      \"seconds\": 0.040870511999997916\n    },\n    {\n      \"id\": \"sql_unicode\",\n      \"passed\": true,\n      \"seconds\": 0.042114034000007905\n    },\n    {\n      \"id\": \"sql_bigint\",\n      \"passed\": true,\n      \"seconds\": 0.04385119599999143\n    },\n    {\n      \"id\": \"sql_unsupported\",\n      \"passed\": true,\n      \"seconds\": 0.03868437899998867\n    },\n    {\n      \"id\": \"storage_restart\",\n      \"passed\": true,\n      \"seconds\": 0.07732199200000878\n    },\n    {\n      \"id\": \"vector_euclidean\",\n      \"passed\": true,\n      \"seconds\": 0.0420900479999915\n    },\n    {\n      \"id\": \"transaction_commit\",\n      \"passed\": true,\n      \"seconds\": 0.056955368000004114\n    },\n    {\n      \"id\": \"transaction_rollback\",\n      \"passed\": true,\n      \"seconds\": 0.04828383400000291\n    },\n    {\n      \"id\": \"storage_mutations\",\n      \"passed\": true,\n      \"seconds\": 0.0809582259999928\n    },\n    {\n      \"id\": \"storage_multiple_tables\",\n      \"passed\": true,\n      \"seconds\": 0.0799294339999932\n    },\n    {\n      \"id\": \"vector_ties_and_filter\",\n      \"passed\": true,\n      \"seconds\": 0.04239623000000847\n    },\n    {\n      \"id\": \"vector_float32\",\n      \"passed\": true,\n      \"seconds\": 0.04224295000000211\n    },\n    {\n      \"id\": \"vector_index_maintenance\",\n      \"passed\": true,\n      \"seconds\": 0.10620637000000954\n    },\n    {\n      \"id\": \"transaction_failed_insert\",\n      \"passed\": true,\n      \"seconds\": 0.08347047300000554\n    },\n    {\n      \"id\": \"transaction_autocommit_atomic\",\n      \"passed\": true,\n      \"seconds\": 0.07788963299999807\n    },\n    {\n      \"id\": \"transaction_shutdown_rollback\",\n      \"passed\": true,\n      \"seconds\": 0.078030708\n    }\n  ],\n  \"scope\": \"official assertions with portable local transport; not an official score\"\n}"
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
+      "output": "{\n  \"passed\": true,\n  \"cases\": [\n    {\n      \"id\": \"sql_crud\",\n      \"passed\": true,\n      \"seconds\": 0.09036229999999534\n    },\n    {\n      \"id\": \"sql_comparisons\",\n      \"passed\": true,\n      \"seconds\": 0.037448802000000114\n    },\n    {\n      \"id\": \"sql_ordering\",\n      \"passed\": true,\n      \"seconds\": 0.15090711800000634\n    },\n    {\n      \"id\": \"sql_empty\",\n      \"passed\": true,\n      \"seconds\": 0.036731392999996615\n    },\n    {\n      \"id\": \"sql_primary_key\",\n      \"passed\": true,\n      \"seconds\": 0.036706757000004586\n    },\n    {\n      \"id\": \"sql_unicode\",\n      \"passed\": true,\n      \"seconds\": 0.037522151000004555\n    },\n    {\n      \"id\": \"sql_bigint\",\n      \"passed\": true,\n      \"seconds\": 0.03616143300000374\n    },\n    {\n      \"id\": \"sql_unsupported\",\n      \"passed\": true,\n      \"seconds\": 0.037237990999997805\n    },\n    {\n      \"id\": \"storage_restart\",\n      \"passed\": true,\n      \"seconds\": 0.08101204800000517\n    },\n    {\n      \"id\": \"vector_euclidean\",\n      \"passed\": true,\n      \"seconds\": 0.03692134300000305\n    },\n    {\n      \"id\": \"transaction_commit\",\n      \"passed\": true,\n      \"seconds\": 0.057681985999991525\n    },\n    {\n      \"id\": \"transaction_rollback\",\n      \"passed\": true,\n      \"seconds\": 0.028935406000002217\n    },\n    {\n      \"id\": \"storage_mutations\",\n      \"passed\": true,\n      \"seconds\": 0.07571672299999932\n    },\n    {\n      \"id\": \"storage_multiple_tables\",\n      \"passed\": true,\n      \"seconds\": 0.07556255500000475\n    },\n    {\n      \"id\": \"vector_ties_and_filter\",\n      \"passed\": true,\n      \"seconds\": 0.03713201499999741\n    },\n    {\n      \"id\": \"vector_float32\",\n      \"passed\": true,\n      \"seconds\": 0.03627028299999324\n    },\n    {\n      \"id\": \"vector_index_maintenance\",\n      \"passed\": true,\n      \"seconds\": 0.09797835000000532\n    },\n    {\n      \"id\": \"transaction_failed_insert\",\n      \"passed\": true,\n      \"seconds\": 0.09425361299999224\n    },\n    {\n      \"id\": \"transaction_autocommit_atomic\",\n      \"passed\": true,\n      \"seconds\": 0.15973835199999087\n    },\n    {\n      \"id\": \"transaction_shutdown_rollback\",\n      \"passed\": true,\n      \"seconds\": 0.07055142100000467\n    }\n  ],\n  \"scope\": \"official assertions with portable local transport; not an official score\"\n}"
     },
     {
       "id": "asan-space",
       "stage": "verified_normal",
-      "source_commit": "9b6bb4d307172dbe6f4ad52d590e4916277f8cde",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43582428209",
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
       "output": "{\n  \"passed\": true,\n  \"live_payload_bytes\": 13107200,\n  \"maximum_database_bytes\": 79076368,\n  \"sizes\": [\n    26500112,\n    39644176,\n    52788240,\n    65932304,\n    79076368,\n    26299408,\n    39443472,\n    52587536,\n    65731600,\n    78875664,\n    26299408,\n    39443472,\n    52587536,\n    65731600,\n    78875664,\n    26299408\n  ]\n}"
+    },
+    {
+      "id": "asan-sql-literals",
+      "stage": "verified_normal",
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
+      "output": "{\n  \"passed\": true,\n  \"roundtripped_literals\": 528,\n  \"malformed_rejected\": 5,\n  \"large_literal_bytes\": 80000,\n  \"unicode_and_nul\": true,\n  \"quoted_identifiers\": true,\n  \"rollback_and_restart\": true\n}"
     },
     {
       "id": "cache-working-set",
       "stage": "verified_cache",
-      "source_commit": "dffec1bfb05014dc63e649edc00e95c873512c65",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43582081369",
+      "source_commit": "45a0218c6e70388c10c62b801eacbcc1d743f17b",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43590994323",
       "output": "{\n  \"passed\": true,\n  \"rows\": 10000,\n  \"dimensions\": 128,\n  \"cache_mib\": 16,\n  \"body_bytes_per_row\": 1024,\n  \"repeated_queries\": 20,\n  \"file_read_bytes\": 11071776,\n  \"projection_and_refusal_transitions\": true\n}"
     },
     {
       "id": "exact-batch",
       "stage": "verified_numeric",
-      "source_commit": "b44b6b97fed7529b4771d85bc5fd88813cc7149e",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43581938105",
-      "output": "{\n  \"passed\": true,\n  \"bit_checks\": 4608,\n  \"aos_scalar_seconds\": 0.153779152,\n  \"kernels\": [\n    {\n      \"name\": \"scalar\",\n      \"seconds\": 0.102447008,\n      \"checksum\": 18444883.120490573\n    },\n    {\n      \"name\": \"avx2\",\n      \"seconds\": 0.039142935,\n      \"checksum\": 18444883.120490573\n    },\n    {\n      \"name\": \"avx512\",\n      \"seconds\": 0.042496032,\n      \"checksum\": 18444883.120490573\n    }\n  ]\n}"
+      "source_commit": "6f2e3639461d61a97323a5c2b000b73bd29938db",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43587814044",
+      "output": "{\n  \"passed\": true,\n  \"bit_checks\": 18432,\n  \"aos_scalar_seconds\": 0.202559949,\n  \"kernels\": [\n    {\n      \"name\": \"scalar\",\n      \"seconds\": 0.067986443,\n      \"checksum\": 18466360.485062122\n    },\n    {\n      \"name\": \"avx2\",\n      \"seconds\": 0.030721879,\n      \"checksum\": 18466360.485062122\n    },\n    {\n      \"name\": \"avx512\",\n      \"seconds\": 0.03097612,\n      \"checksum\": 18466360.485062122\n    }\n  ]\n}"
     },
     {
       "id": "linux-benchmark",
       "stage": "verified_normal",
-      "source_commit": "9b6bb4d307172dbe6f4ad52d590e4916277f8cde",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43582428209",
-      "output": "{\n  \"passed\": true,\n  \"rows\": 10000,\n  \"dimensions\": 128,\n  \"queries\": 1000,\n  \"seed\": 194709,\n  \"write_seconds\": 1.4898891100000071,\n  \"query_prepare_seconds\": 0.15972653800000103,\n  \"query_seconds\": 0.6413765780000062,\n  \"recall\": {\n    \"unfiltered\": 1.0,\n    \"filtered\": 1.0\n  },\n  \"database_bytes\": 7223194,\n  \"numpy_version\": \"2.2.6\",\n  \"note\": \"Local task-shaped measurement, not platform scores or official T/B/M accounting.\"\n}"
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
+      "output": "{\n  \"passed\": true,\n  \"rows\": 10000,\n  \"dimensions\": 128,\n  \"queries\": 1000,\n  \"seed\": 194709,\n  \"write_seconds\": 1.165329693999979,\n  \"query_prepare_seconds\": 0.20242222999999626,\n  \"query_seconds\": 0.275187896999995,\n  \"recall\": {\n    \"unfiltered\": 1.0,\n    \"filtered\": 1.0\n  },\n  \"database_bytes\": 7033365,\n  \"numpy_version\": \"2.2.6\",\n  \"note\": \"Local task-shaped measurement, not platform scores or official T/B/M accounting.\"\n}"
     },
     {
       "id": "linux-cache-column-sets",
       "stage": "verified_normal",
-      "source_commit": "9b6bb4d307172dbe6f4ad52d590e4916277f8cde",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43582428209",
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
       "output": "{\n  \"passed\": true,\n  \"rows\": 2500,\n  \"dimensions\": 33,\n  \"cache_mib\": 2,\n  \"queries_checked\": 50,\n  \"mixed_filter_columns\": true,\n  \"large_filter_refusal\": true,\n  \"winner_projection\": true,\n  \"rollback_and_restart\": true\n}"
+    },
+    {
+      "id": "linux-cache-ranges",
+      "stage": "verified_normal",
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
+      "output": "{\n  \"passed\": true,\n  \"queries_checked\": 213,\n  \"dimensions\": [\n    3,\n    33,\n    128\n  ],\n  \"rows_per_table\": 321,\n  \"unicode_and_nul\": true,\n  \"all_comparisons\": true,\n  \"cache_reordering\": true,\n  \"rollback_and_restart\": true\n}"
     },
     {
       "id": "linux-capacity-2g",
       "stage": "verified_normal",
-      "source_commit": "9b6bb4d307172dbe6f4ad52d590e4916277f8cde",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43582428209",
-      "output": "{\n  \"passed\": true,\n  \"rows\": 40000,\n  \"logical_payload_bytes\": 2621440000,\n  \"database_bytes\": 2681860599,\n  \"memory_limit_bytes\": 2147483648,\n  \"container_memory_peak_bytes\": 2147483648,\n  \"seconds\": 68.75435444599998\n}"
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
+      "output": "{\n  \"passed\": true,\n  \"rows\": 40000,\n  \"logical_payload_bytes\": 2621440000,\n  \"database_bytes\": 2681860599,\n  \"memory_limit_bytes\": 2147483648,\n  \"container_memory_peak_bytes\": 2147483648,\n  \"seconds\": 61.652422909999984\n}"
     },
     {
       "id": "linux-capacity",
       "stage": "verified_normal",
-      "source_commit": "9b6bb4d307172dbe6f4ad52d590e4916277f8cde",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43582428209",
-      "output": "{\n  \"passed\": true,\n  \"rows\": 5000,\n  \"logical_payload_bytes\": 163840000,\n  \"database_bytes\": 170394100,\n  \"memory_limit_bytes\": 100663296,\n  \"container_memory_peak_bytes\": 100663296,\n  \"seconds\": 5.240996336000009\n}"
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
+      "output": "{\n  \"passed\": true,\n  \"rows\": 5000,\n  \"logical_payload_bytes\": 163840000,\n  \"database_bytes\": 170394100,\n  \"memory_limit_bytes\": 100663296,\n  \"container_memory_peak_bytes\": 100663296,\n  \"seconds\": 3.1316605359999983\n}"
+    },
+    {
+      "id": "linux-certified-screen",
+      "stage": "verified_normal",
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
+      "output": "{\n  \"passed\": true,\n  \"bound_checks\": 61680,\n  \"searches_checked\": 1085,\n  \"certified\": 293,\n  \"fallbacks\": 36,\n  \"timed_full_seconds\": 0.0367502,\n  \"timed_screen_seconds\": 0.0108104,\n  \"timed_exact_rows\": 2650,\n  \"timed_screened_rows\": 2000000,\n  \"timed_rowwise_queries\": 200,\n  \"full_scan_reblocks\": 4\n}"
     },
     {
       "id": "linux-column-layouts",
       "stage": "verified_normal",
-      "source_commit": "9b6bb4d307172dbe6f4ad52d590e4916277f8cde",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43582428209",
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
       "output": "{\n  \"passed\": true,\n  \"column_orders\": 120,\n  \"transaction_read_and_rollback\": true,\n  \"embedded_nul_and_unicode\": true\n}"
+    },
+    {
+      "id": "linux-commit-publish",
+      "stage": "verified_normal",
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
+      "output": "{\n  \"passed\": true,\n  \"precise_commit_interruptions\": [\n    {\n      \"stage\": \"before_root\",\n      \"recovered_generation\": 0,\n      \"tables_atomic\": true,\n      \"acknowledged\": false\n    },\n    {\n      \"stage\": \"after_root\",\n      \"recovered_generation\": 1,\n      \"tables_atomic\": true,\n      \"acknowledged\": false\n    },\n    {\n      \"stage\": \"before_sync\",\n      \"recovered_generation\": 1,\n      \"tables_atomic\": true,\n      \"acknowledged\": false\n    },\n    {\n      \"stage\": \"after_sync\",\n      \"recovered_generation\": 1,\n      \"tables_atomic\": true,\n      \"acknowledged\": false\n    }\n  ],\n  \"acknowledged_sync_count\": 1,\n  \"batched_5000_rows_write_calls\": 66,\n  \"process_crash_model\": true,\n  \"limitation\": \"Tests terminate a process in a surviving kernel; they do not establish machine-power-loss ordering.\"\n}"
     },
     {
       "id": "linux-compaction-crash",
       "stage": "verified_normal",
-      "source_commit": "9b6bb4d307172dbe6f4ad52d590e4916277f8cde",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43582428209",
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
       "output": "{\n  \"passed\": true,\n  \"cases\": [\n    {\n      \"stage\": \"before_replace\",\n      \"stopped_before_response\": true,\n      \"recovery_passed\": true\n    },\n    {\n      \"stage\": \"after_replace\",\n      \"stopped_before_response\": true,\n      \"recovery_passed\": true\n    },\n    {\n      \"stage\": \"before_replace\",\n      \"stopped_before_response\": true,\n      \"recovery_passed\": true\n    },\n    {\n      \"stage\": \"after_replace\",\n      \"stopped_before_response\": true,\n      \"recovery_passed\": true\n    }\n  ]\n}"
     },
     {
       "id": "linux-complete-input",
       "stage": "verified_normal",
-      "source_commit": "9b6bb4d307172dbe6f4ad52d590e4916277f8cde",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43582428209",
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
       "output": "{\n  \"passed\": true,\n  \"malformed_prefix_not_executed\": true,\n  \"escaped_nul_string_data_preserved\": true\n}"
     },
     {
       "id": "linux-crash-commit",
       "stage": "verified_normal",
-      "source_commit": "9b6bb4d307172dbe6f4ad52d590e4916277f8cde",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43582428209",
-      "output": "{\n  \"passed\": true,\n  \"commit_interruptions\": [\n    {\n      \"delay_seconds\": 0,\n      \"acknowledged\": false,\n      \"recovered_generation\": 0\n    },\n    {\n      \"delay_seconds\": 0.0001,\n      \"acknowledged\": false,\n      \"recovered_generation\": 0\n    },\n    {\n      \"delay_seconds\": 0.0005,\n      \"acknowledged\": false,\n      \"recovered_generation\": 0\n    },\n    {\n      \"delay_seconds\": 0.001,\n      \"acknowledged\": true,\n      \"recovered_generation\": 4\n    },\n    {\n      \"delay_seconds\": 0.003,\n      \"acknowledged\": true,\n      \"recovered_generation\": 5\n    },\n    {\n      \"delay_seconds\": 0.01,\n      \"acknowledged\": true,\n      \"recovered_generation\": 6\n    },\n    {\n      \"delay_seconds\": 0.03,\n      \"acknowledged\": true,\n      \"recovered_generation\": 7\n    },\n    {\n      \"delay_seconds\": 0,\n      \"acknowledged\": false,\n      \"recovered_generation\": 7\n    },\n    {\n      \"delay_seconds\": 0.0001,\n      \"acknowledged\": false,\n      \"recovered_generation\": 7\n    },\n    {\n      \"delay_seconds\": 0.0005,\n      \"acknowledged\": false,\n      \"recovered_generation\": 7\n    },\n    {\n      \"delay_seconds\": 0.001,\n      \"acknowledged\": true,\n      \"recovered_generation\": 11\n    },\n    {\n      \"delay_seconds\": 0.003,\n      \"acknowledged\": true,\n      \"recovered_generation\": 12\n    },\n    {\n      \"delay_seconds\": 0.01,\n      \"acknowledged\": true,\n      \"recovered_generation\": 13\n    },\n    {\n      \"delay_seconds\": 0.03,\n      \"acknowledged\": true,\n      \"recovered_generation\": 14\n    }\n  ],\n  \"startup_interruptions\": 15,\n  \"startup_kills_before_ready\": 6,\n  \"committed_rows\": 4001\n}"
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
+      "output": "{\n  \"passed\": true,\n  \"commit_interruptions\": [\n    {\n      \"delay_seconds\": 0,\n      \"acknowledged\": false,\n      \"recovered_generation\": 0\n    },\n    {\n      \"delay_seconds\": 0.0001,\n      \"acknowledged\": false,\n      \"recovered_generation\": 2\n    },\n    {\n      \"delay_seconds\": 0.0005,\n      \"acknowledged\": false,\n      \"recovered_generation\": 3\n    },\n    {\n      \"delay_seconds\": 0.001,\n      \"acknowledged\": true,\n      \"recovered_generation\": 4\n    },\n    {\n      \"delay_seconds\": 0.003,\n      \"acknowledged\": true,\n      \"recovered_generation\": 5\n    },\n    {\n      \"delay_seconds\": 0.01,\n      \"acknowledged\": true,\n      \"recovered_generation\": 6\n    },\n    {\n      \"delay_seconds\": 0.03,\n      \"acknowledged\": true,\n      \"recovered_generation\": 7\n    },\n    {\n      \"delay_seconds\": 0,\n      \"acknowledged\": false,\n      \"recovered_generation\": 7\n    },\n    {\n      \"delay_seconds\": 0.0001,\n      \"acknowledged\": false,\n      \"recovered_generation\": 9\n    },\n    {\n      \"delay_seconds\": 0.0005,\n      \"acknowledged\": false,\n      \"recovered_generation\": 10\n    },\n    {\n      \"delay_seconds\": 0.001,\n      \"acknowledged\": true,\n      \"recovered_generation\": 11\n    },\n    {\n      \"delay_seconds\": 0.003,\n      \"acknowledged\": true,\n      \"recovered_generation\": 12\n    },\n    {\n      \"delay_seconds\": 0.01,\n      \"acknowledged\": true,\n      \"recovered_generation\": 13\n    },\n    {\n      \"delay_seconds\": 0.03,\n      \"acknowledged\": true,\n      \"recovered_generation\": 14\n    }\n  ],\n  \"startup_interruptions\": 15,\n  \"startup_kills_before_ready\": 6,\n  \"committed_rows\": 6001\n}"
+    },
+    {
+      "id": "linux-insert-batches",
+      "stage": "verified_normal",
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
+      "output": "{\n  \"passed\": true,\n  \"final_rows\": 5202,\n  \"full_state_checks\": 7,\n  \"failed_statement_kinds\": 4,\n  \"payload_widths\": [\n    0,\n    1,\n    63,\n    4095,\n    4096,\n    65500,\n    65512,\n    65536,\n    65537,\n    70000\n  ],\n  \"late_errors_preserve_file_bytes\": true,\n  \"prior_transaction_statement_survives\": true\n}"
     },
     {
       "id": "linux-invariants",
       "stage": "verified_normal",
-      "source_commit": "9b6bb4d307172dbe6f4ad52d590e4916277f8cde",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43582428209",
-      "output": "{\n  \"passed\": true,\n  \"tests\": [\n    {\n      \"test\": \"value_boundaries\",\n      \"passed\": true,\n      \"details\": {\n        \"invalid_values_rejected\": 21,\n        \"unicode_and_bigint\": true\n      },\n      \"seconds\": 0.38129512400000465\n    },\n    {\n      \"test\": \"state_machine\",\n      \"passed\": true,\n      \"details\": {\n        \"operations\": 500,\n        \"rows\": 56\n      },\n      \"seconds\": 8.678668250000001\n    },\n    {\n      \"test\": \"btree_depth\",\n      \"passed\": true,\n      \"details\": {\n        \"rows\": 60000,\n        \"database_bytes\": 6784261\n      },\n      \"seconds\": 6.244287366999998\n    },\n    {\n      \"test\": \"external_sort\",\n      \"passed\": true,\n      \"details\": {\n        \"sorted_rows\": 9000,\n        \"response_bytes\": 8145955\n      },\n      \"seconds\": 0.9642780010000109\n    }\n  ]\n}"
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
+      "output": "{\n  \"passed\": true,\n  \"tests\": [\n    {\n      \"test\": \"value_boundaries\",\n      \"passed\": true,\n      \"details\": {\n        \"invalid_values_rejected\": 21,\n        \"unicode_and_bigint\": true\n      },\n      \"seconds\": 0.3988870919999954\n    },\n    {\n      \"test\": \"state_machine\",\n      \"passed\": true,\n      \"details\": {\n        \"operations\": 500,\n        \"rows\": 56\n      },\n      \"seconds\": 12.46560805099999\n    },\n    {\n      \"test\": \"btree_depth\",\n      \"passed\": true,\n      \"details\": {\n        \"rows\": 60000,\n        \"database_bytes\": 36327590\n      },\n      \"seconds\": 3.532909860000018\n    },\n    {\n      \"test\": \"external_sort\",\n      \"passed\": true,\n      \"details\": {\n        \"sorted_rows\": 9000,\n        \"response_bytes\": 8145955\n      },\n      \"seconds\": 0.74976722400001\n    }\n  ]\n}"
+    },
+    {
+      "id": "linux-json-request",
+      "stage": "verified_normal",
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
+      "output": "{\n  \"passed\": true,\n  \"parity_cases\": 48279,\n  \"fast_cases\": 29951,\n  \"large_string_bytes\": 250000,\n  \"timed_frames\": 200,\n  \"original_seconds\": 0.364505,\n  \"fast_seconds\": 0.0318582\n}"
     },
     {
       "id": "linux-official",
       "stage": "verified_normal",
-      "source_commit": "9b6bb4d307172dbe6f4ad52d590e4916277f8cde",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43582428209",
-      "output": "{\n  \"scope\": \"public-protocol-check\",\n  \"passed\": true,\n  \"cases\": [\n    {\n      \"id\": \"sql_crud\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 194\n    },\n    {\n      \"id\": \"sql_comparisons\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 191\n    },\n    {\n      \"id\": \"sql_ordering\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 224\n    },\n    {\n      \"id\": \"sql_empty\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 187\n    },\n    {\n      \"id\": \"sql_primary_key\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 185\n    },\n    {\n      \"id\": \"sql_unicode\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 194\n    },\n    {\n      \"id\": \"sql_bigint\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 222\n    },\n    {\n      \"id\": \"sql_unsupported\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 196\n    },\n    {\n      \"id\": \"storage_restart\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 340\n    },\n    {\n      \"id\": \"vector_euclidean\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 190\n    },\n    {\n      \"id\": \"transaction_commit\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 187\n    },\n    {\n      \"id\": \"transaction_rollback\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 183\n    },\n    {\n      \"id\": \"storage_mutations\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 339\n    },\n    {\n      \"id\": \"storage_multiple_tables\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 329\n    },\n    {\n      \"id\": \"vector_ties_and_filter\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 183\n    },\n    {\n      \"id\": \"vector_float32\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 189\n    },\n    {\n      \"id\": \"vector_index_maintenance\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 366\n    },\n    {\n      \"id\": \"transaction_failed_insert\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 371\n    },\n    {\n      \"id\": \"transaction_autocommit_atomic\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 335\n    },\n    {\n      \"id\": \"transaction_shutdown_rollback\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 332\n    }\n  ],\n  \"note\": \"Local diagnostic only; no performance/Agent scores or platform callbacks.\"\n}"
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
+      "output": "{\n  \"scope\": \"public-protocol-check\",\n  \"passed\": true,\n  \"cases\": [\n    {\n      \"id\": \"sql_crud\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 186\n    },\n    {\n      \"id\": \"sql_comparisons\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 186\n    },\n    {\n      \"id\": \"sql_ordering\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 184\n    },\n    {\n      \"id\": \"sql_empty\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 172\n    },\n    {\n      \"id\": \"sql_primary_key\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 170\n    },\n    {\n      \"id\": \"sql_unicode\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 181\n    },\n    {\n      \"id\": \"sql_bigint\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 193\n    },\n    {\n      \"id\": \"sql_unsupported\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 322\n    },\n    {\n      \"id\": \"storage_restart\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 311\n    },\n    {\n      \"id\": \"vector_euclidean\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 162\n    },\n    {\n      \"id\": \"transaction_commit\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 181\n    },\n    {\n      \"id\": \"transaction_rollback\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 194\n    },\n    {\n      \"id\": \"storage_mutations\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 310\n    },\n    {\n      \"id\": \"storage_multiple_tables\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 495\n    },\n    {\n      \"id\": \"vector_ties_and_filter\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 243\n    },\n    {\n      \"id\": \"vector_float32\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 211\n    },\n    {\n      \"id\": \"vector_index_maintenance\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 631\n    },\n    {\n      \"id\": \"transaction_failed_insert\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 338\n    },\n    {\n      \"id\": \"transaction_autocommit_atomic\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 369\n    },\n    {\n      \"id\": \"transaction_shutdown_rollback\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 801\n    }\n  ],\n  \"note\": \"Local diagnostic only; no performance/Agent scores or platform callbacks.\"\n}"
     },
     {
       "id": "linux-open-safety",
       "stage": "verified_normal",
-      "source_commit": "9b6bb4d307172dbe6f4ad52d590e4916277f8cde",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43582428209",
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
       "output": "{\n  \"passed\": true,\n  \"unknown_files_rejected\": [\n    {\n      \"case\": \"short\",\n      \"original_sha256\": \"859f5272d593a781daa9cc407553425a5bf9921eecf66e280e69ad177bedb1c0\",\n      \"preserved\": true\n    },\n    {\n      \"case\": \"large\",\n      \"original_sha256\": \"2027580a968affeaf4af8ea22d44cbdd1d87b435bdf4af430a5ed503f069775b\",\n      \"preserved\": true\n    },\n    {\n      \"case\": \"other_version\",\n      \"original_sha256\": \"d6275ef0c3bd717d3fced1126e72e59d4886d145b00071996a2ea401f9f4c971\",\n      \"preserved\": true\n    }\n  ],\n  \"incomplete_initialization_variants\": 13\n}"
     },
     {
       "id": "linux-portable",
       "stage": "verified_normal",
-      "source_commit": "9b6bb4d307172dbe6f4ad52d590e4916277f8cde",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43582428209",
-      "output": "{\n  \"passed\": true,\n  \"cases\": [\n    {\n      \"id\": \"sql_crud\",\n      \"passed\": true,\n      \"seconds\": 0.18997250099999974\n    },\n    {\n      \"id\": \"sql_comparisons\",\n      \"passed\": true,\n      \"seconds\": 0.17944626599999935\n    },\n    {\n      \"id\": \"sql_ordering\",\n      \"passed\": true,\n      \"seconds\": 0.1853813439999925\n    },\n    {\n      \"id\": \"sql_empty\",\n      \"passed\": true,\n      \"seconds\": 0.18802420800000164\n    },\n    {\n      \"id\": \"sql_primary_key\",\n      \"passed\": true,\n      \"seconds\": 0.17991970699999627\n    },\n    {\n      \"id\": \"sql_unicode\",\n      \"passed\": true,\n      \"seconds\": 0.19168773900000247\n    },\n    {\n      \"id\": \"sql_bigint\",\n      \"passed\": true,\n      \"seconds\": 0.18115253599999903\n    },\n    {\n      \"id\": \"sql_unsupported\",\n      \"passed\": true,\n      \"seconds\": 0.18620787600001165\n    },\n    {\n      \"id\": \"storage_restart\",\n      \"passed\": true,\n      \"seconds\": 0.3405481189999904\n    },\n    {\n      \"id\": \"vector_euclidean\",\n      \"passed\": true,\n      \"seconds\": 0.17650308799998982\n    },\n    {\n      \"id\": \"transaction_commit\",\n      \"passed\": true,\n      \"seconds\": 0.1909012610000076\n    },\n    {\n      \"id\": \"transaction_rollback\",\n      \"passed\": true,\n      \"seconds\": 0.18234409100000448\n    },\n    {\n      \"id\": \"storage_mutations\",\n      \"passed\": true,\n      \"seconds\": 0.3646691640000057\n    },\n    {\n      \"id\": \"storage_multiple_tables\",\n      \"passed\": true,\n      \"seconds\": 0.35731346400000064\n    },\n    {\n      \"id\": \"vector_ties_and_filter\",\n      \"passed\": true,\n      \"seconds\": 0.18205560100000184\n    },\n    {\n      \"id\": \"vector_float32\",\n      \"passed\": true,\n      \"seconds\": 0.18164141399999778\n    },\n    {\n      \"id\": \"vector_index_maintenance\",\n      \"passed\": true,\n      \"seconds\": 0.35084164100000237\n    },\n    {\n      \"id\": \"transaction_failed_insert\",\n      \"passed\": true,\n      \"seconds\": 0.350195111000005\n    },\n    {\n      \"id\": \"transaction_autocommit_atomic\",\n      \"passed\": true,\n      \"seconds\": 0.3434958499999965\n    },\n    {\n      \"id\": \"transaction_shutdown_rollback\",\n      \"passed\": true,\n      \"seconds\": 0.3462870860000038\n    }\n  ],\n  \"scope\": \"official assertions with portable local transport; not an official score\"\n}"
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
+      "output": "{\n  \"passed\": true,\n  \"cases\": [\n    {\n      \"id\": \"sql_crud\",\n      \"passed\": true,\n      \"seconds\": 0.5632921109999955\n    },\n    {\n      \"id\": \"sql_comparisons\",\n      \"passed\": true,\n      \"seconds\": 0.36034347300000036\n    },\n    {\n      \"id\": \"sql_ordering\",\n      \"passed\": true,\n      \"seconds\": 0.16622905699999535\n    },\n    {\n      \"id\": \"sql_empty\",\n      \"passed\": true,\n      \"seconds\": 0.16570720899999003\n    },\n    {\n      \"id\": \"sql_primary_key\",\n      \"passed\": true,\n      \"seconds\": 0.3482427630000018\n    },\n    {\n      \"id\": \"sql_unicode\",\n      \"passed\": true,\n      \"seconds\": 0.3851487729999974\n    },\n    {\n      \"id\": \"sql_bigint\",\n      \"passed\": true,\n      \"seconds\": 0.14268133200000932\n    },\n    {\n      \"id\": \"sql_unsupported\",\n      \"passed\": true,\n      \"seconds\": 0.21751374900000542\n    },\n    {\n      \"id\": \"storage_restart\",\n      \"passed\": true,\n      \"seconds\": 0.4044900429999956\n    },\n    {\n      \"id\": \"vector_euclidean\",\n      \"passed\": true,\n      \"seconds\": 0.20010885300000325\n    },\n    {\n      \"id\": \"transaction_commit\",\n      \"passed\": true,\n      \"seconds\": 0.2726061830000077\n    },\n    {\n      \"id\": \"transaction_rollback\",\n      \"passed\": true,\n      \"seconds\": 0.18996333600000526\n    },\n    {\n      \"id\": \"storage_mutations\",\n      \"passed\": true,\n      \"seconds\": 0.3060654159999956\n    },\n    {\n      \"id\": \"storage_multiple_tables\",\n      \"passed\": true,\n      \"seconds\": 0.4352746690000089\n    },\n    {\n      \"id\": \"vector_ties_and_filter\",\n      \"passed\": true,\n      \"seconds\": 0.18152892199999826\n    },\n    {\n      \"id\": \"vector_float32\",\n      \"passed\": true,\n      \"seconds\": 0.15027084599999796\n    },\n    {\n      \"id\": \"vector_index_maintenance\",\n      \"passed\": true,\n      \"seconds\": 0.30489177900000186\n    },\n    {\n      \"id\": \"transaction_failed_insert\",\n      \"passed\": true,\n      \"seconds\": 0.2932275149999981\n    },\n    {\n      \"id\": \"transaction_autocommit_atomic\",\n      \"passed\": true,\n      \"seconds\": 0.2777081549999991\n    },\n    {\n      \"id\": \"transaction_shutdown_rollback\",\n      \"passed\": true,\n      \"seconds\": 0.3768016730000028\n    }\n  ],\n  \"scope\": \"official assertions with portable local transport; not an official score\"\n}"
     },
     {
       "id": "linux-projection-io",
       "stage": "verified_normal",
-      "source_commit": "9b6bb4d307172dbe6f4ad52d590e4916277f8cde",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43582428209",
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
       "output": "{\n  \"passed\": true,\n  \"rows\": 5000,\n  \"live_text_bytes\": 163840000,\n  \"database_read_bytes\": 350304\n}"
     },
     {
       "id": "linux-recovery-allocation",
       "stage": "verified_normal",
-      "source_commit": "9b6bb4d307172dbe6f4ad52d590e4916277f8cde",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43582428209",
-      "output": "{\n  \"passed\": true,\n  \"injected_allocation_failures\": 1,\n  \"file_preserved\": true,\n  \"file_sha256\": \"c8b94b138f994cde179ac1481d0f3991899b226a743736d10e588dae17140f01\",\n  \"acknowledged_rows_preserved\": 20\n}"
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
+      "output": "{\n  \"passed\": true,\n  \"injected_allocation_failures\": 1,\n  \"file_preserved\": true,\n  \"file_sha256\": \"da0a177a27a9f56032655e8c801e94b2dd778036a3fd822e02b302d1dcc664c3\",\n  \"acknowledged_rows_preserved\": 20\n}"
     },
     {
       "id": "linux-recovery-boundaries",
       "stage": "verified_normal",
-      "source_commit": "9b6bb4d307172dbe6f4ad52d590e4916277f8cde",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43582428209",
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
       "output": "{\n  \"passed\": true,\n  \"consecutive_recovery_interruptions\": [\n    {\n      \"stage\": \"before_truncate\",\n      \"interrupted_before_ready\": true\n    },\n    {\n      \"stage\": \"before_truncate\",\n      \"interrupted_before_ready\": true\n    },\n    {\n      \"stage\": \"after_truncate\",\n      \"interrupted_before_ready\": true\n    },\n    {\n      \"stage\": \"after_truncate\",\n      \"interrupted_before_ready\": true\n    }\n  ],\n  \"committed_rows_preserved\": 20,\n  \"uncommitted_changes_rolled_back\": true\n}"
     },
     {
       "id": "linux-reference-differential",
       "stage": "verified_normal",
-      "source_commit": "9b6bb4d307172dbe6f4ad52d590e4916277f8cde",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43582428209",
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
       "output": "{\n  \"passed\": true,\n  \"reference_commit\": \"dfee55b84284f4c39d2df45951cdbcb1d1baf1a2\",\n  \"reference_evidence\": {\n    \"source\": \"author-published user-supplied platform feedback\",\n    \"url\": \"https://github.com/juanzhi-gcb/seekdb/blob/42f69e8320dcd8c802614f10cfb0699aa7551d2c/agent/conversation.json\",\n    \"json_pointer\": \"/experiments/43/output\",\n    \"mysql\": \"passed\",\n    \"agent_prompt_raw_score\": 6.5,\n    \"independently_authenticated_platform_record\": false\n  },\n  \"operations\": 1600,\n  \"compared_requests\": 1629,\n  \"independent_state_checked\": true,\n  \"tables\": 3,\n  \"scope\": \"Task-defined CRUD, transactions and queries, including aliased and unnamed distance headings, using unambiguous single-quoted SQL strings.\",\n  \"dialect_observation\": \"The frozen reference preserves backslashes; this implementation recognizes MySQL-style backslash escapes. The task kit does not specify that dialect choice. The original mismatch is retained; this corpus avoids that ambiguous case rather than using the reference as an unconditional oracle.\"\n}"
     },
     {
       "id": "linux-response-failure",
       "stage": "verified_normal",
-      "source_commit": "9b6bb4d307172dbe6f4ad52d590e4916277f8cde",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43582428209",
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
       "output": "{\n  \"passed\": true,\n  \"injected_failures\": 1,\n  \"complete_error_response\": true,\n  \"persistent_rows_preserved\": 11\n}"
     },
     {
       "id": "linux-space-reuse",
       "stage": "verified_normal",
-      "source_commit": "9b6bb4d307172dbe6f4ad52d590e4916277f8cde",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43582428209",
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
       "output": "{\n  \"passed\": true,\n  \"live_payload_bytes\": 13107200,\n  \"maximum_database_bytes\": 79076368,\n  \"sizes\": [\n    26500112,\n    39644176,\n    52788240,\n    65932304,\n    79076368,\n    26299408,\n    39443472,\n    52587536,\n    65731600,\n    78875664,\n    26299408,\n    39443472,\n    52587536,\n    65731600,\n    78875664,\n    26299408\n  ]\n}"
+    },
+    {
+      "id": "linux-sql-literals",
+      "stage": "verified_normal",
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
+      "output": "{\n  \"passed\": true,\n  \"roundtripped_literals\": 528,\n  \"malformed_rejected\": 5,\n  \"large_literal_bytes\": 80000,\n  \"unicode_and_nul\": true,\n  \"quoted_identifiers\": true,\n  \"rollback_and_restart\": true\n}"
     },
     {
       "id": "linux-vector-edges",
       "stage": "verified_normal",
-      "source_commit": "9b6bb4d307172dbe6f4ad52d590e4916277f8cde",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43582428209",
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647314",
       "output": "{\n  \"passed\": true,\n  \"variants\": [\n    {\n      \"passed\": true,\n      \"queries\": 504,\n      \"rows\": 257,\n      \"dimensions\": 33,\n      \"vector_cache_mib\": \"16\"\n    },\n    {\n      \"passed\": true,\n      \"queries\": 504,\n      \"rows\": 257,\n      \"dimensions\": 33,\n      \"vector_cache_mib\": \"0\"\n    }\n  ]\n}"
     },
     {
-      "id": "red-raw-nul-protocol",
+      "id": "red-exact-all-shortlist",
       "stage": "retained_development_observation",
       "source_commit": "pre-fix development build; see preserved original report",
-      "source": "validation/scored-review-20261114/red-raw-nul-protocol.json",
-      "output": "{\n  \"passed\": false,\n  \"error\": \"raw NUL terminated parsing early and executed a JSON prefix\"\n}"
+      "source": "validation/faster-review-20261114/red-exact-all-shortlist.json",
+      "output": "{\n  \"passed\": false,\n  \"source_commit\": \"45a0218c6e70388c10c62b801eacbcc1d743f17b\",\n  \"scope\": \"Added regression ran against the existing exact-all-candidates path.\",\n  \"observed_error\": \"normal screening did not avoid remaining exact candidates\"\n}"
     },
     {
-      "id": "red-unrelated-text-cache",
+      "id": "red-linux-insert-batches",
       "stage": "retained_development_observation",
       "source_commit": "pre-fix development build; see preserved original report",
-      "source": "validation/scored-review-20261114/red-unrelated-text-cache.json",
-      "output": "{\n  \"passed\": false,\n  \"error\": \"16 MiB cache reread 133027228 bytes for a fitting vector/filter working set with unrelated 1024-byte text\"\n}"
+      "source": "validation/faster-review-20261114/red-linux-insert-batches.json",
+      "output": "{\n  \"passed\": false,\n  \"error\": \"[Errno 13] Permission denied: 'results/linux-insert-batches/data/database.mvd'\",\n  \"traceback\": \"Traceback (most recent call last):\\n  File \\\"/home/runner/work/seekdb/seekdb/tests/insert_batches.py\\\", line 63, in <module>\\n    result = run(out / 'data')\\n             ^^^^^^^^^^^^^^^^^\\n  File \\\"/home/runner/work/seekdb/seekdb/tests/insert_batches.py\\\", line 39, in run\\n    before = hashlib.sha256(database.read_bytes()).hexdigest()\\n                            ^^^^^^^^^^^^^^^^^^^^^\\n  File \\\"/usr/lib/python3.12/pathlib.py\\\", line 1021, in read_bytes\\n    with self.open(mode='rb') as f:\\n         ^^^^^^^^^^^^^^^^^^^^\\n  File \\\"/usr/lib/python3.12/pathlib.py\\\", line 1015, in open\\n    return io.open(self, mode, buffering, encoding, errors, newline)\\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\nPermissionError: [Errno 13] Permission denied: 'results/linux-insert-batches/data/database.mvd'\\n\"\n}"
+    },
+    {
+      "id": "red-linux-response-failure",
+      "stage": "retained_development_observation",
+      "source_commit": "pre-fix development build; see preserved original report",
+      "source": "validation/faster-review-20261114/red-linux-response-failure.json",
+      "output": "{\n  \"passed\": false,\n  \"error\": \"[Errno 2] No such file or directory: '/home/runner/work/seekdb/seekdb/build/minivectordb'\"\n}"
     },
     {
       "id": "scored-reference-paired",
       "stage": "verified_paired",
-      "source_commit": "89d8d29b57a724c68f6fcf23fb3ac6dc521b2209",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43582288256",
-      "output": "{\n  \"passed\": true,\n  \"rounds\": [\n    {\n      \"body_bytes\": 16,\n      \"round\": 0,\n      \"seed\": 91271,\n      \"ours\": {\n        \"passed\": true,\n        \"write_seconds\": 0.482720951999994,\n        \"prepare_seconds\": 0.04380810399999291,\n        \"query_seconds\": 0.5804899920000253,\n        \"memory_peak_bytes\": 21827584,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=8056832 rios=0 wios=1967 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=8056832 rios=0 wios=1967 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 7223133,\n        \"exact_ids_checked\": 1000\n      },\n      \"reference\": {\n        \"passed\": true,\n        \"write_seconds\": 0.23316509800000063,\n        \"prepare_seconds\": 0.0647970500000099,\n        \"query_seconds\": 0.2579789490000053,\n        \"memory_peak_bytes\": 15785984,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=6115328 rios=0 wios=1493 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=6115328 rios=0 wios=1493 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 6115328,\n        \"exact_ids_checked\": 1000\n      },\n      \"frozen\": {\n        \"passed\": true,\n        \"write_seconds\": 0.7041105799999912,\n        \"prepare_seconds\": 0.03607137899999202,\n        \"query_seconds\": 1.787441696000002,\n        \"memory_peak_bytes\": 23515136,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=8056832 rios=0 wios=1967 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=8056832 rios=0 wios=1967 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 7223133,\n        \"exact_ids_checked\": 1000\n      }\n    },\n    {\n      \"body_bytes\": 16,\n      \"round\": 1,\n      \"seed\": 91272,\n      \"reference\": {\n        \"passed\": true,\n        \"write_seconds\": 0.23210077699999943,\n        \"prepare_seconds\": 0.06343260399998485,\n        \"query_seconds\": 0.25667921500001967,\n        \"memory_peak_bytes\": 16302080,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=6115328 rios=0 wios=1493 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=6115328 rios=0 wios=1493 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 6115328,\n        \"exact_ids_checked\": 1000\n      },\n      \"frozen\": {\n        \"passed\": true,\n        \"write_seconds\": 0.7173551639999971,\n        \"prepare_seconds\": 0.0352013730000067,\n        \"query_seconds\": 1.78055284200002,\n        \"memory_peak_bytes\": 23539712,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=8056832 rios=0 wios=1967 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=8056832 rios=0 wios=1967 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 7223133,\n        \"exact_ids_checked\": 1000\n      },\n      \"ours\": {\n        \"passed\": true,\n        \"write_seconds\": 0.4794992899999784,\n        \"prepare_seconds\": 0.04477477300000032,\n        \"query_seconds\": 0.5765170290000015,\n        \"memory_peak_bytes\": 21753856,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=8056832 rios=0 wios=1967 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=8056832 rios=0 wios=1967 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 7223133,\n        \"exact_ids_checked\": 1000\n      }\n    },\n    {\n      \"body_bytes\": 16,\n      \"round\": 2,\n      \"seed\": 91273,\n      \"frozen\": {\n        \"passed\": true,\n        \"write_seconds\": 0.7093707610000024,\n        \"prepare_seconds\": 0.035591921999980514,\n        \"query_seconds\": 1.7962195839999993,\n        \"memory_peak_bytes\": 23474176,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=8056832 rios=0 wios=1967 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=8056832 rios=0 wios=1967 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 7223133,\n        \"exact_ids_checked\": 1000\n      },\n      \"ours\": {\n        \"passed\": true,\n        \"write_seconds\": 0.49024286500002745,\n        \"prepare_seconds\": 0.04400681699999609,\n        \"query_seconds\": 0.5836215260000017,\n        \"memory_peak_bytes\": 21434368,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=8056832 rios=0 wios=1967 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=8056832 rios=0 wios=1967 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 7223133,\n        \"exact_ids_checked\": 1000\n      },\n      \"reference\": {\n        \"passed\": true,\n        \"write_seconds\": 0.23647163600000454,\n        \"prepare_seconds\": 0.06698955400000273,\n        \"query_seconds\": 0.2635002909999855,\n        \"memory_peak_bytes\": 15564800,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=6115328 rios=0 wios=1493 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=6115328 rios=0 wios=1493 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 6115328,\n        \"exact_ids_checked\": 1000\n      }\n    },\n    {\n      \"body_bytes\": 1024,\n      \"round\": 0,\n      \"seed\": 91271,\n      \"ours\": {\n        \"passed\": true,\n        \"write_seconds\": 0.6645809190000023,\n        \"prepare_seconds\": 0.04661973800000396,\n        \"query_seconds\": 0.5800136290000069,\n        \"memory_peak_bytes\": 32350208,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=18194432 rios=0 wios=4442 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=18194432 rios=0 wios=4442 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 17362929,\n        \"exact_ids_checked\": 1000\n      },\n      \"reference\": {\n        \"passed\": true,\n        \"write_seconds\": 0.3613854220000121,\n        \"prepare_seconds\": 0.12058685899998522,\n        \"query_seconds\": 0.31376403400000186,\n        \"memory_peak_bytes\": 31756288,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=16355328 rios=0 wios=3993 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=16355328 rios=0 wios=3993 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 16355328,\n        \"exact_ids_checked\": 1000\n      },\n      \"frozen\": {\n        \"passed\": true,\n        \"write_seconds\": 0.8995733409999787,\n        \"prepare_seconds\": 0.16456099200001972,\n        \"query_seconds\": 14.144178017999991,\n        \"memory_peak_bytes\": 41222144,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=18194432 rios=0 wios=4442 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=18194432 rios=0 wios=4442 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 17362929,\n        \"exact_ids_checked\": 1000\n      }\n    },\n    {\n      \"body_bytes\": 1024,\n      \"round\": 1,\n      \"seed\": 91272,\n      \"reference\": {\n        \"passed\": true,\n        \"write_seconds\": 0.36870135300000584,\n        \"prepare_seconds\": 0.12167880300000888,\n        \"query_seconds\": 0.32596155599998156,\n        \"memory_peak_bytes\": 32157696,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=16355328 rios=0 wios=3993 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=16355328 rios=0 wios=3993 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 16355328,\n        \"exact_ids_checked\": 1000\n      },\n      \"frozen\": {\n        \"passed\": true,\n        \"write_seconds\": 0.8885700809999832,\n        \"prepare_seconds\": 0.16901678199999992,\n        \"query_seconds\": 14.641433974999984,\n        \"memory_peak_bytes\": 41086976,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=18194432 rios=0 wios=4442 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=18194432 rios=0 wios=4442 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 17362929,\n        \"exact_ids_checked\": 1000\n      },\n      \"ours\": {\n        \"passed\": true,\n        \"write_seconds\": 0.67983351700002,\n        \"prepare_seconds\": 0.046436285000027056,\n        \"query_seconds\": 0.5625083340000288,\n        \"memory_peak_bytes\": 32428032,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=18194432 rios=0 wios=4442 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=18194432 rios=0 wios=4442 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 17362929,\n        \"exact_ids_checked\": 1000\n      }\n    },\n    {\n      \"body_bytes\": 1024,\n      \"round\": 2,\n      \"seed\": 91273,\n      \"frozen\": {\n        \"passed\": true,\n        \"write_seconds\": 0.8928478159999713,\n        \"prepare_seconds\": 0.17837102299995422,\n        \"query_seconds\": 14.989262574999998,\n        \"memory_peak_bytes\": 40873984,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=18194432 rios=0 wios=4442 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=18194432 rios=0 wios=4442 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 17362929,\n        \"exact_ids_checked\": 1000\n      },\n      \"ours\": {\n        \"passed\": true,\n        \"write_seconds\": 0.6683668219999959,\n        \"prepare_seconds\": 0.04754812999999558,\n        \"query_seconds\": 0.5620692910000002,\n        \"memory_peak_bytes\": 32047104,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=18194432 rios=0 wios=4442 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=18194432 rios=0 wios=4442 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 17362929,\n        \"exact_ids_checked\": 1000\n      },\n      \"reference\": {\n        \"passed\": true,\n        \"write_seconds\": 0.3656037709999964,\n        \"prepare_seconds\": 0.12200170599999183,\n        \"query_seconds\": 0.31620234199999686,\n        \"memory_peak_bytes\": 32018432,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=16355328 rios=0 wios=3993 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=16355328 rios=0 wios=3993 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 16355328,\n        \"exact_ids_checked\": 1000\n      }\n    }\n  ],\n  \"medians\": {\n    \"16\": {\n      \"ours\": {\n        \"write_seconds\": 0.482720951999994,\n        \"query_seconds\": 0.5804899920000253,\n        \"memory_peak_bytes\": 21753856,\n        \"storage_bytes\": 7223133\n      },\n      \"reference\": {\n        \"write_seconds\": 0.23316509800000063,\n        \"query_seconds\": 0.2579789490000053,\n        \"memory_peak_bytes\": 15785984,\n        \"storage_bytes\": 6115328\n      },\n      \"frozen\": {\n        \"write_seconds\": 0.7093707610000024,\n        \"query_seconds\": 1.787441696000002,\n        \"memory_peak_bytes\": 23515136,\n        \"storage_bytes\": 7223133\n      },\n      \"ours_over_reference_query_time\": 2.250144805419815,\n      \"ours_over_frozen_query_time\": 0.3247602387809715\n    },\n    \"1024\": {\n      \"ours\": {\n        \"write_seconds\": 0.6683668219999959,\n        \"query_seconds\": 0.5625083340000288,\n        \"memory_peak_bytes\": 32350208,\n        \"storage_bytes\": 17362929\n      },\n      \"reference\": {\n        \"write_seconds\": 0.3656037709999964,\n        \"query_seconds\": 0.31620234199999686,\n        \"memory_peak_bytes\": 32018432,\n        \"storage_bytes\": 16355328\n      },\n      \"frozen\": {\n        \"write_seconds\": 0.8928478159999713,\n        \"query_seconds\": 14.641433974999984,\n        \"memory_peak_bytes\": 41086976,\n        \"storage_bytes\": 17362929\n      },\n      \"ours_over_reference_query_time\": 1.7789505619791846,\n      \"ours_over_frozen_query_time\": 0.038418937309043825\n    }\n  },\n  \"reference_commit\": \"dfee55b84284f4c39d2df45951cdbcb1d1baf1a2\",\n  \"reference_evidence\": {\n    \"source\": \"author-published user-supplied platform feedback\",\n    \"url\": \"https://github.com/juanzhi-gcb/seekdb/blob/42f69e8320dcd8c802614f10cfb0699aa7551d2c/agent/conversation.json\",\n    \"json_pointer\": \"/experiments/43/output\",\n    \"mysql\": \"passed\",\n    \"agent_prompt_raw_score\": 6.5,\n    \"independently_authenticated_platform_record\": false\n  },\n  \"frozen_baseline_commit\": \"977fb6d6e4f7dc2865ab5ba847ae3c489ba27100\",\n  \"environment\": \"Each server: same GCC 13.5 O3 toolchain and Ubuntu runtime; 2 CPU, 2 GiB, swap disabled, read-only root and no network. This controls the toolchain and is not the reference author's original Alpine/GCC 14 production image.\",\n  \"scope\": \"Input SQL and independent truth are prepared outside timers. Timers include request serialization, IPC, responses and server persistence. Query prep and oracle work are excluded. Memory peak includes prep and page cache. Raw io.stat is observational; no official B, E, rank or score is inferred.\"\n}"
+      "source_commit": "ac217b1875cc7382c345b24ddf7dea23a384fe0c",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43592647300",
+      "output": "{\n  \"passed\": true,\n  \"rounds\": [\n    {\n      \"body_bytes\": 16,\n      \"round\": 0,\n      \"seed\": 91271,\n      \"ours\": {\n        \"passed\": true,\n        \"write_seconds\": 0.24124987199999737,\n        \"prepare_seconds\": 0.10382988100002422,\n        \"query_seconds\": 0.2687927109999748,\n        \"memory_peak_bytes\": 23355392,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=7868416 rios=0 wios=1921 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=7868416 rios=0 wios=1921 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 7033359,\n        \"exact_ids_checked\": 1000\n      },\n      \"reference\": {\n        \"passed\": true,\n        \"write_seconds\": 0.23206363200000624,\n        \"prepare_seconds\": 0.06307789400000274,\n        \"query_seconds\": 0.25718426800000316,\n        \"memory_peak_bytes\": 16093184,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=6115328 rios=0 wios=1493 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=6115328 rios=0 wios=1493 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 6115328,\n        \"exact_ids_checked\": 1000\n      },\n      \"frozen\": {\n        \"passed\": true,\n        \"write_seconds\": 0.47721407500000623,\n        \"prepare_seconds\": 0.04236271799999258,\n        \"query_seconds\": 0.5790289089999874,\n        \"memory_peak_bytes\": 21561344,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=8056832 rios=0 wios=1967 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=8056832 rios=0 wios=1967 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 7223133,\n        \"exact_ids_checked\": 1000\n      }\n    },\n    {\n      \"body_bytes\": 16,\n      \"round\": 1,\n      \"seed\": 91272,\n      \"reference\": {\n        \"passed\": true,\n        \"write_seconds\": 0.23207399399998963,\n        \"prepare_seconds\": 0.06304539300001011,\n        \"query_seconds\": 0.2526716209999904,\n        \"memory_peak_bytes\": 15917056,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=6115328 rios=0 wios=1493 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=6115328 rios=0 wios=1493 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 6115328,\n        \"exact_ids_checked\": 1000\n      },\n      \"frozen\": {\n        \"passed\": true,\n        \"write_seconds\": 0.48377911199997925,\n        \"prepare_seconds\": 0.04238319300000626,\n        \"query_seconds\": 0.5745642640000028,\n        \"memory_peak_bytes\": 21528576,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=8056832 rios=0 wios=1967 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=8056832 rios=0 wios=1967 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 7223133,\n        \"exact_ids_checked\": 1000\n      },\n      \"ours\": {\n        \"passed\": true,\n        \"write_seconds\": 0.23886942100000397,\n        \"prepare_seconds\": 0.10477094999998826,\n        \"query_seconds\": 0.265280367999992,\n        \"memory_peak_bytes\": 22908928,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=7868416 rios=0 wios=1921 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=7868416 rios=0 wios=1921 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 7033359,\n        \"exact_ids_checked\": 1000\n      }\n    },\n    {\n      \"body_bytes\": 16,\n      \"round\": 2,\n      \"seed\": 91273,\n      \"frozen\": {\n        \"passed\": true,\n        \"write_seconds\": 0.4744234620000043,\n        \"prepare_seconds\": 0.043456546000015805,\n        \"query_seconds\": 0.565330060000008,\n        \"memory_peak_bytes\": 21942272,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=8056832 rios=0 wios=1967 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=8056832 rios=0 wios=1967 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 7223133,\n        \"exact_ids_checked\": 1000\n      },\n      \"ours\": {\n        \"passed\": true,\n        \"write_seconds\": 0.24232897599998182,\n        \"prepare_seconds\": 0.10515816400001654,\n        \"query_seconds\": 0.2592600879999907,\n        \"memory_peak_bytes\": 22679552,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=7868416 rios=0 wios=1921 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=7868416 rios=0 wios=1921 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 7033359,\n        \"exact_ids_checked\": 1000\n      },\n      \"reference\": {\n        \"passed\": true,\n        \"write_seconds\": 0.22966973900000198,\n        \"prepare_seconds\": 0.06368451299999833,\n        \"query_seconds\": 0.2578127970000139,\n        \"memory_peak_bytes\": 15032320,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=6115328 rios=0 wios=1493 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=6115328 rios=0 wios=1493 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 6115328,\n        \"exact_ids_checked\": 1000\n      }\n    },\n    {\n      \"body_bytes\": 1024,\n      \"round\": 0,\n      \"seed\": 91271,\n      \"ours\": {\n        \"passed\": true,\n        \"write_seconds\": 0.3483305040000175,\n        \"prepare_seconds\": 0.10680215400000748,\n        \"query_seconds\": 0.2695647140000119,\n        \"memory_peak_bytes\": 33341440,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=18104320 rios=0 wios=4420 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=18104320 rios=0 wios=4420 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 17269555,\n        \"exact_ids_checked\": 1000\n      },\n      \"reference\": {\n        \"passed\": true,\n        \"write_seconds\": 0.36650999200000456,\n        \"prepare_seconds\": 0.11774616599998922,\n        \"query_seconds\": 0.31047702999998705,\n        \"memory_peak_bytes\": 32120832,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=16355328 rios=0 wios=3993 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=16355328 rios=0 wios=3993 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 16355328,\n        \"exact_ids_checked\": 1000\n      },\n      \"frozen\": {\n        \"passed\": true,\n        \"write_seconds\": 0.6580439260000048,\n        \"prepare_seconds\": 0.046308568000000605,\n        \"query_seconds\": 0.5782016919999933,\n        \"memory_peak_bytes\": 31817728,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=18194432 rios=0 wios=4442 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=18194432 rios=0 wios=4442 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 17362929,\n        \"exact_ids_checked\": 1000\n      }\n    },\n    {\n      \"body_bytes\": 1024,\n      \"round\": 1,\n      \"seed\": 91272,\n      \"reference\": {\n        \"passed\": true,\n        \"write_seconds\": 0.361161826,\n        \"prepare_seconds\": 0.11867333300000382,\n        \"query_seconds\": 0.32265666799997916,\n        \"memory_peak_bytes\": 32182272,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=16355328 rios=0 wios=3993 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=16355328 rios=0 wios=3993 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 16355328,\n        \"exact_ids_checked\": 1000\n      },\n      \"frozen\": {\n        \"passed\": true,\n        \"write_seconds\": 0.6494002610000109,\n        \"prepare_seconds\": 0.04466517199998066,\n        \"query_seconds\": 0.5639638309999953,\n        \"memory_peak_bytes\": 32292864,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=18194432 rios=0 wios=4442 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=18194432 rios=0 wios=4442 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 17362929,\n        \"exact_ids_checked\": 1000\n      },\n      \"ours\": {\n        \"passed\": true,\n        \"write_seconds\": 0.34129995800000756,\n        \"prepare_seconds\": 0.10756958499999314,\n        \"query_seconds\": 0.2642632450000235,\n        \"memory_peak_bytes\": 33071104,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=18104320 rios=0 wios=4420 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=18104320 rios=0 wios=4420 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 17269555,\n        \"exact_ids_checked\": 1000\n      }\n    },\n    {\n      \"body_bytes\": 1024,\n      \"round\": 2,\n      \"seed\": 91273,\n      \"frozen\": {\n        \"passed\": true,\n        \"write_seconds\": 0.6856049920000089,\n        \"prepare_seconds\": 0.043231972999990376,\n        \"query_seconds\": 0.5670288389999882,\n        \"memory_peak_bytes\": 32382976,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=18194432 rios=0 wios=4442 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=18194432 rios=0 wios=4442 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 17362929,\n        \"exact_ids_checked\": 1000\n      },\n      \"ours\": {\n        \"passed\": true,\n        \"write_seconds\": 0.33669159100000456,\n        \"prepare_seconds\": 0.10565375400000221,\n        \"query_seconds\": 0.2617722640000011,\n        \"memory_peak_bytes\": 33533952,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=18104320 rios=0 wios=4420 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=18104320 rios=0 wios=4420 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 17269555,\n        \"exact_ids_checked\": 1000\n      },\n      \"reference\": {\n        \"passed\": true,\n        \"write_seconds\": 0.37549767900000575,\n        \"prepare_seconds\": 0.11682879200003526,\n        \"query_seconds\": 0.3110204619999877,\n        \"memory_peak_bytes\": 32038912,\n        \"raw_io_stat\": \"259:1 rbytes=0 wbytes=16355328 rios=0 wios=3993 dbytes=0 dios=0\\n252:0 rbytes=0 wbytes=16355328 rios=0 wios=3993 dbytes=0 dios=0\\n\",\n        \"storage_bytes\": 16355328,\n        \"exact_ids_checked\": 1000\n      }\n    }\n  ],\n  \"medians\": {\n    \"16\": {\n      \"ours\": {\n        \"write_seconds\": 0.24124987199999737,\n        \"query_seconds\": 0.265280367999992,\n        \"memory_peak_bytes\": 22908928,\n        \"storage_bytes\": 7033359\n      },\n      \"reference\": {\n        \"write_seconds\": 0.23206363200000624,\n        \"query_seconds\": 0.25718426800000316,\n        \"memory_peak_bytes\": 15917056,\n        \"storage_bytes\": 6115328\n      },\n      \"frozen\": {\n        \"write_seconds\": 0.47721407500000623,\n        \"query_seconds\": 0.5745642640000028,\n        \"memory_peak_bytes\": 21561344,\n        \"storage_bytes\": 7223133\n      },\n      \"ours_over_reference_query_time\": 1.0314797637621782,\n      \"ours_over_frozen_query_time\": 0.4617070441401324\n    },\n    \"1024\": {\n      \"ours\": {\n        \"write_seconds\": 0.34129995800000756,\n        \"query_seconds\": 0.2642632450000235,\n        \"memory_peak_bytes\": 33341440,\n        \"storage_bytes\": 17269555\n      },\n      \"reference\": {\n        \"write_seconds\": 0.36650999200000456,\n        \"query_seconds\": 0.3110204619999877,\n        \"memory_peak_bytes\": 32120832,\n        \"storage_bytes\": 16355328\n      },\n      \"frozen\": {\n        \"write_seconds\": 0.6580439260000048,\n        \"query_seconds\": 0.5670288389999882,\n        \"memory_peak_bytes\": 32292864,\n        \"storage_bytes\": 17362929\n      },\n      \"ours_over_reference_query_time\": 0.8496651419675211,\n      \"ours_over_frozen_query_time\": 0.4660490381160825\n    }\n  },\n  \"reference_commit\": \"dfee55b84284f4c39d2df45951cdbcb1d1baf1a2\",\n  \"reference_evidence\": {\n    \"source\": \"author-published user-supplied platform feedback\",\n    \"url\": \"https://github.com/juanzhi-gcb/seekdb/blob/42f69e8320dcd8c802614f10cfb0699aa7551d2c/agent/conversation.json\",\n    \"json_pointer\": \"/experiments/43/output\",\n    \"mysql\": \"passed\",\n    \"agent_prompt_raw_score\": 6.5,\n    \"independently_authenticated_platform_record\": false\n  },\n  \"frozen_baseline_commit\": \"bcd4a3f9bfefbbe940694b498f2b1f5c1fc35a6b\",\n  \"environment\": \"Each server: same GCC 13.5 O3 toolchain and Ubuntu runtime; 2 CPU, 2 GiB, swap disabled, read-only root and no network. This controls the toolchain and is not the reference author's original Alpine/GCC 14 production image.\",\n  \"scope\": \"Input SQL and independent truth are prepared outside timers. Timers include request serialization, IPC, responses and server persistence. Query prep and oracle work are excluded. Memory peak includes prep and page cache. Raw io.stat is observational; no official B, E, rank or score is inferred.\"\n}"
     },
     {
       "id": "vector-literal",
       "stage": "verified_numeric",
-      "source_commit": "b44b6b97fed7529b4771d85bc5fd88813cc7149e",
-      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43581938105",
-      "output": "{\n  \"passed\": true,\n  \"parity_cases\": 17246,\n  \"nul_tail_hardened\": true,\n  \"json_baseline_seconds\": 0.285604594,\n  \"direct_parser_seconds\": 0.051681133\n}"
+      "source_commit": "6f2e3639461d61a97323a5c2b000b73bd29938db",
+      "source": "https://github.com/xxxhm0524/seekdb/actions/runs/43587814044",
+      "output": "{\n  \"passed\": true,\n  \"parity_cases\": 17246,\n  \"nul_tail_hardened\": true,\n  \"json_baseline_seconds\": 0.329598977,\n  \"direct_parser_seconds\": 0.051100046\n}"
     }
   ],
   "agent_retrospective": [
@@ -361,11 +468,15 @@
     "An added boundary test initially failed for the finite float32 decimal 3.4028235e38. Comparing the input double directly to FLT_MAX incorrectly rejected a value that rounds to finite float32. The threshold was changed to the overflow rounding midpoint. The failing record and successful retest are preserved below.",
     "The low-memory test actually stored 163840000 payload bytes in a container limited to 100663296 bytes. This is evidence for external-memory handling, not a claim based on an in-memory simulation.",
     "The user's objection led to a broader lifecycle audit. Four real defects were reproduced: unbounded committed history, token concatenation accepting malformed vectors, unneeded wide-text reads, and partial JSON publication when the spill file's final flush failed. The preserved red reports and passing regressions support the fixes; they do not retroactively establish that the earlier candidate was bug-free.",
-    "A frozen public commit with author-published formal feedback was compiled as a reference. 1600 operations / 1629 requests across three tables agreed with both implementations and independent Python state. The original backslash escaping difference is recorded separately because the task does not specify that dialect choice. No public reference code or learning material was incorporated into the database core.",
+    "A frozen public commit with author-published formal feedback was compiled as a reference. 1600 operations / 1629 requests across three tables agreed with both implementations and independent Python state. The original backslash escaping difference is recorded separately because the task does not specify that dialect choice. Later clustering and certification designs were borrowed and reimplemented with explicit attribution; the reference's learning material was not copied.",
     "The expanded capacity test used the actual 2 GiB memory budget with 2621440000 bytes of business text. Compaction was interrupted exactly before and after file replacement. Recovery was then repeatedly interrupted at the real truncation syscall, twice before and twice after it, without readiness between interruptions. Committed rows survived and uncommitted changes were rolled back. ASan, UBSan and library assertions covered the protocol, state machine, large tree, compaction and all 120 column layouts.",
     "The final file-opening audit reproduced two data-preservation defects: unknown nonempty files were initialized as empty, and an injected allocation failure while decoding the latest catalog caused rollback to an older committed root and truncation. Unknown formats now fail without changing bytes. Only recognized interrupted-empty-initialization patterns are retried. Recovery validates candidates newest-first and propagates allocation/schema failures without downgrading acknowledged state. Both failures have retained red cases and passing production/sanitizer regressions.",
     "The renewed user request led to controlled same-toolchain performance comparisons with the publicly documented successful commit. Before the change, 1024-byte text exhausted the whole-row snapshot and caused much slower disk queries. A working-set pread probe reproduced that cause, then passed with projected snapshots. Blocked exact distance and direct numeric parsing were tested separately before integration.",
-    "The final controlled replay rotates the frozen 977fb6d baseline, candidate and successful reference on the same runner for three rounds. For 16/1024-byte text, candidate query medians were 0.5805/0.5625 seconds versus frozen baseline 1.7874/14.6414 and reference 0.2580/0.3162. Candidate still trails the reference. These are not official E, rank or scores; raw io.stat is retained without claiming official isolated-device B.",
+    "An earlier controlled replay rotated the original 977fb6d baseline, then-current candidate and successful reference for three rounds. Its candidate query medians were 0.5805/0.5625s, before the subsequent clustering, integer-certificate and parser changes. Those earlier observations are retained under the earlier review directory rather than relabeled as the final candidate.",
+    "The final comparison rotates the bcd4a3f baseline, candidate and successful reference on the same runner for three rounds using the same toolchain and resource limits. 16-byte text: candidate write/query 0.241250/0.265280s; successful reference 0.232064/0.257184s; frozen bcd4a3f baseline 0.477214/0.574564s. 1024-byte text: candidate write/query 0.341300/0.264263s; successful reference 0.366510/0.311020s; frozen bcd4a3f baseline 0.658044/0.567029s. These are measured development timings, not official E, rank or scores. The raw io.stat is retained without claiming official isolated-device B.",
+    "The added container byte-invariance test first failed because the host user could not read the container's mode-0600 file. Its hash is now read inside the owning container, without weakening production permissions or removing assertions. A secondary missing-binary failure followed the skipped extraction step; both failed records are retained and the full workflow was rerun.",
+    "Exact root-publication and sync syscall cuts preserve two-table atomicity. An ordinary acknowledged transaction performs one complete-file durability sync, and a 5000-row batched insertion performed 66 file writes. This is a process-crash experiment, not a power-loss experiment.",
+    "The quoted-span tests round-tripped 528 literals including an 80 KB value, backslashes, doubled delimiters, NUL and Unicode. The request decoder matched the established strict parser on 48279 valid/malformed cases, with float IDs and unusual exponents retaining the original decoder. The normal and sanitized production-source tests are listed below.",
     "Local benchmark times and CI results are not formal platform scores. The nine retained formal inputs are unavailable. Formal admission and ranking require the platform to evaluate the locked submission."
   ],
   "limitations": [

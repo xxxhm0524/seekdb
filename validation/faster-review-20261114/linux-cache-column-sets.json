@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "rows": 2500,
+  "dimensions": 33,
+  "cache_mib": 2,
+  "queries_checked": 50,
+  "mixed_filter_columns": true,
+  "large_filter_refusal": true,
+  "winner_projection": true,
+  "rollback_and_restart": true
+}

@@ -1,0 +1,5 @@
+{
+  "passed": false,
+  "error": "[Errno 13] Permission denied: 'results/linux-insert-batches/data/database.mvd'",
+  "traceback": "Traceback (most recent call last):\n  File \"/home/runner/work/seekdb/seekdb/tests/insert_batches.py\", line 63, in <module>\n    result = run(out / 'data')\n             ^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/seekdb/seekdb/tests/insert_batches.py\", line 39, in run\n    before = hashlib.sha256(database.read_bytes()).hexdigest()\n                            ^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/pathlib.py\", line 1021, in read_bytes\n    with self.open(mode='rb') as f:\n         ^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/pathlib.py\", line 1015, in open\n    return io.open(self, mode, buffering, encoding, errors, newline)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nPermissionError: [Errno 13] Permission denied: 'results/linux-insert-batches/data/database.mvd'\n"
+}

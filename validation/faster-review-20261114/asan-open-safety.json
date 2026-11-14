@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "unknown_files_rejected": [
+    {
+      "case": "short",
+      "original_sha256": "859f5272d593a781daa9cc407553425a5bf9921eecf66e280e69ad177bedb1c0",
+      "preserved": true
+    },
+    {
+      "case": "large",
+      "original_sha256": "2027580a968affeaf4af8ea22d44cbdd1d87b435bdf4af430a5ed503f069775b",
+      "preserved": true
+    },
+    {
+      "case": "other_version",
+      "original_sha256": "d6275ef0c3bd717d3fced1126e72e59d4886d145b00071996a2ea401f9f4c971",
+      "preserved": true
+    }
+  ],
+  "incomplete_initialization_variants": 13
+}

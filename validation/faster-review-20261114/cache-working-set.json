@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "rows": 10000,
+  "dimensions": 128,
+  "cache_mib": 16,
+  "body_bytes_per_row": 1024,
+  "repeated_queries": 20,
+  "file_read_bytes": 11071776,
+  "projection_and_refusal_transitions": true
+}

@@ -1,0 +1,6 @@
+{
+  "passed": false,
+  "source_commit": "45a0218c6e70388c10c62b801eacbcc1d743f17b",
+  "scope": "Added regression ran against the existing exact-all-candidates path.",
+  "observed_error": "normal screening did not avoid remaining exact candidates"
+}

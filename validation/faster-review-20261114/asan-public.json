@@ -1,0 +1,106 @@
+{
+  "passed": true,
+  "cases": [
+    {
+      "id": "sql_crud",
+      "passed": true,
+      "seconds": 0.09036229999999534
+    },
+    {
+      "id": "sql_comparisons",
+      "passed": true,
+      "seconds": 0.037448802000000114
+    },
+    {
+      "id": "sql_ordering",
+      "passed": true,
+      "seconds": 0.15090711800000634
+    },
+    {
+      "id": "sql_empty",
+      "passed": true,
+      "seconds": 0.036731392999996615
+    },
+    {
+      "id": "sql_primary_key",
+      "passed": true,
+      "seconds": 0.036706757000004586
+    },
+    {
+      "id": "sql_unicode",
+      "passed": true,
+      "seconds": 0.037522151000004555
+    },
+    {
+      "id": "sql_bigint",
+      "passed": true,
+      "seconds": 0.03616143300000374
+    },
+    {
+      "id": "sql_unsupported",
+      "passed": true,
+      "seconds": 0.037237990999997805
+    },
+    {
+      "id": "storage_restart",
+      "passed": true,
+      "seconds": 0.08101204800000517
+    },
+    {
+      "id": "vector_euclidean",
+      "passed": true,
+      "seconds": 0.03692134300000305
+    },
+    {
+      "id": "transaction_commit",
+      "passed": true,
+      "seconds": 0.057681985999991525
+    },
+    {
+      "id": "transaction_rollback",
+      "passed": true,
+      "seconds": 0.028935406000002217
+    },
+    {
+      "id": "storage_mutations",
+      "passed": true,
+      "seconds": 0.07571672299999932
+    },
+    {
+      "id": "storage_multiple_tables",
+      "passed": true,
+      "seconds": 0.07556255500000475
+    },
+    {
+      "id": "vector_ties_and_filter",
+      "passed": true,
+      "seconds": 0.03713201499999741
+    },
+    {
+      "id": "vector_float32",
+      "passed": true,
+      "seconds": 0.03627028299999324
+    },
+    {
+      "id": "vector_index_maintenance",
+      "passed": true,
+      "seconds": 0.09797835000000532
+    },
+    {
+      "id": "transaction_failed_insert",
+      "passed": true,
+      "seconds": 0.09425361299999224
+    },
+    {
+      "id": "transaction_autocommit_atomic",
+      "passed": true,
+      "seconds": 0.15973835199999087
+    },
+    {
+      "id": "transaction_shutdown_rollback",
+      "passed": true,
+      "seconds": 0.07055142100000467
+    }
+  ],
+  "scope": "official assertions with portable local transport; not an official score"
+}
