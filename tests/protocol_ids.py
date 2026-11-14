@@ -32,6 +32,11 @@ def run(out):
         for identifier in ids:
             assert send(identifier)['rows']==[]
             send(identifier,sql='SELECT missing FROM t;',ok=False)
+        for value in [dict(id=10**400),dict(id=10**400,op=1),dict(id=10**400,op='bad'),
+                      dict(id=10**400,op='execute',sql=False),dict(id=10**400,op='execute',sql='SELECT id FROM t;',search_mode=None),
+                      dict(id=10**400,op='execute',sql='SELECT id FROM t;',search_mode='invalid')]:
+            db.process.stdin.write((json.dumps(value)+'\n').encode());db.process.stdin.flush();response=db.receive()
+            assert response['ok'] is False and typed(response.get('id'))==typed(value['id']);checked+=1
         send({'large':10**400},sql='BEGIN;')
         send(10**400,sql="INSERT INTO t VALUES(1,'kept');")
         send(10**3000,sql="INSERT INTO t VALUES(2,'partial'),(1,'duplicate');",ok=False)

@@ -169,7 +169,10 @@ Result Engine::select(const Statement& s) {
     for (const auto& o : s.order) {
         std::optional<size_t> alias;
         if (!o.expr.vector) {
-            for (size_t i = 0; i < projections.size(); ++i) if (lower(projections[i].name) == lower(o.expr.column)) {
+            // Only explicit AS names enter the alias namespace. Repeated
+            // ordinary projections are legal and do not make a base column
+            // ambiguous; this matches the successful reference's binder.
+            for (size_t i = 0; i < s.projections.size(); ++i) if (!s.projections[i].alias.empty() && lower(s.projections[i].alias) == lower(o.expr.column)) {
                 if (alias) fail("ambiguous_column", "ambiguous ORDER BY alias");
                 alias = i;
             }

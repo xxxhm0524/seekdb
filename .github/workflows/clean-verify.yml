@@ -40,6 +40,10 @@ jobs:
         env:
           MVD_DOCKER_IMAGE: mvd-clean
         run: python3 tests/sql_numeric_forms.py --output results/linux-sql-numeric-forms
+      - name: Explicit aliases and repeated ordinary projections
+        env:
+          MVD_DOCKER_IMAGE: mvd-clean
+        run: python3 tests/order_alias_boundaries.py --output results/linux-order-aliases
       - name: Independent invariants and real SIGKILL
         env:
           MVD_DOCKER_IMAGE: mvd-clean
@@ -166,6 +170,7 @@ jobs:
           python3 tests/protocol_complete_input.py --output results/asan-complete-input
           python3 tests/protocol_ids.py --output results/asan-protocol-ids
           python3 tests/sql_numeric_forms.py --output results/asan-sql-numeric-forms
+          python3 tests/order_alias_boundaries.py --output results/asan-order-aliases
           python3 tests/cache_column_sets.py --output results/asan-cache-column-sets
           python3 tests/cache_ranges.py --output results/asan-cache-ranges
           python3 tests/insert_batches.py --output results/asan-insert-batches

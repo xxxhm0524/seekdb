@@ -95,6 +95,10 @@ def run(out, reference_binary, ours_binary=None):
                 execute(f"SELECT id,L2_DISTANCE(v,'[0,0,0]') AS d FROM t WHERE n>=0 ORDER BY d LIMIT {limit};",'limits')
             for sql in [
                 'SELECT id AS k,n FROM t ORDER BY k DESC LIMIT 3;',
+                'SELECT id,id FROM t ORDER BY id;',
+                'SELECT id,ID FROM t ORDER BY ID DESC;',
+                'SELECT n AS id,id FROM t ORDER BY id;',
+                "SELECT L2_DISTANCE(v,'[0,0,0]') AS id,id FROM t ORDER BY id LIMIT 3;",
                 'SELECT id AS a,n AS a FROM t ORDER BY a;',
                 'SELECT id,n FROM t ORDER BY n DESC,id ASC;',
                 "SELECT id,L2_DISTANCE(v,'[0,0,0]') AS d FROM t ORDER BY d DESC,n ASC LIMIT 4;",
