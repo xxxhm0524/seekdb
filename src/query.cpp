@@ -201,6 +201,22 @@ Result Engine::select(const Statement& s) {
         }
         result.rows->add(values);
     };
+    bool vector_query = false;
+    for (const auto& p : projections) vector_query |= p.distance;
+    for (const auto& o : ordering) vector_query |= o.distance;
+    if (vector_query) {
+        if (vector_index_ && !vector_index_->valid(table)) vector_index_.reset();
+        if (!vector_index_ && !(refused_vector_root_ == table.root && refused_vector_table_ == table.name)) {
+            vector_index_ = VectorIndex::create(storage_, table);
+            if (!vector_index_) { refused_vector_root_ = table.root; refused_vector_table_ = table.name; }
+        }
+        if (vector_index_ && ordering.size() == 1 && ordering[0].distance && !s.order[0].descending && limit <= 65536) {
+            auto hits = vector_index_->search(ordering[0].query, static_cast<size_t>(limit),
+                                              [&](const Row& row) { return matches(row, predicates); });
+            for (const auto& hit : hits) output(vector_index_->entries()[hit.entry].row);
+            return result;
+        }
+    }
     BTree tree(storage_);
     uint64_t emitted = 0;
     std::unique_ptr<Sorter> sorter;

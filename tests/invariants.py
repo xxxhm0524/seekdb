@@ -112,6 +112,15 @@ def btree_depth(directory, count=60000):
         for k in rng.sample(keys, min(200, count)):
             assert db.execute(f"SELECT * FROM t WHERE id={k};")["rows"] == [[k, k % 13]]
         db.execute("BEGIN;")
+        db.execute("UPDATE t SET n=-9 WHERE id=0;")
+        late_failure = ",".join(f"({count+10000+k},1)" for k in range(3000)) + ",(0,1)"
+        db.execute("INSERT INTO t VALUES " + late_failure + ";", ok=False)
+        assert db.execute("SELECT n FROM t WHERE id=0;")["rows"] == [[-9]]
+        assert db.execute(f"SELECT id FROM t WHERE id>={count+10000};")["rows"] == []
+        db.execute("COMMIT;")
+        db.restart(crash=True)
+        assert db.execute("SELECT n FROM t WHERE id=0;")["rows"] == [[-9]]
+        db.execute("BEGIN;")
         db.execute("DELETE FROM t WHERE id>=0;")
         assert db.execute("SELECT id FROM t LIMIT 1;")["rows"] == []
         db.execute("ROLLBACK;")
@@ -143,6 +152,12 @@ def value_boundaries(directory):
         for bad in ["9223372036854775808", "-9223372036854775809", "1.5", "1e2", "'1'"]:
             db.execute(f"INSERT INTO unicode_table VALUES (0,{bad},'x','[0,0]');", ok=False)
         db.execute("INSERT INTO unicode_table VALUES (0,2,'中😀éa','[0,0]');", ok=False)
+        # This decimal is above FLT_MAX as a double, but rounds to finite
+        # FLT_MAX as float32. Only conversion overflow should be rejected.
+        db.execute("INSERT INTO unicode_table VALUES (0,3,'max','[3.4028235e38,-3.4028235e38]');")
+        assert db.execute("SELECT v FROM unicode_table WHERE id=3;")["rows"] == [[
+            [f32(3.4028235e38), f32(-3.4028235e38)]]]
+        db.execute("DELETE FROM unicode_table WHERE id=3;")
         db.execute("SELECT missing FROM unicode_table LIMIT 0;", ok=False)
         db.execute("SELECT id FROM unicode_table WHERE missing=1;", ok=False)
         db.execute("SELECT id FROM unicode_table ORDER BY missing LIMIT 0;", ok=False)

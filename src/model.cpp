@@ -48,7 +48,10 @@ Value parse_value(const Column& c, const std::string& text, bool quoted) {
     for (const auto& x : a) {
         if (!x.is_number()) fail("invalid_vector", "vector elements must be numeric");
         double d = x.get<double>();
-        if (!std::isfinite(d) || std::abs(d) > static_cast<double>(std::numeric_limits<float>::max()))
+        // Round-to-nearest float32 remains finite slightly above FLT_MAX.
+        // The midpoint to the next exponent, not FLT_MAX itself, is overflow.
+        const double overflow = std::ldexp(2.0 - std::ldexp(1.0, -24), 127);
+        if (!std::isfinite(d) || std::abs(d) >= overflow)
             fail("invalid_vector", "vector value overflows finite float32");
         float f = static_cast<float>(d);
         if (!std::isfinite(f)) fail("invalid_vector", "vector value is not finite float32");

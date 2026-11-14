@@ -144,7 +144,7 @@ Storage::Storage(const std::filesystem::path& dir) : file_(dir / "database.mvd")
     }
     if (!found) {
         // An incomplete first initialization has never acknowledged any SQL.
-        if (has_signature) throw IoError("no valid committed database root");
+        if (has_signature && file_size > PAGE_SIZE * 2 + 2) throw IoError("no valid committed database root");
         file_.truncate(PAGE_SIZE * 2); end_ = durable_end_ = PAGE_SIZE * 2;
         commit({});
     } else file_.truncate(durable_end_);
@@ -203,6 +203,7 @@ void Storage::commit(const Catalog& catalog) {
     // Allocate/copy everything that can fail before publishing the durable root.
     Catalog next = catalog;
     std::string bytes = catalog_json(next).dump();
+    if (bytes.size() > (64ULL << 20)) fail("resource_limit", "catalog exceeds the storage format limit");
     Ref ref = append(bytes);
     for (auto& [offset, cached] : pages_) flush_page(offset, cached);
     file_.sync();

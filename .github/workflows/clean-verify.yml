@@ -23,6 +23,28 @@ jobs:
         env:
           MVD_DOCKER_IMAGE: mvd-clean
         run: python3 tests/invariants.py --output results/linux-invariants
+      - name: Database exceeds cgroup memory budget
+        env:
+          MVD_DOCKER_IMAGE: mvd-clean
+        run: python3 tests/capacity.py --output results/linux-capacity
+      - name: Install locked test oracle dependency
+        run: |
+          /usr/bin/python3 -m venv build/oracle-venv
+          build/oracle-venv/bin/python -m pip install numpy==2.2.6
+      - name: Float32 oracle and task-shaped benchmark
+        env:
+          MVD_DOCKER_IMAGE: mvd-clean
+        run: build/oracle-venv/bin/python tests/benchmark.py --output results/linux-benchmark
+      - name: Hostile float32 patterns with and without index cache
+        env:
+          MVD_DOCKER_IMAGE: mvd-clean
+        run: build/oracle-venv/bin/python tests/vector_edges.py --output results/linux-vector-edges
+      - name: Interrupt production ELF commits and startup
+        run: |
+          mkdir -p build
+          docker run --rm --entrypoint cat mvd-clean /app/minivectordb > build/minivectordb
+          chmod +x build/minivectordb
+          MVD_BIN="$PWD/build/minivectordb" python3 tests/crash_commit.py --output results/linux-crash-commit
       - name: Preserve reports and stderr
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

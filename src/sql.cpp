@@ -38,7 +38,7 @@ static std::vector<Token> lex(const std::string& s) {
                 } else text.push_back(x);
             }
             if (!ended) fail("syntax_error", "unterminated quoted token");
-            out.push_back({text, delimiter == '\'', delimiter != '\''}); continue;
+            out.push_back({text, delimiter == '\'', delimiter != '\'', delimiter != '\''}); continue;
         }
         if (std::isalpha(c) || c == '_' || c >= 128) {
             size_t begin = i++;
@@ -71,7 +71,7 @@ class Parser {
     std::vector<Token> tokens;
     size_t at = 0;
     bool end() const { return at == tokens.size(); }
-    bool is(const std::string& text) const { return !end() && !tokens[at].quoted && lower(tokens[at].text) == text; }
+    bool is(const std::string& text) const { return !end() && !tokens[at].quoted && !tokens[at].delimited && lower(tokens[at].text) == text; }
     bool take(const std::string& text) { if (is(text)) { ++at; return true; } return false; }
     void need(const std::string& text) { if (!take(text)) fail("syntax_error", "expected " + text); }
     std::string identifier() {

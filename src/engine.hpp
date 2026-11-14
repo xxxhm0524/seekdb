@@ -2,6 +2,7 @@
 #include "result.hpp"
 #include "sql.hpp"
 #include "storage.hpp"
+#include "vector_index.hpp"
 namespace mvd {
 struct Predicate { size_t column; std::string op; Value value; };
 std::vector<Predicate> bind_predicates(const Table& table, const std::vector<Condition>& conditions);
@@ -11,6 +12,9 @@ class Engine {
     Storage storage_;
     Catalog active_;
     bool transaction_ = false;
+    std::unique_ptr<VectorIndex> vector_index_;
+    std::optional<uint64_t> refused_vector_root_;
+    std::string refused_vector_table_;
     size_t table_index(const std::string& name) const;
     Result select(const Statement& statement);
 public:

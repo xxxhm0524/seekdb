@@ -27,12 +27,23 @@ bool matches(const Row& row, const std::vector<Predicate>& predicates) {
     }
     return true;
 }
-Engine::Engine(const std::filesystem::path& dir) : directory_(dir), storage_(dir), active_(storage_.committed) {}
+Engine::Engine(const std::filesystem::path& dir) : directory_(dir), storage_(dir), active_(storage_.committed) {
+    for (const auto& entry : std::filesystem::directory_iterator(dir)) {
+        std::string name = entry.path().filename().string();
+        bool sort_temp = name.starts_with("sort-") && name.ends_with(".tmp") && name.size() > 9;
+        if (sort_temp) for (size_t i = 5; i + 4 < name.size(); ++i) sort_temp &= name[i] >= '0' && name[i] <= '9';
+        if (name == "response.tmp" || sort_temp) std::filesystem::remove(entry.path());
+    }
+    // All rebuild work that can fit the bounded index budget completes before
+    // the protocol's ready handshake. Oversized tables use disk exact scans.
+    for (const auto& table : active_) if (!table.indexes.empty()) vector_index_ = VectorIndex::create(storage_, table);
+}
 size_t Engine::table_index(const std::string& name) const {
     for (size_t i = 0; i < active_.size(); ++i) if (active_[i].name == lower(name)) return i;
     fail("unknown_table", "unknown table: " + name);
 }
 void Engine::shutdown() {
+    vector_index_.reset(); refused_vector_root_.reset();
     if (transaction_) {
         Catalog next = storage_.committed;
         storage_.rollback(); active_.swap(next); transaction_ = false;
@@ -42,6 +53,7 @@ Result Engine::execute(const std::string& sql, const std::string& mode) {
     if (mode != "exact" && mode != "ann") fail("invalid_request", "unknown search_mode");
     Statement s = parse_sql(sql);
     if (s.kind == Statement::Select) return select(s);
+    vector_index_.reset(); refused_vector_root_.reset();
     if (s.kind == Statement::Begin) {
         if (transaction_) fail("transaction_error", "nested transactions are unsupported");
         transaction_ = true; return {};
@@ -57,6 +69,7 @@ Result Engine::execute(const std::string& sql, const std::string& mode) {
     Catalog next = active_;
     uint64_t mark = storage_.mark();
     Result result;
+    std::unique_ptr<VectorIndex> built_index;
     try {
         BTree tree(storage_);
         if (s.kind == Statement::Create) {
@@ -69,6 +82,7 @@ Result Engine::execute(const std::string& sql, const std::string& mode) {
                 if (t.columns[col].type != Type::Vector) fail("type_error", "vector index requires VECTOR column");
                 for (const auto& name : t.indexes) if (lower(name) == lower(s.index)) fail("index_exists", "index already exists");
                 t.indexes.push_back(s.index);
+                built_index = VectorIndex::create(storage_, t);
             } else if (s.kind == Statement::Insert) {
                 std::vector<size_t> order;
                 if (s.insert_columns.empty()) { order.resize(t.columns.size()); std::iota(order.begin(), order.end(), 0); }
@@ -117,6 +131,7 @@ Result Engine::execute(const std::string& sql, const std::string& mode) {
         }
         if (!transaction_) storage_.commit(next);
         active_.swap(next);
+        vector_index_ = std::move(built_index);
     } catch (const IoError&) { throw; }
     catch (...) { storage_.rewind(mark); throw; }
     return result;

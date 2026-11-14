@@ -1,7 +1,7 @@
 #pragma once
 #include "model.hpp"
 namespace mvd {
-struct Token { std::string text; bool quoted = false, identifier = false; };
+struct Token { std::string text; bool quoted = false, identifier = false, delimited = false; };
 struct Literal { std::string text; bool quoted = false; };
 struct Expr { std::string column; std::optional<Literal> vector; std::string alias; };
 struct Condition { std::string column, op; Literal value; };
