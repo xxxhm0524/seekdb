@@ -41,6 +41,7 @@ int main(int argc, char** argv) {
         std::string line;
         while (std::getline(std::cin, line)) {
             mvd::Json id = nullptr;
+            bool output_started = false;
             try {
                 mvd::Json request;
                 try { request = strict_json(line); }
@@ -50,15 +51,27 @@ int main(int argc, char** argv) {
                 id = request["id"];
                 if (!request.contains("op") || !request["op"].is_string()) mvd::fail("invalid_request", "request requires string op");
                 std::string op = request["op"].get<std::string>();
-                if (op == "shutdown") { engine.shutdown(); mvd::Result{}.write(id, std::cout); return 0; }
+                if (op == "shutdown") { engine.shutdown(); mvd::Result{}.write(id, std::cout, output_started); return std::cout ? 0 : 1; }
                 if (op != "execute" || !request.contains("sql") || !request["sql"].is_string()) mvd::fail("invalid_request", "expected execute with SQL string");
                 if (request.contains("search_mode") && !request["search_mode"].is_string()) mvd::fail("invalid_request", "search_mode must be a string");
                 auto result = engine.execute(request["sql"].get<std::string>(), request.value("search_mode", "exact"));
-                result.write(id, std::cout);
-            } catch (const mvd::Error& error) { error_response(id, error.code, error.what()); }
-            catch (const mvd::IoError& error) { error_response(id, "io_error", error.what()); return 1; }
-            catch (const std::bad_alloc&) { error_response(id, "resource_limit", "memory allocation failed"); return 1; }
-            catch (const std::exception& error) { error_response(id, "internal_error", error.what()); return 1; }
+                result.write(id, std::cout, output_started);
+            } catch (const mvd::Error& error) {
+                if (output_started) { std::cerr << error.what() << '\n'; return 1; }
+                error_response(id, error.code, error.what());
+            } catch (const mvd::IoError& error) {
+                if (output_started) std::cerr << error.what() << '\n';
+                else error_response(id, "io_error", error.what());
+                return 1;
+            } catch (const std::bad_alloc&) {
+                if (output_started) std::cerr << "memory allocation failed while publishing response\n";
+                else error_response(id, "resource_limit", "memory allocation failed");
+                return 1;
+            } catch (const std::exception& error) {
+                if (output_started) std::cerr << error.what() << '\n';
+                else error_response(id, "internal_error", error.what());
+                return 1;
+            }
             if (!std::cout) return 1;
         }
         engine.shutdown(); return 0;

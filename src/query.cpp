@@ -185,13 +185,20 @@ Result Engine::select(const Statement& s) {
     result.rows = std::make_unique<RowOutput>(directory_);
     uint64_t limit = s.limit.value_or(UINT64_MAX);
     if (!limit) return result;
-    bool need_row = false;
-    for (const auto& p : projections) need_row |= p.column != table.primary || p.distance;
-    for (const auto& p : ordering) need_row |= p.column != table.primary || p.distance;
-    for (const auto& p : predicates) need_row |= p.column != table.primary;
+    std::vector<bool> wanted(table.columns.size(), false);
+    for (const auto& p : projections) wanted[p.column] = true;
+    for (const auto& p : ordering) wanted[p.column] = true;
+    for (const auto& p : predicates) wanted[p.column] = true;
+    wanted[table.primary] = false; // The B+ tree already supplies the exact key.
+    bool need_row = false, all_payload = true;
+    for (size_t i = 0; i < wanted.size(); ++i) if (i != table.primary) {
+        need_row |= wanted[i]; all_payload &= wanted[i];
+    }
     auto load = [&](int64_t key, Ref ref) {
-        if (need_row) return decode_row(table, storage_.read(ref));
-        Row row(table.columns.size()); row[table.primary] = key; return row;
+        Row row;
+        if (need_row) row = all_payload ? decode_row(table, storage_.read(ref)) : storage_.read_selected(table, ref, wanted);
+        else row.resize(table.columns.size());
+        row[table.primary] = key; return row;
     };
     auto output = [&](const Row& row) {
         Json values = Json::array();

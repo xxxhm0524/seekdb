@@ -51,6 +51,7 @@ public:
     uint64_t allocate_page();
     Ref append(const std::string& bytes);
     std::string read(Ref ref) const;
+    Row read_selected(const Table& table, Ref ref, const std::vector<bool>& wanted) const;
     uint64_t mark() const { return end_; }
     void rewind(uint64_t mark);
     void rollback() { rewind(durable_end_); }

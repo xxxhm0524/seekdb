@@ -36,7 +36,10 @@ Engine::Engine(const std::filesystem::path& dir) : directory_(dir), storage_(dir
     }
     // All rebuild work that can fit the bounded index budget completes before
     // the protocol's ready handshake. Oversized tables use disk exact scans.
-    for (const auto& table : active_) if (!table.indexes.empty()) vector_index_ = VectorIndex::create(storage_, table);
+    for (const auto& table : active_) if (!table.indexes.empty()) {
+        vector_index_.reset();
+        vector_index_ = VectorIndex::create(storage_, table);
+    }
 }
 size_t Engine::table_index(const std::string& name) const {
     for (size_t i = 0; i < active_.size(); ++i) if (active_[i].name == lower(name)) return i;
@@ -112,8 +115,16 @@ Result Engine::execute(const std::string& sql, const std::string& mode) {
                 }
                 uint64_t changed = 0;
                 const Table snapshot = active_[ti];
+                std::vector<bool> needed(snapshot.columns.size(), false);
+                for (const auto& p : predicates) needed[p.column] = true;
+                needed[snapshot.primary] = false;
+                bool predicate_payload = std::any_of(needed.begin(), needed.end(), [](bool x) { return x; });
                 auto visit = [&](int64_t key, Ref ref) {
-                    Row row = decode_row(snapshot, storage_.read(ref));
+                    Row row;
+                    if (s.kind != Statement::Delete) row = decode_row(snapshot, storage_.read(ref));
+                    else if (predicate_payload) row = storage_.read_selected(snapshot, ref, needed);
+                    else row.resize(snapshot.columns.size());
+                    row[snapshot.primary] = key;
                     if (!matches(row, predicates)) return true;
                     if (s.kind == Statement::Delete) {
                         if (!tree.erase(t.root, key)) throw IoError("missing row during DELETE");

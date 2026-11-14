@@ -41,12 +41,13 @@ class Client:
         self.process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                         stderr=self.stderr, env=self.env)
         self.lines = queue.Queue()
+        process, lines = self.process, self.lines
         def reader():
             try:
-                for line in self.process.stdout:
-                    self.lines.put(line)
+                for line in process.stdout:
+                    lines.put(line)
             finally:
-                self.lines.put(None)
+                lines.put(None)
         self.reader = threading.Thread(target=reader, daemon=True)
         self.reader.start()
         assert self.receive() == {"type": "ready"}, "incorrect ready handshake"
@@ -61,7 +62,7 @@ class Client:
         self.process.stdin.write((json.dumps(request, ensure_ascii=False) + "\n").encode())
         self.process.stdin.flush()
         response = self.receive()
-        assert response.get("id") == request.get("id")
+        assert json.dumps(response.get("id"),sort_keys=True,allow_nan=False) == json.dumps(request.get("id"),sort_keys=True,allow_nan=False)
         assert type(response.get("ok")) is bool
         return response
 

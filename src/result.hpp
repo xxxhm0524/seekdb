@@ -11,18 +11,21 @@ namespace mvd {
 class RowOutput {
     std::filesystem::path path_;
     std::ofstream file_;
+    std::ifstream input_;
     std::string memory_;
     bool first_ = true;
+    bool prepared_ = false;
     void append(const std::string& bytes);
 public:
     explicit RowOutput(const std::filesystem::path& directory) : path_(directory / "response.tmp") {}
     ~RowOutput();
     void add(const Json& row);
+    void prepare();
     void write(std::ostream& output);
 };
 struct Result {
     Json fields = Json::object();
     std::unique_ptr<RowOutput> rows;
-    void write(const Json& id, std::ostream& out);
+    void write(const Json& id, std::ostream& out, bool& output_started);
 };
 }
