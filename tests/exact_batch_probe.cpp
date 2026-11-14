@@ -1,4 +1,4 @@
-#include "exact_batch_proto.hpp"
+#include "../src/exact_batch.hpp"
 #include <array>
 #include <bit>
 #include <chrono>

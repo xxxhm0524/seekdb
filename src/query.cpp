@@ -238,7 +238,7 @@ Result Engine::select(const Statement& s) {
             bool projection_cached = vector_index_->covers(wanted);
             for (const auto& hit : hits) {
                 const auto& entry = vector_index_->entries()[hit.entry];
-                if (projection_cached) output(entry.row);
+                if (projection_cached) output(vector_index_->materialize(hit.entry));
                 else output(load(entry.key, entry.ref));
             }
             return result;

@@ -1,4 +1,6 @@
 #pragma once
+// Eight candidates share one dimension-major block. Every candidate's double
+// accumulation still visits dimensions in scalar order; no fused operations.
 #include <cmath>
 #include <cstddef>
 #if defined(__x86_64__) && (defined(__GNUC__) || defined(__clang__))
@@ -37,11 +39,11 @@ __attribute__((target("avx2"))) inline void avx2(const float* block, const float
 __attribute__((target("avx512f"))) inline void avx512(const float* block, const float* query, size_t dimensions, double* output) {
     __m512d sums = _mm512_setzero_pd();
     for (size_t d = 0; d < dimensions; ++d) {
-        auto points = _mm512_cvtps_pd(_mm256_loadu_ps(block + d * width));
+        auto points = _mm512_maskz_cvtps_pd(0xff, _mm256_loadu_ps(block + d * width));
         auto delta = _mm512_sub_pd(points, _mm512_set1_pd(double(query[d])));
         sums = _mm512_add_pd(sums, _mm512_mul_pd(delta, delta));
     }
-    _mm512_storeu_pd(output, _mm512_sqrt_pd(sums));
+    _mm512_storeu_pd(output, _mm512_maskz_sqrt_pd(0xff, sums));
 }
 #endif
 inline Kernel select() {
