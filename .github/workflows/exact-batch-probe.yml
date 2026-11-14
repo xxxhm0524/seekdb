@@ -1,0 +1,22 @@
+name: Exact batch distance feasibility
+on:
+  push:
+    branches: ['review/scored-reference-20261114']
+    paths: ['tests/exact_batch_proto.hpp','tests/exact_batch_probe.cpp','.github/workflows/exact-batch-probe.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Verify each available exact kernel and measure layout impact
+        run: |
+          mkdir -p results/exact-batch
+          g++ -std=c++20 -O3 -ffp-contract=off tests/exact_batch_probe.cpp -o /tmp/mvd-exact-batch
+          /tmp/mvd-exact-batch | tee results/exact-batch/report.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: exact-batch-${{ github.sha }}
+          path: results/exact-batch/report.json
