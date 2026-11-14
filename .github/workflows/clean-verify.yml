@@ -28,6 +28,10 @@ jobs:
         env:
           MVD_DOCKER_IMAGE: mvd-clean
         run: python3 tests/client.py --output results/linux-portable
+      - name: Complete JSON input and escaped NUL data
+        env:
+          MVD_DOCKER_IMAGE: mvd-clean
+        run: python3 tests/protocol_complete_input.py --output results/linux-complete-input
       - name: Independent invariants and real SIGKILL
         env:
           MVD_DOCKER_IMAGE: mvd-clean
@@ -115,6 +119,7 @@ jobs:
           python3 tests/space_reuse.py --output results/asan-space
           python3 tests/column_layouts.py --output results/asan-column-layouts
           python3 tests/open_safety.py --output results/asan-open-safety
+          python3 tests/protocol_complete_input.py --output results/asan-complete-input
       - name: Preserve sanitizer reports
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

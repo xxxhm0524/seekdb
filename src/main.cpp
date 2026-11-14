@@ -8,6 +8,7 @@
 
 namespace {
 mvd::Json strict_json(const std::string& line) {
+    if (line.find('\0') != std::string::npos) mvd::fail("invalid_request", "raw NUL in JSON request");
     std::vector<std::set<std::string>> objects;
     auto callback = [&](int, mvd::Json::parse_event_t event, mvd::Json& value) {
         using Event = mvd::Json::parse_event_t;
