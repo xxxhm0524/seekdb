@@ -2,6 +2,7 @@ name: Scored reference paired performance review
 on:
   push:
     branches: ['review/scored-reference-20261114']
+    paths: ['src/**','tests/paired_reference_perf.py','tests/reference_differential.py','tests/reference-controlled.Dockerfile','Dockerfile','Makefile','.github/workflows/scored-reference-perf.yml']
   workflow_dispatch:
 permissions:
   contents: read

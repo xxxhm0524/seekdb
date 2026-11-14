@@ -1,0 +1,30 @@
+name: Vector cache working set review
+on:
+  push:
+    branches: ['review/scored-reference-20261114']
+    paths: ['src/**','tests/cache_unrelated_text.py','tests/io_probe.c','Dockerfile','Makefile','.github/workflows/cache-admission.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  admission:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Build candidate and extract production ELF
+        run: |
+          docker build --platform linux/amd64 -t mvd-cache-review .
+          mkdir -p build
+          docker run --rm --entrypoint cat mvd-cache-review /app/minivectordb > build/minivectordb
+          chmod +x build/minivectordb
+      - name: Full-width unrelated text cache admission
+        run: MVD_BIN="$PWD/build/minivectordb" python3 tests/cache_unrelated_text.py --output results/cache-working-set
+      - name: Preserve admission evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: cache-admission-${{ github.sha }}
+          path: |
+            results/**/report.json
+            results/**/*.log
