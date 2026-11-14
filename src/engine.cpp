@@ -54,6 +54,7 @@ Result Engine::execute(const std::string& sql, const std::string& mode) {
     Statement s = parse_sql(sql);
     if (s.kind == Statement::Select) return select(s);
     vector_index_.reset(); refused_vector_root_.reset();
+    if (!transaction_ && storage_.compact_if_needed()) active_ = storage_.committed;
     if (s.kind == Statement::Begin) {
         if (transaction_) fail("transaction_error", "nested transactions are unsupported");
         transaction_ = true; return {};
@@ -96,6 +97,7 @@ Result Engine::execute(const std::string& sql, const std::string& mode) {
                     int64_t key = std::get<int64_t>(row[t.primary]);
                     if (tree.find(t.root, key)) fail("duplicate_key", "duplicate primary key");
                     Ref ref = storage_.append(encode_row(t, row)); tree.put(t.root, key, ref); ++t.count;
+                    t.live_bytes += ref.length;
                 }
                 result.fields["affected_rows"] = s.values.size();
             } else {
@@ -116,9 +118,12 @@ Result Engine::execute(const std::string& sql, const std::string& mode) {
                     if (s.kind == Statement::Delete) {
                         if (!tree.erase(t.root, key)) throw IoError("missing row during DELETE");
                         --t.count;
+                        t.live_bytes -= ref.length;
                     } else {
                         for (const auto& [col, value] : assignments) row[col] = value;
-                        tree.put(t.root, key, storage_.append(encode_row(t, row)), true);
+                        Ref replacement = storage_.append(encode_row(t, row));
+                        tree.put(t.root, key, replacement, true);
+                        t.live_bytes = t.live_bytes - ref.length + replacement.length;
                     }
                     ++changed; return true;
                 };

@@ -1,7 +1,7 @@
 name: Clean MiniVectorDB verification
 on:
   push:
-    branches: ['rewrite/minivectordb-clean-20261114', '2026-competition-round2']
+    branches: ['rewrite/minivectordb-clean-20261114', 'audit/minivectordb-space-20261114', '2026-competition-round2']
   workflow_dispatch:
 permissions:
   contents: read
@@ -32,6 +32,10 @@ jobs:
         env:
           MVD_DOCKER_IMAGE: mvd-clean
         run: python3 tests/invariants.py --output results/linux-invariants
+      - name: Bounded storage under repeated updates
+        env:
+          MVD_DOCKER_IMAGE: mvd-clean
+        run: python3 tests/space_reuse.py --output results/linux-space-reuse
       - name: Database exceeds cgroup memory budget
         env:
           MVD_DOCKER_IMAGE: mvd-clean
@@ -54,6 +58,10 @@ jobs:
           docker run --rm --entrypoint cat mvd-clean /app/minivectordb > build/minivectordb
           chmod +x build/minivectordb
           MVD_BIN="$PWD/build/minivectordb" python3 tests/crash_commit.py --output results/linux-crash-commit
+      - name: Interrupt compaction exactly at replacement boundaries
+        run: MVD_BIN="$PWD/build/minivectordb" python3 tests/compaction_crash.py --output results/linux-compaction-crash
+      - name: Measure projected query disk reads
+        run: MVD_BIN="$PWD/build/minivectordb" python3 tests/projection_io.py --output results/linux-projection-io
       - name: Preserve reports and stderr
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

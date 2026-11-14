@@ -89,8 +89,20 @@ class Parser {
         if (end()) fail("syntax_error", "expected literal");
         if (take("[")) {
             std::string s = "[";
-            while (!end() && !is("]")) s += tokens[at++].text;
-            need("]"); return {s + "]", false};
+            if (take("]")) return {"[]", false};
+            for (;;) {
+                if (end() || tokens[at].quoted || tokens[at].identifier || tokens[at].delimited)
+                    fail("invalid_vector", "vector elements must be numeric literals");
+                const std::string number = tokens[at++].text;
+                try {
+                    Json value = Json::parse(number);
+                    if (!value.is_number()) fail("invalid_vector", "vector elements must be numeric literals");
+                } catch (const Json::exception&) { fail("invalid_vector", "invalid numeric vector literal"); }
+                s += number;
+                if (take("]")) break;
+                need(","); s += ",";
+            }
+            return {s + "]", false};
         }
         auto t = tokens[at++];
         if (!t.quoted && (t.identifier || t.text == ")" || t.text == "," || t.text == ";"))

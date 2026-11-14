@@ -113,7 +113,7 @@ Json catalog_json(const Catalog& tables) {
         Json cs = Json::array();
         for (const auto& c : t.columns) cs.push_back({{"name", c.name}, {"type", static_cast<int>(c.type)}, {"width", c.width}});
         a.push_back({{"name", t.name}, {"columns", cs}, {"primary", t.primary}, {"root", t.root},
-                     {"count", t.count}, {"indexes", t.indexes}});
+                     {"count", t.count}, {"live_bytes", t.live_bytes}, {"indexes", t.indexes}});
     }
     return a;
 }
@@ -123,6 +123,7 @@ Catalog catalog_from_json(const Json& value) {
         Table t;
         t.name = v.at("name").get<std::string>(); t.primary = v.at("primary").get<size_t>();
         t.root = v.at("root").get<uint64_t>(); t.count = v.at("count").get<uint64_t>();
+        t.live_bytes = v.value("live_bytes", UINT64_MAX);
         t.indexes = v.at("indexes").get<std::vector<std::string>>();
         for (const auto& c : v.at("columns")) {
             int type = c.at("type").get<int>();

@@ -149,6 +149,8 @@ def value_boundaries(directory):
         assert r == [[9223372036854775807, -9223372036854775808, "中😀é", [16777216.0, f32(1.401298464324817e-45)]]], r
         for vector in ["[NaN,0]", "[Infinity,0]", "[1e400,0]", "[1e39,0]", "[1]", "[1,2,3]", "[true,0]", "[null,0]", "['1',0]", "{\"0\":0}"]:
             db.execute("INSERT INTO unicode_table VALUES(0,1,'x'," + quote(vector) + ");", ok=False)
+        for vector in ["[1 2,0]", "[1,'2']", '[1,"2"]', "[1 e2,0]", "[1,]", "[,1]", "[[1],0]", "[true,0]"]:
+            db.execute("INSERT INTO unicode_table VALUES(0,1,'x'," + vector + ");", ok=False)
         for bad in ["9223372036854775808", "-9223372036854775809", "1.5", "1e2", "'1'"]:
             db.execute(f"INSERT INTO unicode_table VALUES (0,{bad},'x','[0,0]');", ok=False)
         db.execute("INSERT INTO unicode_table VALUES (0,2,'中😀éa','[0,0]');", ok=False)

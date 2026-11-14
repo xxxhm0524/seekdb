@@ -7,6 +7,10 @@
 #include <fcntl.h>
 #include <thread>
 #ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
 #include <io.h>
 #include <sys/stat.h>
 #else
@@ -31,7 +35,7 @@ void write_le(unsigned char* p, uint64_t v, unsigned n) {
     for (unsigned i = 0; i < n; ++i) p[i] = static_cast<unsigned char>(v >> (8 * i));
 }
 static void io_failure(const char* op) { throw IoError(std::string(op) + ": " + std::strerror(errno)); }
-File::File(const std::filesystem::path& path) {
+File::File(const std::filesystem::path& path) : path_(path) {
 #ifdef _WIN32
     fd_ = _wopen(path.wstring().c_str(), _O_RDWR | _O_CREAT | _O_BINARY, _S_IREAD | _S_IWRITE);
 #else
@@ -113,6 +117,29 @@ void File::sync() {
     if (rc) io_failure("sync");
 #endif
 }
+void File::replace_with(const std::filesystem::path& replacement) {
+    // Closing first also permits atomic replacement on Windows, whose CRT
+    // handles do not share deletion. No SQL cursor is live during compaction.
+#ifdef _WIN32
+    if (_close(fd_)) io_failure("close before database replacement");
+    fd_ = -1;
+    if (!MoveFileExW(replacement.wstring().c_str(), path_.wstring().c_str(),
+                     MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH))
+        throw IoError("replace compacted database: Windows error " + std::to_string(GetLastError()));
+#else
+    ::close(fd_); fd_ = -1;
+    if (::rename(replacement.c_str(), path_.c_str())) io_failure("replace compacted database");
+#endif
+    File reopened(path_); fd_ = reopened.fd_; reopened.fd_ = -1;
+#ifndef _WIN32
+    int parent = ::open(path_.parent_path().c_str(), O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+    if (parent < 0) io_failure("open database directory");
+    int rc;
+    do { rc = ::fsync(parent); } while (rc < 0 && errno == EINTR);
+    int saved = errno; ::close(parent); errno = saved;
+    if (rc) io_failure("sync database directory");
+#endif
+}
 static size_t cache_pages() {
     size_t mib = 4;
     if (const char* v = std::getenv("MVD_PAGE_CACHE_MIB")) {
@@ -121,7 +148,7 @@ static size_t cache_pages() {
     }
     return std::max(size_t(8), mib * 1024 * 1024 / PAGE_SIZE);
 }
-Storage::Storage(const std::filesystem::path& dir) : file_(dir / "database.mvd"), cache_pages_(cache_pages()) {
+Storage::Storage(const std::filesystem::path& dir) : directory_(dir), file_(dir / "database.mvd"), cache_pages_(cache_pages()) {
     const uint64_t file_size = file_.size();
     bool found = false, has_signature = false;
     for (unsigned slot = 0; slot < 2; ++slot) {
@@ -148,6 +175,14 @@ Storage::Storage(const std::filesystem::path& dir) : file_(dir / "database.mvd")
         file_.truncate(PAGE_SIZE * 2); end_ = durable_end_ = PAGE_SIZE * 2;
         commit({});
     } else file_.truncate(durable_end_);
+    // Older clean-rewrite catalogs did not include the derived byte counter.
+    // Recover it from leaf references without reading record payloads.
+    for (auto& table : committed) if (table.live_bytes == UINT64_MAX) {
+        table.live_bytes = 0;
+        BTree tree(*this);
+        tree.scan(table.root, [&](int64_t, Ref ref) { table.live_bytes += ref.length; return true; });
+    }
+    cleanup_compaction_scratch();
 }
 void Storage::flush_page(uint64_t offset, Cached& p) {
     if (!p.dirty) return;

@@ -32,6 +32,7 @@ struct Table {
     std::vector<Column> columns;
     size_t primary = 0;
     uint64_t root = 0, count = 0;
+    uint64_t live_bytes = 0;
     std::vector<std::string> indexes;
     size_t column(const std::string& name) const {
         for (size_t i = 0; i < columns.size(); ++i) if (lower(columns[i].name) == lower(name)) return i;

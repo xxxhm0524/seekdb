@@ -16,6 +16,7 @@ void write_le(unsigned char* data, uint64_t value, unsigned bytes);
 
 class File {
     int fd_ = -1;
+    std::filesystem::path path_;
 public:
     explicit File(const std::filesystem::path& path);
     ~File();
@@ -26,11 +27,13 @@ public:
     uint64_t size() const;
     void truncate(uint64_t size);
     void sync();
+    void replace_with(const std::filesystem::path& replacement);
 };
 
 // Committed pages are immutable. Only pages owned by the current SQL statement
 // can be edited; errors therefore discard a tail, never overwrite live data.
 class Storage {
+    std::filesystem::path directory_;
     File file_;
     struct Cached { Page page; bool dirty; std::list<uint64_t>::iterator lru; };
     std::unordered_map<uint64_t, Cached> pages_;
@@ -39,6 +42,7 @@ class Storage {
     uint64_t end_ = PAGE_SIZE * 2, durable_end_ = PAGE_SIZE * 2, generation_ = 0;
     void evict();
     void flush_page(uint64_t offset, Cached& page);
+    void cleanup_compaction_scratch();
 public:
     Catalog committed;
     explicit Storage(const std::filesystem::path& directory);
@@ -51,6 +55,7 @@ public:
     void rewind(uint64_t mark);
     void rollback() { rewind(durable_end_); }
     void commit(const Catalog& catalog);
+    bool compact_if_needed();
 };
 
 class BTree {
