@@ -37,12 +37,13 @@ std::unique_ptr<VectorIndex> VectorIndex::create(Storage& store, const Table& ta
     size_t coordinate_bytes = blocks * index->dimensions_ * batch::width * sizeof(float);
     if (index->dimensions_ > budget / (2 * sizeof(float))) return nullptr;
     size_t scratch = index->dimensions_ * 2 * sizeof(float);
-    size_t initial_bytes = coordinate_bytes + count * sizeof(Entry) + index->columns_.capacity() / 8 + scratch + 64;
+    const size_t fixed = sizeof(VectorIndex) + index->table_.capacity() + index->columns_.capacity() / 8 + scratch;
+    size_t initial_bytes = coordinate_bytes + count * sizeof(Entry) + fixed;
     if (initial_bytes > budget) return nullptr;
     index->coordinates_.resize(coordinate_bytes / sizeof(float));
     index->entries_.reserve(static_cast<size_t>(table.count));
     size_t used = index->entries_.capacity() * sizeof(Entry) + index->coordinates_.capacity() * sizeof(float)
-                  + index->columns_.capacity() / 8 + scratch + 64;
+                  + fixed;
     if (used > budget) return nullptr;
     bool complete = true;
     BTree tree(store);
@@ -58,7 +59,7 @@ std::unique_ptr<VectorIndex> VectorIndex::create(Storage& store, const Table& ta
         for (size_t d = 0; d < index->dimensions_; ++d)
             index->coordinates_[(position / batch::width) * index->dimensions_ * batch::width + d * batch::width + position % batch::width] = vector[d];
         row[column] = int64_t(0); // The float32 payload is owned once by coordinates_.
-        used += row.capacity() * sizeof(Value);
+        used += row.capacity() * sizeof(Value) + 32; // allocation metadata/alignment
         for (const auto& v : row) {
             if (auto s = std::get_if<std::string>(&v)) used += s->capacity() + 32;
             if (auto a = std::get_if<std::vector<float>>(&v)) used += a->capacity() * sizeof(float) + 32;

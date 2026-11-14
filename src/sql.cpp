@@ -1,6 +1,7 @@
 #include "sql.hpp"
 #include <charconv>
 #include <cctype>
+#include <cstring>
 #include <set>
 namespace mvd {
 static std::vector<Token> lex(const std::string& s) {
@@ -20,13 +21,14 @@ static std::vector<Token> lex(const std::string& s) {
         if (c == '\'' || c == '`' || c == '"') {
             char delimiter = s[i++]; std::string text; bool ended = false;
             while (i < s.size()) {
-                char x = s[i++];
-                if (x == delimiter) {
-                    if (i < s.size() && s[i] == delimiter) { text.push_back(x); ++i; }
-                    else { ended = true; break; }
-                } else if (x == '\\' && delimiter == '\'') {
+                const size_t quote = s.find(delimiter, i);
+                const size_t end = quote == std::string::npos ? s.size() : quote;
+                const char* escape = delimiter == '\'' ? static_cast<const char*>(std::memchr(s.data() + i, '\\', end - i)) : nullptr;
+                if (escape) {
+                    const size_t slash = static_cast<size_t>(escape - s.data());
+                    text.append(s.data() + i, slash - i); i = slash + 1;
                     if (i == s.size()) fail("syntax_error", "unterminated string escape");
-                    x = s[i++];
+                    char x = s[i++];
                     switch (x) {
                     case 'n': text.push_back('\n'); break;
                     case 'r': text.push_back('\r'); break;
@@ -35,10 +37,16 @@ static std::vector<Token> lex(const std::string& s) {
                     case 'b': text.push_back('\b'); break;
                     default: text.push_back(x); break;
                     }
-                } else text.push_back(x);
+                    continue;
+                }
+                text.append(s.data() + i, end - i); i = end;
+                if (quote == std::string::npos) break;
+                ++i;
+                if (i < s.size() && s[i] == delimiter) { text.push_back(delimiter); ++i; }
+                else { ended = true; break; }
             }
             if (!ended) fail("syntax_error", "unterminated quoted token");
-            out.push_back({text, delimiter == '\'', delimiter != '\'', delimiter != '\''}); continue;
+            out.push_back({std::move(text), delimiter == '\'', delimiter != '\'', delimiter != '\''}); continue;
         }
         if (std::isalpha(c) || c == '_' || c >= 128) {
             size_t begin = i++;

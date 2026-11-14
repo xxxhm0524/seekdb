@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
                 if (op == "shutdown") { engine.shutdown(); mvd::Result{}.write(id, std::cout, output_started); return std::cout ? 0 : 1; }
                 if (op != "execute" || !request.contains("sql") || !request["sql"].is_string()) mvd::fail("invalid_request", "expected execute with SQL string");
                 if (request.contains("search_mode") && !request["search_mode"].is_string()) mvd::fail("invalid_request", "search_mode must be a string");
-                auto result = engine.execute(request["sql"].get<std::string>(), request.value("search_mode", "exact"));
+                auto result = engine.execute(request["sql"].get_ref<const std::string&>(), request.value("search_mode", "exact"));
                 result.write(id, std::cout, output_started);
             } catch (const mvd::Error& error) {
                 if (output_started) { std::cerr << error.what() << '\n'; return 1; }

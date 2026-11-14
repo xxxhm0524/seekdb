@@ -56,6 +56,10 @@ jobs:
         env:
           MVD_DOCKER_IMAGE: mvd-clean
         run: python3 tests/insert_batches.py --output results/linux-insert-batches
+      - name: Quoted spans escapes Unicode and malformed literals
+        env:
+          MVD_DOCKER_IMAGE: mvd-clean
+        run: python3 tests/sql_literals.py --output results/linux-sql-literals
       - name: Database exceeds cgroup memory budget
         env:
           MVD_DOCKER_IMAGE: mvd-clean
@@ -145,6 +149,7 @@ jobs:
           python3 tests/cache_column_sets.py --output results/asan-cache-column-sets
           python3 tests/cache_ranges.py --output results/asan-cache-ranges
           python3 tests/insert_batches.py --output results/asan-insert-batches
+          python3 tests/sql_literals.py --output results/asan-sql-literals
       - name: Sanitized integer certificates and exact fallback
         env:
           ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
