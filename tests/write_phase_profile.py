@@ -31,6 +31,13 @@ def cpu(client):
  fields=Path('/proc/%d/stat'%client.p.pid).read_text().split();return (int(fields[13])+int(fields[14]))/os.sysconf('SC_CLK_TCK')
 vectors=np.random.default_rng(20261114).random((10000,128),dtype=np.float32)
 batches=['INSERT INTO items VALUES '+','.join("(%d,'c%d','[%s]')"%(i+1,i%10,','.join('%.9g'%float(x) for x in vectors[i])) for i in range(start,start+100)) for start in range(0,10000,100)]
+queries={'filtered_query':[],'unfiltered_query':[]};double_vectors=vectors.astype(np.float64)
+query_vectors=np.random.default_rng(20261115).random((1000,128),dtype=np.float32)
+for i,query in enumerate(query_vectors):
+ filtered=i<500;eligible=np.arange(i%10,10000,10) if filtered else np.arange(10000)
+ delta=double_vectors[eligible]-query.astype(np.float64);distances=np.einsum('ij,ij->i',delta,delta);order=np.lexsort((eligible,distances))[:10]
+ text="SELECT id,L2_DISTANCE(v,'[%s]') AS d FROM items%s ORDER BY d LIMIT 10"%(','.join('%.9g'%float(x) for x in query)," WHERE cat='c%d'"%(i%10) if filtered else '')
+ queries['filtered_query' if filtered else 'unfiltered_query'].append((text,(eligible[order]+1).tolist()))
 results=[]
 for trial in range(a.rounds):
  for version in (['reference','candidate'] if trial%2==0 else ['candidate','reference']):
@@ -53,6 +60,12 @@ for trial in range(a.rounds):
     run('CREATE TABLE auto_items(id BIGINT PRIMARY KEY,cat VARCHAR(8),v VECTOR(128))')
     measure('autocommit_insert',lambda:[run(sql.replace('items','auto_items',1)) for sql in batches])
     rows=run('SELECT id FROM items ORDER BY id')['rows'];assert rows==[[i] for i in range(1,10001)]
+    run('CREATE VECTOR INDEX vi ON items(v)')
+    for group in queries.values():run(group[0][0])
+    for name,group in queries.items():
+     answers=[]
+     measure(name,lambda:[answers.append(run(sql)['rows']) for sql,_ in group])
+     for rows,(_,expected) in zip(answers,group):assert [row[0] for row in rows]==expected
     c.kill();c.start();assert run('SELECT id FROM items WHERE id=10000')['rows']==[[10000]]
    finally:c.close()
    row=dict(round=trial,version=version,phases=phases);results.append(row);print(json.dumps(row),flush=True)
