@@ -24,9 +24,10 @@ jobs:
           build/oracle-venv/bin/python tests/write_profile.py --binary build/profile --output results/write-profile
       - name: Preserve CPU attribution
         run: |
-          gprof -s build/profile results/write-profile/*/gmon.out
-          gprof -b -p build/profile gmon.sum > results/write-profile/flat.txt
-          gprof -b -q build/profile gmon.sum > results/write-profile/callgraph.txt
+          objcopy --strip-debug build/profile build/profile-symbols
+          gprof -s build/profile-symbols results/write-profile/*/gmon.out
+          gprof -b -p build/profile-symbols gmon.sum > results/write-profile/flat.txt
+          gprof -b -q build/profile-symbols gmon.sum > results/write-profile/callgraph.txt
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
@@ -37,3 +38,4 @@ jobs:
             results/**/callgraph.txt
             results/**/gmon.out
             results/**/*.log
+            build/profile-symbols
