@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Kill across multi-table COMMIT; require all-or-nothing durable state."""
 import json
+import argparse
 import os
 import queue
 import sys
@@ -13,7 +14,8 @@ from protocol_client import Client
 
 
 def main():
-    rows = 5000  # Cross the 8 MiB WAL sync window in one multi-table commit.
+    parser=argparse.ArgumentParser();parser.add_argument('--wide-rows',action='store_true');args=parser.parse_args()
+    rows = 200 if args.wide_rows else 5000  # Cross the 8 MiB WAL sync window.
     verdicts = {'old': 0, 'new': 0, 'acknowledged': 0}
     for delay in (-1, 0, 0.001, 0.008, 0.02, 'wal-prefix', None):
         with tempfile.TemporaryDirectory(prefix='mvd-commit-') as data:
@@ -25,8 +27,8 @@ def main():
                     assert r.get(k) == v, r
                 return r
             try:
-                sql('CREATE TABLE a (id BIGINT PRIMARY KEY,s VARCHAR(256),v VECTOR(2))')
-                sql('CREATE TABLE b (id BIGINT PRIMARY KEY,s VARCHAR(256),v VECTOR(2))')
+                sql('CREATE TABLE a (id BIGINT PRIMARY KEY,s VARCHAR(%d),v VECTOR(2))'%(25000 if args.wide_rows else 256))
+                sql('CREATE TABLE b (id BIGINT PRIMARY KEY,s VARCHAR(%d),v VECTOR(2))'%(25000 if args.wide_rows else 256))
                 for table in ('a', 'b'):
                     sql("INSERT INTO %s VALUES (1,'old','[9,9]'),(2,'gone','[8,8]')" % table, affected_rows=2)
                 sql('BEGIN')

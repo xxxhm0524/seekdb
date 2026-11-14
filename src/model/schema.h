@@ -13,9 +13,10 @@ struct TableSchema {
   std::vector<uint32_t> col_offsets;  // payload offset of each column
   uint32_t page_size = kPageSize;
   uint32_t rows_per_page = 0;
+  uint32_t pages_per_row = 1;
 };
 
-// Compute row layout.  Throws INVALID_SCHEMA when a row cannot fit a page.
+// Compute fixed row layout and its physical page mapping.
 void build_row_layout(TableSchema &schema);
 
 int find_column(const TableSchema&,const std::string&);

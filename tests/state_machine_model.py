@@ -20,9 +20,11 @@ parser=argparse.ArgumentParser()
 parser.add_argument('--seed',type=int,default=20261112)
 parser.add_argument('--steps',type=int,default=1000)
 parser.add_argument('--wide-spill',action='store_true')
+parser.add_argument('--multi-page',action='store_true')
 parser.add_argument('--image')
 parser.add_argument('--output',type=Path)
 args=parser.parse_args();rng=random.Random(args.seed)
+if args.multi_page:args.wide_spill=True
 report=dict(passed=False,seed=args.seed,steps=args.steps,
     base_sha=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
     working_tree_dirty=bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True).strip()),
@@ -39,7 +41,11 @@ schemas={'a':dict(columns=['s','v','pk','g','n'],dim=9,width=384),
 if args.wide_spill:
     schemas['a']['width']=2048
     schemas['b']['width']=8184
+if args.multi_page:
+    schemas['a']['width']=25000
+    schemas['b']['width']=65535
 report['wide_spill']=args.wide_spill
+report['multi_page']=args.multi_page
 groups=['','a','b','甲','😀',"a'b",'\0x','z']
 strings=['','a','甲','😀','é','e\u0301',"a'b",'a\\b','\n','\t','\0z','\U0010ffff']
 model={name:{} for name in schemas};committed=copy.deepcopy(model);active=False
@@ -129,8 +135,9 @@ try:
                 sql('CREATE TABLE '+name+'('+','.join(col+' '+definitions[col] for col in schema['columns'])+')')
             sql('BEGIN');active=True
             for name in schemas:
-                for first in range(0,320 if args.wide_spill else 800,80):
-                    batch=[make_row(name,i-400) for i in range(first,first+80)]
+                initial=40 if args.multi_page else (320 if args.wide_spill else 800)
+                for first in range(0,initial,80):
+                    batch=[make_row(name,i-400) for i in range(first,min(first+80,initial))]
                     sql('INSERT INTO '+name+' VALUES '+','.join(row_values(name,row) for row in batch),affected_rows=len(batch))
                     model[name].update({row['pk']:row for row in batch})
             if args.wide_spill:

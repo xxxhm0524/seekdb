@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """SIGKILL recovery, including repeated kills while recovery is in progress."""
 import os
+import argparse
 import queue
 import subprocess
 import sys
@@ -18,9 +19,8 @@ BATCH = 500
 
 
 def main():
-    rows = ROWS
-    if len(sys.argv) > 1:
-        rows = int(sys.argv[1])
+    parser=argparse.ArgumentParser();parser.add_argument('rows',nargs='?',type=int,default=ROWS);parser.add_argument('--wide-rows',action='store_true');args=parser.parse_args()
+    rows = args.rows
     with tempfile.TemporaryDirectory(prefix="mvd-crash-", ignore_cleanup_errors=True) as datadir:
         client = Client(DEFAULT_BINARY, datadir, extra=["--cache-mb=1"])
         def sql(text, **expected):
@@ -29,7 +29,7 @@ def main():
             for field, value in expected.items():
                 assert response.get(field) == value, response
             return response
-        sql("CREATE TABLE t (id BIGINT PRIMARY KEY, cat VARCHAR(8), v VECTOR(%d));" % DIM)
+        sql("CREATE TABLE t (id BIGINT PRIMARY KEY, cat VARCHAR(%d), v VECTOR(%d));" % (25000 if args.wide_rows else 8,DIM))
         for start in range(0, rows, BATCH):
             parts = []
             for i in range(start, min(start + BATCH, rows)):

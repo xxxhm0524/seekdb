@@ -28,23 +28,7 @@ void Table::open(bool rebuild, bool fresh) {
   // Startup replays committed WAL before inspecting possibly interrupted page
   // writes. Also avoid scanning every table twice during normal recovery.
   if (!rebuild) return;
-  int64_t size = file_.size();
-  if (size < 0) throw_error("IO_ERROR", "cannot stat table file");
-  uint32_t total_pages = static_cast<uint32_t>(size / kPageSize);
-  if (static_cast<int64_t>(total_pages) * kPageSize != size)
-    throw_error("CORRUPTION", "table file size is not page aligned");
-  page_count_ = 0;
-  // Find the highest page with a valid header.
-  for (int64_t p = static_cast<int64_t>(total_pages) - 1; p >= 0; --p) {
-    Page page;
-    if (!load_page_raw(static_cast<uint32_t>(p), page))
-      throw_error("IO_ERROR", "cannot read table tail");
-    if (page.magic == kPageMagic) {
-      page_count_ = static_cast<uint32_t>(p) + 1;
-      next_pos_ = static_cast<uint64_t>(p) * schema_.rows_per_page + page.nrows;
-      break;
-    }
-  }
+  locate_end_of_file();
   rebuild_pk_index();
 }
 
@@ -96,23 +80,7 @@ uint32_t Table::load_pages_raw(uint32_t first_page, uint32_t count, void *pages)
 }
 
 void Table::refresh_after_recovery() {
-  int64_t size = file_.size();
-  if (size < 0) throw_error("IO_ERROR", "cannot stat table file");
-  uint32_t total_pages = static_cast<uint32_t>(size / kPageSize);
-  if (static_cast<int64_t>(total_pages) * kPageSize != size)
-    throw_error("CORRUPTION", "table file size is not page aligned after recovery");
-  page_count_ = 0;
-  next_pos_ = 0;
-  for (int64_t p = static_cast<int64_t>(total_pages) - 1; p >= 0; --p) {
-    Page page;
-    if (!load_page_raw(static_cast<uint32_t>(p), page))
-      throw_error("IO_ERROR", "cannot read recovered table tail");
-    if (page.magic == kPageMagic) {
-      page_count_ = static_cast<uint32_t>(p) + 1;
-      next_pos_ = static_cast<uint64_t>(p) * schema_.rows_per_page + page.nrows;
-      break;
-    }
-  }
+  locate_end_of_file();
   rebuild_pk_index();
 }
 
@@ -127,6 +95,14 @@ void Table::rebuild_pk_index() {
       Page page;
       std::memcpy(&page, buffer->bytes + static_cast<size_t>(i) * kPageSize, kPageSize);
       if (page.magic != kPageMagic) continue;
+      if (schema_.pages_per_row > 1) {
+        const uint32_t page_no = p + i;
+        if (page_no % schema_.pages_per_row == 0 &&
+            page.nrows == 1 && row_is_valid(page.payload)) {
+          pk_pos_[row_id(page.payload)] = page_no / schema_.pages_per_row;
+        }
+        continue;
+      }
       uint32_t n = std::min(page.nrows, page.capacity(schema_.row_size));
       for (uint32_t slot = 0; slot < n; ++slot) {
         const uint8_t *row = page.row_ptr(slot, schema_.row_size);
@@ -139,7 +115,64 @@ void Table::rebuild_pk_index() {
   }
 }
 
+void Table::locate_end_of_file() {
+  int64_t size = file_.size();
+  if (size < 0) throw_error("IO_ERROR", "cannot stat table file");
+  uint32_t total_pages = static_cast<uint32_t>(size / kPageSize);
+  if (static_cast<int64_t>(total_pages) * kPageSize != size)
+    throw_error("CORRUPTION", "table file size is not page aligned");
+  page_count_ = 0;
+  next_pos_ = 0;
+  if (schema_.pages_per_row > 1) {
+    if (total_pages % schema_.pages_per_row != 0)
+      throw_error("CORRUPTION", "incomplete wide row extent after recovery");
+    page_count_ = total_pages;
+    next_pos_ = total_pages / schema_.pages_per_row;
+    return;
+  }
+  // Find the highest page with a valid header.
+  for (int64_t p = static_cast<int64_t>(total_pages) - 1; p >= 0; --p) {
+    Page page;
+    if (!load_page_raw(static_cast<uint32_t>(p), page))
+      throw_error("IO_ERROR", "failed to read table page while locating end of file");
+    if (page.magic == kPageMagic) {
+      page_count_ = static_cast<uint32_t>(p) + 1;
+      next_pos_ = static_cast<uint64_t>(p) * schema_.rows_per_page + page.nrows;
+      break;
+    }
+  }
+}
+
+
+uint32_t Table::wide_row_page(uint64_t pos) const {
+  if (pos >= std::numeric_limits<uint32_t>::max() / schema_.pages_per_row)
+    throw_error("RESOURCE_LIMIT", "wide row exceeds the table page address space");
+  return static_cast<uint32_t>(pos * schema_.pages_per_row);
+}
+
+
 bool Table::read_row(uint64_t pos, std::vector<uint8_t> &row) {
+  if (schema_.pages_per_row > 1) {
+    const uint32_t first = wide_row_page(pos);
+    if (first >= page_count_) return false;
+    auto page = get_page(first);
+    if (page->magic != kPageMagic || page->nrows != 1 || !row_is_valid(page->payload))
+      return false;
+    row.resize(schema_.row_size);
+    size_t offset = 0;
+    for (uint32_t i = 0; i < schema_.pages_per_row; ++i) {
+      if (i != 0) {
+        page = get_page(first + i);
+        if (page->magic != kPageMagic || page->page_no != first + i || page->nrows != 0)
+          throw_error("CORRUPTION", "invalid wide row continuation");
+      }
+      const size_t bytes = std::min(sizeof(page->payload), row.size() - offset);
+      std::memcpy(row.data() + offset, page->payload, bytes);
+      offset += bytes;
+    }
+    return true;
+  }
+
   uint32_t page_no = static_cast<uint32_t>(pos / schema_.rows_per_page);
   uint32_t slot = static_cast<uint32_t>(pos % schema_.rows_per_page);
   auto page = get_page(page_no);
@@ -324,6 +357,42 @@ void Table::materialize_state(const RowState &state, const uint8_t *base,
 
 void Table::build_commit_images(const TxTable &tx,
                                 const std::function<void(PageImage)> &visit) {
+  if (schema_.pages_per_row > 1) {
+    std::vector<const RowState *> changes;
+    for (const auto &entry : tx.rows) {
+      const RowState &state = entry.second;
+      if (!state.deleted || state.existed) changes.push_back(&state);
+    }
+    std::sort(changes.begin(), changes.end(), [](const RowState *a, const RowState *b) {
+      return a->pos < b->pos;
+    });
+    std::vector<uint8_t> row;
+    for (const RowState *state : changes) {
+      const uint32_t first = wide_row_page(state->pos);
+      if (!state->deleted) {
+        materialize_state(*state, nullptr, row);
+        set_row_valid(row.data(), true);
+      }
+      size_t offset = 0;
+      for (uint32_t i = 0; i < schema_.pages_per_row; ++i) {
+        auto page = make_page();
+        page->page_no = first + i;
+        page->nrows = i == 0 ? 1 : 0;
+        if (!state->deleted) {
+          const size_t bytes = std::min(sizeof(page->payload), row.size() - offset);
+          std::memcpy(page->payload, row.data() + offset, bytes);
+          offset += bytes;
+        }
+        PageImage image;
+        image.table_id = schema_.id;
+        image.page_no = page->page_no;
+        image.page = std::move(page);
+        visit(std::move(image));
+      }
+    }
+    return;
+  }
+
   struct Change {
     uint64_t pos;
     bool deleted;

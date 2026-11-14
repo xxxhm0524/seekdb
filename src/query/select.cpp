@@ -183,7 +183,7 @@ Response Database::exec_select(SelectStmt &stmt) {
         if (scan_error) std::rethrow_exception(scan_error);
         for (size_t t = 1; t < heaps.size(); ++t) heaps[0].merge(heaps[t]);
       }
-    } else if (tx_.active()) {
+    } else if (tx_.active() || schema.pages_per_row>1) {
       for_each_visible(table, where, [&](const VisibleRow &vr) {
         const uint8_t *base = vr.row + schema.col_offsets[topk_vector_column];
         const float *vec = reinterpret_cast<const float *>(base);

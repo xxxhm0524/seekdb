@@ -47,7 +47,9 @@ int main(int argc,char** argv) {
  try {
   CHECK(argc==3);
   std::string mode=argv[2];
-  bool wide=mode=="wide"||mode=="shutdown"||mode=="retry";
+  bool cross_page=mode.rfind("cross-page-",0)==0;
+  if(cross_page)mode.erase(0,11);
+  bool wide=cross_page||mode=="wide"||mode=="shutdown"||mode=="retry";
   bool sync_fault=mode=="sync-live"||mode=="sync-shutdown";
   bool early_shutdown=mode=="shutdown"||mode=="retry"||mode=="sync-shutdown";
   long limit=sync_fault?1:180;
@@ -58,7 +60,7 @@ int main(int argc,char** argv) {
     {
       mvd::Engine e(directory,wide?1:16,300,0);e.open();e.set_ann_mode(true);
       for(const char* name:{"t","u"}) {
-        CHECK(e.execute(std::string("CREATE TABLE ")+name+(wide?"(id BIGINT PRIMARY KEY,s VARCHAR(8000),v VECTOR(2))":"(id BIGINT PRIMARY KEY,s VARCHAR(32),v VECTOR(2))")).ok);
+        CHECK(e.execute(std::string("CREATE TABLE ")+name+(cross_page?"(id BIGINT PRIMARY KEY,s VARCHAR(25000),v VECTOR(2))":wide?"(id BIGINT PRIMARY KEY,s VARCHAR(8000),v VECTOR(2))":"(id BIGINT PRIMARY KEY,s VARCHAR(32),v VECTOR(2))")).ok);
         CHECK(e.execute(std::string("INSERT INTO ")+name+" VALUES(1,'base','[3,4]'),(2,'remove','[0,1]')").ok);
         CHECK(e.execute(std::string("CREATE VECTOR INDEX idx ON ")+name+"(v)").ok);
       }

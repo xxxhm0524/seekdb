@@ -86,6 +86,8 @@ class Table {
   bool direct_io_ = false;
   std::unordered_map<int64_t, uint64_t> pk_pos_;
   bool reopen_buffered();
+  void locate_end_of_file();
+  uint32_t wide_row_page(uint64_t pos) const;
 };
 
 }

@@ -98,6 +98,10 @@ void Database::commit_transaction() {
     table.set_next_pos(kv.second.next_pos);
     for (auto &rk : kv.second.rows) {
       const RowState &state = rk.second;
+      if(table.schema().pages_per_row>1&&(!state.deleted||state.existed)){
+        uint32_t end=table.wide_row_page(state.pos)+table.schema().pages_per_row;
+        table.page_count_=std::max(table.page_count_,end);
+      }
       if (state.deleted) {
         if (state.existed) table.erase_pk(rk.first);
       } else {

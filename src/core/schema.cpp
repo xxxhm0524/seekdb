@@ -63,17 +63,16 @@ void build_row_layout(TableSchema &schema) {
         offset += static_cast<uint32_t>(col.dim) * 4;
         break;
     }
-    // Reject as soon as a row exceeds one page, before a very large column
-    // list can wrap the uint32 layout offset back to a small valid-looking row.
-    if (offset > kPageSize - kPageHeaderSize)
-      throw_error("INVALID_SCHEMA", "row is too large for a page");
+    // Bound per-row buffers before a large column list can wrap the offset.
+    if (offset > 16 * 1024 * 1024)
+      throw_error("INVALID_SCHEMA", "row layout exceeds 16 MiB");
   }
   schema.row_size = align_up(offset, 64);
   schema.page_size = kPageSize;
   schema.rows_per_page =
       (kPageSize - kPageHeaderSize) / schema.row_size;
-  if (schema.rows_per_page == 0)
-    throw_error("INVALID_SCHEMA", "row is too large for a page");
+  const uint32_t payload=kPageSize-kPageHeaderSize;
+  schema.pages_per_row=(schema.row_size+payload-1)/payload;
 }
 
 int find_column(const TableSchema& schema,const std::string& name){auto key=lower_copy(name);for(size_t i=0;i<schema.columns.size();++i)if(lower_copy(schema.columns[i].name)==key)return int(i);return -1;}

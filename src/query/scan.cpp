@@ -30,12 +30,21 @@ void Database::for_each_visible(
     }
     return;
   }
-  for (uint32_t p = 0; p < table.page_count(); ++p) {
-    auto page = table.get_page(p);
-    if (page->magic != kPageMagic) continue;
-    uint32_t n = std::min(page->nrows, page->capacity(schema.row_size));
+  std::vector<uint8_t> wide_row;
+  const bool wide=schema.pages_per_row>1;
+  for (uint32_t p = 0; p < table.page_count(); p+=schema.pages_per_row) {
+    std::shared_ptr<Page> page;
+    uint32_t n=1;
+    if(!wide){
+      page=table.get_page(p);
+      if(page->magic!=kPageMagic)continue;
+      n=std::min(page->nrows,page->capacity(schema.row_size));
+    }
     for (uint32_t slot = 0; slot < n; ++slot) {
-      const uint8_t *row = table.row_data(*page, slot);
+      const uint64_t pos=wide?p/schema.pages_per_row:static_cast<uint64_t>(p)*schema.rows_per_page+slot;
+      const uint8_t *row;
+      if(wide){if(!table.read_row(pos,wide_row))continue;row=wide_row.data();}
+      else row=table.row_data(*page,slot);
       if (!table.row_is_valid(row)) continue;
       int64_t pk = table.row_id(row);
       const uint8_t *use = row;
@@ -61,7 +70,7 @@ void Database::for_each_visible(
       vr.row = use;
       vr.page = overlay ? nullptr : page;
       vr.pk = pk;
-      vr.pos = static_cast<uint64_t>(p) * schema.rows_per_page + slot;
+      vr.pos = pos;
       vr.from_overlay = overlay;
       if (!visit(vr)) return;
     }
