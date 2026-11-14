@@ -17,14 +17,17 @@ private:
     uint64_t root_;
     std::string table_;
     size_t vector_column_ = 0;
+    std::vector<bool> columns_;
     std::vector<Entry> entries_;
     std::vector<size_t> order_;
     std::vector<Node> nodes_;
     int build(size_t begin, size_t end);
 public:
     VectorIndex(uint64_t root, std::string table) : root_(root), table_(std::move(table)) {}
-    static std::unique_ptr<VectorIndex> create(Storage& store, const Table& table);
+    static std::unique_ptr<VectorIndex> create(Storage& store, const Table& table, const std::vector<bool>& wanted = {});
     bool valid(const Table& table) const { return root_ == table.root && table_ == table.name; }
+    bool covers(const std::vector<bool>& wanted) const;
+    const std::vector<bool>& columns() const { return columns_; }
     const std::vector<Entry>& entries() const { return entries_; }
     std::vector<Hit> search(const std::vector<float>& query, size_t k,
                            const std::function<bool(const Row&)>& matches) const;

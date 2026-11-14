@@ -15,6 +15,7 @@ class Engine {
     std::unique_ptr<VectorIndex> vector_index_;
     std::optional<uint64_t> refused_vector_root_;
     std::string refused_vector_table_;
+    std::vector<bool> refused_vector_columns_;
     size_t table_index(const std::string& name) const;
     Result select(const Statement& statement);
 public:

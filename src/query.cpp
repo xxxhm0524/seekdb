@@ -213,14 +213,34 @@ Result Engine::select(const Statement& s) {
     for (const auto& o : ordering) vector_query |= o.distance;
     if (vector_query) {
         if (vector_index_ && !vector_index_->valid(table)) vector_index_.reset();
-        if (!vector_index_ && !(refused_vector_root_ == table.root && refused_vector_table_ == table.name)) {
-            vector_index_ = VectorIndex::create(storage_, table);
-            if (!vector_index_) { refused_vector_root_ = table.root; refused_vector_table_ = table.name; }
+        std::vector<bool> cache_needed(table.columns.size(), false);
+        cache_needed[table.primary] = true;
+        for (const auto& p : predicates) cache_needed[p.column] = true;
+        for (const auto& o : ordering) cache_needed[o.column] = true;
+        for (const auto& p : projections) if (p.distance) cache_needed[p.column] = true;
+        auto refused = [&](const std::vector<bool>& columns) {
+            if (refused_vector_root_ != table.root || refused_vector_table_ != table.name || refused_vector_columns_.size() != columns.size()) return false;
+            for (size_t i = 0; i < columns.size(); ++i) if (refused_vector_columns_[i] && !columns[i]) return false;
+            return true;
+        };
+        if ((!vector_index_ || !vector_index_->covers(cache_needed)) && !refused(cache_needed)) {
+            auto desired = cache_needed;
+            if (vector_index_) for (size_t i = 0; i < desired.size(); ++i) desired[i] = desired[i] || vector_index_->columns()[i];
+            if (!refused(desired)) {
+                vector_index_.reset(); // Keep the shared budget during rebuilding.
+                vector_index_ = VectorIndex::create(storage_, table, desired);
+                if (!vector_index_) { refused_vector_root_ = table.root; refused_vector_table_ = table.name; refused_vector_columns_ = std::move(desired); }
+            }
         }
-        if (vector_index_ && ordering.size() == 1 && ordering[0].distance && !s.order[0].descending && limit <= 65536) {
+        if (vector_index_ && vector_index_->covers(cache_needed) && ordering.size() == 1 && ordering[0].distance && !s.order[0].descending && limit <= 65536) {
             auto hits = vector_index_->search(ordering[0].query, static_cast<size_t>(limit),
                                               [&](const Row& row) { return matches(row, predicates); });
-            for (const auto& hit : hits) output(vector_index_->entries()[hit.entry].row);
+            bool projection_cached = vector_index_->covers(wanted);
+            for (const auto& hit : hits) {
+                const auto& entry = vector_index_->entries()[hit.entry];
+                if (projection_cached) output(entry.row);
+                else output(load(entry.key, entry.ref));
+            }
             return result;
         }
     }

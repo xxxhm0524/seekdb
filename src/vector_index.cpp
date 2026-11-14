@@ -13,20 +13,29 @@ static size_t vector_budget() {
     }
     return mib * 1024 * 1024;
 }
-std::unique_ptr<VectorIndex> VectorIndex::create(Storage& store, const Table& table) {
+bool VectorIndex::covers(const std::vector<bool>& wanted) const {
+    if (wanted.size() != columns_.size()) return false;
+    for (size_t i = 0; i < wanted.size(); ++i) if (wanted[i] && !columns_[i]) return false;
+    return true;
+}
+std::unique_ptr<VectorIndex> VectorIndex::create(Storage& store, const Table& table, const std::vector<bool>& wanted) {
     size_t budget = vector_budget(), column = table.columns.size();
     for (size_t i = 0; i < table.columns.size(); ++i) if (table.columns[i].type == Type::Vector) column = i;
     if (!budget || column == table.columns.size()) return nullptr;
     auto index = std::make_unique<VectorIndex>(table.root, table.name); index->vector_column_ = column;
+    if (!wanted.empty() && wanted.size() != table.columns.size()) throw IoError("invalid vector snapshot projection");
+    index->columns_ = wanted.empty() ? std::vector<bool>(table.columns.size(), false) : wanted;
+    index->columns_[column] = index->columns_[table.primary] = true;
     // Reserve by the known row count, but never reserve beyond the entire budget.
     if (table.count > budget / (sizeof(Entry) + sizeof(size_t) + table.columns.size() * sizeof(Value))) return nullptr;
     index->entries_.reserve(static_cast<size_t>(table.count));
-    size_t used = index->entries_.capacity() * sizeof(Entry);
+    size_t used = index->entries_.capacity() * sizeof(Entry) + index->columns_.capacity() / 8 + 32;
     bool complete = true;
     BTree tree(store);
     tree.scan(table.root, [&](int64_t key, Ref ref) {
-        if (ref.length > budget) { complete = false; return false; }
-        Row row = decode_row(table, store.read(ref));
+        auto materialized = store.read_selected_bounded(table, ref, index->columns_, budget - std::min(budget, used));
+        if (!materialized) { complete = false; return false; }
+        Row row = std::move(*materialized); row[table.primary] = key;
         used += row.capacity() * sizeof(Value);
         for (const auto& v : row) {
             if (auto s = std::get_if<std::string>(&v)) used += s->capacity() + 32;

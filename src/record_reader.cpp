@@ -2,10 +2,20 @@
 #include <bit>
 
 namespace mvd {
+namespace { struct MaterializationLimit {}; }
 Row Storage::read_selected(const Table& table, Ref ref, const std::vector<bool>& wanted) const {
+    return read_selected_impl(table, ref, wanted, SIZE_MAX);
+}
+std::optional<Row> Storage::read_selected_bounded(const Table& table, Ref ref, const std::vector<bool>& wanted, size_t limit) const {
+    try { return read_selected_impl(table, ref, wanted, limit); }
+    catch (const MaterializationLimit&) { return std::nullopt; }
+}
+Row Storage::read_selected_impl(const Table& table, Ref ref, const std::vector<bool>& wanted, size_t limit) const {
     if (wanted.size() != table.columns.size()) throw IoError("invalid projected record shape");
     if (ref.offset < 8192 || ref.offset > end_ || ref.length > end_ - ref.offset)
         throw IoError("invalid projected record reference");
+    if (table.columns.size() > limit / sizeof(Value)) throw MaterializationLimit{};
+    limit -= table.columns.size() * sizeof(Value);
     Row row(table.columns.size());
     uint64_t position = 0;
     auto range = [&](uint64_t size, void* data) {
@@ -25,6 +35,8 @@ Row Storage::read_selected(const Table& table, Ref ref, const std::vector<bool>&
             uint64_t size = read_le(length.data(), 4);
             if (position > ref.length || size > ref.length - position) throw IoError("truncated projected string");
             if (wanted[i]) {
+                if (size > limit) throw MaterializationLimit{};
+                limit -= static_cast<size_t>(size);
                 std::string text(static_cast<size_t>(size), '\0');
                 range(size, text.data()); row[i] = std::move(text);
             } else range(size, nullptr);
@@ -32,6 +44,8 @@ Row Storage::read_selected(const Table& table, Ref ref, const std::vector<bool>&
             uint64_t size = uint64_t(column.width) * sizeof(float);
             if (position > ref.length || size > ref.length - position) throw IoError("truncated projected vector");
             if (wanted[i]) {
+                if (size > limit) throw MaterializationLimit{};
+                limit -= static_cast<size_t>(size);
                 std::string bytes(static_cast<size_t>(size), '\0');
                 range(size, bytes.data());
                 std::vector<float> vector; vector.reserve(column.width);

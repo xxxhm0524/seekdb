@@ -1,7 +1,7 @@
 name: Clean MiniVectorDB verification
 on:
   push:
-    branches: ['rewrite/minivectordb-clean-20261114', 'audit/minivectordb-space-20261114', '2026-competition-round2']
+    branches: ['rewrite/minivectordb-clean-20261114', 'audit/minivectordb-space-20261114', 'review/scored-reference-20261114', '2026-competition-round2']
   workflow_dispatch:
 permissions:
   contents: read

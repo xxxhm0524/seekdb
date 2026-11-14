@@ -43,6 +43,7 @@ class Storage {
     void evict();
     void flush_page(uint64_t offset, Cached& page);
     void cleanup_compaction_scratch();
+    Row read_selected_impl(const Table& table, Ref ref, const std::vector<bool>& wanted, size_t limit) const;
 public:
     Catalog committed;
     explicit Storage(const std::filesystem::path& directory);
@@ -52,6 +53,7 @@ public:
     Ref append(const std::string& bytes);
     std::string read(Ref ref) const;
     Row read_selected(const Table& table, Ref ref, const std::vector<bool>& wanted) const;
+    std::optional<Row> read_selected_bounded(const Table& table, Ref ref, const std::vector<bool>& wanted, size_t limit) const;
     uint64_t mark() const { return end_; }
     void rewind(uint64_t mark);
     void rollback() { rewind(durable_end_); }
