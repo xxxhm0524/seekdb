@@ -1,0 +1,36 @@
+name: Clean MiniVectorDB verification
+on:
+  push:
+    branches: ['rewrite/minivectordb-clean-20261114', '2026-competition-round2']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Build locked Linux image
+        run: docker build --pull -t mvd-clean .
+      - name: Official protocol and all public assertions
+        run: python3 protocol_check/run.py --image mvd-clean --output results/linux-official
+      - name: Portable transport against actual container
+        env:
+          MVD_DOCKER_IMAGE: mvd-clean
+        run: python3 tests/client.py --output results/linux-portable
+      - name: Independent invariants and real SIGKILL
+        env:
+          MVD_DOCKER_IMAGE: mvd-clean
+        run: python3 tests/invariants.py --output results/linux-invariants
+      - name: Preserve reports and stderr
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: clean-verification-${{ github.sha }}
+          path: |
+            results/**/report.json
+            results/**/result.json
+            results/**/cases.json
+            results/**/*.log
+          if-no-files-found: warn
