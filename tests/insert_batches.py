@@ -3,6 +3,7 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import subprocess
 import sys
 from client import Client
 
@@ -36,13 +37,20 @@ def run(directory):
             checked += 1
         check()
         database = directory / 'database.mvd'
-        before = hashlib.sha256(database.read_bytes()).hexdigest()
+        def file_hash():
+            if db.container:
+                # The production container owns its mode-0600 data file. Read
+                # its bytes as that same container user rather than widening
+                # runtime permissions to accommodate a host-side assertion.
+                return subprocess.check_output(['docker', 'exec', db.container, 'sha256sum', '/data/database.mvd'], text=True).split()[0]
+            return hashlib.sha256(database.read_bytes()).hexdigest()
+        before = file_hash()
         fresh = [value(k) for k in range(10000, 14500)]
         # Duplicate after several full batches; both an existing key and a
         # key introduced earlier in this very statement must undo everything.
         for tail in [value(0), value(10001), "(20000,'bad','[1,2]')"]:
             db.execute('INSERT INTO t VALUES' + ','.join(fresh + [tail]) + ';', ok=False)
-            assert hashlib.sha256(database.read_bytes()).hexdigest() == before
+            assert file_hash() == before
             check()
         db.execute('BEGIN;'); db.execute('INSERT INTO t VALUES' + value(9999) + ';')
         rows[9999] = ['x', [float(9999 % 17), 0.125, -0.25]]
