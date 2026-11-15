@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "runtime_core": "c2c2b42f6782549049b14764c7a105389cb5289f",
+  "runtime_inputs": 38,
+  "release_binary_sha256": "6fd307974aafc6cd51fb33469fdaa4a882cd6e8bacea6ad55a59feae6b9e8ade",
+  "baseline_binary_sha256": "1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66",
+  "compiler": "g++ (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0",
+  "kernel": "Linux-5.15.0-202-generic-x86_64-with-glibc2.35",
+  "architecture": "x86_64",
+  "formal_submitted": false,
+  "docker_used": false
+}

@@ -1,0 +1,165 @@
+{
+  "passed": true,
+  "rows": 10000,
+  "dimensions": 128,
+  "queries": 1000,
+  "rounds": 2,
+  "batch": 100,
+  "warmup": 10,
+  "cpu_affinity": [
+    2,
+    3
+  ],
+  "versions": {
+    "baseline": {
+      "binary": "/tmp/mvd-reference-opt-20261115-39q88lpc/build/baseline",
+      "sha256": "1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66"
+    },
+    "candidate": {
+      "binary": "/tmp/mvd-reference-opt-20261115-39q88lpc/build/fp32-only",
+      "sha256": "b3dc878de8312a36e20ec0e78274e9ee64fafa29e31e1fc5dfe455782b8942d4"
+    }
+  },
+  "fixture_sha256": "8c5f1e90a45d840735849349b800d013d53ccc3fbf38ee35d803594a294c2d95",
+  "oracle_source_sha256": "d818386c615725b3f525b4c7b463decce16ee8c7d82a4f616ce832f081010ae7",
+  "oracle_binary_sha256": "338e9487c2adb1eb54a074e411d646ed40e62b9a24befa568968bbc701b36459",
+  "samples": 16,
+  "verified_queries": 16000,
+  "summary": {
+    "bigint-idx0": {
+      "medians": {
+        "baseline": {
+          "write_ms": 490.50203550000003,
+          "query_ms": 168.84548150000012,
+          "cycle_ms": 659.3475170000002
+        },
+        "candidate": {
+          "write_ms": 492.66725099999996,
+          "query_ms": 181.59188550000005,
+          "cycle_ms": 674.2591365000001
+        }
+      },
+      "paired_speedups": {
+        "write_ms": [
+          1.001364079145932,
+          0.9898887748284627
+        ],
+        "query_ms": [
+          0.9222673344355021,
+          0.9373068381970044
+        ],
+        "cycle_ms": [
+          0.9800459044792512,
+          0.9757378006386138
+        ]
+      },
+      "median_paired_speedup": {
+        "write_ms": 0.9956264269871973,
+        "query_ms": 0.9297870863162533,
+        "cycle_ms": 0.9778918525589325
+      }
+    },
+    "bigint-idx1": {
+      "medians": {
+        "baseline": {
+          "write_ms": 494.0806419999999,
+          "query_ms": 167.80118000000004,
+          "cycle_ms": 697.86758
+        },
+        "candidate": {
+          "write_ms": 490.9958105000002,
+          "query_ms": 183.75363749999997,
+          "cycle_ms": 711.4514565000002
+        }
+      },
+      "paired_speedups": {
+        "write_ms": [
+          1.0086707384504823,
+          1.0039109335915075
+        ],
+        "query_ms": [
+          0.914570446598391,
+          0.911803016970501
+        ],
+        "cycle_ms": [
+          0.9823503393243522,
+          0.9794698160318493
+        ]
+      },
+      "median_paired_speedup": {
+        "write_ms": 1.006290836020995,
+        "query_ms": 0.913186731784446,
+        "cycle_ms": 0.9809100776781008
+      }
+    },
+    "text-idx0": {
+      "medians": {
+        "baseline": {
+          "write_ms": 493.37058649999994,
+          "query_ms": 184.96410699999993,
+          "cycle_ms": 678.3346935
+        },
+        "candidate": {
+          "write_ms": 506.460106,
+          "query_ms": 184.12864350000007,
+          "cycle_ms": 690.5887495000001
+        }
+      },
+      "paired_speedups": {
+        "write_ms": [
+          0.9974709203297861,
+          0.952106310244775
+        ],
+        "query_ms": [
+          1.1005005471801264,
+          0.9097838873513158
+        ],
+        "cycle_ms": [
+          1.0253862150815602,
+          0.9409969155588593
+        ]
+      },
+      "median_paired_speedup": {
+        "write_ms": 0.9747886152872806,
+        "query_ms": 1.0051422172657212,
+        "cycle_ms": 0.9831915653202098
+      }
+    },
+    "text-idx1": {
+      "medians": {
+        "baseline": {
+          "write_ms": 488.11145950000014,
+          "query_ms": 168.82077700000013,
+          "cycle_ms": 693.3811095000002
+        },
+        "candidate": {
+          "write_ms": 492.063801,
+          "query_ms": 184.11462600000002,
+          "cycle_ms": 712.494895
+        }
+      },
+      "paired_speedups": {
+        "write_ms": [
+          0.998664389194076,
+          0.9853767190028488
+        ],
+        "query_ms": [
+          0.9170852738453825,
+          0.9167824248576211
+        ],
+        "cycle_ms": [
+          0.9771927964136796,
+          0.9692053550339844
+        ]
+      },
+      "median_paired_speedup": {
+        "write_ms": 0.9920205540984623,
+        "query_ms": 0.9169338493515018,
+        "cycle_ms": 0.973199075723832
+      }
+    }
+  },
+  "timing": "Sum of actual JSONL request round trips; input and oracle generation, warmup, verification and restart excluded. Fresh database per sample; version/order counterbalanced.",
+  "resources": "Per-process VmHWM and /proc/io retained; not formal T/B/M. CPU quota and memory ceiling enforced by launcher.",
+  "formal_score": null
+}

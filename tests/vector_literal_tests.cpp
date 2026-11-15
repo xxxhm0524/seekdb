@@ -63,6 +63,8 @@ int main() {
     parsed_ownership();
     const std::string cases[]{"[]","[0,-0,+0,0e-999,-1e-999]","[3.4028235e38,-3.4028235e38]",
       "[3.4028236e38]","[1e309]","[1e-324]","[.1,1.,+1E+3,-.0]","[16777217,16777219]",
+      "[3.4028236e38,1e400]","[3.4028236e38,1]","[3.4028236e38,@]",
+      "[1e400,3.4028236e38]","[1.000000059604644775390626,-0]",
       " [ 1 ,\t2\r\n, 3\f] ","[1/*keep*/,2]","[1,--comment\n2]","[1,2]/*tail*/",
       "[1e999,@]","[1e999,/*]","[nan]","[inf]","[0x1p0]","[1,,2]","[1,]","[,1]",
       "[+-1]","[- 1]","[1e+]","[.]","[1.2.3]","[1]x","[1];","[1\v,2]","[1,2",""};
@@ -78,6 +80,7 @@ int main() {
       const std::string replacements="[],+-.eE/ *@0129\t\n";
       text[rng()%text.size()]=replacements[rng()%replacements.size()];same(text,count);
     }
-    std::cout<<"PASS vector literal differential: 6150 cases, bitwise values and identical errors; 256 quoted-token round trips and 256 unterminated checks\n";return 0;
+    std::cout<<"PASS vector literal differential: "<<(sizeof(cases)/sizeof(cases[0])*5+6000)
+             <<" cases, bitwise values and identical errors; 256 quoted-token round trips and 256 unterminated checks\n";return 0;
   }catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}
 }

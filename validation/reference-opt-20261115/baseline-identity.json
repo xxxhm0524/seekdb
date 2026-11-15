@@ -1,0 +1,16 @@
+{
+  "upstream_repository": "https://github.com/juanzhi-gcb/seekdb",
+  "upstream_commit": "a08e66e299847ca539c419cfbc67593357246627",
+  "author_reported_scored_runtime": "a24d2cd764027adec7371f268f99ccdca2307032",
+  "runtime_git_objects": {
+    "src": "90dc2e6c149b12c2576d3327e3c621c81c26e524",
+    "include": "10ed3388a60ff4621ed52d422b317859a41ea4b0",
+    "CMakeLists.txt": "78d8497653d29085db65ae5a9e57954f1a7ac513",
+    "Dockerfile": "5ca119733dfffd36fa9e11ee4612607d65ccc468"
+  },
+  "archive_sha256": "36dfa7546462d8958a9a02276f763e08c87ccf34edc3459758f375c869288cf5",
+  "archive_bytes": 942080,
+  "user_direction": "Use the publicly successful reference directly as the implementation base; abandon earlier independent implementation.",
+  "formal_submission": false,
+  "pushed": false
+}

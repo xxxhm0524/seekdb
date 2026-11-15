@@ -1,0 +1,23 @@
+{
+  "passed": true,
+  "checks": 18,
+  "environment": {
+    "uid": [
+      "65534",
+      "65534",
+      "65534",
+      "65534"
+    ],
+    "no_new_privileges": "1",
+    "root_flags": 4097,
+    "data_flags": 4096,
+    "routes": [],
+    "cgroup": "0::/mvd-reference-opt-20261115-39q88lpc\n"
+  },
+  "entrypoint_arguments": [],
+  "ready": "Original official Session.start verified the ready object",
+  "shutdown_eof_and_sigkill_rollback": true,
+  "failed_statement_preserves_prior_transaction": true,
+  "same_index_name_on_distinct_tables": true,
+  "binary_sha256": "6fd307974aafc6cd51fb33469fdaa4a882cd6e8bacea6ad55a59feae6b9e8ade"
+}

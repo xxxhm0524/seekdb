@@ -1,0 +1,81 @@
+{
+  "passed": true,
+  "runtime_core": "c2c2b42f6782549049b14764c7a105389cb5289f",
+  "workspace": "/tmp/mvd-ref-native-r88ssbt3",
+  "stages": [
+    {
+      "name": "ctest",
+      "exit_code": 0,
+      "seconds": 23.163278083025943,
+      "argv": [
+        "ctest",
+        "--test-dir",
+        "/tmp/mvd-reference-opt-20261115-39q88lpc/numeric-build",
+        "--output-on-failure",
+        "--parallel",
+        "2",
+        "--output-junit",
+        "/tmp/mvd-ref-native-r88ssbt3/native-evidence/ctest.xml"
+      ]
+    },
+    {
+      "name": "public",
+      "exit_code": 0,
+      "seconds": 1.1158735289936885,
+      "argv": [
+        "/usr/bin/python3",
+        "/tmp/mvd-ref-native-r88ssbt3/official-kit/protocol_check/run.py",
+        "--command",
+        "[\"/usr/bin/python3\", \"/tmp/mvd-ref-native-r88ssbt3/native_launcher_hardened.py\", \"{data_dir}\"]",
+        "--output",
+        "/tmp/mvd-ref-native-r88ssbt3/native-evidence/public"
+      ]
+    },
+    {
+      "name": "parity",
+      "exit_code": 0,
+      "seconds": 7.132309451000765,
+      "argv": [
+        "/usr/bin/python3",
+        "/tmp/mvd-ref-native-r88ssbt3/native_parity_audit.py",
+        "--output",
+        "/tmp/mvd-ref-native-r88ssbt3/native-evidence/parity",
+        "--candidate",
+        "/tmp/mvd-ref-native-r88ssbt3/build/candidate",
+        "--reference",
+        "/tmp/mvd-ref-native-r88ssbt3/build/baseline"
+      ]
+    },
+    {
+      "name": "wire",
+      "exit_code": 0,
+      "seconds": 4.67487088200869,
+      "argv": [
+        "/usr/bin/python3",
+        "/tmp/mvd-ref-native-r88ssbt3/native_wire_boundaries.py",
+        "--output",
+        "/tmp/mvd-ref-native-r88ssbt3/native-evidence/wire",
+        "--candidate",
+        "/tmp/mvd-ref-native-r88ssbt3/build/candidate",
+        "--reference",
+        "/tmp/mvd-ref-native-r88ssbt3/build/baseline"
+      ]
+    },
+    {
+      "name": "default-contract",
+      "exit_code": 0,
+      "seconds": 0.2650589040131308,
+      "argv": [
+        "/usr/bin/python3",
+        "/tmp/mvd-ref-native-r88ssbt3/default_contract.py",
+        "default-contract",
+        "/tmp/mvd-ref-native-r88ssbt3/build/candidate"
+      ]
+    }
+  ],
+  "binary_sha256": "6fd307974aafc6cd51fb33469fdaa4a882cd6e8bacea6ad55a59feae6b9e8ade",
+  "existing_build_reused": true,
+  "benchmark": false,
+  "docker_used": false,
+  "formal_submitted": false
+}

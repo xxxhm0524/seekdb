@@ -1,0 +1,123 @@
+{
+  "passed": true,
+  "observations": 6,
+  "results": [
+    {
+      "category": "id_near_response_limit",
+      "id_bytes": 1,
+      "request_bytes": 65,
+      "request_within_reference_limit": true,
+      "ours": {
+        "ok": true,
+        "id_exact": true,
+        "affected_rows": 0,
+        "error": null
+      },
+      "reference": {
+        "ok": true,
+        "id_exact": true,
+        "affected_rows": 0,
+        "error": null
+      },
+      "qualifying_failure": false
+    },
+    {
+      "category": "id_near_response_limit",
+      "id_bytes": 16776704,
+      "request_bytes": 16776768,
+      "request_within_reference_limit": true,
+      "ours": {
+        "ok": true,
+        "id_exact": true,
+        "affected_rows": 0,
+        "error": null
+      },
+      "reference": {
+        "ok": true,
+        "id_exact": true,
+        "affected_rows": 0,
+        "error": null
+      },
+      "qualifying_failure": false
+    },
+    {
+      "category": "id_near_response_limit",
+      "id_bytes": 16776960,
+      "request_bytes": 16777024,
+      "request_within_reference_limit": true,
+      "ours": {
+        "ok": true,
+        "id_exact": true,
+        "affected_rows": 0,
+        "error": null
+      },
+      "reference": {
+        "ok": true,
+        "id_exact": true,
+        "affected_rows": 0,
+        "error": null
+      },
+      "qualifying_failure": false
+    },
+    {
+      "category": "id_near_response_limit",
+      "id_bytes": 16777000,
+      "request_bytes": 16777064,
+      "request_within_reference_limit": true,
+      "ours": {
+        "ok": true,
+        "id_exact": true,
+        "affected_rows": 0,
+        "error": null
+      },
+      "reference": {
+        "ok": true,
+        "id_exact": true,
+        "affected_rows": 0,
+        "error": null
+      },
+      "qualifying_failure": false
+    },
+    {
+      "category": "id_near_response_limit",
+      "id_bytes": 16777088,
+      "request_bytes": 16777152,
+      "request_within_reference_limit": true,
+      "ours": {
+        "ok": true,
+        "id_exact": true,
+        "affected_rows": 0,
+        "error": null
+      },
+      "reference": {
+        "ok": true,
+        "id_exact": true,
+        "affected_rows": 0,
+        "error": null
+      },
+      "qualifying_failure": false
+    },
+    {
+      "category": "id_near_response_limit",
+      "id_bytes": 16777120,
+      "request_bytes": 16777184,
+      "request_within_reference_limit": true,
+      "ours": {
+        "ok": true,
+        "id_exact": true,
+        "affected_rows": 0,
+        "error": null
+      },
+      "reference": {
+        "ok": true,
+        "id_exact": true,
+        "affected_rows": 0,
+        "error": null
+      },
+      "qualifying_failure": false
+    }
+  ],
+  "candidate_sha256": "6fd307974aafc6cd51fb33469fdaa4a882cd6e8bacea6ad55a59feae6b9e8ade",
+  "reference_sha256": "1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66",
+  "scope": "Actual JSONL requests within the unchanged official response bound; IDs summarized by size, no formal score."
+}

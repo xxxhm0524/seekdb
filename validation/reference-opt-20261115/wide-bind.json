@@ -1,0 +1,344 @@
+{
+  "passed": true,
+  "samples": [
+    {
+      "dimension": 128,
+      "round": 0,
+      "version": "baseline",
+      "request_bytes": 364,
+      "elapsed_ms": 0.10591,
+      "process_vmhwm_kib": 2736,
+      "passed": true
+    },
+    {
+      "dimension": 128,
+      "round": 0,
+      "version": "candidate",
+      "request_bytes": 364,
+      "elapsed_ms": 0.12044,
+      "process_vmhwm_kib": 2736,
+      "passed": true
+    },
+    {
+      "dimension": 128,
+      "round": 1,
+      "version": "candidate",
+      "request_bytes": 364,
+      "elapsed_ms": 0.11285,
+      "process_vmhwm_kib": 2736,
+      "passed": true
+    },
+    {
+      "dimension": 128,
+      "round": 1,
+      "version": "baseline",
+      "request_bytes": 364,
+      "elapsed_ms": 0.10769,
+      "process_vmhwm_kib": 2732,
+      "passed": true
+    },
+    {
+      "dimension": 128,
+      "round": 2,
+      "version": "baseline",
+      "request_bytes": 364,
+      "elapsed_ms": 0.1053,
+      "process_vmhwm_kib": 2736,
+      "passed": true
+    },
+    {
+      "dimension": 128,
+      "round": 2,
+      "version": "candidate",
+      "request_bytes": 364,
+      "elapsed_ms": 0.11005,
+      "process_vmhwm_kib": 2732,
+      "passed": true
+    },
+    {
+      "dimension": 128,
+      "round": 3,
+      "version": "candidate",
+      "request_bytes": 364,
+      "elapsed_ms": 0.11422,
+      "process_vmhwm_kib": 2732,
+      "passed": true
+    },
+    {
+      "dimension": 128,
+      "round": 3,
+      "version": "baseline",
+      "request_bytes": 364,
+      "elapsed_ms": 0.10977,
+      "process_vmhwm_kib": 2736,
+      "passed": true
+    },
+    {
+      "dimension": 131072,
+      "round": 0,
+      "version": "baseline",
+      "request_bytes": 262252,
+      "elapsed_ms": 15.219966,
+      "process_vmhwm_kib": 5264,
+      "passed": true
+    },
+    {
+      "dimension": 131072,
+      "round": 0,
+      "version": "candidate",
+      "request_bytes": 262252,
+      "elapsed_ms": 14.655225,
+      "process_vmhwm_kib": 4212,
+      "passed": true
+    },
+    {
+      "dimension": 131072,
+      "round": 1,
+      "version": "candidate",
+      "request_bytes": 262252,
+      "elapsed_ms": 14.652235,
+      "process_vmhwm_kib": 4212,
+      "passed": true
+    },
+    {
+      "dimension": 131072,
+      "round": 1,
+      "version": "baseline",
+      "request_bytes": 262252,
+      "elapsed_ms": 15.223166,
+      "process_vmhwm_kib": 5272,
+      "passed": true
+    },
+    {
+      "dimension": 131072,
+      "round": 2,
+      "version": "baseline",
+      "request_bytes": 262252,
+      "elapsed_ms": 15.225706,
+      "process_vmhwm_kib": 5268,
+      "passed": true
+    },
+    {
+      "dimension": 131072,
+      "round": 2,
+      "version": "candidate",
+      "request_bytes": 262252,
+      "elapsed_ms": 14.757485,
+      "process_vmhwm_kib": 4212,
+      "passed": true
+    },
+    {
+      "dimension": 131072,
+      "round": 3,
+      "version": "candidate",
+      "request_bytes": 262252,
+      "elapsed_ms": 14.855395,
+      "process_vmhwm_kib": 4212,
+      "passed": true
+    },
+    {
+      "dimension": 131072,
+      "round": 3,
+      "version": "baseline",
+      "request_bytes": 262252,
+      "elapsed_ms": 15.176295,
+      "process_vmhwm_kib": 5268,
+      "passed": true
+    },
+    {
+      "dimension": 1048576,
+      "round": 0,
+      "version": "baseline",
+      "request_bytes": 2097260,
+      "elapsed_ms": 121.940504,
+      "process_vmhwm_kib": 21312,
+      "passed": true
+    },
+    {
+      "dimension": 1048576,
+      "round": 0,
+      "version": "candidate",
+      "request_bytes": 2097260,
+      "elapsed_ms": 124.101544,
+      "process_vmhwm_kib": 13128,
+      "passed": true
+    },
+    {
+      "dimension": 1048576,
+      "round": 1,
+      "version": "candidate",
+      "request_bytes": 2097260,
+      "elapsed_ms": 123.850424,
+      "process_vmhwm_kib": 13128,
+      "passed": true
+    },
+    {
+      "dimension": 1048576,
+      "round": 1,
+      "version": "baseline",
+      "request_bytes": 2097260,
+      "elapsed_ms": 122.431714,
+      "process_vmhwm_kib": 21312,
+      "passed": true
+    },
+    {
+      "dimension": 1048576,
+      "round": 2,
+      "version": "baseline",
+      "request_bytes": 2097260,
+      "elapsed_ms": 122.235534,
+      "process_vmhwm_kib": 21316,
+      "passed": true
+    },
+    {
+      "dimension": 1048576,
+      "round": 2,
+      "version": "candidate",
+      "request_bytes": 2097260,
+      "elapsed_ms": 123.794684,
+      "process_vmhwm_kib": 13132,
+      "passed": true
+    },
+    {
+      "dimension": 1048576,
+      "round": 3,
+      "version": "candidate",
+      "request_bytes": 2097260,
+      "elapsed_ms": 123.773944,
+      "process_vmhwm_kib": 13132,
+      "passed": true
+    },
+    {
+      "dimension": 1048576,
+      "round": 3,
+      "version": "baseline",
+      "request_bytes": 2097260,
+      "elapsed_ms": 127.327236,
+      "process_vmhwm_kib": 21316,
+      "passed": true
+    },
+    {
+      "dimension": 4194304,
+      "round": 0,
+      "version": "baseline",
+      "request_bytes": 8388716,
+      "elapsed_ms": 486.294173,
+      "process_vmhwm_kib": 76564,
+      "passed": true
+    },
+    {
+      "dimension": 4194304,
+      "round": 0,
+      "version": "candidate",
+      "request_bytes": 8388716,
+      "elapsed_ms": 496.953788,
+      "process_vmhwm_kib": 43832,
+      "passed": true
+    },
+    {
+      "dimension": 4194304,
+      "round": 1,
+      "version": "candidate",
+      "request_bytes": 8388716,
+      "elapsed_ms": 493.158866,
+      "process_vmhwm_kib": 43828,
+      "passed": true
+    },
+    {
+      "dimension": 4194304,
+      "round": 1,
+      "version": "baseline",
+      "request_bytes": 8388716,
+      "elapsed_ms": 511.569193,
+      "process_vmhwm_kib": 76564,
+      "passed": true
+    },
+    {
+      "dimension": 4194304,
+      "round": 2,
+      "version": "baseline",
+      "request_bytes": 8388716,
+      "elapsed_ms": 508.852152,
+      "process_vmhwm_kib": 76564,
+      "passed": true
+    },
+    {
+      "dimension": 4194304,
+      "round": 2,
+      "version": "candidate",
+      "request_bytes": 8388716,
+      "elapsed_ms": 487.001384,
+      "process_vmhwm_kib": 43824,
+      "passed": true
+    },
+    {
+      "dimension": 4194304,
+      "round": 3,
+      "version": "candidate",
+      "request_bytes": 8388716,
+      "elapsed_ms": 493.752077,
+      "process_vmhwm_kib": 43828,
+      "passed": true
+    },
+    {
+      "dimension": 4194304,
+      "round": 3,
+      "version": "baseline",
+      "request_bytes": 8388716,
+      "elapsed_ms": 510.850173,
+      "process_vmhwm_kib": 76564,
+      "passed": true
+    }
+  ],
+  "summary": {
+    "128": {
+      "baseline": {
+        "elapsed_ms": 0.1068,
+        "process_vmhwm_kib": 2736.0
+      },
+      "candidate": {
+        "elapsed_ms": 0.113535,
+        "process_vmhwm_kib": 2734.0
+      }
+    },
+    "131072": {
+      "baseline": {
+        "elapsed_ms": 15.221566,
+        "process_vmhwm_kib": 5268.0
+      },
+      "candidate": {
+        "elapsed_ms": 14.706355,
+        "process_vmhwm_kib": 4212.0
+      }
+    },
+    "1048576": {
+      "baseline": {
+        "elapsed_ms": 122.333624,
+        "process_vmhwm_kib": 21314.0
+      },
+      "candidate": {
+        "elapsed_ms": 123.822554,
+        "process_vmhwm_kib": 13130.0
+      }
+    },
+    "4194304": {
+      "baseline": {
+        "elapsed_ms": 509.8511625,
+        "process_vmhwm_kib": 76564.0
+      },
+      "candidate": {
+        "elapsed_ms": 493.4554715,
+        "process_vmhwm_kib": 43828.0
+      }
+    }
+  },
+  "versions": {
+    "baseline": "1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66",
+    "candidate": "6fd307974aafc6cd51fb33469fdaa4a882cd6e8bacea6ad55a59feae6b9e8ade"
+  },
+  "cpu_affinity": [
+    2,
+    3
+  ],
+  "scope": "Actual default JSONL process; valid zero-result distance projection still binds and validates its full vector. Per-process VmHWM includes startup and parsing. This is a wide-vector micro workload, not formal memory or a 128D workload speed claim."
+}

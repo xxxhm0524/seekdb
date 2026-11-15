@@ -1,0 +1,33 @@
+{
+  "passed": true,
+  "runtime_core": "c2c2b42f6782549049b14764c7a105389cb5289f",
+  "binary_sha256": "e68663238442838f14e8e34b714aa2bffd6405a501ae60936bdaba0a764a07b4",
+  "leak_detection": true,
+  "stages": [
+    {
+      "stage": "vector_literals",
+      "exit_code": 0
+    },
+    {
+      "stage": "numeric_maximum",
+      "exit_code": 0
+    },
+    {
+      "stage": "numeric_ties",
+      "exit_code": 0
+    },
+    {
+      "stage": "public",
+      "exit_code": 0
+    },
+    {
+      "stage": "parity",
+      "exit_code": 0
+    },
+    {
+      "stage": "wire",
+      "exit_code": 0
+    }
+  ],
+  "scope": "Same production source under ASan/UBSan; native diagnostic binary is not the release binary."
+}

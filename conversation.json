@@ -1,1723 +1,1726 @@
 {
- "summary": "MiniVectorDB真实开发记录与当前代码说明。当前交付源码与 a24d2cd 一致；基础实现、协议修复、优化决策、失败与复测证据均嵌在本JSON；用户记录和Agent解释分别归属，历史成绩与当前本地结果分开。",
- "rule_version": "agent-learning-evidence-v3-unbounded",
- "material_summary": "材料包含基础实现到当前交付的证据链、按模块的实现说明、原文引用、完整T/B/M摘要及未采用方案。它是学习/开发证据输入，不是平台评分报告；无自填Prompt分数或保证得分。",
- "schema_version": "minivectordb-learning-evidence-curated-v1",
- "material_type": "real",
- "synthetic": false,
- "scope": "基于历史有效6.5分材料的结构整理。当前代码说明对应a24；用户原文和选中的历史实验原文保持不变，完整记录由归档与追加文件保留。",
- "provenance": {
-  "material_kind": "real_student_agent_development_record",
-  "user_messages": "u01-u70 全部保留，未改写；u71+ 的 a24 之后性能探索不作为当前代码证据。",
-  "results": "e01-e126 中按引用选择的记录，逐字节取自团队归档；e127+ 不作为当前运行源码证据。",
-  "agent_authored": [
-   "summary",
-   "material_summary",
-   "submission_summary",
-   "formal_feedback",
-   "material_overview",
-   "agent_observations",
-   "case_studies",
-   "review_navigation",
-   "implementation_map",
-   "review_views",
-   "dimension_evidence_inventory"
+  "format": "reference-derived-actual-evidence-v1",
+  "synthetic": false,
+  "date": "2026-11-15",
+  "provenance": {
+    "code_repository": "https://github.com/juanzhi-gcb/seekdb",
+    "upstream_commit": "a08e66e299847ca539c419cfbc67593357246627",
+    "runtime_core": "c2c2b42f6782549049b14764c7a105389cb5289f",
+    "code_attribution": "The full implementation is derived from the named public reference. Codex changed three runtime files for quoted-vector buffering; the previous independent implementation is not the runtime base."
+  },
+  "owner_contribution_limit": "Owner messages are instructions and reviews. They do not establish personal implementation or technical learning. The reference author dialogue, learning evidence and platform results are not this owner contribution. All new implementation, benchmark interpretation and tests are Agent work.",
+  "messages": [
+    {
+      "role": "user",
+      "source": "actual owner message",
+      "content": "要不你也不要用docker了，你直接在a6000上面完成题目吧"
+    },
+    {
+      "role": "user",
+      "source": "actual owner message",
+      "content": "[https://github.com/juanzhi-gcb/seekdb](https://github.com/juanzhi-gcb/seekdb)\n请你对照这个仓库进行修改，这个仓库的代码已经得分了"
+    },
+    {
+      "role": "user",
+      "source": "actual owner message",
+      "content": "你能不能确定参考代码能通过的边界情况我们的代码也能完美执行"
+    },
+    {
+      "role": "user",
+      "source": "actual owner message",
+      "content": "那么我觉得你可以继续检查"
+    },
+    {
+      "role": "user",
+      "source": "actual owner message",
+      "content": "你的代码不是在别人的基础上构建的吗，为什么别人不会出现这种问题，但我们会"
+    },
+    {
+      "role": "user",
+      "source": "actual owner message",
+      "content": "要不你直接在别人的代码基础上优化吧，我们现在的代码就废弃了吧"
+    },
+    {
+      "role": "assistant",
+      "source": "Codex visible progress, actual excerpt",
+      "content": "可以，停止修补现有实现，改为以已核对得分反馈的参考版本为基础优化。现有代码和证据保留归档。"
+    },
+    {
+      "role": "assistant",
+      "source": "Codex visible progress, actual excerpt",
+      "content": "三项无收益的尝试都已排除。现在测试一个较小的改动：减少向量解析时的中间缓冲分配，保持参考版本的数值转换结果和报错顺序，再检查端到端性能是否有稳定收益。"
+    },
+    {
+      "role": "assistant",
+      "source": "Codex visible progress, actual excerpt",
+      "content": "缓冲优化的收益已测到：约 419 万维的合法查询，进程峰值内存从约 **74.8 MiB 降至 42.8 MiB**。标准 128 维负载的速度没有稳定提升，我不会宣称它更快。"
+    }
   ],
-  "student_evidence": "rubric_instances[*].student_evidence 指向 conversations 中的学生原话字符串"
- },
- "baseline_commit": "a24d2cd764027adec7371f268f99ccdca2307032",
- "submission_summary": {
-  "source": "agent_authored_summary",
-  "entry_path": "agent/conversation.json",
-  "purpose": "代码来源、开发证据与版本索引，不是评审输出。",
-  "historical_formal": "a24d2cd7 正式 MySQL 通过，E=3977.995012，Prompt 合并无效；T/B/M 与逐轮评审未提供。",
-  "latest_user_report": "a24 运行代码再次正式提测：MySQL 通过，E=3615.639045，Prompt 仍为合并无效提示；平台未提供该次 commit 绑定或分项。",
-  "candidate": "当前分支运行源码与 a24d2cd 一致（src/include/tests/CMakeLists.txt/Dockerfile 树相同）；本地交付验证见 e125/e126。",
-  "boundary": "本地/公开准入不能替代隐藏准入；不把本地比例换算为官方 E 或 Prompt 分数。"
- },
- "formal_feedback": {
-  "source": "user_supplied_platform_result",
-  "reported_commit": "a24d2cd764027adec7371f268f99ccdca2307032",
-  "mysql_admission": "passed",
-  "performance_E_text": "3977.995012",
-  "prompt_result_text": "Prompt结果无效、待复核、超出平台0–100范围或缺少材料摘要，本项不参与排名；未截断或换算本地分数。",
-  "latest_user_report": {
-   "performance_E_text": "3615.639045",
-   "prompt_result_text": "Prompt结果无效、待复核、超出平台0–100范围或缺少材料摘要，本项不参与排名；未截断或换算本地分数。",
-   "reported_commit": null,
-   "note": "用户最新反馈；平台未提供 commit 绑定、T/B/M 分项或 Prompt 逐轮报告。"
-  },
-  "scope": "历史与最新用户反馈；不能把 E 的原始口径当作 0–100 分，也不能归因未提供的分项。"
- },
- "material_overview": {
-  "source": "agent_retrospective",
-  "prepared_on": "2026-11-14",
-  "reading_order": [
-   "source_identity 与 submission_summary 说明当前运行源码固定为 a24，以及历史/最新正式反馈的边界。",
-   "rubric_instances 是五维证据入口：P1-P2 问题理解、T1 技术理解与迁移、V1-V4 独立验证、E1-E2 实验迭代、R1-R2 取舍与反思。",
-   "implementation_map 把模块、源码哈希、用户请求和实际结果连成可核对链。",
-   "conversations 与 experiments 只保留 a24 形成之前的真实记录；Agent 解释与用户原文分别归属。"
+  "experiments": [
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/baseline-ctest.json",
+      "sha256": "aae8e4d2169f35a5fe0ea984111368a41f0c5c65417422bd536a2d2b5c0d2d97",
+      "retained_experiment": true,
+      "result": {
+        "passed": true,
+        "tests": 70,
+        "failures": [],
+        "xml_sha256": "6f793a208abaf23c5399694ada23eced4f7d81c167a4c5a9c4597b076ebb937b"
+      }
+    },
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/candidate-ctest.json",
+      "sha256": "6a1ccc4193e76b97568e7f3984f1211a5dc12a1bf5d4ee9f799bfb9449086926",
+      "retained_experiment": true,
+      "result": {
+        "passed": true,
+        "tests": 70,
+        "failures": [],
+        "xml_sha256": "ba6d6fa5f77df7d577e5cea2f65c6c105b85e3e086950c1f73c6ca8c408a023e"
+      }
+    },
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/baseline-public.json",
+      "sha256": "d53f5c689e8c0f893be5cbba211959149924130f3140c7f538b69b134ae0cbcd",
+      "retained_experiment": true,
+      "result": {
+        "scope": "public-protocol-check",
+        "passed": true,
+        "cases": [
+          {
+            "id": "sql_crud",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 44
+          },
+          {
+            "id": "sql_comparisons",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 46
+          },
+          {
+            "id": "sql_ordering",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 41
+          },
+          {
+            "id": "sql_empty",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 40
+          },
+          {
+            "id": "sql_primary_key",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 37
+          },
+          {
+            "id": "sql_unicode",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 40
+          },
+          {
+            "id": "sql_bigint",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 42
+          },
+          {
+            "id": "sql_unsupported",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 36
+          },
+          {
+            "id": "storage_restart",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 85
+          },
+          {
+            "id": "vector_euclidean",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 46
+          },
+          {
+            "id": "transaction_commit",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 36
+          },
+          {
+            "id": "transaction_rollback",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 44
+          },
+          {
+            "id": "storage_mutations",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 73
+          },
+          {
+            "id": "storage_multiple_tables",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 71
+          },
+          {
+            "id": "vector_ties_and_filter",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 36
+          },
+          {
+            "id": "vector_float32",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 35
+          },
+          {
+            "id": "vector_index_maintenance",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 76
+          },
+          {
+            "id": "transaction_failed_insert",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 81
+          },
+          {
+            "id": "transaction_autocommit_atomic",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 71
+          },
+          {
+            "id": "transaction_shutdown_rollback",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 83
+          }
+        ],
+        "note": "Local diagnostic only; no performance/Agent scores or platform callbacks."
+      }
+    },
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/candidate-public.json",
+      "sha256": "26c8e80c179b932419c79ffca547f24d6929d9138cf08e63fa28887251cdbe8b",
+      "retained_experiment": true,
+      "result": {
+        "scope": "public-protocol-check",
+        "passed": true,
+        "cases": [
+          {
+            "id": "sql_crud",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 51
+          },
+          {
+            "id": "sql_comparisons",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 40
+          },
+          {
+            "id": "sql_ordering",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 38
+          },
+          {
+            "id": "sql_empty",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 41
+          },
+          {
+            "id": "sql_primary_key",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 43
+          },
+          {
+            "id": "sql_unicode",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 36
+          },
+          {
+            "id": "sql_bigint",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 34
+          },
+          {
+            "id": "sql_unsupported",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 41
+          },
+          {
+            "id": "storage_restart",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 73
+          },
+          {
+            "id": "vector_euclidean",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 36
+          },
+          {
+            "id": "transaction_commit",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 42
+          },
+          {
+            "id": "transaction_rollback",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 40
+          },
+          {
+            "id": "storage_mutations",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 70
+          },
+          {
+            "id": "storage_multiple_tables",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 89
+          },
+          {
+            "id": "vector_ties_and_filter",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 42
+          },
+          {
+            "id": "vector_float32",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 39
+          },
+          {
+            "id": "vector_index_maintenance",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 80
+          },
+          {
+            "id": "transaction_failed_insert",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 87
+          },
+          {
+            "id": "transaction_autocommit_atomic",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 73
+          },
+          {
+            "id": "transaction_shutdown_rollback",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 82
+          }
+        ],
+        "note": "Local diagnostic only; no performance/Agent scores or platform callbacks."
+      }
+    },
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/parity.json",
+      "sha256": "1a3538d39e83510c9130657ec46e0b1fc6c79db0d68ee167977b2f1cc61fd96d",
+      "retained_experiment": true,
+      "result": {
+        "passed": true,
+        "observations": 7862,
+        "qualifying_failure_count": 0,
+        "failures": [],
+        "reference_rejections_accepted_by_candidate": [],
+        "seed": 120055,
+        "phase": "all",
+        "candidate_sha256": "6fd307974aafc6cd51fb33469fdaa4a882cd6e8bacea6ad55a59feae6b9e8ade",
+        "reference_sha256": "1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66",
+        "reference_commit": "a08e66e299847ca539c419cfbc67593357246627",
+        "scope": "Actual hardened native processes; finite differential checks, no formal score."
+      }
+    },
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/sanitizers.json",
+      "sha256": "9d2d986157dd9956e4210d582ebfa78cecd26b6f004ec8a2fdf21e8d9b793966",
+      "retained_experiment": true,
+      "result": {
+        "passed": true,
+        "runtime_core": "c2c2b42f6782549049b14764c7a105389cb5289f",
+        "binary_sha256": "e68663238442838f14e8e34b714aa2bffd6405a501ae60936bdaba0a764a07b4",
+        "leak_detection": true,
+        "stages": [
+          {
+            "stage": "vector_literals",
+            "exit_code": 0
+          },
+          {
+            "stage": "numeric_maximum",
+            "exit_code": 0
+          },
+          {
+            "stage": "numeric_ties",
+            "exit_code": 0
+          },
+          {
+            "stage": "public",
+            "exit_code": 0
+          },
+          {
+            "stage": "parity",
+            "exit_code": 0
+          },
+          {
+            "stage": "wire",
+            "exit_code": 0
+          }
+        ],
+        "scope": "Same production source under ASan/UBSan; native diagnostic binary is not the release binary."
+      }
+    },
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/asan-public.json",
+      "sha256": "c98758c739a6876268a9b6c1600f8525f28b47de0e5d875c7360247be74f1e21",
+      "retained_experiment": true,
+      "result": {
+        "scope": "public-protocol-check",
+        "passed": true,
+        "cases": [
+          {
+            "id": "sql_crud",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 92
+          },
+          {
+            "id": "sql_comparisons",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 91
+          },
+          {
+            "id": "sql_ordering",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 87
+          },
+          {
+            "id": "sql_empty",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 92
+          },
+          {
+            "id": "sql_primary_key",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 92
+          },
+          {
+            "id": "sql_unicode",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 89
+          },
+          {
+            "id": "sql_bigint",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 85
+          },
+          {
+            "id": "sql_unsupported",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 90
+          },
+          {
+            "id": "storage_restart",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 182
+          },
+          {
+            "id": "vector_euclidean",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 88
+          },
+          {
+            "id": "transaction_commit",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 87
+          },
+          {
+            "id": "transaction_rollback",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 97
+          },
+          {
+            "id": "storage_mutations",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 184
+          },
+          {
+            "id": "storage_multiple_tables",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 178
+          },
+          {
+            "id": "vector_ties_and_filter",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 90
+          },
+          {
+            "id": "vector_float32",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 88
+          },
+          {
+            "id": "vector_index_maintenance",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 176
+          },
+          {
+            "id": "transaction_failed_insert",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 178
+          },
+          {
+            "id": "transaction_autocommit_atomic",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 170
+          },
+          {
+            "id": "transaction_shutdown_rollback",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 170
+          }
+        ],
+        "note": "Local diagnostic only; no performance/Agent scores or platform callbacks."
+      }
+    },
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/asan-parity.json",
+      "sha256": "5e7e6593363a43a30b83e385c2a4da74e0b31d5614152b6abdf4bc25a0507f24",
+      "retained_experiment": true,
+      "result": {
+        "passed": true,
+        "observations": 7862,
+        "qualifying_failure_count": 0,
+        "failures": [],
+        "reference_rejections_accepted_by_candidate": [],
+        "seed": 120055,
+        "phase": "all",
+        "candidate_sha256": "e68663238442838f14e8e34b714aa2bffd6405a501ae60936bdaba0a764a07b4",
+        "reference_sha256": "1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66",
+        "reference_commit": "a08e66e299847ca539c419cfbc67593357246627",
+        "scope": "Actual hardened native processes; finite differential checks, no formal score."
+      }
+    },
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/asan-wire.json",
+      "sha256": "ff837a7d2581766c345fae38df3ddbb11b3aec568df2a9e6224529ec5412103e",
+      "retained_experiment": true,
+      "result": {
+        "passed": true,
+        "observations": 6,
+        "results": [
+          {
+            "category": "id_near_response_limit",
+            "id_bytes": 1,
+            "request_bytes": 65,
+            "request_within_reference_limit": true,
+            "ours": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "reference": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "qualifying_failure": false
+          },
+          {
+            "category": "id_near_response_limit",
+            "id_bytes": 16776704,
+            "request_bytes": 16776768,
+            "request_within_reference_limit": true,
+            "ours": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "reference": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "qualifying_failure": false
+          },
+          {
+            "category": "id_near_response_limit",
+            "id_bytes": 16776960,
+            "request_bytes": 16777024,
+            "request_within_reference_limit": true,
+            "ours": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "reference": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "qualifying_failure": false
+          },
+          {
+            "category": "id_near_response_limit",
+            "id_bytes": 16777000,
+            "request_bytes": 16777064,
+            "request_within_reference_limit": true,
+            "ours": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "reference": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "qualifying_failure": false
+          },
+          {
+            "category": "id_near_response_limit",
+            "id_bytes": 16777088,
+            "request_bytes": 16777152,
+            "request_within_reference_limit": true,
+            "ours": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "reference": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "qualifying_failure": false
+          },
+          {
+            "category": "id_near_response_limit",
+            "id_bytes": 16777120,
+            "request_bytes": 16777184,
+            "request_within_reference_limit": true,
+            "ours": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "reference": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "qualifying_failure": false
+          }
+        ],
+        "candidate_sha256": "e68663238442838f14e8e34b714aa2bffd6405a501ae60936bdaba0a764a07b4",
+        "reference_sha256": "1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66",
+        "scope": "Actual JSONL requests within the unchanged official response bound; IDs summarized by size, no formal score."
+      }
+    },
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/default-contract.json",
+      "sha256": "439958966c4094cac23c17b7a426b65815db3a0667e7212031d64244075c0169",
+      "retained_experiment": true,
+      "result": {
+        "passed": true,
+        "checks": 18,
+        "environment": {
+          "uid": [
+            "65534",
+            "65534",
+            "65534",
+            "65534"
+          ],
+          "no_new_privileges": "1",
+          "root_flags": 4097,
+          "data_flags": 4096,
+          "routes": [],
+          "cgroup": "0::/mvd-reference-opt-20261115-39q88lpc\n"
+        },
+        "entrypoint_arguments": [],
+        "ready": "Original official Session.start verified the ready object",
+        "shutdown_eof_and_sigkill_rollback": true,
+        "failed_statement_preserves_prior_transaction": true,
+        "same_index_name_on_distinct_tables": true,
+        "binary_sha256": "6fd307974aafc6cd51fb33469fdaa4a882cd6e8bacea6ad55a59feae6b9e8ade"
+      }
+    },
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/benchmark.json",
+      "sha256": "b4bfff9617c7b4c24b6b92c4bc574d0c38b6d1739ffa0783ab84c2d51e17a80d",
+      "retained_experiment": true,
+      "result": {
+        "passed": true,
+        "rows": 10000,
+        "dimensions": 128,
+        "queries": 1000,
+        "rounds": 6,
+        "batch": 100,
+        "warmup": 10,
+        "cpu_affinity": [
+          2,
+          3
+        ],
+        "versions": {
+          "baseline": {
+            "binary": "/tmp/mvd-reference-opt-20261115-39q88lpc/build/baseline",
+            "sha256": "1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66"
+          },
+          "candidate": {
+            "binary": "/tmp/mvd-reference-opt-20261115-39q88lpc/build/numeric",
+            "sha256": "6fd307974aafc6cd51fb33469fdaa4a882cd6e8bacea6ad55a59feae6b9e8ade"
+          }
+        },
+        "fixture_sha256": "8c5f1e90a45d840735849349b800d013d53ccc3fbf38ee35d803594a294c2d95",
+        "oracle_source_sha256": "d818386c615725b3f525b4c7b463decce16ee8c7d82a4f616ce832f081010ae7",
+        "oracle_binary_sha256": "338e9487c2adb1eb54a074e411d646ed40e62b9a24befa568968bbc701b36459",
+        "samples": 48,
+        "verified_queries": 48000,
+        "summary": {
+          "bigint-idx0": {
+            "medians": {
+              "baseline": {
+                "write_ms": 487.14772399999987,
+                "query_ms": 166.13865699999982,
+                "cycle_ms": 653.2266299999999
+              },
+              "candidate": {
+                "write_ms": 484.477298,
+                "query_ms": 165.84243899999996,
+                "cycle_ms": 650.1364715000002
+              }
+            },
+            "paired_speedups": {
+              "write_ms": [
+                1.0114075110671108,
+                1.0057347043335187,
+                1.015305786216999,
+                0.998205346322219,
+                1.0052574555059968,
+                0.9941029095732742
+              ],
+              "query_ms": [
+                1.0031354850959366,
+                1.0014287428962427,
+                0.9996615292595603,
+                1.0060903435687778,
+                1.005337573562952,
+                0.9432722253738599
+              ],
+              "cycle_ms": [
+                1.009297599997779,
+                1.0046383412100541,
+                1.0112903160366224,
+                1.0002270752255262,
+                1.0052778656257637,
+                0.9806081766847415
+              ]
+            },
+            "median_paired_speedup": {
+              "write_ms": 1.0054960799197579,
+              "query_ms": 1.0022821139960896,
+              "cycle_ms": 1.004958103417909
+            }
+          },
+          "bigint-idx1": {
+            "medians": {
+              "baseline": {
+                "write_ms": 487.75586899999985,
+                "query_ms": 167.62885799999998,
+                "cycle_ms": 693.0206379999998
+              },
+              "candidate": {
+                "write_ms": 487.29400449999997,
+                "query_ms": 166.4763970000002,
+                "cycle_ms": 690.0862735000001
+              }
+            },
+            "paired_speedups": {
+              "write_ms": [
+                0.9939591710389505,
+                1.0096378404132045,
+                0.9899852421690462,
+                1.0093421584322915,
+                0.9814372123650246,
+                0.9974293557480985
+              ],
+              "query_ms": [
+                1.0083432940276842,
+                1.0055061426798515,
+                1.0425806692860282,
+                0.9966751743545276,
+                1.0013668140067085,
+                1.004380193421224
+              ],
+              "cycle_ms": [
+                0.997884871535504,
+                1.0085544611354187,
+                1.0030779367144997,
+                1.006096977238623,
+                0.986960493267583,
+                0.9999739604010938
+              ]
+            },
+            "median_paired_speedup": {
+              "write_ms": 0.9956942633935245,
+              "query_ms": 1.0049431680505378,
+              "cycle_ms": 1.0015259485577968
+            }
+          },
+          "text-idx0": {
+            "medians": {
+              "baseline": {
+                "write_ms": 488.07584,
+                "query_ms": 167.5366684999999,
+                "cycle_ms": 653.5943454999999
+              },
+              "candidate": {
+                "write_ms": 481.18911249999996,
+                "query_ms": 166.62300650000014,
+                "cycle_ms": 651.3103184999998
+              }
+            },
+            "paired_speedups": {
+              "write_ms": [
+                1.001099754071174,
+                1.0095476683882425,
+                1.0141696755373995,
+                1.0014935948913215,
+                1.0263931622702267,
+                1.0019417938648876
+              ],
+              "query_ms": [
+                0.9921326519432845,
+                1.0029431131712878,
+                1.0140613623466748,
+                1.0226001222720107,
+                0.6249899376802331,
+                0.991349206832585
+              ],
+              "cycle_ms": [
+                0.9987741462546628,
+                1.0078663497723575,
+                1.0141422319936189,
+                1.006929816993004,
+                0.8804942375897644,
+                0.9992388205007166
+              ]
+            },
+            "median_paired_speedup": {
+              "write_ms": 1.005744731126565,
+              "query_ms": 0.9975378825572861,
+              "cycle_ms": 1.0030843187468603
+            }
+          },
+          "text-idx1": {
+            "medians": {
+              "baseline": {
+                "write_ms": 482.5624679999999,
+                "query_ms": 167.36302599999982,
+                "cycle_ms": 693.9902644999997
+              },
+              "candidate": {
+                "write_ms": 494.48732199999995,
+                "query_ms": 167.23558499999993,
+                "cycle_ms": 699.1759555000001
+              }
+            },
+            "paired_speedups": {
+              "write_ms": [
+                0.984766276862121,
+                0.8303914970253965,
+                0.9570046299717702,
+                1.0083929888716585,
+                0.9945169549084162,
+                0.9780225363842738
+              ],
+              "query_ms": [
+                1.0009843151159354,
+                1.1751970684519908,
+                0.9882296545850703,
+                1.0014016333790763,
+                1.1761119448862851,
+                0.9445467627320073
+              ],
+              "cycle_ms": [
+                0.991588706702123,
+                0.9115494970776715,
+                0.9651405463071647,
+                1.0051792602613807,
+                1.0396383757195267,
+                0.971766514791852
+              ]
+            },
+            "median_paired_speedup": {
+              "write_ms": 0.9813944066231974,
+              "query_ms": 1.0011929742475059,
+              "cycle_ms": 0.9816776107469876
+            }
+          }
+        },
+        "timing": "Sum of actual JSONL request round trips; input and oracle generation, warmup, verification and restart excluded. Fresh database per sample; version/order counterbalanced.",
+        "resources": "Per-process VmHWM and /proc/io retained; not formal T/B/M. CPU quota and memory ceiling enforced by launcher.",
+        "formal_score": null
+      }
+    },
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/wide-bind.json",
+      "sha256": "b25f15e33eb05f2b5b97096708732160fa075c7c7cf64c2a8e85972c104cedbd",
+      "retained_experiment": true,
+      "result": {
+        "passed": true,
+        "summary": {
+          "128": {
+            "baseline": {
+              "elapsed_ms": 0.1068,
+              "process_vmhwm_kib": 2736.0
+            },
+            "candidate": {
+              "elapsed_ms": 0.113535,
+              "process_vmhwm_kib": 2734.0
+            }
+          },
+          "131072": {
+            "baseline": {
+              "elapsed_ms": 15.221566,
+              "process_vmhwm_kib": 5268.0
+            },
+            "candidate": {
+              "elapsed_ms": 14.706355,
+              "process_vmhwm_kib": 4212.0
+            }
+          },
+          "1048576": {
+            "baseline": {
+              "elapsed_ms": 122.333624,
+              "process_vmhwm_kib": 21314.0
+            },
+            "candidate": {
+              "elapsed_ms": 123.822554,
+              "process_vmhwm_kib": 13130.0
+            }
+          },
+          "4194304": {
+            "baseline": {
+              "elapsed_ms": 509.8511625,
+              "process_vmhwm_kib": 76564.0
+            },
+            "candidate": {
+              "elapsed_ms": 493.4554715,
+              "process_vmhwm_kib": 43828.0
+            }
+          }
+        },
+        "versions": {
+          "baseline": "1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66",
+          "candidate": "6fd307974aafc6cd51fb33469fdaa4a882cd6e8bacea6ad55a59feae6b9e8ade"
+        },
+        "cpu_affinity": [
+          2,
+          3
+        ],
+        "scope": "Actual default JSONL process; valid zero-result distance projection still binds and validates its full vector. Per-process VmHWM includes startup and parsing. This is a wide-vector micro workload, not formal memory or a 128D workload speed claim."
+      }
+    },
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/rejected-ipo.json",
+      "sha256": "9cd7901cb63e99c08485462e3ab8b131b6595a47895bfdd90665b13b50fc3c28",
+      "retained_experiment": false,
+      "result": {
+        "passed": true,
+        "rows": 10000,
+        "dimensions": 128,
+        "queries": 1000,
+        "rounds": 3,
+        "batch": 100,
+        "warmup": 10,
+        "versions": {
+          "baseline": {
+            "binary": "/tmp/mvd-reference-opt-20261115-39q88lpc/build/baseline",
+            "sha256": "1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66"
+          },
+          "candidate": {
+            "binary": "/tmp/mvd-reference-opt-20261115-39q88lpc/build/ipo",
+            "sha256": "fa75589918db739d6223ec171e97d79397870e14c19ee8785b586e78e286f662"
+          }
+        },
+        "fixture_sha256": "8c5f1e90a45d840735849349b800d013d53ccc3fbf38ee35d803594a294c2d95",
+        "oracle_source_sha256": "d818386c615725b3f525b4c7b463decce16ee8c7d82a4f616ce832f081010ae7",
+        "oracle_binary_sha256": "338e9487c2adb1eb54a074e411d646ed40e62b9a24befa568968bbc701b36459",
+        "samples": 24,
+        "verified_queries": 24000,
+        "summary": {
+          "bigint-idx0": {
+            "medians": {
+              "baseline": {
+                "write_ms": 495.67236699999984,
+                "query_ms": 241.68346500000007,
+                "cycle_ms": 737.355832
+              },
+              "candidate": {
+                "write_ms": 553.0614580000001,
+                "query_ms": 251.95707399999986,
+                "cycle_ms": 805.018532
+              }
+            },
+            "paired_speedups": {
+              "write_ms": [
+                0.8918581287217452,
+                0.8591533513434926,
+                0.9452090464168666
+              ],
+              "query_ms": [
+                0.7369685044048416,
+                1.050051248430935,
+                0.9663683485667857
+              ],
+              "cycle_ms": [
+                0.8433803173614394,
+                0.9183269968269038,
+                0.9520416212597126
+              ]
+            },
+            "median_paired_speedup": {
+              "write_ms": 0.8918581287217452,
+              "query_ms": 0.9663683485667857,
+              "cycle_ms": 0.9183269968269038
+            }
+          },
+          "bigint-idx1": {
+            "medians": {
+              "baseline": {
+                "write_ms": 571.886355,
+                "query_ms": 284.30105,
+                "cycle_ms": 887.3552070000001
+              },
+              "candidate": {
+                "write_ms": 585.2107699999999,
+                "query_ms": 320.09013699999997,
+                "cycle_ms": 942.456411
+              }
+            },
+            "paired_speedups": {
+              "write_ms": [
+                0.9566066274443698,
+                0.9371353584817481,
+                0.977231425525542
+              ],
+              "query_ms": [
+                0.6225704074099608,
+                0.9682731441084879,
+                0.8991585061850059
+              ],
+              "cycle_ms": [
+                0.8448769295428884,
+                0.9486607760589536,
+                0.9474280057711868
+              ]
+            },
+            "median_paired_speedup": {
+              "write_ms": 0.9566066274443698,
+              "query_ms": 0.8991585061850059,
+              "cycle_ms": 0.9474280057711868
+            }
+          },
+          "text-idx0": {
+            "medians": {
+              "baseline": {
+                "write_ms": 559.7520390000003,
+                "query_ms": 300.2963400000004,
+                "cycle_ms": 858.1654680000001
+              },
+              "candidate": {
+                "write_ms": 573.9884750000003,
+                "query_ms": 291.49241399999966,
+                "cycle_ms": 865.4808889999999
+              }
+            },
+            "paired_speedups": {
+              "write_ms": [
+                1.0611841981199779,
+                0.913593914930086,
+                0.9571912305304442
+              ],
+              "query_ms": [
+                1.2243895473402175,
+                1.0302029335144232,
+                0.9865218598000791
+              ],
+              "cycle_ms": [
+                1.1166900972225915,
+                0.952867623631607,
+                0.967181336526069
+              ]
+            },
+            "median_paired_speedup": {
+              "write_ms": 0.9571912305304442,
+              "query_ms": 1.0302029335144232,
+              "cycle_ms": 0.967181336526069
+            }
+          },
+          "text-idx1": {
+            "medians": {
+              "baseline": {
+                "write_ms": 567.8343839999999,
+                "query_ms": 302.58435599999956,
+                "cycle_ms": 913.3345639999998
+              },
+              "candidate": {
+                "write_ms": 581.0797280000002,
+                "query_ms": 264.28334399999994,
+                "cycle_ms": 884.9138360000001
+              }
+            },
+            "paired_speedups": {
+              "write_ms": [
+                0.8491178976389963,
+                0.9866157712770793,
+                0.9896421829852762
+              ],
+              "query_ms": [
+                0.9544776798344129,
+                1.4229085495808038,
+                0.9459288376427512
+              ],
+              "cycle_ms": [
+                0.8836063254863604,
+                1.0953653495073195,
+                0.9730501695299504
+              ]
+            },
+            "median_paired_speedup": {
+              "write_ms": 0.9866157712770793,
+              "query_ms": 0.9544776798344129,
+              "cycle_ms": 0.9730501695299504
+            }
+          }
+        },
+        "timing": "Sum of actual JSONL request round trips; input and oracle generation, warmup, verification and restart excluded. Fresh database per sample; version/order counterbalanced.",
+        "resources": "Per-process VmHWM and /proc/io retained; not formal T/B/M. CPU quota and memory ceiling enforced by launcher.",
+        "formal_score": null
+      }
+    },
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/rejected-fp32-only.json",
+      "sha256": "a839b059fe21a2606912d318e8f9608ef3469ac698991b7149463f08504be300",
+      "retained_experiment": false,
+      "result": {
+        "passed": true,
+        "rows": 10000,
+        "dimensions": 128,
+        "queries": 1000,
+        "rounds": 2,
+        "batch": 100,
+        "warmup": 10,
+        "cpu_affinity": [
+          2,
+          3
+        ],
+        "versions": {
+          "baseline": {
+            "binary": "/tmp/mvd-reference-opt-20261115-39q88lpc/build/baseline",
+            "sha256": "1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66"
+          },
+          "candidate": {
+            "binary": "/tmp/mvd-reference-opt-20261115-39q88lpc/build/fp32-only",
+            "sha256": "b3dc878de8312a36e20ec0e78274e9ee64fafa29e31e1fc5dfe455782b8942d4"
+          }
+        },
+        "fixture_sha256": "8c5f1e90a45d840735849349b800d013d53ccc3fbf38ee35d803594a294c2d95",
+        "oracle_source_sha256": "d818386c615725b3f525b4c7b463decce16ee8c7d82a4f616ce832f081010ae7",
+        "oracle_binary_sha256": "338e9487c2adb1eb54a074e411d646ed40e62b9a24befa568968bbc701b36459",
+        "samples": 16,
+        "verified_queries": 16000,
+        "summary": {
+          "bigint-idx0": {
+            "medians": {
+              "baseline": {
+                "write_ms": 490.50203550000003,
+                "query_ms": 168.84548150000012,
+                "cycle_ms": 659.3475170000002
+              },
+              "candidate": {
+                "write_ms": 492.66725099999996,
+                "query_ms": 181.59188550000005,
+                "cycle_ms": 674.2591365000001
+              }
+            },
+            "paired_speedups": {
+              "write_ms": [
+                1.001364079145932,
+                0.9898887748284627
+              ],
+              "query_ms": [
+                0.9222673344355021,
+                0.9373068381970044
+              ],
+              "cycle_ms": [
+                0.9800459044792512,
+                0.9757378006386138
+              ]
+            },
+            "median_paired_speedup": {
+              "write_ms": 0.9956264269871973,
+              "query_ms": 0.9297870863162533,
+              "cycle_ms": 0.9778918525589325
+            }
+          },
+          "bigint-idx1": {
+            "medians": {
+              "baseline": {
+                "write_ms": 494.0806419999999,
+                "query_ms": 167.80118000000004,
+                "cycle_ms": 697.86758
+              },
+              "candidate": {
+                "write_ms": 490.9958105000002,
+                "query_ms": 183.75363749999997,
+                "cycle_ms": 711.4514565000002
+              }
+            },
+            "paired_speedups": {
+              "write_ms": [
+                1.0086707384504823,
+                1.0039109335915075
+              ],
+              "query_ms": [
+                0.914570446598391,
+                0.911803016970501
+              ],
+              "cycle_ms": [
+                0.9823503393243522,
+                0.9794698160318493
+              ]
+            },
+            "median_paired_speedup": {
+              "write_ms": 1.006290836020995,
+              "query_ms": 0.913186731784446,
+              "cycle_ms": 0.9809100776781008
+            }
+          },
+          "text-idx0": {
+            "medians": {
+              "baseline": {
+                "write_ms": 493.37058649999994,
+                "query_ms": 184.96410699999993,
+                "cycle_ms": 678.3346935
+              },
+              "candidate": {
+                "write_ms": 506.460106,
+                "query_ms": 184.12864350000007,
+                "cycle_ms": 690.5887495000001
+              }
+            },
+            "paired_speedups": {
+              "write_ms": [
+                0.9974709203297861,
+                0.952106310244775
+              ],
+              "query_ms": [
+                1.1005005471801264,
+                0.9097838873513158
+              ],
+              "cycle_ms": [
+                1.0253862150815602,
+                0.9409969155588593
+              ]
+            },
+            "median_paired_speedup": {
+              "write_ms": 0.9747886152872806,
+              "query_ms": 1.0051422172657212,
+              "cycle_ms": 0.9831915653202098
+            }
+          },
+          "text-idx1": {
+            "medians": {
+              "baseline": {
+                "write_ms": 488.11145950000014,
+                "query_ms": 168.82077700000013,
+                "cycle_ms": 693.3811095000002
+              },
+              "candidate": {
+                "write_ms": 492.063801,
+                "query_ms": 184.11462600000002,
+                "cycle_ms": 712.494895
+              }
+            },
+            "paired_speedups": {
+              "write_ms": [
+                0.998664389194076,
+                0.9853767190028488
+              ],
+              "query_ms": [
+                0.9170852738453825,
+                0.9167824248576211
+              ],
+              "cycle_ms": [
+                0.9771927964136796,
+                0.9692053550339844
+              ]
+            },
+            "median_paired_speedup": {
+              "write_ms": 0.9920205540984623,
+              "query_ms": 0.9169338493515018,
+              "cycle_ms": 0.973199075723832
+            }
+          }
+        },
+        "timing": "Sum of actual JSONL request round trips; input and oracle generation, warmup, verification and restart excluded. Fresh database per sample; version/order counterbalanced.",
+        "resources": "Per-process VmHWM and /proc/io retained; not formal T/B/M. CPU quota and memory ceiling enforced by launcher.",
+        "formal_score": null
+      }
+    },
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/rejected-no-bound.json",
+      "sha256": "5635d68a37d78da328628a6b86ed20f345dca8fa58dc60e9076a839d2e7a2844",
+      "retained_experiment": false,
+      "result": {
+        "passed": true,
+        "rows": 10000,
+        "dimensions": 128,
+        "queries": 1000,
+        "rounds": 2,
+        "batch": 100,
+        "warmup": 10,
+        "cpu_affinity": [
+          2,
+          3
+        ],
+        "versions": {
+          "baseline": {
+            "binary": "/tmp/mvd-reference-opt-20261115-39q88lpc/build/baseline",
+            "sha256": "1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66"
+          },
+          "candidate": {
+            "binary": "/tmp/mvd-reference-opt-20261115-39q88lpc/build/no-bound",
+            "sha256": "6da740a0f6710f6ecfe57a0d0ebef165057aebc42034cdffe7db9c28a704b6ee"
+          }
+        },
+        "fixture_sha256": "8c5f1e90a45d840735849349b800d013d53ccc3fbf38ee35d803594a294c2d95",
+        "oracle_source_sha256": "d818386c615725b3f525b4c7b463decce16ee8c7d82a4f616ce832f081010ae7",
+        "oracle_binary_sha256": "338e9487c2adb1eb54a074e411d646ed40e62b9a24befa568968bbc701b36459",
+        "samples": 16,
+        "verified_queries": 16000,
+        "summary": {
+          "bigint-idx0": {
+            "medians": {
+              "baseline": {
+                "write_ms": 493.40093649999994,
+                "query_ms": 233.6681075000002,
+                "cycle_ms": 727.0690440000001
+              },
+              "candidate": {
+                "write_ms": 494.02983200000006,
+                "query_ms": 285.9492789999999,
+                "cycle_ms": 779.9791109999999
+              }
+            },
+            "paired_speedups": {
+              "write_ms": [
+                0.9980719868984027,
+                0.999381433220704
+              ],
+              "query_ms": [
+                1.0544263460659113,
+                0.5799214329927759
+              ],
+              "cycle_ms": [
+                1.018737698531745,
+                0.8456439347065108
+              ]
+            },
+            "median_paired_speedup": {
+              "write_ms": 0.9987267100595534,
+              "query_ms": 0.8171738895293437,
+              "cycle_ms": 0.9321908166191278
+            }
+          },
+          "bigint-idx1": {
+            "medians": {
+              "baseline": {
+                "write_ms": 488.54618500000004,
+                "query_ms": 173.23570150000006,
+                "cycle_ms": 697.9119995000001
+              },
+              "candidate": {
+                "write_ms": 492.4480609999999,
+                "query_ms": 285.97652900000014,
+                "cycle_ms": 814.545093
+              }
+            },
+            "paired_speedups": {
+              "write_ms": [
+                0.9909748878675559,
+                0.9931787858407751
+              ],
+              "query_ms": [
+                0.6267265052718854,
+                0.5848637692489836
+              ],
+              "cycle_ms": [
+                0.863888255418446,
+                0.849736745721035
+              ]
+            },
+            "median_paired_speedup": {
+              "write_ms": 0.9920768368541655,
+              "query_ms": 0.6057951372604345,
+              "cycle_ms": 0.8568125005697405
+            }
+          },
+          "text-idx0": {
+            "medians": {
+              "baseline": {
+                "write_ms": 509.4288670000001,
+                "query_ms": 205.33924250000007,
+                "cycle_ms": 714.7681095000003
+              },
+              "candidate": {
+                "write_ms": 489.59321950000003,
+                "query_ms": 286.5050090000001,
+                "cycle_ms": 776.0982285000001
+              }
+            },
+            "paired_speedups": {
+              "write_ms": [
+                0.9737355625668576,
+                1.108490010192621
+              ],
+              "query_ms": [
+                0.5970348326749856,
+                0.8368766685827581
+              ],
+              "cycle_ms": [
+                0.8352633122603799,
+                1.007789514665829
+              ]
+            },
+            "median_paired_speedup": {
+              "write_ms": 1.0411127863797391,
+              "query_ms": 0.7169557506288718,
+              "cycle_ms": 0.9215264134631044
+            }
+          },
+          "text-idx1": {
+            "medians": {
+              "baseline": {
+                "write_ms": 489.14766050000014,
+                "query_ms": 166.23664550000007,
+                "cycle_ms": 692.3748590000001
+              },
+              "candidate": {
+                "write_ms": 491.6299854999999,
+                "query_ms": 287.0756090000001,
+                "cycle_ms": 815.297998
+              }
+            },
+            "paired_speedups": {
+              "write_ms": [
+                0.9928795721194644,
+                0.9970611713173134
+              ],
+              "query_ms": [
+                0.5809535644962917,
+                0.5771890184782735
+              ],
+              "cycle_ms": [
+                0.8504273612943732,
+                0.8480184802332575
+              ]
+            },
+            "median_paired_speedup": {
+              "write_ms": 0.9949703717183889,
+              "query_ms": 0.5790712914872826,
+              "cycle_ms": 0.8492229207638153
+            }
+          }
+        },
+        "timing": "Sum of actual JSONL request round trips; input and oracle generation, warmup, verification and restart excluded. Fresh database per sample; version/order counterbalanced.",
+        "resources": "Per-process VmHWM and /proc/io retained; not formal T/B/M. CPU quota and memory ceiling enforced by launcher.",
+        "formal_score": null
+      }
+    },
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/source-identity.json",
+      "sha256": "e2da0508c393853f7f77d04eb3a8a6d7f2e214d73ee33d4c00c9d652ea8ef092",
+      "retained_experiment": true,
+      "result": {
+        "passed": true,
+        "runtime_core": "c2c2b42f6782549049b14764c7a105389cb5289f",
+        "runtime_inputs": 38,
+        "release_binary_sha256": "6fd307974aafc6cd51fb33469fdaa4a882cd6e8bacea6ad55a59feae6b9e8ade",
+        "baseline_binary_sha256": "1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66",
+        "compiler": "g++ (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0",
+        "kernel": "Linux-5.15.0-202-generic-x86_64-with-glibc2.35",
+        "architecture": "x86_64",
+        "formal_submitted": false,
+        "docker_used": false
+      }
+    },
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/native-replay.json",
+      "sha256": "ae449bc6af73256b001aba7f2053099f44451d889ab2ee4a160894df8325117f",
+      "retained_experiment": true,
+      "result": {
+        "passed": true,
+        "runtime_core": "c2c2b42f6782549049b14764c7a105389cb5289f",
+        "workspace": "/tmp/mvd-ref-native-r88ssbt3",
+        "stages": [
+          {
+            "name": "ctest",
+            "exit_code": 0,
+            "seconds": 23.163278083025943
+          },
+          {
+            "name": "public",
+            "exit_code": 0,
+            "seconds": 1.1158735289936885
+          },
+          {
+            "name": "parity",
+            "exit_code": 0,
+            "seconds": 7.132309451000765
+          },
+          {
+            "name": "wire",
+            "exit_code": 0,
+            "seconds": 4.67487088200869
+          },
+          {
+            "name": "default-contract",
+            "exit_code": 0,
+            "seconds": 0.2650589040131308
+          }
+        ],
+        "binary_sha256": "6fd307974aafc6cd51fb33469fdaa4a882cd6e8bacea6ad55a59feae6b9e8ade",
+        "existing_build_reused": true,
+        "benchmark": false,
+        "docker_used": false,
+        "formal_submitted": false
+      }
+    },
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/wire.json",
+      "sha256": "03a940d0439621704944c70156792e62c2dad01be734fcfe1e7b1fcc4e109c30",
+      "retained_experiment": true,
+      "result": {
+        "passed": true,
+        "observations": 6,
+        "results": [
+          {
+            "category": "id_near_response_limit",
+            "id_bytes": 1,
+            "request_bytes": 65,
+            "request_within_reference_limit": true,
+            "ours": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "reference": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "qualifying_failure": false
+          },
+          {
+            "category": "id_near_response_limit",
+            "id_bytes": 16776704,
+            "request_bytes": 16776768,
+            "request_within_reference_limit": true,
+            "ours": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "reference": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "qualifying_failure": false
+          },
+          {
+            "category": "id_near_response_limit",
+            "id_bytes": 16776960,
+            "request_bytes": 16777024,
+            "request_within_reference_limit": true,
+            "ours": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "reference": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "qualifying_failure": false
+          },
+          {
+            "category": "id_near_response_limit",
+            "id_bytes": 16777000,
+            "request_bytes": 16777064,
+            "request_within_reference_limit": true,
+            "ours": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "reference": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "qualifying_failure": false
+          },
+          {
+            "category": "id_near_response_limit",
+            "id_bytes": 16777088,
+            "request_bytes": 16777152,
+            "request_within_reference_limit": true,
+            "ours": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "reference": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "qualifying_failure": false
+          },
+          {
+            "category": "id_near_response_limit",
+            "id_bytes": 16777120,
+            "request_bytes": 16777184,
+            "request_within_reference_limit": true,
+            "ours": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "reference": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "qualifying_failure": false
+          }
+        ],
+        "candidate_sha256": "6fd307974aafc6cd51fb33469fdaa4a882cd6e8bacea6ad55a59feae6b9e8ade",
+        "reference_sha256": "1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66",
+        "scope": "Actual JSONL requests within the unchanged official response bound; IDs summarized by size, no formal score."
+      }
+    }
   ],
-  "student_contribution_boundary": "用户设定目标、资源与提交约束，提供正式反馈并要求基线对照及路线取舍；Agent实现代码、测试和技术解释。各自贡献以对应记录定位。"
- },
- "prompt_requirement_evolution": {
-  "source": "agent_retrospective",
-  "scope": "只归纳原话，不制造历史修订或学生理解。",
-  "changes": [
-   "u33–u35 要求检查无索引弱点、实际实验并逐轮自检；对应 e57–e62。",
-   "u40、u42–u43 反馈正式性能并要求分别测量写入/查询 T/B/M；对应 e63–e68。",
-   "u58–u69 要求大幅优化、逐版原生对照并在达到倍数后提测；对应 e107–e125。",
-   "u70给出a24正式3977.995012及Prompt无效；u72要求批次压缩同时检查随机读和解压缓存成本。",
-   "u74-u77要求拆清写入T/fsync、保留B/M，并按真正端到端T判断；u83改为先发布已验证版本、用正式结果检验方向。"
+  "agent_observations": [
+    "The owner explicitly abandoned the independent implementation. A clean fork of the scored-runtime-qualified reference replaced it as the development base; protocol, parser, store, transaction and recovery implementations were inherited directly.",
+    "The source comparison against the upstream runtime is three files: binder.cpp, value.cpp and a shared float32 conversion header. The numerical path still converts decimal to binary64 and then binary32. Complete lexical validity, numeric failure, dimension and float32 range error priority is retained, including errors after an earlier range overflow.",
+    "The optimization avoids the temporary double component array for simple quoted vectors; complex syntax keeps the original lexer path. Existing slow/fast binder checks plus added error priority combinations compare bitwise values and exact errors.",
+    "Three preliminary changes did not yield stable gains and were discarded: IPO, disabling integer screening and disabling conservative screening. Their actual successful-correctness benchmark results remain available and are not called performance wins.",
+    "Six paired rounds verify 48000 standard-workload query results. Median cycle speedups across four shapes are approximately 1.005, 1.002, 1.003 and 0.982. This does not establish a consistent 128D speed benefit. No slow sample was removed.",
+    "The retained memory result is a separate valid wide-vector binding workload with LIMIT 0 on an empty table. Actual process VmHWM medians at dimension 4194304 are 76564 KiB and 43828 KiB, a 42.8 percent reduction. It is not formal M, full-database capacity or a default-workload speed claim.",
+    "Original and candidate each pass 70 CTests and 20 unchanged public protocol cases. The candidate also passes 7862 reference comparisons, independent scalar expected values, large IDs, ASan/UBSan/leak diagnostics and actual hardened default-entrypoint transaction/restart checks.",
+    "Initial local runner calibration failed on a temporary-directory guard and on copied executable permissions; logs were retained. Corrected runs are separately named. An original mixed-CRLF CMake file caused a normalized-hash/raw-byte mismatch during evidence checks; the input manifest now retains both raw Git byte hashes and normalized hashes, and all 38 exact runtime inputs were checked.",
+    "The new native reproduction runner was actually replayed in a fresh temporary directory while reusing verified existing binaries, explicitly recorded as such. Docker builds and remote GitHub Actions were not run. Author-reported success is not a formal evaluation of this fork."
+  ],
+  "limitations": [
+    "No official hidden admission, performance score, Prompt score or rank exists for this candidate.",
+    "No new Docker build/cold pull or remote GitHub CI result exists. GCC 11.4 native runs do not establish the Alpine builder path.",
+    "Finite comparison cases are not a universal proof. The inherited depth/resource/history limits still apply.",
+    "Formal push/submission is not authorized. A later formal attempt needs owner approval for the complete final SHA, after 22:00 Asia/Shanghai, at most once per day, no adjacent midnight attempts, current quota/history checks and a durable one-attempt marker."
   ]
- },
- "future_task_prompt": {
-  "source": "agent_authored",
-  "status": "new_template_not_executed",
-  "content": "若验证提示词的独立可实现性，在隔离工作区仅提供implementation_prompt、正式协议和测试约束，重新实现后以未修改的测试验收；记录缺失要求、偏差和修复。本项尚未执行，不能当作本次材料的已验证结果。"
- },
- "conversations": [
-  {
-   "id": "u01",
-   "role": "user",
-   "content": "那先检查一下 seekdb 仓库，找找正式题包、测试驱动和公开用例，看看现有代码是什么情况，再制定实现计划。"
-  },
-  {
-   "id": "u02",
-   "role": "user",
-   "content": "记住我们这个全程放到D盘，我的C盘要炸了"
-  },
-  {
-   "id": "u03",
-   "role": "user",
-   "content": "就按这个计划开始，先在D盘建好第二轮工作区，把Docker环境和存储位置确认好，再开始实现核心功能，别动初赛分支。同时你可以上网查找相关论文文献，看看有不有什么方法可以提升本道题的分数"
-  },
-  {
-   "id": "u04",
-   "role": "user",
-   "context": "对是否更改影响所有发行版的 WSL 全局交换文件路径的回答。",
-   "content": "不修改全局设置，暂时保留现状"
-  },
-  {
-   "id": "u05",
-   "role": "user",
-   "content": "继续实现表目录、行编解码和 SQL 执行层，把基础增删改查、向量查询和事务串起来，补齐测试。还是全部放 D 盘，别动初赛分支，先不提测。注意提效可以找找论文看看有什么方法"
-  },
-  {
-   "id": "u06",
-   "role": "user",
-   "content": "继续下一阶段，先看看正式题包和测试驱动有没有更新，再做按需解码和降低写入放大的优化，跑对照实验确认收益。还是全部放 D 盘，别动初赛分支，先不推送、不提测。"
-  },
-  {
-   "id": "u07",
-   "role": "user",
-   "content": "持续优化，继续"
-  },
-  {
-   "id": "u08",
-   "role": "user",
-   "content": "继续"
-  },
-  {
-   "id": "u09",
-   "role": "user",
-   "content": "就按这个方案继续，先做耗时拆分和两种 D 盘存储路径的对照，再根据结果决定缓存还是批量读取。还是全部放 D 盘，别动初赛分支，不改全局设置，先不推送、不提测。"
-  },
-  {
-   "id": "u10",
-   "role": "user",
-   "content": "继续"
-  },
-  {
-   "id": "u11",
-   "role": "user",
-   "content": "按照你的方案，执行优化方案，有问题自己解决"
-  },
-  {
-   "id": "u12",
-   "role": "user",
-   "content": "按照你的优化方案继续优化，有问题自己解决，同时在执行前再确认一次可行性，大胆尝试"
-  },
-  {
-   "id": "u13",
-   "role": "user",
-   "content": "我们继续优化，先找到能最大优化的部分，然后给出优化方案，然后按计划执行"
-  },
-  {
-   "id": "u14",
-   "role": "user",
-   "content": "这是上一版的提测结果",
-   "context": "用户随后提供失败提交 bdae610c073a215d1fe85727ef85a2a8062ea238 及 MySQL 正式用例未通过汇总；没有具体 SQL 日志。"
-  },
-  {
-   "id": "u15",
-   "role": "user",
-   "content": "按照你的检测结果修复错误"
-  },
-  {
-   "id": "u16",
-   "role": "user",
-   "content": "Done， 已经补充了一下stdin/stdout的规则，其实就是给docker的主业务程序发送stdin，前提是按照docker正常的规则来设计，docker run跑的是业务主程序\n也补充了一个具体的py用来double check，但这是AI写的，并没有细致的运行，大家可以参考",
-   "context": "用户转发组织者的规则更新，并提示公开 Python 程序未经细致验证；不视为用户独立编写或审查驱动的证据。"
-  },
-  {
-   "id": "u17",
-   "role": "user",
-   "content": "继续确认可以优化的弱点项，确定优化方案，然后检查方案并执行"
-  },
-  {
-   "id": "u18",
-   "role": "user",
-   "content_excerpt": "先告诉我；这一版的性能指标是多少",
-   "context": "用户插入询问0e954ffd90c6802ecd9fae4c0ca00eb8553201dd性能。此处为请求文字节选，原文表格与空白未保留。"
-  },
-  {
-   "id": "u19",
-   "role": "user",
-   "content": "记住修正最后要同步到最新版，优化最好的那一版"
-  },
-  {
-   "id": "u20",
-   "role": "user",
-   "content": "继续分析可以大幅度优化的部分，列出优化方案，自己检查后执行优化方案，有问题自己解决"
-  },
-  {
-   "id": "u21",
-   "role": "user",
-   "content": "推送并且给我branch和commit"
-  },
-  {
-   "id": "u22",
-   "role": "user",
-   "content_excerpt": "检查为什么会出现",
-   "context": "用户附MySQL正式用例未通过、两项不计分的汇总；这是请求开头原文节选。"
-  },
-  {
-   "id": "u23",
-   "role": "user",
-   "content_excerpt": "0e954ffd90c6802ecd9fae4c0ca00eb8553201dd",
-   "context": "用户在追问失败提交SHA时提供此完整值、第二轮分支及执行成功状态。仓库地址中的凭据已删除；没有具体失败类别或日志。"
-  },
-  {
-   "id": "u24",
-   "role": "user",
-   "content": "检查完错误原因再进行一波性能与prompt优化"
-  },
-  {
-   "id": "u25",
-   "role": "user",
-   "content": "推送本地最新版到GitHub"
-  },
-  {
-   "id": "u26",
-   "role": "user",
-   "content": "现在各模块的效率是多少"
-  },
-  {
-   "id": "u27",
-   "role": "user",
-   "content": "依据可能提升的空间进行问题排序，然后依次进行提效优化"
-  },
-  {
-   "id": "u28",
-   "role": "user",
-   "content": "出一点刁钻的问题考考我们的数据库，并优化一下漏洞"
-  },
-  {
-   "id": "u29",
-   "role": "user",
-   "content": "这是一版结果，可以先看看这版格式上和我们有什么区别保证最新版有成绩"
-  },
-  {
-   "id": "u30",
-   "role": "user",
-   "content": "先推动上去给我branch和commit"
-  },
-  {
-   "id": "u31",
-   "role": "user",
-   "content": "Prompt结果无效、待复核、超出平台0–100范围或缺少材料摘要，本项不参与排名；未截断或换算本地分数。注意这个"
-  },
-  {
-   "id": "u32",
-   "role": "user",
-   "content": "补充的规则说明"
-  },
-  {
-   "id": "u33",
-   "role": "user",
-   "content": "无索引是我们的弱点部分是吗"
-  },
-  {
-   "id": "u34",
-   "role": "user",
-   "content": "可以，按你的方法进实验"
-  },
-  {
-   "id": "u35",
-   "role": "user",
-   "content": "不断优化，直至到你觉得ok了为止，优化完一轮之后就自觉检查自己的薄弱点，然后针对薄弱点继续优化"
-  },
-  {
-   "id": "u36",
-   "role": "user",
-   "content": "这版的primpt怎么样"
-  },
-  {
-   "id": "u37",
-   "role": "user",
-   "content": "按你的理解优化prompt"
-  },
-  {
-   "id": "u38",
-   "role": "user",
-   "content": "继续"
-  },
-  {
-   "id": "u39",
-   "role": "user",
-   "content": "推送"
-  },
-  {
-   "id": "u40",
-   "role": "user",
-   "content_excerpt": "为什么性能分这么低",
-   "platform_result_excerpt": "通过；此项为准入条件，不计排名分\n性能评测完成；原始指标 E = 856.552980\nPrompt结果无效、待复核、超出平台0–100范围或缺少材料摘要",
-   "excerpt_note": "同一用户消息的原文节选；平台片段为非连续节选，省略表格排版。不是Agent自行访问平台所得。"
-  },
-  {
-   "id": "u41",
-   "role": "user",
-   "content_excerpt": "是的，其他队伍的",
-   "leaderboard_excerpt": "5214.002443\n1840.765422\n967.672080\n791.938624",
-   "excerpt_note": "异步回答开头原文与榜单数值非连续节选，省略其他队伍个人信息。",
-   "context_source": "agent_context_annotation",
-   "context": "用户确认提测SHA为524133baf0a4ed947805236c02cce9cecffc0be3并提供榜单；四个数值分别对应所贴榜单第1、80、97、98名。此上下文标注来自Agent，不冒充用户技术推导。"
-  },
-  {
-   "id": "u42",
-   "role": "user",
-   "content": "再次回顾题目，以得分为第一要务，不断优化得分项"
-  },
-  {
-   "id": "u43",
-   "role": "user",
-   "content": "对批量写入和向量 TopK 查询测量耗时 T、磁盘 I/O B、峰值内存 M优化的是这些",
-   "input_channel": "user_async_reply"
-  },
-  {
-   "id": "u44",
-   "role": "user",
-   "content": "https://oceanbase.yuque.com/org-wiki-obtech-vh7w9r/hc3pio/lg8enxlmwg69unt6#GM6Bz 再好好读一下评分要求，以提分为第一要求，同时解决prompt没分问题，没分就是接口问题，你要按照他官方仓库给的那个写，json文件里面路径查查有没有写错，同时你仓库的基准有不有好好用起来"
-  },
-  {
-   "id": "u45",
-   "role": "user",
-   "content": "我们之前用的是什么",
-   "input_channel": "user_async_reply",
-   "context": "询问此前Prompt材料路径。"
-  },
-  {
-   "id": "u46",
-   "role": "user",
-   "input_channel": "user_message",
-   "content": "现在基于 a7c88df6 这个最新版跑一下性能测试，对比之前 856 分的版本，分析瓶颈在哪里，再基于现有代码优化，目标性能原始分 7000、prompt 原始分 40，注意官方接口和提交规范。"
-  },
-  {
-   "id": "u47",
-   "role": "user",
-   "input_channel": "user_message",
-   "content": "将他计分的选项都进行优化，尽力做到最好，我们的mysql准入已经OK了对吧，现在我们要解决的是批量写入耗时 T，磁盘 I/O：B，峰值内存：M，针对prompt没分问题，官方给的解释是最好conversion最好生成一下，因为是AI评分，让AI找到这个"
-  },
-  {
-   "id": "u48",
-   "role": "user",
-   "input_channel": "user_async_reply",
-   "content": "就是这个agent/conversation.json",
-   "context": "回答官方所说conversion是否指conversation.json、是否指定入口路径的澄清问题。未提供新增评分字段或平台详细错误。"
-  },
-  {
-   "id": "u49",
-   "role": "user",
-   "content": "把这个最终版本推送到 GitHub 的 2026-competition-round2 分支，确认 agent/conversation.json 一起提交，把最终 commit 给我，我去正式提测。"
-  },
-  {
-   "id": "u50",
-   "role": "user",
-   "input_channel": "user_async_reply",
-   "content": "授权，完整提交代码、Prompt 和测试证据"
-  },
-  {
-   "id": "u51",
-   "role": "user",
-   "source": "user_supplied_platform_result",
-   "content": "通过；此项为准入条件，不计排名分\n性能评测完成；原始指标 E = 1630.670965\nPrompt结果无效、待复核、超出平台0–100范围或缺少材料摘要，本项不参与排名；未截断或换算本地分数。",
-   "context": "用户粘贴的这版正式提测三项结果文字节选，提交版本关联 aea69813。"
-  },
-  {
-   "id": "u52",
-   "role": "user",
-   "input_channel": "user_async_reply",
-   "content": "只有三项结果",
-   "context": "回答是否还能展开或下载 T/B/M、Prompt 评审报告或失败码。"
-  },
-  {
-   "id": "u53",
-   "role": "user",
-   "content": "不断优化至理论上限，通过每一版与上一版的评分点检验，发现当前版本的薄弱评分部分，以提分为第一要务，不断迭代，注意创意性扩展思维，运用一些超乎寻常的方法，形成自我的关键更新突破，在没有优化至理论上限之前不要停，有问题自己解决，给你任何权限，注意重心放在计分点上"
-  },
-  {
-   "id": "u54",
-   "source": "user",
-   "content": "正确性门槛未通过（失败用例数：1）。原因：JSON response timeout（未及时收到JSON响应，请检查换行、flush和程序阻塞） × 1。未执行性能评测。\n这个可能会影响我们的那个prompt测评吗"
-  },
-  {
-   "id": "u55",
-   "source": "user",
-   "content": "授权公开这份完整历史归档"
-  },
-  {
-   "id": "u56",
-   "source": "user",
-   "content": "我先用 ff117199 这个版本正式提测，结果出来后发给你，再根据实际结果继续优化，目标还是性能原始分 7000、Prompt 原始分 40。"
-  },
-  {
-   "id": "u57",
-   "source": "user",
-   "excerpt": true,
-   "content": "通过；此项为准入条件，不计排名分\n性能评测完成；原始指标 E = 2576.778405\nPrompt结果无效、待复核、超出平台0–100范围或缺少材料摘要，本项不参与排名；未截断或换算本地分数。",
-   "context": "用户正式反馈的三个详情原文节选；未展示T/B/M和Prompt具体失败码。"
-  },
-  {
-   "id": "u58",
-   "source": "user",
-   "content": "优化到提升幅度大一点，因为一天只有两天的提交次数，至少优化到现在性能分数2500的两倍再给我最终版"
-  },
-  {
-   "id": "u59",
-   "source": "user",
-   "content": "继续"
-  },
-  {
-   "id": "u60",
-   "source": "user",
-   "content": " 调优可以大胆点"
-  },
-  {
-   "id": "u61",
-   "source": "user",
-   "content": "对！激进一点，我们要追求大幅提升"
-  },
-  {
-   "id": "u62",
-   "source": "user",
-   "content": "继续"
-  },
-  {
-   "id": "u63",
-   "source": "user",
-   "content": "继续，看看原生重测结果，对比上一版的 T、B、M，有明显收益就继续叠加优化，至少做到现在性能分两倍再给我正式提测版。"
-  },
-  {
-   "id": "u64",
-   "source": "user",
-   "content": "继续看 e039bba7 的原生重测结果，列出相对上一版的 T、B、M 变化，有收益就继续叠加优化，没收益就换路线，达到翻倍目标前先别给我正式提测版。"
-  },
-  {
-   "id": "u65",
-   "source": "user",
-   "content": "继续，以 f62ce8a7 为基线换更有突破性的路线，别再围着没收益的方案打转。重点优化 T、B、M，每版都做原生对照，达到性能翻倍目标前先别给我正式提测版。"
-  },
-  {
-   "id": "u66",
-   "source": "user",
-   "content": "继续"
-  },
-  {
-   "id": "u67",
-   "source": "user",
-   "content": "next"
-  },
-  {
-   "id": "u68",
-   "source": "user",
-   "content": "继续看三轮大数据复测和小数据查询的原生结果，确认写入异常原因，找出查询 T 的主要瓶颈，有稳定收益就继续叠加优化，性能翻倍前先别给我正式提测版。"
-  },
-  {
-   "id": "u69",
-   "source": "user",
-   "content": "现在做到的程度是2500多分的几倍，我想先提测一版，看看我们改的方向对不对"
-  },
-  {
-   "id": "u70",
-   "source": "user",
-   "content": "通过；此项为准入条件，不计排名分\n性能评测完成；原始指标 E = 3977.995012\nPrompt结果无效、待复核、超出平台0–100范围或缺少材料摘要，本项不参与排名；未截断或换算本地分数。",
-   "context": "用户在明确以a24d2cd7提测后给出的三个详情原文节选；未提供T/B/M明细。",
-   "excerpt": true
-  }
- ],
- "experiments": [
-  {
-   "id": "e01",
-   "source": "tool",
-   "purpose": "确认第二轮工作区与提交基线",
-   "output": "## 2026-competition-round2...upstream/2026-competition-round2\nc842a368c3394748d0499386c18f6b465242e141\norigin https://github.com/juanzhi-gcb/seekdb.git\nupstream https://github.com/oceanbase/seekdb.git",
-   "note": "末两行整理了remote输出的制表符与fetch/push重复项，其余信息未改变。"
-  },
-  {
-   "id": "e04",
-   "source": "tool",
-   "purpose": "类型/向量/存储核心首次失败测试，证明尚未实现时测试不能通过",
-   "output": "core_types: FAIL: not implemented\ncore_vector: FAIL: not implemented\ncore_storage: FAIL: not implemented\n0% tests passed, 3 tests failed out of 3",
-   "note": "原始CTest输出摘要。后续成功结果必须实际执行后追加。"
-  },
-  {
-   "id": "e05",
-   "source": "tool",
-   "purpose": "核心四组测试及真实写失败回归",
-   "output": "100% tests passed, 0 tests failed out of 4\nTotal Test time (real) = 29.00 sec",
-   "note": "核心实现者在Linux本地完整执行。写失败回归先实际失败，再修复并通过。"
-  },
-  {
-   "id": "e08",
-   "source": "tool",
-   "purpose": "SQL 命令行验收的失败基线与首轮成功结果",
-   "output": "AssertionError: SQL CLI executable is missing: /mnt/d/Codex/MiniVectorDB/build/core/minivectordb\n随后接入真实程序：Ran 7 tests in 2.501s\nOK",
-   "note": "Agent 编写并运行。七项包含分号/引号/注释、增删改查和向量距离、语句错误及EOF回滚、90步独立Python参考模型、收到确认后SIGKILL及重启。不是官方用例；没有用户独立解释这些结果的证据。"
-  },
-  {
-   "id": "e09",
-   "source": "tool",
-   "purpose": "VARCHAR 比较回归修复后的完整容器与运行入口验收",
-   "output": "100% tests passed, 0 tests failed out of 12\nTotal Test time (real) = 61.27 sec\nPASS runtime: read-only root, network disabled, 2 CPU/512 MiB, /data persistence and EOF rollback",
-   "note": "最终test镜像5bc1eafd618a15a2db268341c33a5f29bb16939c6675968d01af293cd257b1b3；runtime镜像c525c4bed66a9ebc693df8c7e6d586a705ae2316db89771b6dd467f880a8fcc4。容器/data映射D盘。宿主不支持swap limit，本次没有正式物理IO、冷缓存、排名或分数验证。"
-  },
-  {
-   "id": "e10",
-   "source": "agent_review",
-   "purpose": "独立规格审查发现查询常量宽度错误并复查修复",
-   "output": "VARCHAR(1)列与'aa'比较，新增测试运行失败：text exceeds scalar length。修复后7组相关测试通过7.77秒。独立审查8组重点测试8/8通过8.71秒；120行16组结果的Python参考模型通过。",
-   "note": "审查Agent与实现Agent分别运行，摘要保留原始数值。修复提交7c140e88e167aaef6255f0e509ed980040f414f7。Agent提出反例和修复，不冒充用户独立质疑或理解。"
-  },
-  {
-   "id": "e11",
-   "source": "agent_review",
-   "purpose": "独立代码质量审查和额外真实写盘失败探针",
-   "output": "8/8 focused suites passed in 7.98s.\nPASS independent autocommit UPDATE/DELETE and explicit CREATE I/O failure rollback, continuation, commit and reopen\nREADY = YES",
-   "note": "审查Agent独立编译并执行D盘探针，覆盖自动提交语句原子性及表元数据写出后的CREATE失败；只审查当前里程碑，不是正式用例或性能合格证明。"
-  },
-  {
-   "id": "e13",
-   "source": "tool",
-   "purpose": "最终优化版本容器和运行验证",
-   "output": "100% tests passed, 0 tests failed out of 15\nTotal Test time (real) = 77.02 sec\nPASS runtime: read-only root, network disabled, 2 CPU/512 MiB, /data persistence and EOF rollback",
-   "note": "核心8f1a679ff0c4d59e13949e228cc5f9f198698578；test镜像eea97e0a038e39cee02b688144bce1c352fe63ed1c629a4adad9ab1d3dab5c3a；runtime镜像ccbffecd48173eaadd19951ecb43fba7c5ae003c9dd5a5c82648fac2a1504cb6。WSL不支持swap limit，不等同正式准入。"
-  },
-  {
-   "id": "e14",
-   "source": "agent_review",
-   "purpose": "独立规格和质量审查",
-   "output": "规格：262行四模式差分PASS；4/4重点测试22.48秒；修正后codec/selective 2/2，4.40秒。\n质量：selective/batches 2/2，6.39秒；位复制和runner清理复查PASS。",
-   "note": "分别由审查Agent执行与报告，非用户独立推导；完整报告在docs/reviews/。"
-  },
-  {
-   "id": "e15",
-   "source": "tool",
-   "purpose": "发现并保留按需解码的负面结果",
-   "output": "fa419bb版解码专项：100%命中，eager中位830.881 ms、lazy中位1454.919 ms；50%命中825.573对1014.942 ms。",
-   "note": "全部原始数据保留v1。完整校验后再次逐分量转换造成成本；该结果由Agent分析，不是用户自己提出。"
-  },
-  {
-   "id": "e16",
-   "source": "tool",
-   "purpose": "修正后解码专项重新验证",
-   "output": "[{\"match_percent\": 0, \"eager_ms\": 829.048427, \"lazy_ms\": 640.90102, \"time_reduction_percent\": 22.69438079520051}, {\"match_percent\": 1, \"eager_ms\": 889.10549, \"lazy_ms\": 655.708944, \"time_reduction_percent\": 26.250714749270088}, {\"match_percent\": 10, \"eager_ms\": 845.739037, \"lazy_ms\": 658.195946, \"time_reduction_percent\": 22.17505433653052}, {\"match_percent\": 50, \"eager_ms\": 899.58046, \"lazy_ms\": 704.970679, \"time_reduction_percent\": 21.633393526577937}, {\"match_percent\": 100, \"eager_ms\": 888.919876, \"lazy_ms\": 754.267638, \"time_reduction_percent\": 15.147848713419931}]",
-   "note": "8f1a679版，10000行128维20遍，三轮五种命中率共30样本；配对校验和全部一致。只测校验/对象构造/距离累积，不含SQL/IO/TopK。"
-  },
-  {
-   "id": "e21",
-   "source": "tool",
-   "purpose": "两种D盘路径与统计开关三轮对照",
-   "output": "{\"source\": \"73bc598585d2243d52743b6b1de4336c3d35bd49\", \"filesystems\": {\"windows\": \"UNKNOWN\", \"linux\": \"ext2/ext3\"}, \"groups\": {\"windows-profile0\": {\"write_ms\": 5180.648287, \"write_cpu_ms\": 715.623, \"query_total_ms\": 12790.219605, \"query_cpu_ms\": 1779.217, \"write_profile\": {\"pread\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"pwrite\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"fsync\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"page_checksum\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"row_validation\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"row_materialization\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"row_decode\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"vector_distance\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"page_read_branch\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"page_read_overflow\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}}, \"query_profile\": {\"pread\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"pwrite\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"fsync\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"page_checksum\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"row_validation\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"row_materialization\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"row_decode\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"vector_distance\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"page_read_branch\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"page_read_overflow\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}}}, \"windows-profile1\": {\"write_ms\": 5114.688012, \"write_cpu_ms\": 727.266, \"query_total_ms\": 12797.200037, \"query_cpu_ms\": 1829.632, \"write_profile\": {\"pread\": {\"calls\": 32005, \"bytes\": 131092480, \"nanoseconds\": 4230285441}, \"pwrite\": {\"calls\": 2480, \"bytes\": 10158080, \"nanoseconds\": 374052693}, \"fsync\": {\"calls\": 40, \"bytes\": 0, \"nanoseconds\": 142810806}, \"page_checksum\": {\"calls\": 34485, \"bytes\": 0, \"nanoseconds\": 264661372}, \"row_validation\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"row_materialization\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"row_decode\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"vector_distance\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"page_read_branch\": {\"calls\": 31965, \"bytes\": 0, \"nanoseconds\": 0}, \"page_read_overflow\": {\"calls\": 40, \"bytes\": 0, \"nanoseconds\": 0}}, \"query_profile\": {\"pread\": {\"calls\": 88440, \"bytes\": 362250240, \"nanoseconds\": 11946807955}, \"pwrite\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"fsync\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"page_checksum\": {\"calls\": 88440, \"bytes\": 0, \"nanoseconds\": 680956993}, \"row_validation\": {\"calls\": 80400, \"bytes\": 0, \"nanoseconds\": 32827296}, \"row_materialization\": {\"calls\": 164800, \"bytes\": 0, \"nanoseconds\": 10023611}, \"row_decode\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"vector_distance\": {\"calls\": 44000, \"bytes\": 0, \"nanoseconds\": 6723726}, \"page_read_branch\": {\"calls\": 7960, \"bytes\": 0, \"nanoseconds\": 0}, \"page_read_overflow\": {\"calls\": 80480, \"bytes\": 0, \"nanoseconds\": 0}}}, \"linux-profile0\": {\"write_ms\": 512.217307, \"write_cpu_ms\": 335.765, \"query_total_ms\": 697.980852, \"query_cpu_ms\": 698.031, \"write_profile\": {\"pread\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"pwrite\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"fsync\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"page_checksum\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"row_validation\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"row_materialization\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"row_decode\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"vector_distance\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"page_read_branch\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"page_read_overflow\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}}, \"query_profile\": {\"pread\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"pwrite\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"fsync\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"page_checksum\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"row_validation\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"row_materialization\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"row_decode\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"vector_distance\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"page_read_branch\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"page_read_overflow\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}}}, \"linux-profile1\": {\"write_ms\": 518.806898, \"write_cpu_ms\": 339.308, \"query_total_ms\": 709.230511, \"query_cpu_ms\": 709.28, \"write_profile\": {\"pread\": {\"calls\": 32005, \"bytes\": 131092480, \"nanoseconds\": 25610142}, \"pwrite\": {\"calls\": 2480, \"bytes\": 10158080, \"nanoseconds\": 7869073}, \"fsync\": {\"calls\": 40, \"bytes\": 0, \"nanoseconds\": 182443462}, \"page_checksum\": {\"calls\": 34485, \"bytes\": 0, \"nanoseconds\": 226384815}, \"row_validation\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"row_materialization\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"row_decode\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"vector_distance\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"page_read_branch\": {\"calls\": 31965, \"bytes\": 0, \"nanoseconds\": 0}, \"page_read_overflow\": {\"calls\": 40, \"bytes\": 0, \"nanoseconds\": 0}}, \"query_profile\": {\"pread\": {\"calls\": 88440, \"bytes\": 362250240, \"nanoseconds\": 81314692}, \"pwrite\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"fsync\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"page_checksum\": {\"calls\": 88440, \"bytes\": 0, \"nanoseconds\": 569702053}, \"row_validation\": {\"calls\": 80400, \"bytes\": 0, \"nanoseconds\": 18333362}, \"row_materialization\": {\"calls\": 164800, \"bytes\": 0, \"nanoseconds\": 5168780}, \"row_decode\": {\"calls\": 0, \"bytes\": 0, \"nanoseconds\": 0}, \"vector_distance\": {\"calls\": 44000, \"bytes\": 0, \"nanoseconds\": 4259809}, \"page_read_branch\": {\"calls\": 7960, \"bytes\": 0, \"nanoseconds\": 0}, \"page_read_overflow\": {\"calls\": 80480, \"bytes\": 0, \"nanoseconds\": 0}}}}, \"validated_queries\": 480, \"reopen_checks\": 12, \"binary_sha256\": \"c54ee3c99f0560a5586dd7b8f39ef230bf67be8f34b9a63fd6e48067291a048c\", \"benchmark_source_sha256\": \"8a1a85b5cbe9f711415f8962f9861a390893023b2c7bf509ea5dd775320a64a1\"}",
-   "note": "12样本480查询和12次重启全部通过。环境差异不是代码提速；bytes不是物理IO；没有缓存命中证据。"
-  },
-  {
-   "id": "e32",
-   "source": "tool",
-   "purpose": "Reproduce admission gaps before fixing",
-   "output": "Both bdae610 and873e139: old dev-tsv diagnostic19/20 cases94/95SQL; CREATE VECTOR INDEX fails. New official JSONL handshake on actual873 image: TIMEOUT JSON response timeout. Platform summary alone does not identify the unique failing SQL.",
-   "evidence": "bench/results/admission-20261110/baseline-handshake.json;docs/admission-protocol-review.md"
-  },
-  {
-   "id": "e33",
-   "source": "tool",
-   "purpose": "Verify protocol evidence rather than guess JSON framing",
-   "output": "Official upstream f4d4e26653af823a7601668802f80e374ad6643c defines JSONL input/output, exact ready, execute/search_mode, shutdown. 50 downloaded source/case files verified against Git blob SHA1. Native adapter tests first failed on old binary; overflow-ID regression also failed before the numeric guard.",
-   "evidence": "docs/admission-protocol-review.md;tests/jsonl_tests.py"
-  },
-  {
-   "id": "e34",
-   "source": "tool",
-   "purpose": "Actual Docker official public regression",
-   "output": "20/20 public cases,95SQL assertions pass through official JSONL driver, with D-only storage launcher and negative assertion canary. Handshake passes. Modes exact/ann and index maintenance included; no hidden29-case claim.",
-   "evidence": "bench/results/admission-20261110/public.json;bench/results/admission-20261110/handshake.json"
-  },
-  {
-   "id": "e35",
-   "source": "tool",
-   "purpose": "Independent state model and crash checks",
-   "output": "150 mutations,273 independent model checks across exact/ann and filters;2 crash/restarts. Committed rows and indexes persist; uncommitted DML/DDL discarded.",
-   "evidence": "bench/results/admission-20261110/independent.json"
-  },
-  {
-   "id": "e43",
-   "source": "tool",
-   "purpose": "Reproduce numerical discrepancies before repair",
-   "output": "Old and latest actual Docker probes rejected finite-rounding float32 maximum, including reinsertion of their own vector output. Returned distances both1 nevertheless sorted ids2,1 because squared values differed. New dedicated regression tests failed before fixes; final actualJSONL probes accept roundtrip and order1,2. True overflow and existing1e-400 rejection retained. No detailed hidden-case log establishes formal root cause.",
-   "evidence": "bench/results/snapshot-20261110/ (snapshot-numeric-probe/result.json;probe-float-d55b183/result.json)"
-  },
-  {
-   "id": "e54",
-   "source": "tool",
-   "purpose": "边界问题考试与失败确认",
-   "output": "在最新row CPU版本复现：既有库、测试子进程RLIMIT_NOFILE=4、65510字符请求ID，INSERT返回ok:false但随后SELECT能查到已提交行。BEGIN/COMMIT/shutdown同一根因导致状态确认不一致。原协议矩阵180检查有2个状态预期失败；新增5个回归方法有7处失败。SQL模型1344请求/56事务目录循环通过；独立存储故障472案例通过。",
-   "evidence": "bench/results/adversarial-20261110/adversarial-protocol-20261110/results.json"
-  },
-  {
-   "id": "e55",
-   "source": "tool",
-   "purpose": "修复、增强测试断言并验证性能保持",
-   "output": "响应ID与结果临时文件分离，完整准备结果后才输出。36/36 Docker450.33s；审查加强行列数和重试实际数据断言后3/3专项通过。协议6方法、SQL1344请求、存储475故障/重试案例；公开20/20、模型273/2kill、runtime通过。12000真实JSONL查询/12重启通过；有索引3150.268->3110.907ms，无索引4751.245->4698.321ms，约1%差异按基本持平看待。",
-   "evidence": "bench/results/adversarial-20261110/manifest.json"
-  },
-  {
-   "id": "e56",
-   "source": "tool",
-   "purpose": "与用户提供的平台成功提交进行格式和行为对照",
-   "output": "8b7054是当前HEAD祖先；Dockerfile、.dockerignore、main.cpp相同；协议仅有长ID缓冲修复。两版实际Docker各公开20/20、95SQL通过；各50通用检查和58报文，57条逐字节相同，唯一差异为返回距离均为1时旧版主键2、1，新版正确为1、2。共2次正常重启、2次强杀恢复。最新运行镜像仍为e1cdb1e7239b。两份学习材料保持相同、合法且小于128KiB。",
-   "evidence": "bench/results/successful-version-20261110/manifest.json"
-  },
-  {
-   "id": "e57",
-   "source": "tool",
-   "purpose": "先拆分无索引成本",
-   "output": "60查询诊断中位316.443ms，回调外85.309、全行校验75.982、物化38.772、距离33.039、pread0.904；包含阶段不相加。正常计时另跑。",
-   "evidence": "bench/results/unindexed-20261111/manifest.json"
-  },
-  {
-   "id": "e58",
-   "source": "tool",
-   "purpose": "发现第一轮快照的负面结果",
-   "output": "主场景764.182→455.031ms，但每三读一更新完整周期151.067→161.286ms。最初两个VECTOR的测试夹具错误已修正；随后baseline RED命中预期快照行计数。禁用/拒绝路径取消逐行append包装。",
-   "evidence": "bench/results/unindexed-20261111/manifest.json"
-  },
-  {
-   "id": "e59",
-   "source": "tool",
-   "purpose": "单arena复用与实验顺序纠错",
-   "output": "删除后保留容量用例在旧实现真实RED；失效只保留分配，所有内容重新完整校验。六轮轮换短读写周期release 163.174→reuse 154.729ms；保留RSS代价。初五轮正反序未平衡中间模式，独立审查指出后重跑，旧数据保留。",
-   "evidence": "bench/results/unindexed-20261111/manifest.json"
-  },
-  {
-   "id": "e60",
-   "source": "tool",
-   "purpose": "查询内向量临时空间复用",
-   "output": "旧路径候选向量Cell计数非零而新要求零，真实RED后实现。32种SQL组合、位模式和零新增分配测试通过；完整行校验及距离累加不变。最终六轮核心参考738.615→415.285ms；单独scratch从456.239ms继续下降。",
-   "evidence": "bench/results/unindexed-20261111/manifest.json"
-  },
-  {
-   "id": "e61",
-   "source": "tool",
-   "purpose": "最终容器、实际协议与负面复验",
-   "output": "38/38内部、20/20公开95SQL、273模型/2kill、runtime通过；12000真实JSONL查询12重启通过。无索引4847.382→2922.435ms；有索引3103.185→2939.265ms。超容量初3轮约+4.34%，追加6轮238.785→233.422ms按接近持平解释，不隐藏负面记录。",
-   "evidence": "bench/results/unindexed-20261111/manifest.json"
-  },
-  {
-   "id": "e62",
-   "source": "tool",
-   "purpose": "小表预热后大表写入资源与崩溃检查",
-   "output": "64MiB容器先预热1000行快照，再扩至20000行约78.125MiB逻辑文本，超容量回退和未提交DELETE强杀恢复通过；保留当前/峰值/交换观测，WSL不能保证no-swap，不宣称正式准入。",
-   "evidence": "bench/results/unindexed-20261111/manifest.json"
-  },
-  {
-   "id": "e63",
-   "source": "tool",
-   "purpose": "有界类型化扫描缓存的失效边界与受控对照",
-   "output": "旧路径在warm.stats.row_validation.calls<=warm.rows.size()断言真实RED。新增私有对齐向量/BIGINT列缓存，冷建先完整验证全部行，写入前失效；不支持的表达式或超预算回退。9份无探针对照共255样本、22236查询；另有2组诊断480查询和初测4样本800查询，分别保留，不混作受控样本。类型化缓存的交错写读查询+8.96%，完整周期+1.02%，不将主场景收益外推频繁失效场景。",
-   "evidence_files": [
-    "bench/results/score-first-20261111/typed-red.log",
-    "bench/results/score-first-20261111/typed-validated-dense.summary.json",
-    "bench/results/score-first-20261111/typed-validated-indexed.summary.json",
-    "bench/results/score-first-20261111/typed-validated-varied.summary.json",
-    "bench/results/score-first-20261111/score-combined-dense.summary.json",
-    "bench/results/score-first-20261111/score-combined-indexed.summary.json",
-    "bench/results/score-first-20261111/score-memory-dense.summary.json",
-    "bench/results/score-first-20261111/score-memory-varied.summary.json",
-    "bench/results/score-first-20261111/score-kernel-dense.summary.json",
-    "bench/results/score-first-20261111/score-kernel-varied.summary.json"
-   ]
-  },
-  {
-   "id": "e64",
-   "source": "tool",
-   "purpose": "进程强杀模型下合并提交同步并验证确认边界",
-   "output": "旧提交同步计数expected1/got2真实RED。ProcessCrash路径保持数据写入→根写入→同文件最终fsync成功→ACK，去掉根写入前的额外同步；Store默认Ordered保留。独立测试441个提交策略案例通过，含握手SIGKILL、短写/EINTR和注入返回错误。只覆盖进程崩溃契约，不能外推断电、内核崩溃或介质故障；未据此声称写入字节减少。",
-   "evidence_files": [
-    "bench/results/score-first-20261111/commit-policy-red.log",
-    "bench/results/score-first-20261111/core-kernel-pre-default-LastTest.log",
-    "bench/results/score-first-20261111/2026-11-11-commit-policy-review.md"
-   ]
-  },
-  {
-   "id": "e65",
-   "source": "tool",
-   "purpose": "私有已验证向量内核与较小页缓存的代价",
-   "output": "接口测试先因缺少validated.hpp编译RED，不能当作数值错误反例。最终931个逐位数值及验证边界案例通过，公共距离入口仍校验，保留double顺序累加、sqrt及主键平局次序。数据页缓存16→4MiB降低驻留，但overflow查询9.301914→10.345081ms，第二次查询7.366392→16.028449ms退化；后续内核wide35.126561→29.703480ms，overflow10.965781→10.818301ms接近持平且写入224.169912→230.316733ms变慢。原始负面结果保留，不宣称全场景获益。内核short_reuse完整周期86.366→88.793ms退化，即使其查询分项下降。",
-   "evidence_files": [
-    "bench/results/score-first-20261111/validated-vector-red.log",
-    "bench/results/score-first-20261111/score-kernel-tests.log",
-    "bench/results/score-first-20261111/core-kernel-pre-default-LastTest.log",
-    "bench/results/score-first-20261111/score-memory-varied.summary.json",
-    "bench/results/score-first-20261111/score-kernel-varied.summary.json"
-   ]
-  },
-  {
-   "id": "e66",
-   "source": "tool",
-   "purpose": "最终镜像对正式通过524133的实际JSONL六项指标",
-   "output": "2CPU/2GiB、10000×128维、batch100、每轮1000次TopK10且半数10%过滤，各版本/索引状态3轮。12000答案核验、12重启通过。无索引write1712.011→1322.306ms、query2849.399→1196.348ms，写/查询累计峰值53764096→40648704、61079552→45031424字节；有索引write1697.999→1323.932ms、query2882.698→1250.799ms，峰值53141504→41447424、72077312→57696256。设备8:48累计I/O中位数写入均31793152字节，查询无索引31793152、有索引43196416，两版相同。B不是文件大小；包含启动、加载和建索引/预热至采样，查询区间增量0不表示整个工作负载无I/O。没有统一冷缓存或关闭后回写收敛证明，不等同官方T/B/M，也不换算E。",
-   "evidence_files": [
-    "bench/results/score-first-20261111/tbm-summary.json",
-    "bench/results/score-first-20261111/jsonl-score-first-final-summary.json",
-    "bench/results/score-first-20261111/2026-11-11-jsonl-tbm-review.md"
-   ]
-  },
-  {
-   "id": "e67",
-   "source": "tool",
-   "purpose": "最终源码、测试镜像及运行镜像的一致性和回归",
-   "output": "最终内部41/41通过，503.87s；公开20/20共95SQL，独立模型273检查/150变更/2次强杀通过。runtime以2CPU/512MiB验证默认JSONL、只读根目录、禁网、持久化、EOF/shutdown回滚。镜像内61个源码文件与工作区一致，测试及运行二进制SHA256同为61249560c684981daa4a8e2d786f90df0021b7123303594c3b0c658c3e0cd2b4。受控核心计时为512MiB，e66实际JSONL为2GiB，资源场景为64MiB，三种限制分开报告。当前仍未commit、push或提测；不是新增正式成绩。",
-   "evidence_files": [
-    "bench/results/score-first-20261111/score-first-final-internal.log",
-    "bench/results/score-first-20261111/score-first-final-public/result.json",
-    "bench/results/score-first-20261111/score-first-final-model/result.json",
-    "bench/results/score-first-20261111/score-first-final-runtime.log",
-    "bench/results/score-first-20261111/score-first-image-source.json",
-    "bench/results/score-first-20261111/score-first-runtime-binary.txt"
-   ]
-  },
-  {
-   "id": "e68",
-   "source": "tool",
-   "purpose": "64MiB资源场景的适用范围校正",
-   "output": "64MiB容器从1000行扩至20000行、约78.125MiB逻辑文本，7个检查点和14项验证通过，含未提交DELETE强杀恢复。数值载荷估计320008字节仍在8MiB类型化缓存预算内：这是数据集大于内存检查，不是类型化超预算回退证明。采样无OOM、swap_current=0；本机未强制限制交换，不保证no-swap，也不代表正式资源准入。",
-   "evidence_files": [
-    "bench/results/score-first-20261111/score-first-resource/result.json"
-   ]
-  },
-  {
-   "id": "e71",
-   "source": "tool",
-   "purpose": "修复后两种过滤三轮真实JSONL复验",
-   "output": "同一已正式通过524133镜像对比本地修复镜像，BIGINT/VARCHAR各3轮，每类18个新会话；总24000个计时查询精确校验、36次完整记录重启核验通过。T/B/M中位数如下；不是官方E，未预言名次。写入B未改善；预热、生成分布和设备缓存仍属本地条件。",
-   "medians": {
-    "bigint": {
-     "reference/write/unindexed": {
-      "T_ms": 1742.457538,
-      "B_bytes": 31793152,
-      "M_bytes": 53743616
-     },
-     "candidate/write/unindexed": {
-      "T_ms": 1339.65794,
-      "B_bytes": 31793152,
-      "M_bytes": 40931328
-     },
-     "reference/query/unindexed": {
-      "T_ms": 2955.066409,
-      "B_bytes": 31793152,
-      "M_bytes": 60858368
-     },
-     "candidate/query/unindexed": {
-      "T_ms": 1222.810056,
-      "B_bytes": 31793152,
-      "M_bytes": 45432832
-     },
-     "reference/query/indexed": {
-      "T_ms": 2973.353641,
-      "B_bytes": 43196416,
-      "M_bytes": 72507392
-     },
-     "candidate/query/indexed": {
-      "T_ms": 1252.858949,
-      "B_bytes": 43196416,
-      "M_bytes": 57049088
-     }
-    },
-    "varchar": {
-     "reference/write/unindexed": {
-      "T_ms": 1748.168197,
-      "B_bytes": 31793152,
-      "M_bytes": 53477376
-     },
-     "candidate/write/unindexed": {
-      "T_ms": 1350.104839,
-      "B_bytes": 31793152,
-      "M_bytes": 41074688
-     },
-     "reference/query/unindexed": {
-      "T_ms": 3101.743053,
-      "B_bytes": 31793152,
-      "M_bytes": 60956672
-     },
-     "candidate/query/unindexed": {
-      "T_ms": 3002.89828,
-      "B_bytes": 31793152,
-      "M_bytes": 48058368
-     },
-     "reference/query/indexed": {
-      "T_ms": 3078.535907,
-      "B_bytes": 43196416,
-      "M_bytes": 72421376
-     },
-     "candidate/query/indexed": {
-      "T_ms": 3067.491771,
-      "B_bytes": 43196416,
-      "M_bytes": 60076032
-     }
-    }
-   },
-   "evidence_files": [
-    "bench/results/contract-20261111/contract-final-bigint/summary.json",
-    "bench/results/contract-20261111/contract-final-varchar/summary.json",
-    "bench/results/contract-20261111/contract-final-internal.log",
-    "bench/results/contract-20261111/contract-final-image-source.json"
-   ]
-  },
-  {
-   "id": "e81",
-   "source": "tool",
-   "purpose": "按用户确认重新生成材料入口",
-   "output": "用户u48确认官方建议指agent/conversation.json。本轮重新生成该入口，前置submission_summary说明版本、实测结果、来源与内部引用；根目录保留相同副本。摘要不是平台评审输出或自评分。关键数值已写在JSON字符串内，不依赖评审跟随外部路径。历史用户/实验/Agent数组前缀保留。旧524133的Prompt合并无效原因仍未得到明确类别；本地包装合规不证明平台已读入或评审有效，7000/40仍是待正式验证的目标。",
-   "evidence_files": [
-    "bench/results/resources-20261111/comparison-summary.json"
-   ]
-  },
-  {
-   "id": "e107",
-   "source": "tool",
-   "purpose": "缓存预算与页地址散列组合的原生完整测量",
-   "output": "commit35467933ac6c8368eeae1e71ffd82f09e5b79368，Actions43162466351，两台原生x86各58项CTest及20项公开协议通过。10k×128维、1000查询、BIGINT/VARCHAR过滤、每项3轮中位数对ff117199：写入T=0.4958–0.5450倍、B=0.550442倍、M=0.5105–0.5126倍；查询T=0.7030–0.8878倍、B=0.550442/0.576951倍、M=0.5821–0.6260倍。连续随机float32与随机文本恢复核对通过。30k容量压力提升来自旧缓存容量断崖，不能混为默认负载收益。两份原始工件下载后按GitHub摘要核验。",
-   "evidence_files": []
-  },
-  {
-   "id": "e110",
-   "source": "tool",
-   "purpose": "推广至AVX2并实测不含VNNI的处理器",
-   "output": "commit2472f0a2b6249b5c834ca9c4c474fe54e81047c8/run43169539952，两台各59项CTest、20项公开协议及完整性能对照通过。AVX2用绝对值与符号变换保证8位乘加每对绝对值不超过32258，避开饱和；原生与强制AVX2路径均与标量筛选掩码逐项比对。每机117168项oracle/边界比较、80640项原生掩码检查。无VNNI机器3轮核心查询CPU：关闭39.771/38.959/39.278ms，启用34.458/34.109/35.583ms；完整查询T相对缓存版0.90669–0.95724倍，M=1.07417–1.08584倍。VNNI机器完整查询T=0.88550–0.92741倍。所有结果摘要一致；这些是本地生成数据，未换算官方E。",
-   "evidence_files": []
-  },
-  {
-   "id": "e118",
-   "source": "tool",
-   "purpose": "依据两台原生完整计分指标淘汰定点路线",
-   "output": "e039bba7/run43208397960两台均63项CTest和公开协议通过。相对上一版f62ce8a7，BIGINT无索引查询T增加7.51%–10.00%、有索引增加7.73%–9.79%；VARCHAR分别增加1.80%–3.97%、1.21%–4.67%。所有B比值为1，查询M增加6.27%–7.08%。第一台同一二进制开关探针确有1100000行走定点路径，结果摘要一致；核心查询CPU关闭16.494–16.997ms、开启17.440–17.841ms，typed缓存从6720016增至7920016字节。由此拒绝当前定点实现，不把整数指令或正确性通过等同于性能收益。写入逻辑未修改，单机VARCHAR写入T下降12.22%不可归因为定点查询改进。两个原生归档SHA256均已核验，正式分支未变。",
-   "evidence_files": []
-  },
-  {
-   "id": "e119",
-   "source": "tool",
-   "purpose": "验证追加日志替代逐批重写树索引的结构性收益",
-   "output": "f8bbfeca/run43217005915基于f62ce8a7，采用不可变记录链、双提交根和内存键位置目录，旧格式02至07仍自动识别。ARM69/69通过，两台原生均69/69及公开20项通过。第二台首次在一般随机数据的资源收尾阶段因cgroup仍报告4KiB脏页而被采集器拒绝；未放宽采集条件，原代码重跑完整通过，首次失败证据保留。相对f62两台常规负载：写入T下降5.6%–12.9%，查询T下降6.9%–10.5%，B下降23.6%–26.4%，写入M下降23.1%–25.8%，查询M下降10.1%–16.5%。两份成功归档SHA256已核验。正式分支和正式成绩未变；本地收益不是官方E翻倍证明。",
-   "evidence_files": []
-  },
-  {
-   "id": "e123",
-   "source": "tool",
-   "purpose": "复用有界JSON响应缓冲并区分CPU收益与写入等待异常",
-   "output": "b170c05f/run43221866726两台原生各69项内部测试及20项公开协议通过。每条请求前清空内容并关闭旧临时文件，保留64KiB响应容量，换行和flush保持不变。相对日志版f8bbfeca，默认查询T减少4.5%–6.8%，B不变，M近似不变；系统CPU耗时减少，支持分配开销下降的解释。相对正式ff117199，默认写入T=0.4382–0.4714、查询T=0.5587–0.6061、B=0.3586–0.3901、写入M约0.35、查询M=0.4978–0.5723。容量测试第一台30k文本写入出现3106ms异常，总CPU仅724ms、多个批次等待100–223ms；另一台正常，正在追加三轮诊断，不能断言异常根因。所有比例仅为生成负载，不换算官方E。",
-   "evidence_files": [
-    "bench/results/release-20261112/responsearena-comparison.json",
-    "bench/results/release-20261112/responsearena-cpu.json"
-   ]
-  },
-  {
-   "id": "e125",
-   "source": "tool",
-   "purpose": "定位投影缓存重复计数缺陷并以双机原生收益决定采用",
-   "output": "4ffb3656/run43231201624。旧版首次VARCHAR过滤触发类型化缓存重新观察，而投影缓存已完成的观察仍重复累加行数，预计2N行与实际N行不符，最终缓存拒绝启用。新增交替无过滤/文本过滤并跨索引、回滚、删除的回归，旧版失败；修复后ARM70/70、两台原生各70/70及公开20项通过。核心200查询探针旧投影bytes=0，新=508623，结果digest全部9eb107fcb857b579；两机三轮CPU中位数11.885→8.304ms、21.914→15.430ms。完整默认查询相对b170：VARCHAR T减少7.5%–10.7%、M增加3.4%–4.2%，B不变；BIGINT基本持平。采用此修复，预算与写入/事务失效不变。完整候选对正式ff117199：默认写入T=0.4796–0.4939、查询T=0.5314–0.6173、B=0.3586–0.3901、写入M=0.3496–0.3629、查询M=0.5160–0.5756。不是官方E换算，仍需正式提测。",
-   "evidence_files": [
-    "bench/results/release-20261112/probation-comparison.json",
-    "bench/results/release-20261112/native-1/ctest.log",
-    "bench/results/release-20261112/native-2/ctest.log"
-   ]
-  },
-  {
-   "id": "e126",
-   "source": "user_supplied_platform_result",
-   "purpose": "a24正式反馈，区分官方成绩与后续本地候选",
-   "output": "用户指定a24d2cd7正式提测后反馈：MySQL通过；性能原始E=3977.995012；Prompt仍为合并无效提示。没有T/B/M明细或逐轮Prompt评审报告。官方值属于a24d2cd764027adec7371f268f99ccdca2307032，不属于当前候选。"
-  }
- ],
- "agent_observations": [
-  {
-   "id": "a01",
-   "source": "agent",
-   "content": "官方第二轮分支仅有空Dockerfile、conversation.json和残留配置。遗留驱动使用网络端口，并非本题规定的stdin/stdout接口；尚未获取正式协议/公开用例。"
-  },
-  {
-   "id": "a04",
-   "source": "agent",
-   "content": "写盘失败回归发现提交extent可能引用没有完整写出的页，导致重启选择旧提交；修复为完整写成功后才推进页分配。另一回归发现先sqrt再排序会合并接近距离，改为平方距离排序、输出时sqrt。均由Agent发现和验证，不声称是学生独立发现。"
-  },
-  {
-   "id": "a05",
-   "source": "agent",
-   "content": "SQL阶段采用共享提交根的表命名空间，使跨表提交和回滚统一；行编解码显式验证长度、UTF-8及float32。失败修改语句恢复保存点。一般排序使用有限内存运行段和两路归并，TopK保留少量键与距离再投影。格式02不兼容旧开发数据，明确拒绝旧格式。"
-  },
-  {
-   "id": "a07",
-   "source": "agent",
-   "content": "VARCHAR(n)的n限制存储值长度，不应限制WHERE比较常量。修复后查询常量只验证字符串类型和完整UTF-8，INSERT/SET仍限制列宽；回归覆盖五种比较、Unicode、UPDATE/DELETE谓词和LIMIT0。这个反例由独立审查Agent提出并验证。"
-  },
-  {
-   "id": "a08",
-   "source": "agent",
-   "content": "按需解码只推迟对象构造，仍完整验证整条记录，包括未投影/被过滤向量的有限性。过滤通过后才构造向量；获胜投影重读计入实际构造次数。行存仍读取整条记录，不能从少构造直接推出物理IO下降。"
-  },
-  {
-   "id": "a09",
-   "source": "agent",
-   "content": "批量写入在128条/512KiB界限内共享新建路径，单条超大记录独立。旧页不可变且整批成功才发布工作根，语句保存点恢复此前块。没有修改提交边界或减少fsync，格式02兼容旧读取器。"
-  },
-  {
-   "id": "a11",
-   "source": "agent",
-   "content": "页面CRC32原实现每字节迭代8位，换成固定256项查表。保留多项式、起止取反、字段置零、整页校验和格式02。由Agent提出和实现；独立逐位参考验证字节一致，前后版本使用相同SQL基准测量。"
-  },
-  {
-   "id": "a13",
-   "source": "agent",
-   "content": "索引缓存主要消除写入重复读取，CRC切片加速全部校验。原型保守下界严格大于第k距离才剪枝，保留精确并列次序。聚类VA读页略增但CPU耗时减少；256KiB缓存查询退化样本也保留。下一步设计紧凑页原子发布与恢复，再集成版本一致的摘要。以上是Agent提出、实现与解释，不冒充用户独立理解。"
-  },
-  {
-   "id": "a14",
-   "source": "agent",
-   "content": "先独立复核地址标记、格式兼容、完整校验和原子发布的可行性，再把不可变槽页接入SQL事务。小批次内多行共享页，每次扫描只缓存完整验证后的不可变页；单行页面走普通布局，旧02不自动迁移。默认1MiB是小规模与大规模实测取舍，不承诺所有负载更快。"
-  },
-  {
-   "id": "a16",
-   "source": "agent",
-   "content": "根据剖析优先复用跨查询数据页，而非提前终止距离或直接替换提交日志。自行实现四路固定容量缓存，只有完整验证的不可变页准入，命中仍检查地址/类型，SQL仍逐行检查全部字段。成功页地址不复用，部分失败页不准入，故回滚和失败重试不需要用缓存改变持久化协议。"
-  },
-  {
-   "id": "a17",
-   "source": "agent",
-   "content": "实测双层缓存比仅数据缓存更慢；选择SQL16MiB数据缓存并关闭扫描缓存，底层Store默认保持关闭。保留首次查询、写入及内存退化。下一瓶颈转向整行校验和逐行执行，批量校验/少复制需另做对照。上述设计与解释来自Agent，不冒充用户理解。"
-  },
-  {
-   "id": "a40",
-   "source": "agent",
-   "content": "这轮把写入、I/O、峰值内存作为共同目标：减少实际持久化页，而非增大缓存或省略fsync；再减少无用索引遍历和向量临时token。新格式是兼容性代价，当前二进制保留旧文件支持，旧二进制拒绝04。仍无空间回收，平坦向量索引仍全扫描。最终小规模写入T约降10.5%–11.2%、B约降48.7%–50.5%、M约降34.5%–41.8%；不能直接换算正式分数。"
-  },
-  {
-   "id": "a44",
-   "source": "agent",
-   "content": "第七至十轮以完整JSONL的T/B/M和真实上一版本为接受依据，微基准只用于选方向。单字符串列缓存和聚集改善过滤路径；AVX512只有真实支持的主机通过逐位检查后才保留，乘加融合失败是关键反例。代码与这些推理来自Agent，不归为用户独立掌握。写入、内存小幅回退以及第十轮写入大波动均保留。尚无法由共享主机推导理论上限、官方7000或Prompt40；新隐藏超时报告的版本和根因待确认。"
-  },
-  {
-   "id": "a46",
-   "source": "agent",
-   "content": "最新正式版本ff117199通过MySQL且E=2576.778405，但Prompt仍只有合并无效提示。公开文件限制可检查，平台引用校验、三轮评审分歧和0–100范围兼容性无法由现有反馈区分；不能认定增加材料就能修复或保证40分。新增用户记录与工具摘要采用只追加的摘要绑定归档，历史记录不改写。"
-  },
-  {
-   "id": "a47",
-   "source": "agent",
-   "content": "此次由Agent实现的突破是把精确查询拆成有误差界的低成本拒绝与原始精确复算，并把存储压缩、查询时间、缓存峰值一起比较。整数缓存增加约1.44MB，必须用实际查询T收益抵偿；无损压缩存在T退步，不能只展示B/M。返回列缓存与组合版仍需独立验证，尚未形成满足用户翻倍目标的最终正式版本。上述解释和取舍属于Agent工作，不补造为学生原话或理解。"
-  },
-  {
-   "id": "a50",
-   "source": "agent",
-   "content": "Agent根据原生测量定位两类成本：一是频繁分配响应缓冲引入的系统开销，二是文本过滤切换使投影缓存观察计数重复而持续回表。前者经复用64KiB容量减少查询T，后者经冻结已完成的观察恢复缓存，额外约0.5MB用于减少CPU。100行与10000行查询对照还表明端到端T含明显请求往返成本，故核心CPU提升不能直接作为总分倍数。具体设计和推导归于Agent；用户真实贡献是提出T/B/M逐版验证要求并决定先提测反馈方向。"
-  }
- ],
- "case_studies": [
-  {
-   "id": "case_unindexed",
-   "source": "agent_retrospective",
-   "title": "无索引弱点：拆分耗时、修复退化、复测",
-   "result": "先拆出 60 查询诊断中位 316.443ms，再把主场景从 764.182ms 降到 455.031ms，并以真实 RED 确认测试能抓到退化。",
-   "boundary": "Agent 复盘，只用于定位实验链，不作为学生证据；学生证据只在 rubric_instances 中引用一次。",
-   "files": [
-    "docs/unindexed-results.md",
-    "bench/results/unindexed-20261111/manifest.json",
-    "bench/results/unindexed-20261111/unindexed-v4-short.summary.json",
-    "bench/results/unindexed-20261111/unindexed-resource-v2/result.json"
-   ]
-  },
-  {
-   "id": "case_score_first",
-   "source": "agent_retrospective",
-   "title": "正式反馈后：把局部提速改为写入/查询的 T、B、M 对照",
-   "result": "e66 分别给出写入/查询的 T、累计 B 和峰值 M；e67/e68 验证同一最终程序及资源边界。",
-   "boundary": "Agent 复盘，只用于定位实验链，不作为学生证据；学生证据只在 rubric_instances 中引用一次。",
-   "files": [
-    "bench/results/score-first-20261111/tbm-summary.json",
-    "bench/results/score-first-20261111/score-first-image-source.json",
-    "bench/results/score-first-20261111/score-first-final-internal.log",
-    "bench/results/score-first-20261111/score-first-resource/result.json",
-    "bench/results/score-first-20261111/score-memory-varied.summary.json",
-    "bench/results/score-first-20261111/core-kernel-pre-default-LastTest.log"
-   ]
-  }
- ],
- "review_navigation": {
-  "source": "agent_retrospective",
-  "purpose": "仅索引真实原文；计分证据只在 rubric_instances 中引用一次，Agent 分析不归为学生理解。",
-  "items": [
-   {
-    "chain": "无索引弱点与反例修正",
-    "result_evidence": [
-     {
-      "id": "e57",
-      "pointer": "/experiments/20/output"
-     },
-     {
-      "id": "e58",
-      "pointer": "/experiments/21/output"
-     },
-     {
-      "id": "e59",
-      "pointer": "/experiments/22/output"
-     },
-     {
-      "id": "e60",
-      "pointer": "/experiments/23/output"
-     },
-     {
-      "id": "e61",
-      "pointer": "/experiments/24/output"
-     },
-     {
-      "id": "e62",
-      "pointer": "/experiments/25/output"
-     }
-    ]
-   }
-  ]
- },
- "limitations": [
-  "平台未提供 a24 的 T/B/M 分项或 Prompt 逐轮评审报告，因此不能确定历史无效原因，也不能预测本次 Prompt 分数。",
-  "最新用户反馈 E=3615.639045 与历史 E=3977.995012 的差异未获得平台解释；未把差异归因到某个代码或材料改动。",
-  "正式成绩归属对应提交；本地验证检查材料、代码身份及已留存证据，不替代当前提交的隐藏准入。"
- ],
- "performance_caveats": [
-  "自生成固定种子负载、预热和硬件与正式环境不同；不将本地延时比例换算为官方 E。",
-  "B/M 包含准备和预热，查询 T 只计查询环节；原生 x86 共享 runner 不是冻结比赛主机。"
- ],
- "scoring_notes": "rubric_instances 是证据导航。材料不填写预期得分、不指定评审结论；实现说明、用户记录和实际测量分别归属。五个维度各至少有一个实例，同一证据不跨维度重复计分。",
- "rubric_instances": [
-  {
-   "instance_id": "P1",
-   "dimension": "问题理解与自主拆解",
-   "title": "把性能目标拆成写入/查询的 T、B、M",
-   "problem": "性能分由哪些可测量的资源项决定。",
-   "student_evidence": [
-    {
-     "id": "u43",
-     "pointer": "/conversations/42/content",
-     "quote": "对批量写入和向量 TopK 查询测量耗时 T、磁盘 I/O B、峰值内存 M优化的是这些"
-    }
-   ],
-   "result_evidence": [
-    {
-     "id": "e66",
-     "pointer": "/experiments/29/output",
-     "quote": "无索引write1712.011→1322.306ms、query2849.399→1196.348ms，写/查询累计峰值53764096→40648704、61079552→45031424字节"
-    }
-   ],
-   "scoring_rationale": "学生直接指出评分口径是写入/查询的 T、磁盘 I/O B、峰值内存 M；后续实验按这三项分别给出对照值，说明拆解被执行。",
-   "attribution_limit": "口径理解来自学生；实验设计、数值采集与解读由 Agent/工具完成。",
-   "evidence_state": "has_actual_result"
-  },
-  {
-   "instance_id": "P2",
-   "dimension": "问题理解与自主拆解",
-   "title": "用已得分的 856 版本作基线定位瓶颈",
-   "problem": "当前候选相对已正式通过的 524133/856 版本差在哪里。",
-   "student_evidence": [
-    {
-     "id": "u46",
-     "pointer": "/conversations/45/content",
-     "quote": "对比之前 856 分的版本，分析瓶颈在哪里"
-    }
-   ],
-   "result_evidence": [
-    {
-     "id": "e71",
-     "pointer": "/experiments/32/output",
-     "quote": "同一已正式通过524133镜像对比本地修复镜像，BIGINT/VARCHAR各3轮，每类18个新会话；总24000个计时查询精确校验、36次完整记录重启核验通过。"
-    }
-   ],
-   "scoring_rationale": "学生指定了对照基线（已正式通过的 856 分版本）、分析目标和优化顺序；实验结果以该镜像为 reference 给出两类过滤的 T/B/M 中位数。",
-   "attribution_limit": "基线与目标由学生指定；实验设计、执行和归因由 Agent 完成。",
-   "evidence_state": "has_actual_result"
-  },
-  {
-   "instance_id": "T1",
-   "dimension": "技术理解与迁移",
-   "title": "先对照两条存储路径，再按结果选择缓存或批量读取",
-   "problem": "D 盘与 Linux 文件系统路径的差异，以及缓存/批量读取的取舍。",
-   "student_evidence": [
-    {
-     "id": "u09",
-     "pointer": "/conversations/8/content",
-     "quote": "先做耗时拆分和两种 D 盘存储路径的对照，再根据结果决定缓存还是批量读取"
-    }
-   ],
-   "result_evidence": [
-    {
-     "id": "e21",
-     "pointer": "/experiments/11/output",
-     "quote": "\"filesystems\": {\"windows\": \"UNKNOWN\", \"linux\": \"ext2/ext3\"}, \"groups\": {\"windows-profile0\": {\"write_ms\": 5180.648287, \"write_cpu_ms\": 715.623, \"query_total_ms\": 12790.219605, \"query_cpu_ms\": 1779.217"
-    }
-   ],
-   "scoring_rationale": "用户给出先对照再决策的验证顺序；两条存储路径有实际结果。材料没有用户对缓存与页读取机制的独立解释，不能由Agent解释反推用户技术掌握。",
-   "attribution_limit": "决策顺序由学生给出；路径探测、计时与解释由 Agent 完成。",
-   "evidence_state": "has_actual_result"
-  },
-  {
-   "instance_id": "V1",
-   "dimension": "独立验证与质疑",
-   "title": "主动要求刁钻用例反查自家数据库",
-   "problem": "现有用例是否覆盖容易出错的边界。",
-   "student_evidence": [
-    {
-     "id": "u28",
-     "pointer": "/conversations/27/content",
-     "quote": "出一点刁钻的问题考考我们的数据库"
-    }
-   ],
-   "result_evidence": [
-    {
-     "id": "e54",
-     "pointer": "/experiments/17/output",
-     "quote": "在最新row CPU版本复现：既有库、测试子进程RLIMIT_NOFILE=4、65510字符请求ID，INSERT返回ok:false但随后SELECT能查到已提交行。BEGIN/COMMIT/shutdown同一根因导致状态确认不一致。原协议矩阵180检查有2个状态预期失败；新增5个回归方法有7处失败。SQL模型1344请求/56事务目录循环通过；独立存储故障472案例通过。"
-    },
-    {
-     "id": "e55",
-     "pointer": "/experiments/18/output",
-     "quote": "响应ID与结果临时文件分离，完整准备结果后才输出。36/36 Docker450.33s；审查加强行列数和重试实际数据断言后3/3专项通过。协议6方法、SQL1344请求、存储475故障/重试案例；公开20/20、模型273/2kill、runtime通过。12000真实JSONL查询/12重启通过；有索引3150.268->3110.907ms，无索引4751.245->4698.321ms，约1%差异按基本持平看待。"
-    }
-   ],
-   "scoring_rationale": "用户要求刁钻边界检查；Agent实际构造文件描述符耗尽和长ID场景，复现状态确认不一致并修复复测。具体反例由Agent提出，不归为用户独立设计。",
-   "attribution_limit": "反例要求来自学生；具体用例、复现和修复由 Agent 完成。",
-   "evidence_state": "has_actual_result"
-  },
-  {
-   "instance_id": "V2",
-   "dimension": "独立验证与质疑",
-   "title": "拿平台已通过的版本做逐字节差异比对",
-   "problem": "平台显示成功的版本与自己版本到底差在哪。",
-   "student_evidence": [
-    {
-     "id": "u29",
-     "pointer": "/conversations/28/content",
-     "quote": "这是一版结果，可以先看看这版格式上和我们有什么区别"
-    }
-   ],
-   "result_evidence": [
-    {
-     "id": "e56",
-     "pointer": "/experiments/19/output",
-     "quote": "各50通用检查和58报文，57条逐字节相同，唯一差异为返回距离均为1时旧版主键2、1，新版正确为1、2"
-    }
-   ],
-   "scoring_rationale": "学生要求与平台成功版本做格式和行为对照；实验逐字节比对了 58 条报文并定位到唯一的并列主键顺序差异。",
-   "attribution_limit": "比对要求来自学生；报文采集、比对和差异定位由 Agent 完成。",
-   "evidence_state": "has_actual_result"
-  },
-  {
-   "instance_id": "V3",
-   "dimension": "独立验证与质疑",
-   "title": "对 Prompt 0 分提出接口假设并要求查路径",
-   "problem": "Prompt 一直无效，是接口/路径问题还是材料问题。",
-   "student_evidence": [
-    {
-     "id": "u44",
-     "pointer": "/conversations/43/content",
-     "quote": "没分就是接口问题，你要按照他官方仓库给的那个写，json文件里面路径查查有没有写错"
-    }
-   ],
-   "result_evidence": [
-    {
-     "id": "e81",
-     "pointer": "/experiments/33/output",
-     "quote": "旧524133的Prompt合并无效原因仍未得到明确类别；本地包装合规不证明平台已读入或评审有效"
-    }
-   ],
-   "scoring_rationale": "学生提出可检验的假设（没分是接口问题）并要求检查官方路径；后续入口被重新生成并核对，但正式反馈仍为合并无效，说明该假设不足以解释问题。",
-   "attribution_limit": "假设由学生提出；路径核对、材料重建和结论由 Agent 完成。",
-   "evidence_state": "has_actual_result"
-  },
-  {
-   "instance_id": "V4",
-   "dimension": "独立验证与质疑",
-   "title": "追问 JSON timeout 是否会影响 Prompt 评价",
-   "problem": "正确性门槛的 JSON response timeout 与 Prompt 评价是否相关。",
-   "student_evidence": [
-    {
-     "id": "u54",
-     "pointer": "/conversations/53/content",
-     "quote": "这个可能会影响我们的那个prompt测评吗"
-    }
-   ],
-   "result_evidence": [],
-   "scoring_rationale": "学生提出一个具体的因果疑问，但材料中没有该问题的确定答案；保留为待验证的问题，不补造结果。",
-   "attribution_limit": "问题由学生提出；后续诊断仍标记为未知，未形成确定结论。",
-   "evidence_state": "question_or_plan_only"
-  },
-  {
-   "instance_id": "E1",
-   "dimension": "实验与反馈迭代",
-   "title": "无索引弱点：拆分耗时、修复退化、复测",
-   "problem": "无索引路径是不是最弱项，成本来自哪里，修复后是否真的改善。",
-   "student_evidence": [
-    {
-     "id": "u33",
-     "pointer": "/conversations/32/content",
-     "quote": "无索引是我们的弱点部分是吗"
-    },
-    {
-     "id": "u35",
-     "pointer": "/conversations/34/content",
-     "quote": "优化完一轮之后就自觉检查自己的薄弱点，然后针对薄弱点继续优化"
-    }
-   ],
-   "result_evidence": [
-    {
-     "id": "e57",
-     "pointer": "/experiments/20/output",
-     "quote": "60查询诊断中位316.443ms，回调外85.309、全行校验75.982、物化38.772、距离33.039、pread0.904"
-    },
-    {
-     "id": "e58",
-     "pointer": "/experiments/21/output",
-     "quote": "主场景764.182→455.031ms，但每三读一更新完整周期151.067→161.286ms"
-    },
-    {
-     "id": "e60",
-     "pointer": "/experiments/23/output",
-     "quote": "旧路径候选向量Cell计数非零而新要求零，真实RED后实现"
-    }
-   ],
-   "scoring_rationale": "学生先问无索引是否是弱点，要求按测量结果进实验，并规定每轮后自查薄弱点再继续；实验先拆出诊断中位 316.443ms，再把主场景从 764.182ms 降到 455.031ms，最后以真实 RED 确认测试能抓到退化。",
-   "attribution_limit": "问题与迭代要求由学生提出；耗时拆分、修复、RED 验证和数据解释由 Agent 完成。",
-   "evidence_state": "has_actual_result"
-  },
-  {
-   "instance_id": "E2",
-   "dimension": "实验与反馈迭代",
-   "title": "每一版都与上一版按评分点对照",
-   "problem": "优化收益是真实提升还是单轮噪声。",
-   "student_evidence": [
-    {
-     "id": "u53",
-     "pointer": "/conversations/52/content",
-     "quote": "通过每一版与上一版的评分点检验"
-    }
-   ],
-   "result_evidence": [
-    {
-     "id": "e107",
-     "pointer": "/experiments/34/output",
-     "quote": "10k×128维、1000查询、BIGINT/VARCHAR过滤、每项3轮中位数对ff117199：写入T=0.4958–0.5450倍、B=0.550442倍、M=0.5105–0.5126倍"
-    },
-    {
-     "id": "e110",
-     "pointer": "/experiments/35/output",
-     "quote": "完整查询T相对缓存版0.90669–0.95724倍，M=1.07417–1.08584倍"
-    }
-   ],
-   "scoring_rationale": "学生要求每一版都与上一版按评分点对照；实验以三轮中位数给出相对 ff117199 和上一版的 T/B/M 比值，并保留 M 增加的代价。",
-   "attribution_limit": "对照方法由学生要求；实验设计、统计和结果解释由 Agent 完成。",
-   "evidence_state": "has_actual_result"
-  },
-  {
-   "instance_id": "R1",
-   "dimension": "取舍与反思",
-   "title": "按实测收益决定继续叠加还是换路线",
-   "problem": "定点/整数筛选等路线没有稳定收益时，是继续投入还是放弃。",
-   "student_evidence": [
-    {
-     "id": "u64",
-     "pointer": "/conversations/63/content",
-     "quote": "有收益就继续叠加优化，没收益就换路线"
-    },
-    {
-     "id": "u65",
-     "pointer": "/conversations/64/content",
-     "quote": "以 f62ce8a7 为基线换更有突破性的路线，别再围着没收益的方案打转"
-    }
-   ],
-   "result_evidence": [
-    {
-     "id": "e118",
-     "pointer": "/experiments/36/output",
-     "quote": "由此拒绝当前定点实现，不把整数指令或正确性通过等同于性能收益"
-    },
-    {
-     "id": "e119",
-     "pointer": "/experiments/37/output",
-     "quote": "写入T下降5.6%–12.9%，查询T下降6.9%–10.5%，B下降23.6%–26.4%"
-    }
-   ],
-   "scoring_rationale": "学生用上一版实测结果设定接受/放弃规则：有收益才叠加，没收益就换路线；实验据此拒绝了变慢的定点实现，并在新日志存储路线上复测出 T/B/M 收益。",
-   "attribution_limit": "接受/放弃规则与换路线决定由学生给出；具体实现、测量和机制解释由 Agent 完成。",
-   "evidence_state": "has_actual_result"
-  },
-  {
-   "instance_id": "R2",
-   "dimension": "取舍与反思",
-   "title": "阶段性正式提测验证优化方向",
-   "problem": "继续优化还是先花一次提交验证方向。",
-   "student_evidence": [
-    {
-     "id": "u69",
-     "pointer": "/conversations/68/content",
-     "quote": "现在做到的程度是2500多分的几倍，我想先提测一版，看看我们改的方向对不对"
-    }
-   ],
-   "result_evidence": [
-    {
-     "id": "e126",
-     "pointer": "/experiments/40/output",
-     "quote": "用户指定a24d2cd7正式提测后反馈：MySQL通过；性能原始E=3977.995012；Prompt仍为合并无效提示。没有T/B/M明细或逐轮Prompt评审报告。官方值属于a24d2cd764027adec7371f268f99ccdca2307032，不属于当前候选。"
-    }
-   ],
-   "scoring_rationale": "用户提出先正式提测验证方向；后续提供a24的3977.995012正式结果及Prompt无效状态。此闭环没有证明性能翻倍，也没有用户独立解释算法机制的记录。",
-   "attribution_limit": "决策由学生提出；提测执行与后续结果尚未记录。",
-   "evidence_state": "has_actual_result"
-  },
-  {
-   "instance_id": "R3",
-   "dimension": "取舍与反思",
-   "title": "在每日两次提交限制下设定 2× 目标",
-   "problem": "有限提交次数下，继续优化还是尽快提测。",
-   "student_evidence": [
-    {
-     "id": "u58",
-     "pointer": "/conversations/57/content",
-     "quote": "优化到提升幅度大一点，因为一天只有两天的提交次数，至少优化到现在性能分数2500的两倍再给我最终版"
-    }
-   ],
-   "result_evidence": [
-    {
-     "id": "e125",
-     "pointer": "/experiments/39/output",
-     "quote": "完整候选对正式ff117199：默认写入T=0.4796–0.4939、查询T=0.5314–0.6173、B=0.3586–0.3901"
-    }
-   ],
-   "scoring_rationale": "学生把每日提交次数作为约束，设定至少 2× 2500 的量化目标再提测；实验给出相对 ff117199 的完整 T/B/M 比值，写入约 2×、查询约 1.6–1.9×，形成目标-结果链，但学生未解释分项口径。",
-   "attribution_limit": "提交预算约束与目标由学生给出；实验设计、统计和分项解释由 Agent 完成。",
-   "evidence_state": "has_actual_result"
-  }
- ],
- "review_feedback_context": {
-  "source": "user_relay_of_organizer_explanation",
-  "content": "用户转述常见无效原因：对话不足以支撑当前代码；三次独立评审从不同角度出发，结论差异可能导致证据不足。没有该仓库逐轮报告，不能认定这两项已是本次正式失败的确定原因。",
-  "response": "统一事实入口：固定 a24 运行源码，保留实现映射、真实请求/结果引用和 12 个独立实例；补齐五维覆盖，移除事后实现规格及 a24 之后的 J11/u71+ 实验。未伪造三次独立评审，也不保证消除模型分歧。"
- },
- "implementation_map": [
-  {
-   "module": "基础类型、行与表目录",
-   "source": "agent_code_explanation",
-   "explanation": "先建立BIGINT、UTF-8、float32向量与行编解码，再通过表命名空间把SQL与存储串联；核心未实现时的失败与接入后通过均有记录。VARCHAR存储宽度与比较常量宽度分开，越界和非法UTF-8仍拒绝。",
-   "files": [
-    {
-     "path": "src/types/value.cpp",
-     "sha256": "91fd8d059b92aa5a498f387372db13f7e3e9676e85213850e04522886c51f84a"
-    },
-    {
-     "path": "src/storage/row_codec.cpp",
-     "sha256": "9354791514f93caaf649ba9562e893c998f741837358e13aa2fe14548d65fcaf"
-    },
-    {
-     "path": "src/catalog/catalog.cpp",
-     "sha256": "00d7cfc032a4ce89b59a6dcd5240901dece8740e969b20a240e6f06a2528c2a8"
-    }
-   ],
-   "request_evidence": [
-    {
-     "id": "u05",
-     "pointer": "/conversations/4/content",
-     "quote": "继续实现表目录、行编解码和 SQL 执行层，把基础增删改查、向量查询和事务串起来，补齐测试。还是全部放 D 盘，别动初赛分支，先不提测。注意提效可以找找论文看看有什么方法"
-    }
-   ],
-   "result_evidence": [
-    {
-     "id": "e04",
-     "pointer": "/experiments/1/output",
-     "quote": "core_types: FAIL: not implemented\ncore_vector: FAIL: not implemented\ncore_storage: FAIL: not implemented\n0% tests passed, 3 tests failed out of 3"
-    },
-    {
-     "id": "e05",
-     "pointer": "/experiments/2/output",
-     "quote": "100% tests passed, 0 tests failed out of 4\nTotal Test time (real) = 29.00 sec"
-    },
-    {
-     "id": "e08",
-     "pointer": "/experiments/3/output",
-     "quote": "AssertionError: SQL CLI executable is missing: /mnt/d/Codex/MiniVectorDB/build/core/minivectordb\n随后接入真实程序：Ran 7 tests in 2.501s\nOK"
-    },
-    {
-     "id": "e09",
-     "pointer": "/experiments/4/output",
-     "quote": "100% tests passed, 0 tests failed out of 12\nTotal Test time (real) = 61.27 sec\nPASS runtime: read-only root, network disabled, 2 CPU/512 MiB, /data persistence and EOF rollback"
-    }
-   ]
-  },
-  {
-   "module": "SQL与事务执行",
-   "source": "agent_code_explanation",
-   "explanation": "解析生成语句与字面量，绑定负责列名、维度、类型和重复键检查；写语句在变更前完成绑定，用保存点恢复语句失败，自动事务与显式事务分开。提交异常可能已发布新根，不能错误地恢复为旧事务状态。",
-   "files": [
-    {
-     "path": "src/sql/lexer.cpp",
-     "sha256": "ac0aa1a04e0c365592f00534991c96ceb519c281b486265b180af4c7ca42936d"
-    },
-    {
-     "path": "src/sql/parser.cpp",
-     "sha256": "0d990fd864cd4d48d7e736cb3a23a24032d96a4ec9333880907fd4c7e374f74d"
-    },
-    {
-     "path": "src/sql/binder.cpp",
-     "sha256": "579a6f09665f684b8553e9c5363981c8c7b077aa35a846badd9d91e20507616b"
-    },
-    {
-     "path": "src/sql/executor.cpp",
-     "sha256": "acb89bf210ff20fe05671b705aead8eb6b76b54637c49dc9f5b30a64dcd9b598"
-    }
-   ],
-   "request_evidence": [
-    {
-     "id": "u05",
-     "pointer": "/conversations/4/content",
-     "quote": "继续实现表目录、行编解码和 SQL 执行层，把基础增删改查、向量查询和事务串起来，补齐测试。还是全部放 D 盘，别动初赛分支，先不提测。注意提效可以找找论文看看有什么方法"
-    },
-    {
-     "id": "u06",
-     "pointer": "/conversations/5/content",
-     "quote": "继续下一阶段，先看看正式题包和测试驱动有没有更新，再做按需解码和降低写入放大的优化，跑对照实验确认收益。还是全部放 D 盘，别动初赛分支，先不推送、不提测。"
-    }
-   ],
-   "result_evidence": [
-    {
-     "id": "e08",
-     "pointer": "/experiments/3/output",
-     "quote": "AssertionError: SQL CLI executable is missing: /mnt/d/Codex/MiniVectorDB/build/core/minivectordb\n随后接入真实程序：Ran 7 tests in 2.501s\nOK"
-    },
-    {
-     "id": "e09",
-     "pointer": "/experiments/4/output",
-     "quote": "100% tests passed, 0 tests failed out of 12\nTotal Test time (real) = 61.27 sec\nPASS runtime: read-only root, network disabled, 2 CPU/512 MiB, /data persistence and EOF rollback"
-    },
-    {
-     "id": "e11",
-     "pointer": "/experiments/6/output",
-     "quote": "8/8 focused suites passed in 7.98s.\nPASS independent autocommit UPDATE/DELETE and explicit CREATE I/O failure rollback, continuation, commit and reopen\nREADY = YES"
-    },
-    {
-     "id": "e35",
-     "pointer": "/experiments/15/output",
-     "quote": "150 mutations,273 independent model checks across exact/ann and filters;2 crash/restarts. Committed rows and indexes persist; uncommitted DML/DDL discarded."
-    }
-   ]
-  },
-  {
-   "module": "JSONL协议与响应原子性",
-   "source": "agent_code_explanation",
-   "explanation": "默认容器入口按官方JSONL输出ready，逐请求返回一条换行并flush的JSON；原始ID不经double转换。执行和响应暂存分开，长ID/资源耗尽场景曾导致提交成功但确认失败，已有回归与修复。过大帧有16MiB上限，协议错误不混入stdout日志。",
-   "files": [
-    {
-     "path": "src/main.cpp",
-     "sha256": "5ef7551fcef2a80ac5c07e6e759ec3d435748d0850024460d9ea81de85218a58"
-    },
-    {
-     "path": "src/protocol/jsonl.hpp",
-     "sha256": "ba60c30f59c3550043b4426e6607ee6359d94882a35ff287521b9aef5a9cce9a"
-    }
-   ],
-   "request_evidence": [
-    {
-     "id": "u16",
-     "pointer": "/conversations/15/content",
-     "quote": "Done， 已经补充了一下stdin/stdout的规则，其实就是给docker的主业务程序发送stdin，前提是按照docker正常的规则来设计，docker run跑的是业务主程序\n也补充了一个具体的py用来double check，但这是AI写的，并没有细致的运行，大家可以参考"
-    },
-    {
-     "id": "u28",
-     "pointer": "/conversations/27/content",
-     "quote": "出一点刁钻的问题考考我们的数据库，并优化一下漏洞"
-    }
-   ],
-   "result_evidence": [
-    {
-     "id": "e32",
-     "pointer": "/experiments/12/output",
-     "quote": "Both bdae610 and873e139: old dev-tsv diagnostic19/20 cases94/95SQL; CREATE VECTOR INDEX fails. New official JSONL handshake on actual873 image: TIMEOUT JSON response timeout. Platform summary alone does not identify the "
-    },
-    {
-     "id": "e33",
-     "pointer": "/experiments/13/output",
-     "quote": "Official upstream f4d4e26653af823a7601668802f80e374ad6643c defines JSONL input/output, exact ready, execute/search_mode, shutdown. 50 downloaded source/case files verified against Git blob SHA1. Native adapter tests firs"
-    },
-    {
-     "id": "e34",
-     "pointer": "/experiments/14/output",
-     "quote": "20/20 public cases,95SQL assertions pass through official JSONL driver, with D-only storage launcher and negative assertion canary. Handshake passes. Modes exact/ann and index maintenance included; no hidden29-case claim"
-    },
-    {
-     "id": "e54",
-     "pointer": "/experiments/17/output",
-     "quote": "在最新row CPU版本复现：既有库、测试子进程RLIMIT_NOFILE=4、65510字符请求ID，INSERT返回ok:false但随后SELECT能查到已提交行。BEGIN/COMMIT/shutdown同一根因导致状态确认不一致。原协议矩阵180检查有2个状态预期失败；新增5个回归方法有7处失败。SQL模型1344请求/56事务目录循环通过；独立存储故障472案例通过。"
-    },
-    {
-     "id": "e55",
-     "pointer": "/experiments/18/output",
-     "quote": "响应ID与结果临时文件分离，完整准备结果后才输出。36/36 Docker450.33s；审查加强行列数和重试实际数据断言后3/3专项通过。协议6方法、SQL1344请求、存储475故障/重试案例；公开20/20、模型273/2kill、runtime通过。12000真实JSONL查询/12重启通过；有索引3150.268->3110.907ms，无索引4751.245->4698.321ms，约1%差异按基本持平看待。"
-    }
-   ]
-  },
-  {
-   "module": "精确向量与保守筛选",
-   "source": "agent_code_explanation",
-   "explanation": "保持float32值和确定的距离/主键次序；采用保守筛选减少精确计算，无法排除时执行精确路径。指令更少或微内核更快不等于端到端更快，因此拒绝没有稳定收益的定点实现。",
-   "files": [
-    {
-     "path": "src/vector/exact.cpp",
-     "sha256": "d2871ee2ef754703ea9fb216a159faf39881de7d61dcb09062ec5e7de8245a54"
-    },
-    {
-     "path": "src/vector/batch_simd.hpp",
-     "sha256": "2bb391c626687b7f38e47e0be93042aaa35323738e330a2880a52c87ee6319e6"
-    },
-    {
-     "path": "src/vector/int8_bound.hpp",
-     "sha256": "81bcc2ed93c991d4e4570359ef92ed7c8d8b7ec8eb9db77a57434111032d3dcf"
-    }
-   ],
-   "request_evidence": [
-    {
-     "id": "u06",
-     "pointer": "/conversations/5/content",
-     "quote": "继续下一阶段，先看看正式题包和测试驱动有没有更新，再做按需解码和降低写入放大的优化，跑对照实验确认收益。还是全部放 D 盘，别动初赛分支，先不推送、不提测。"
-    },
-    {
-     "id": "u63",
-     "pointer": "/conversations/62/content",
-     "quote": "继续，看看原生重测结果，对比上一版的 T、B、M，有明显收益就继续叠加优化，至少做到现在性能分两倍再给我正式提测版。"
-    }
-   ],
-   "result_evidence": [
-    {
-     "id": "e43",
-     "pointer": "/experiments/16/output",
-     "quote": "Old and latest actual Docker probes rejected finite-rounding float32 maximum, including reinsertion of their own vector output. Returned distances both1 nevertheless sorted ids2,1 because squared valu"
-    },
-    {
-     "id": "e107",
-     "pointer": "/experiments/34/output",
-     "quote": "commit35467933ac6c8368eeae1e71ffd82f09e5b79368，Actions43162466351，两台原生x86各58项CTest及20项公开协议通过。10k×128维、1000查询、BIGINT/VARCHAR过滤、每项3轮中位数对ff117199：写入T=0.4958–0.5450倍、B=0.550442倍、M=0.5105–0.5126倍；查询T=0.703"
-    },
-    {
-     "id": "e110",
-     "pointer": "/experiments/35/output",
-     "quote": "commit2472f0a2b6249b5c834ca9c4c474fe54e81047c8/run43169539952，两台各59项CTest、20项公开协议及完整性能对照通过。AVX2用绝对值与符号变换保证8位乘加每对绝对值不超过32258，避开饱和；原生与强制AVX2路径均与标量筛选掩码逐项比对。每机117168项oracle/边界比较、80640项原生掩码检查。无VNNI机器3轮核心查询"
-    },
-    {
-     "id": "e118",
-     "pointer": "/experiments/36/output",
-     "quote": "e039bba7/run43208397960两台均63项CTest和公开协议通过。相对上一版f62ce8a7，BIGINT无索引查询T增加7.51%–10.00%、有索引增加7.73%–9.79%；VARCHAR分别增加1.80%–3.97%、1.21%–4.67%。所有B比值为1，查询M增加6.27%–7.08%。第一台同一二进制开关探针确有1100000行走定点路径，结果摘要一致；核心查询C"
-    }
-   ]
-  },
-  {
-   "module": "快照、投影和有界缓存",
-   "source": "agent_code_explanation",
-   "explanation": "把重复扫描中可复用的数据与本次查询绑定/距离/投影分开；写入及事务边界保守失效。限制缓存预算并记录首次构建、失效重建和峰值重叠；不隐藏更新混合负载的退化。",
-   "files": [
-    {
-     "path": "src/sql/scan_cache.hpp",
-     "sha256": "18e9274cce60ca1ef2e64b3752defd26264ab2a584787a778f65c08df3544945"
-    },
-    {
-     "path": "src/sql/typed_scan_cache.hpp",
-     "sha256": "8fef336fa2c3ec7e1fc598c88fff1ecd8bf8d963375aadc412c020afb9ff9957"
-    },
-    {
-     "path": "src/sql/projection_cache.hpp",
-     "sha256": "6098ef28eaddd33ab175a2e5721c46d25c91b83db34b2f1511eb56e8c2562abd"
-    }
-   ],
-   "request_evidence": [
-    {
-     "id": "u33",
-     "pointer": "/conversations/32/content",
-     "quote": "无索引是我们的弱点部分是吗"
-    },
-    {
-     "id": "u35",
-     "pointer": "/conversations/34/content",
-     "quote": "不断优化，直至到你觉得ok了为止，优化完一轮之后就自觉检查自己的薄弱点，然后针对薄弱点继续优化"
-    },
-    {
-     "id": "u65",
-     "pointer": "/conversations/64/content",
-     "quote": "继续，以 f62ce8a7 为基线换更有突破性的路线，别再围着没收益的方案打转。重点优化 T、B、M，每版都做原生对照，达到性能翻倍目标前先别给我正式提测版。"
-    }
-   ],
-   "result_evidence": [
-    {
-     "id": "e57",
-     "pointer": "/experiments/20/output",
-     "quote": "60查询诊断中位316.443ms，回调外85.309、全行校验75.982、物化38.772、距离33.039、pread0.904；包含阶段不相加。正常计时另跑。"
-    },
-    {
-     "id": "e58",
-     "pointer": "/experiments/21/output",
-     "quote": "主场景764.182→455.031ms，但每三读一更新完整周期151.067→161.286ms。最初两个VECTOR的测试夹具错误已修正；随后baseline RED命中预期快照行计数。禁用/拒绝路径取消逐行append包装。"
-    },
-    {
-     "id": "e60",
-     "pointer": "/experiments/23/output",
-     "quote": "旧路径候选向量Cell计数非零而新要求零，真实RED后实现。32种SQL组合、位模式和零新增分配测试通过；完整行校验及距离累加不变。最终六轮核心参考738.615→415.285ms；单独scratch从456.239ms继续下降。"
-    },
-    {
-     "id": "e63",
-     "pointer": "/experiments/26/output",
-     "quote": "旧路径在warm.stats.row_validation.calls<=warm.rows.size()断言真实RED。新增私有对齐向量/BIGINT列缓存，冷建先完整验证全部行，写入前失效；不支持的表达式或超预算回退。9份无探针对照共255样本、22236查询；另有2组诊断480查询和初测4样本800查询，分别保留，不混作受控样本。类型化缓存的交错写读查询+8.96%，完整周期+1.02%，不"
-    },
-    {
-     "id": "e125",
-     "pointer": "/experiments/39/output",
-     "quote": "4ffb3656/run43231201624。旧版首次VARCHAR过滤触发类型化缓存重新观察，而投影缓存已完成的观察仍重复累加行数，预计2N行与实际N行不符，最终缓存拒绝启用。新增交替无过滤/文本过滤并跨索引、回滚、删除的回归，旧版失败；修复后ARM70/70、两台原生各70/70及公开20项通过。核心200查询探针旧投影bytes=0，新=508623，结果digest全部9eb107fcb"
-    }
-   ]
-  },
-  {
-   "module": "J08追加记录与无损字节平面压缩",
-   "source": "agent_code_explanation",
-   "explanation": "J08以不可变追加记录、内存键到偏移目录和交替提交根减少写放大。语句失败恢复保存点，回滚改变可达性，提交仍执行同步。字节平面与RLE保持原值；该模块的采用证据是e119，后续J11不属于本次实现。",
-   "files": [
-    {
-     "path": "src/storage/store.cpp",
-     "sha256": "3a14f71dc36ef1dcbff4eec7627ad942eedb6a5106c0fc57f5157bce9bae7d8b"
-    },
-    {
-     "path": "src/storage/journal_store.hpp",
-     "sha256": "889dd81655901bccd6aeff1235906487850476b50136428e37048772eb6e9445"
-    },
-    {
-     "path": "src/storage/packed_codec.hpp",
-     "sha256": "508e2d0b168b9050c0b0895e1665fd06c833455bf4f21712f92e0604059584ec"
-    }
-   ],
-   "request_evidence": [
-    {
-     "id": "u53",
-     "pointer": "/conversations/52/content",
-     "quote": "不断优化至理论上限，通过每一版与上一版的评分点检验，发现当前版本的薄弱评分部分，以提分为第一要务，不断迭代，注意创意性扩展思维，运用一些超乎寻常的方法，形成自我的关键更新突破，在没有优化至理论上限之前不要停，有问题自己解决，给你任何权限，注意重心放在计分点上"
-    },
-    {
-     "id": "u65",
-     "pointer": "/conversations/64/content",
-     "quote": "继续，以 f62ce8a7 为基线换更有突破性的路线，别再围着没收益的方案打转。重点优化 T、B、M，每版都做原生对照，达到性能翻倍目标前先别给我正式提测版。"
-    }
-   ],
-   "result_evidence": [
-    {
-     "id": "e119",
-     "pointer": "/experiments/37/output",
-     "quote": "f8bbfeca/run43217005915基于f62ce8a7，采用不可变记录链、双提交根和内存键位置目录，旧格式02至07仍自动识别。ARM69/69通过，两台原生均69/69及公开20项通过。第二台首次在一般随机数据的资源收尾阶段因cgroup仍报告4KiB脏页而被采集器拒绝；未放宽采集条件，原代码重跑完整通过，首次失败证据保留。相对f62两台常规负载：写入T下降5.6%–12.9%，查询"
-    }
-   ]
-  },
-  {
-   "module": "协议解析、绑定与缓冲输出",
-   "source": "agent_code_explanation",
-   "explanation": "a24保留严格JSONL、UTF-8和数值绑定；复用64KiB响应缓冲容量，逐请求清空内容，成功响应仍以换行与flush结束。e123给出缓冲复用对照，e34验证实际官方传输入口。",
-   "files": [
-    {
-     "path": "src/protocol/jsonl.hpp",
-     "sha256": "ba60c30f59c3550043b4426e6607ee6359d94882a35ff287521b9aef5a9cce9a"
-    },
-    {
-     "path": "src/types/value.cpp",
-     "sha256": "91fd8d059b92aa5a498f387372db13f7e3e9676e85213850e04522886c51f84a"
-    },
-    {
-     "path": "src/sql/binder.cpp",
-     "sha256": "579a6f09665f684b8553e9c5363981c8c7b077aa35a846badd9d91e20507616b"
-    }
-   ],
-   "request_evidence": [
-    {
-     "id": "u28",
-     "pointer": "/conversations/27/content",
-     "quote": "出一点刁钻的问题考考我们的数据库，并优化一下漏洞"
-    },
-    {
-     "id": "u65",
-     "pointer": "/conversations/64/content",
-     "quote": "继续，以 f62ce8a7 为基线换更有突破性的路线，别再围着没收益的方案打转。重点优化 T、B、M，每版都做原生对照，达到性能翻倍目标前先别给我正式提测版。"
-    }
-   ],
-   "result_evidence": [
-    {
-     "id": "e123",
-     "pointer": "/experiments/38/output",
-     "quote": "b170c05f/run43221866726两台原生各69项内部测试及20项公开协议通过。每条请求前清空内容并关闭旧临时文件，保留64KiB响应容量，换行和flush保持不变。相对日志版f8bbfeca，默认查询T减少4.5%–6.8%，B不变，M近似不变；系统CPU耗时减少，支持分配开销下降的解释。相对正式ff117199，默认写入T=0.4382–0.4714、查询T=0.5587–0.60"
-    },
-    {
-     "id": "e34",
-     "pointer": "/experiments/14/output",
-     "quote": "20/20 public cases,95SQL assertions pass through official JSONL driver, with D-only storage launcher and negative assertion canary. Handshake passes. Modes exact/ann and index maintenance included; no"
-    }
-   ]
-  }
- ],
- "review_views": [
-  {
-   "view": "来源与可复现性",
-   "source": "agent_explanation",
-   "content": "source_identity 绑定 a24；implementation_map 的源码哈希与 a24 文件一致；记录选择只覆盖 a24 形成之前的 u01-u70 / e01-e126。"
-  },
-  {
-   "view": "正确性与接口",
-   "source": "agent_explanation",
-   "content": "e32-e35 对应官方协议与独立状态模型，e54-e55 对应响应确认反例，e125/e126 对应当前交付验证与正式反馈。通过只限这些实际检查，不等同于隐藏准入。"
-  },
-  {
-   "view": "性能与取舍",
-   "source": "agent_explanation",
-   "content": "e119/e123/e125 对照 a24 的结构性改动、资源取舍和修复验证；a24 之后的 J11/centered 实验不作为当前运行源码证据。三个视角是同一事实的导航，不是三份独立评分结论。"
-  }
- ],
- "dimension_evidence_inventory": {
-  "source": "agent_evidence_inventory",
-  "user_contribution": "u43 拆分 T/B/M；u53/u65 要求逐版对照与止损；u58 在提交次数约束下设定 2× 目标；u69 要求阶段提测验证方向；u70 给出 a24 正式反馈。",
-  "implementation_evidence": "implementation_map 绑定 a24 源码；e119/e123/e125 说明结构性改动、资源取舍和修复验证；e126 记录正式反馈。",
-  "mechanism_explanation": "当前详细机制解释主要由 Agent 撰写；材料没有将其替换为学生独立推导证据。",
-  "complete_scope": "这是确定范围内的记录选择与当前代码说明；没有声称囊括未保存的聊天或三次平台评审。记录不足以支持某项独立理解时保留该事实，不补造对话。"
- },
- "source_identity": {
-  "verified_engine_commit": "a24d2cd764027adec7371f268f99ccdca2307032",
-  "runtime_trees": {
-   "src": "90dc2e6c149b12c2576d3327e3c621c81c26e524",
-   "include": "10ed3388a60ff4621ed52d422b317859a41ea4b0",
-   "tests": "ce82fb4d207f355db4cfc95f777232f664c98b3d",
-   "CMakeLists.txt": "78d8497653d29085db65ae5a9e57954f1a7ac513",
-   "Dockerfile": "5ca119733dfffd36fa9e11ee4612607d65ccc468"
-  },
-  "scope": "运行/构建/测试固定 a24；材料只选 u01-u70 / e01-e126；a24 之后的 J11、centered 与 u71+ 实验不作为当前运行源码证据。"
- }
 }
