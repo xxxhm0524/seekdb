@@ -18,7 +18,7 @@ jobs:
           mkdir -p kernel-results
           g++ --version > kernel-results/compiler.txt
           lscpu > kernel-results/cpu.txt
-          g++ -Isrc -std=c++20 -O3 -DNDEBUG -ffp-contract=off bench/e860-kernels/compare.cpp -o kernel-results/compare
+          g++ -Isrc -Ithird_party -std=c++20 -O3 -DNDEBUG -ffp-contract=off bench/e860-kernels/compare.cpp -o kernel-results/compare
       - name: Compare every score and minimum before timing
         run: kernel-results/compare > kernel-results/report.jsonl
       - name: Preserve paired evidence
