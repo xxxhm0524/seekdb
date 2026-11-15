@@ -7,6 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 H = ROOT / 'evidence/e860-history-20261116'
 V = ROOT / 'validation/e860-opt-20261116'
+CURRENT_CORE = json.loads((V/'runtime-inputs.json').read_text(encoding='utf-8'))['production_core']
 history = json.loads((H/'approved-owner-history.json').read_text(encoding='utf-8'))
 latest = json.loads((H/'latest-owner-history.json').read_text(encoding='utf-8'))
 messages = copy.deepcopy(history['messages'])
@@ -16,6 +17,7 @@ for i, message in enumerate(messages):
     if message['role'] == 'user' and '18446744073709551616' in message['content']:
         message['attribution_note'] = 'The owner quotes an Agent finding, then challenges the review method. The quoted discovery is not relabeled as the owner finding it.'
 messages += copy.deepcopy(latest['messages'])
+assert len({message['id'] for message in messages}) == len(messages)
 
 material = dict(
     format='agent-learning-evidence-v3-unbounded', synthetic=False,
@@ -24,7 +26,7 @@ material = dict(
     owner_leadership_overview=dict(author='Agent 整理说明，不是历史用户发言',
         text='做题人多次纠正仅凭公开用例或代码来源判断正确性的做法，要求寻找参考实现通过而本实现失败的边界，并以 MySQL 全部准入作为得分前提。在实现路线反复调整后，做题人决定保留参考派生候选作备选，重新以已有正式成绩的 e860 为主线，参考新的得分公开代码继续优化。做题人把目标从原始性能 E≥4000 提高为 E≥4500，并撤销当晚提测和时间限制，使实现者可以继续核验正确性与资源取舍。',
         role_boundary='目标、质疑、验收要求、选型和是否提测归属于做题人的真实指令。具体存储实现、数学界、实验及工具操作归属于 Agent 或实际参考作者。未补写做题人没有说过的机制解释、操作或理解。'),
-    current_context=dict(base='e86045306f5940613bfcf4aa84b0ee4bf74c20f1', production_core='ba96b7b048d3c1ae8a910a0cf6f5e0e46bd87396',
+    current_context=dict(base='e86045306f5940613bfcf4aa84b0ee4bf74c20f1', production_core=CURRENT_CORE,
         target='正式原始性能指标 E≥4500；本地数据不能确认达到该值', formal_submission='做题人已取消本轮正式提测；跨日不自动恢复授权。',
         route_history='早期重写与参考派生候选的结果均保留原版本归属。本轮主线由做题人重新指定为 e860，参考派生 6fca5f7e8 仍独立保留。',
         source_attribution='e860 原有 juanzhi 参考来源保留。Freaybru/seekdb-2026 的 3dfd062502aed05de32b269c64bd32995b0ffb5e 提供已提交前缀映射与向量来源复用思路；4427.302903 仅为作者公开记录对应的成绩。新页回收、共享寿命接入及本地实验由 Agent 实施。未复制参考作者的学习对话。'),
@@ -45,18 +47,25 @@ include('observed-formal-e860',H/'formal-result-at-20261115-2156.json','formal r
 for name, note in [
     ('public.json','Unchanged official f4d driver and assertions, default native constrained entrypoint; no Docker image build.'),
     ('regression.json','All 26 unchanged native assertion groups passed against the dynamic production build so fault injection can actually intercept calls.'),
-    ('baseline-parity.json','7862 strict comparisons passed. The old helper hardcoded reference_commit=a08; the actual reference binary SHA is the pinned e860 binary 6a89320d...7934. New CI passes the source identity explicitly; original output is retained.'),
+    ('baseline-parity.json','7862 strict comparisons passed against the pinned e860 binary, with the source commit passed explicitly. Earlier incorrectly labeled raw reports remain historical; this report has the correct identity.'),
     ('reclaim-lifecycle.json','Actual before/after-fallocate SIGKILL, EIO/ENOSYS injection, both recovery-root live-byte manifests and reads by unmodified e860. Changed unreachable garbage is not compared as live data.'),
     ('sanitizer.json','ASan, UBSan and leak detection; eight selected semantic groups, native same production sources.'),
     ('capacity.json','Actual 2 GiB/no-swap cgroup with over 2 GiB physical persisted user data; exact/ann and committed/uncommitted SIGKILL. Sampled memory is not memory.peak.'),
     ('ordered-resources.json','Three counterbalanced rounds with sequential insertion; include both baseline and scored public reference. Native measurements, not a score.'),
     ('reclaim-resources.json','Random insertion: reclaim trades about 2% write time for a large page-cache-inclusive memory reduction. Slow samples remain.'),
     ('lto-queries.json','Rejected reference-inspired link-time optimization: six paired rounds, about 1% worse ID/distance queries. Default build unchanged.'),
-    ('lto-writes.json','Rejected LTO: four shapes by four paired rounds, roughly 3-5% worse writes despite identical files. Negative evidence is retained.')]:
-    include(name,V/name,'e860 optimization, production core ba96b7b',note)
+    ('lto-writes.json','Rejected LTO: four shapes by four paired rounds, roughly 3-5% worse writes despite identical files. Negative evidence is retained.'),
+    ('final-ordered-resources.json','Latest three-round sequential-insertion comparison against original e860 and the scored public reference. Page-cache-inclusive memory is sampled, not official memory.peak.'),
+    ('final-avx2-id.json','Six rounds of actual ID/distance JSONL requests compared to prior core ba96b7b; all 48000 query results checked against an independent oracle.'),
+    ('final-avx2-body.json','Six rounds including uncached ordinary projection; 48000 checked results. Every measured round remains represented in the summary.'),
+    ('verified-avx2-certified.json','All available scalar/AVX2 integer scores and block minima matched, with conservative bounds and exact float64 survivor/tie checks. No VNNI hardware execution is claimed.'),
+    ('verified-avx2-design.json','Source design identity: the original scalar/VNNI dot kernels are retained, while AVX2 normalization/minimum and query-magnitude work are fused. An unmeasured VNNI unroll was not adopted.')]:
+    prior = name in ('ordered-resources.json','reclaim-resources.json','lto-queries.json','lto-writes.json')
+    include(name,V/name,'Prior e860 production core ba96b7b' if prior else 'Current e860 optimization, production core '+CURRENT_CORE,note)
 
 def owner(needle):
     for i,m in enumerate(messages):
+        if m['role']=='user' and needle in m.get('owner_answer',''):return dict(pointer=f'/conversations/{i}/owner_answer',quote=needle)
         if m['role']=='user' and needle in m['content']:return dict(pointer=f'/conversations/{i}/content',quote=needle)
     raise AssertionError(needle)
 
@@ -70,7 +79,7 @@ material['candidate_evidence_chains']=[
     dict(topic='做题人要求逐条核对协议与参考边界',owner_evidence=[owner('你不应该对着协议一个一个排查吗')],
         observed_result=[result('baseline-parity.json','"observations": 7862')],
         attribution='原始编号缺陷是做题人在引号中引用 Agent 发现；做题人的贡献是质疑遗漏并要求完整排查。结果是有限对拍证据，不能写成所有输入的证明。'),
-    dict(topic='由做题人指定重新以已得分 e860 优化',owner_evidence=[owner('在e86045306f5940613bfcf4aa84b0ee4bf74c20f1上优化'),owner('改成e大于等于4500吧')],
+    dict(topic='由做题人指定重新以已得分 e860 优化',owner_evidence=[owner('在e86045306f5940613bfcf4aa84b0ee4bf74c20f1上优化'),owner('原始性能指标 E ≥ 4000'),owner('改成e大于等于4500吧')],
         observed_result=[result('public.json','"passed": true'),result('regression.json','"completed": 26')],
         attribution='路线与目标由做题人指定；实现和验证由 Agent 执行。目标尚未通过正式平台确认。'),
     dict(topic='正确性和存储约束优先于提速',owner_evidence=[owner('请你确定mysol的样例要不通过，否则不得分'),owner('请你检查一些边界情况')],

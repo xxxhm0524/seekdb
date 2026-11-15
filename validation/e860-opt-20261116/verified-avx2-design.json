@@ -1,0 +1,7 @@
+{
+  "base": "ba96b7b048d3c1ae8a910a0cf6f5e0e46bd87396",
+  "header_sha256": "28f1121ad45f197a0d40a5046c078102246028d6a05192f20e1eab73867c18ee",
+  "vnni_dot_kernel_byte_identical_to_base": true,
+  "vnni_block_sha256": "047872f1cf3ff638ab2e52578ab93667e2e957ad9fc4cc9a15407fe4e6eca72a",
+  "scope": "AVX2 exact normalization/minimum fusion and hoisted query magnitude; original scalar/VNNI dot products retained."
+}

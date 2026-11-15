@@ -1,6 +1,6 @@
 {
   "base": "e86045306f5940613bfcf4aa84b0ee4bf74c20f1",
-  "production_core": "ba96b7b048d3c1ae8a910a0cf6f5e0e46bd87396",
+  "production_core": "ca5228e04ad1f570157ea288b109ef7e3c81e9db",
   "formal_submitted": false,
   "target_E": 4500,
   "sha256_lf": {
@@ -12,7 +12,7 @@
     "src/main.cpp": "83af68555e74295a053f2116cc305b83c4779be9df9c17229753fd08abb0f475",
     "src/model.cpp": "b890b730a7e9c56546779e570a4b85dfa984867f876b7e347d1b9bd31da1797e",
     "src/model.hpp": "c735faa5ef8de815b53a52aa3b5de8a313acf07f1564974174bb1f4b8595c3c8",
-    "src/quantized_screen.hpp": "53e52859c326cfc30247ff3fe4feb90d67beffaf3d8c61b9a52b599cd868b7ad",
+    "src/quantized_screen.hpp": "28f1121ad45f197a0d40a5046c078102246028d6a05192f20e1eab73867c18ee",
     "src/query.cpp": "6879b6c0324d2ad9403bd293df31cf111738e02bcd6eb3c2ebbcc9c971e46bce",
     "src/record_reader.cpp": "74c64390576ac63bd8d25e1128e31d4e957d2057297429f761f76ce59560ee74",
     "src/request.cpp": "0dbc22559f74b9e366afaec1e4e0b6c92b0329e075a48e67178b72d9f7e87505",
@@ -23,7 +23,7 @@
     "src/sql.hpp": "1dd7a158b46c5afb8b254a052a721bbe6671f8d11864ff95ff6cdc56b8bb9089",
     "src/storage.cpp": "0832294701400c2977296e7925ff87ef8bd0f429afdb596b13f01262249f09b7",
     "src/storage.hpp": "72304134dd212a064dd860f6a1348e96046ae797e3d47eff975ea9a40cfaeda5",
-    "src/vector_index.cpp": "a240da6544aede2a85107fbca5f3a01ee460d8f9206b77c2aaa3f644045c7440",
+    "src/vector_index.cpp": "6caefdb84179ee919486a83d1412625e3097d42b37eebad0f639137b06697e40",
     "src/vector_index.hpp": "a906953fae09e81f8ee22bd4c93e507eed2d17561cbec974142ef48010d9b6bb",
     "src/vector_literal.cpp": "f2ee612c5a701c7c6ac5372de394aae3d21da463d1c9b107580ce5605d9801c4",
     "src/vector_literal.hpp": "ed7166c2b40fae917d2d5879228ea1b575e5ded55ea98d26449c6a0e37e3937f",
@@ -31,17 +31,17 @@
     "Dockerfile": "1f20987cdf45add1804b14cc032628a36f1617ef86d23a864e68e0ca5f9a42c4",
     "third_party/DEPENDENCIES.json": "397bb6d1da34f5fdca46ddb7448258629ee4509f7fba06c90e510424ae7c4a0d"
   },
-  "source_match_sha256": "42e79d9901c75ca301b41b7fa693b297bbadbb4b12e87245f59ef1982d01e09c",
+  "source_match_sha256": "fbf03b338120bb72bf780cfb7041f72598edf4794d0a1fc09c10be679e0bac79",
   "evidence_reports": {
-    "public.json": "a5bb4349e7d807f227a2e4479450755429c7c12f221d74236c06d6477c0ae8ac",
-    "regression.json": "e25742b641002718bff9f38ca10a6d3f4a62c4fc1c11e4e465dcf264f6158a96",
-    "baseline-parity.json": "fa857f2c96ee8dd2c91d081cb0d66b4d867a62200bb624bcb7a2284a7f0dcdcd",
-    "reclaim-lifecycle.json": "aa13465068e031f8cb82681d203586e5202e4ca9188e4ef3df25a9ce3e9727fa",
-    "sanitizer.json": "d12b3503c3bc0b414c9f5e5f802dc3194cbb634df6d256549a917fc85492f520",
-    "capacity.json": "7b0cefdcdf89b3423a1b469391da988d33e8cff6de7c49594f551733e4a67726"
+    "public.json": "5083258b47619c7b8bc5927632955237df77ded7237c63b9c8286626bf474111",
+    "regression.json": "f81f8722e0ec40bba57fbb43f9d7f35e4cc1cf0af78a2debcc0858e925b52d22",
+    "baseline-parity.json": "5d839d134b6ae11d995e11cde739f6e31bff5b237750e963f33b127dea718b05",
+    "reclaim-lifecycle.json": "4213d5bbc3d9cfa71e01fd350a75e0859992fef2d9fbd68e5cfa7680065c7d15",
+    "sanitizer.json": "bdf4e6cb92b114381ccb2872bc3b5d51420995bb5e1deef011b2df4d7041e8bc",
+    "capacity.json": "6ce175262fe038092dab05805aca43fafdd9efe9962ef1d73b898fc30816ef8c"
   },
-  "source_archive_sha256": "1c19e35648639618507d69c73f0a000fb5af89c985e9fe3a9bf7038e3f8a88b4",
+  "source_archive_sha256": "297f29934ff99eefefbca8463038c8dac1e70f661b7884f9bb7879acf0c39014",
   "compiler": "A6000 GCC 11.4; final native CI recompiles with runner toolchain",
-  "metadata_correction": "baseline-parity.json was emitted by an older generic helper with a hardcoded reference_commit field. Its actual reference binary SHA256 is the frozen e860 binary 6a89320da35ea2c74ca8cdee8795c098f39738ea3ba6921953ffd9b577643934. The new CI helper takes an explicit verified reference commit. Raw historical output is retained.",
+  "metadata_correction": "Current baseline parity passes an explicit e860 source identity. The earlier hardcoded-reference metadata issue is preserved only in historical raw reports.",
   "scope": "Actual native evidence for matching production source bytes. No Docker cold pull/build or formal score claimed. Earlier 54-report evidence remains bound to its historical core."
 }

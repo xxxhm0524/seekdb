@@ -8,7 +8,7 @@
     "src/main.cpp": "83af68555e74295a053f2116cc305b83c4779be9df9c17229753fd08abb0f475",
     "src/model.cpp": "b890b730a7e9c56546779e570a4b85dfa984867f876b7e347d1b9bd31da1797e",
     "src/model.hpp": "c735faa5ef8de815b53a52aa3b5de8a313acf07f1564974174bb1f4b8595c3c8",
-    "src/quantized_screen.hpp": "53e52859c326cfc30247ff3fe4feb90d67beffaf3d8c61b9a52b599cd868b7ad",
+    "src/quantized_screen.hpp": "28f1121ad45f197a0d40a5046c078102246028d6a05192f20e1eab73867c18ee",
     "src/query.cpp": "6879b6c0324d2ad9403bd293df31cf111738e02bcd6eb3c2ebbcc9c971e46bce",
     "src/record_reader.cpp": "74c64390576ac63bd8d25e1128e31d4e957d2057297429f761f76ce59560ee74",
     "src/request.cpp": "0dbc22559f74b9e366afaec1e4e0b6c92b0329e075a48e67178b72d9f7e87505",
@@ -19,11 +19,11 @@
     "src/sql.hpp": "1dd7a158b46c5afb8b254a052a721bbe6671f8d11864ff95ff6cdc56b8bb9089",
     "src/storage.cpp": "0832294701400c2977296e7925ff87ef8bd0f429afdb596b13f01262249f09b7",
     "src/storage.hpp": "72304134dd212a064dd860f6a1348e96046ae797e3d47eff975ea9a40cfaeda5",
-    "src/vector_index.cpp": "a240da6544aede2a85107fbca5f3a01ee460d8f9206b77c2aaa3f644045c7440",
+    "src/vector_index.cpp": "6caefdb84179ee919486a83d1412625e3097d42b37eebad0f639137b06697e40",
     "src/vector_index.hpp": "a906953fae09e81f8ee22bd4c93e507eed2d17561cbec974142ef48010d9b6bb",
     "src/vector_literal.cpp": "f2ee612c5a701c7c6ac5372de394aae3d21da463d1c9b107580ce5605d9801c4",
     "src/vector_literal.hpp": "ed7166c2b40fae917d2d5879228ea1b575e5ded55ea98d26449c6a0e37e3937f"
   },
-  "binary_static": "738de307ee78c048d1bd8360f4650507b4d8a00c935d0499fabf05c6dd4033ae",
-  "binary_dynamic": "bc8592f65a30e88d9fa1860240871dbbe55559082ac1be09ba8b92521a82bf18"
+  "binary_static": "c36fafed171d63f7669631c281136a83e1826971143e796b28be9c035e9d4a9c",
+  "binary_dynamic": "2a64d196902ac2f1e6d1c97959e03553bcdd008cc0231fd9d09dc267f77bfde5"
 }
