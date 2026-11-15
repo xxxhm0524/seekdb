@@ -1,6 +1,7 @@
 #include "minivectordb/profile.hpp"
 #include "sql.hpp"
 #include "minivectordb/value.hpp"
+#include "../types/float32.hpp"
 #include <charconv>
 #include <cmath>
 #include <set>
@@ -128,19 +129,30 @@ namespace minivectordb::sql {
         return v.text;
       }
       if(fast_vector && v.kind==Literal::String) {
-        std::vector<double> values;
+        std::vector<float> values;
         values.reserve(std::min<std::size_t>(c.extent,v.text.size()/2));
-        std::exception_ptr numeric_error;
+        std::size_t component_count=0;
+        std::exception_ptr numeric_error,range_error;
         const bool plain=plain_vector(v.text,[&](auto component){
+          ++component_count;
           if(numeric_error)return;
-          try {values.push_back(real(component));}
+          double number=0;
+          try {number=real(component);}
           catch(const Error&) {numeric_error=std::current_exception();}
+          if(numeric_error || range_error)return;
+          try {values.push_back(detail::finite_float32(number));}
+          catch(const std::invalid_argument&) {range_error=std::current_exception();}
         });
         if(plain) {
           // The lexer inspects the complete input before any conversion. A
           // malformed suffix must still win over an earlier overflow error.
           if(numeric_error)std::rethrow_exception(numeric_error);
-          return make_vector(values,c.extent);
+          // Keep error precedence: complete grammar, binary64 parsing,
+          // dimension, then float32 range. A later malformed token must still
+          // take the original lexer path even after a numeric conversion fails.
+          if(component_count!=c.extent)throw std::invalid_argument("VECTOR dimension mismatch");
+          if(range_error)std::rethrow_exception(range_error);
+          return values;
         }
       }
       auto components=vector_components(v);
