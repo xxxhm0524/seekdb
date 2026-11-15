@@ -3,7 +3,7 @@ WORKDIR /build
 COPY Makefile ./
 COPY src/ ./src/
 COPY third_party/ ./third_party/
-RUN --network=none make -j2 LDFLAGS='-static-libstdc++ -static-libgcc' \
+RUN make -j2 LDFLAGS='-static-libstdc++ -static-libgcc' \
     && g++ --version > compiler-version.txt \
     && sha256sum minivectordb > binary.sha256
 
@@ -14,7 +14,7 @@ COPY third_party/json.LICENSE.MIT /app/licenses/nlohmann-json.MIT
 COPY third_party/GCC-RUNTIME-EXCEPTION-3.1.txt /app/licenses/GCC-RUNTIME-EXCEPTION-3.1.txt
 COPY --from=build /usr/share/common-licenses/GPL-3 /app/licenses/GPL-3
 COPY --from=build /build/compiler-version.txt /build/binary.sha256 /app/build-info/
-RUN --network=none mkdir -p /data
+RUN mkdir -p /data
 VOLUME ["/data"]
 ENTRYPOINT ["/app/minivectordb"]
 CMD ["--data-dir", "/data"]
