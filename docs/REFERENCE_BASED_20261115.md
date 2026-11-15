@@ -1,5 +1,7 @@
 # 直接继承参考实现的原生候选
 
+本报告保留原 c2/4da 阶段的实测归属。后续 Prompt 编排及读取故障注入兼容修复分别见 PROMPT_RECORD_REVIEW_20261115.md、CI_READ_INJECTION_20261115.md；旧“未推送/未跑 GitHub CI”的描述对应报告当时的快照，不作为新提交状态。
+
 用户决定废弃先前独立实现，直接在已得分的公开参考基础上优化。本工程从 [juanzhi-gcb/seekdb 的 a08e66e](https://github.com/juanzhi-gcb/seekdb/tree/a08e66e299847ca539c419cfbc67593357246627) 独立检出；其 src/include/tests/CMakeLists/Dockerfile 与作者公开反馈指向的 a24d2cd 运行核心逐项匹配。作者自述的 MySQL 通过和性能结果属于对方，本候选没有平台成绩，也没有独立登录验证对方账户。
 
 原工程和 Dot/Codex 独立候选仅作归档；本工程的运行代码没有从其协议、WAL、pager 或 SQL 引擎迁入。复用的 Python 内容属于外部测试工具和独立预期，不进入数据库程序。

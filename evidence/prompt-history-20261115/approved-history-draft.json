@@ -1,0 +1,441 @@
+{
+  "format": "reference-derived-authentic-history-review-draft-v2",
+  "synthetic": false,
+  "status": "draft_only_not_committed_published_or_submitted",
+  "date": "2026-11-15",
+  "provenance": {
+    "old_material_sha256": "8f1d1778fe34a1b6aa42d9722fb7dfe1ade6ec8c32789fd04a7c99b76d510042",
+    "frozen_parent_commit": "4da36e6b47dc698a5115f66c6bee9833b001364d",
+    "code_repository": "https://github.com/juanzhi-gcb/seekdb",
+    "upstream_commit": "a08e66e299847ca539c419cfbc67593357246627",
+    "runtime_core": "c2c2b42f6782549049b14764c7a105389cb5289f"
+  },
+  "context": {
+    "initial_goal_is_in_messages": true,
+    "stage_boundary": "早期消息属于先前独立实现或路线转换；该实现后来按用户要求退出主线。当前代码直接继承指定参考，不能把之前所有修复都归为当前代码的开发成果。",
+    "rule_context_summary_author": "Agent retrospective summary, not a historical owner prompt",
+    "rule_context_summary": "本题要求 JSONL 标准输入输出、编号值及类型原样回传、基础 SQL 与 float32 向量/L2/过滤 TopK、/data 持久化及事务恢复。本文件展示真实 Prompt、可见交互、实际结果和复盘，不要求提交隐藏思维链。平台学习评价关注用户原文所支持的理解、验证、纠错和取舍；日志和 Agent 解释本身不能代替用户贡献。"
+  },
+  "attribution_policy": "用户发言按原文及角色保留；代码、技术解释、实验操作和本索引由 Agent 完成时明确标注。参考作者的对话、学习过程及成绩不属于本用户。下列链条仅供定位，是否有效、应合并及如何评价均不预设，也不自报得分。",
+  "messages": [
+    {
+      "role": "user",
+      "source": "actual owner message, exact source text",
+      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
+      "source_line": 20,
+      "timestamp": "2026-11-14T05:58:42.234Z",
+      "stage": "earlier_independent_attempt_or_transition",
+      "content": "/goal [https://oceanbase.yuque.com/org-wiki-obtech-vh7w9r/hc3pio/lg8enxlmwg69unt6](https://oceanbase.yuque.com/org-wiki-obtech-vh7w9r/hc3pio/lg8enxlmwg69unt6)请你独立完成这道赛题，之前对话写的代码有很多问题，来来回回修改了10次也无法得分。对此你也可以看别人执行成功并得分的github的公开仓库中的代码\n"
+    },
+    {
+      "role": "user",
+      "source": "actual owner message, exact source text",
+      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
+      "source_line": 79,
+      "timestamp": "2026-11-14T06:00:20.084Z",
+      "stage": "earlier_independent_attempt_or_transition",
+      "content": "我觉得你在之前代码的基础上完成不如完全重新完成，那里已经成为了史山代码\n"
+    },
+    {
+      "role": "user",
+      "source": "actual owner message, exact source text",
+      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
+      "source_line": 722,
+      "timestamp": "2026-11-14T07:10:04.599Z",
+      "stage": "earlier_independent_attempt_or_transition",
+      "content": "你作为一名经验老道的数据库专家，这明显不是你应该犯的问题，请你吸取经验并仔细查找还有没有类似的问题\n"
+    },
+    {
+      "role": "user",
+      "source": "actual owner message, exact source text",
+      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
+      "source_line": 916,
+      "timestamp": "2026-11-14T07:28:08.965Z",
+      "stage": "earlier_independent_attempt_or_transition",
+      "content": "你可以看看别人公开仓库的代码（前提是别人已经成功提交）\n"
+    },
+    {
+      "role": "user",
+      "source": "actual owner message, exact source text",
+      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
+      "source_line": 1812,
+      "timestamp": "2026-11-14T08:52:10.769Z",
+      "stage": "earlier_independent_attempt_or_transition",
+      "content": "你可以继续看看别人github的代码（前提对方通过），确保我们这次可以得到分数\n"
+    },
+    {
+      "role": "user",
+      "source": "actual owner message, exact source text",
+      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
+      "source_line": 2660,
+      "timestamp": "2026-11-14T10:43:24.238Z",
+      "stage": "earlier_independent_attempt_or_transition",
+      "content": "你可以直接借鉴别人的代码，并且最好还能比他们的快\n"
+    },
+    {
+      "role": "user",
+      "source": "actual owner message, exact source text",
+      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
+      "source_line": 3617,
+      "timestamp": "2026-11-14T11:49:58.090Z",
+      "stage": "earlier_independent_attempt_or_transition",
+      "content": "你为什么不直接看别人的代码呢，这是符合比赛规定的\n"
+    },
+    {
+      "role": "user",
+      "source": "actual owner message, exact source text",
+      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
+      "source_line": 3961,
+      "timestamp": "2026-11-14T12:18:53.569Z",
+      "stage": "earlier_independent_attempt_or_transition",
+      "content": "请你看看有没有边界情况是参考代码可以完成的，而我们的则会失败，这非常重要，将决定我们能不能得分\n"
+    },
+    {
+      "role": "user",
+      "source": "actual owner message, exact source text",
+      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
+      "source_line": 4329,
+      "timestamp": "2026-11-14T12:56:34.787Z",
+      "stage": "earlier_independent_attempt_or_transition",
+      "content": "为什么会出现\"已复现一处真实缺陷：请求 `id=18446744073709551616` 时，我们返回了浮点数，违反协议要求的“原样回传，包括 JSON 类型”；参考实现保留了原始编号。  \"这种问题呢，你不应该对着协议一个一个排查吗\n"
+    },
+    {
+      "role": "user",
+      "source": "actual owner message, exact source text",
+      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
+      "source_line": 4905,
+      "timestamp": "2026-11-14T14:45:42.724Z",
+      "stage": "earlier_independent_attempt_or_transition",
+      "content": "你现在确定已经完全符合赛题要求的全部协议和要求了吗，请你仔细检查一次"
+    },
+    {
+      "role": "user",
+      "source": "actual owner message, exact source text",
+      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
+      "source_line": 5185,
+      "timestamp": "2026-11-14T14:58:00.077Z",
+      "stage": "earlier_independent_attempt_or_transition",
+      "content": "请你确定mysol的样例要不通过，否则不得分"
+    },
+    {
+      "role": "user",
+      "source": "actual owner message, exact source text",
+      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
+      "source_line": 6017,
+      "timestamp": "2026-11-15T08:51:36.012Z",
+      "stage": "earlier_independent_attempt_or_transition",
+      "content": "要不你也不要用docker了，你直接在a6000上面完成题目吧\n"
+    },
+    {
+      "role": "user",
+      "source": "actual owner message, exact source text",
+      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
+      "source_line": 6329,
+      "timestamp": "2026-11-15T09:15:35.514Z",
+      "stage": "earlier_independent_attempt_or_transition",
+      "content": "[https://github.com/juanzhi-gcb/seekdb](https://github.com/juanzhi-gcb/seekdb)\n请你对照这个仓库进行修改，这个仓库的代码已经得分了\n"
+    },
+    {
+      "role": "user",
+      "source": "actual owner message, exact source text",
+      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
+      "source_line": 7168,
+      "timestamp": "2026-11-15T10:49:09.629Z",
+      "stage": "earlier_independent_attempt_or_transition",
+      "content": "你能不能确定参考代码能通过的边界情况我们的代码也能完美执行"
+    },
+    {
+      "role": "user",
+      "source": "actual owner message, exact source text",
+      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
+      "source_line": 7443,
+      "timestamp": "2026-11-15T11:31:37.396Z",
+      "stage": "earlier_independent_attempt_or_transition",
+      "content": "那么我觉得你可以继续检查"
+    },
+    {
+      "role": "user",
+      "source": "actual owner message, exact source text",
+      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
+      "source_line": 7495,
+      "timestamp": "2026-11-15T11:34:34.493Z",
+      "stage": "earlier_independent_attempt_or_transition",
+      "content": "你的代码不是在别人的基础上构建的吗，为什么别人不会出现这种问题，但我们会"
+    },
+    {
+      "role": "user",
+      "source": "actual owner message, exact source text",
+      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
+      "source_line": 7505,
+      "timestamp": "2026-11-15T11:36:06.450Z",
+      "stage": "reference_based_candidate",
+      "content": "要不你直接在别人的代码基础上优化吧，我们现在的代码就废弃了吧"
+    },
+    {
+      "role": "user",
+      "source": "actual owner message, exact source text",
+      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
+      "source_line": 8000,
+      "timestamp": "2026-11-15T12:37:02.032Z",
+      "stage": "reference_based_candidate",
+      "content": "请你检查一些边界情况，确定参考代码能通过的边界情况我们的代码也能完美执行\n"
+    },
+    {
+      "role": "assistant",
+      "source": "Codex visible progress, actual excerpt",
+      "content": "可以，停止修补现有实现，改为以已核对得分反馈的参考版本为基础优化。现有代码和证据保留归档。",
+      "stage": "reference_based_candidate",
+      "source_material_sha256": "8f1d1778fe34a1b6aa42d9722fb7dfe1ade6ec8c32789fd04a7c99b76d510042"
+    },
+    {
+      "role": "assistant",
+      "source": "Codex visible progress, actual excerpt",
+      "content": "三项无收益的尝试都已排除。现在测试一个较小的改动：减少向量解析时的中间缓冲分配，保持参考版本的数值转换结果和报错顺序，再检查端到端性能是否有稳定收益。",
+      "stage": "reference_based_candidate",
+      "source_material_sha256": "8f1d1778fe34a1b6aa42d9722fb7dfe1ade6ec8c32789fd04a7c99b76d510042"
+    },
+    {
+      "role": "assistant",
+      "source": "Codex visible progress, actual excerpt",
+      "content": "缓冲优化的收益已测到：约 419 万维的合法查询，进程峰值内存从约 **74.8 MiB 降至 42.8 MiB**。标准 128 维负载的速度没有稳定提升，我不会宣称它更快。",
+      "stage": "reference_based_candidate",
+      "source_material_sha256": "8f1d1778fe34a1b6aa42d9722fb7dfe1ade6ec8c32789fd04a7c99b76d510042"
+    }
+  ],
+  "experiments": [
+    {
+      "id": "baseline-ctest.json",
+      "source": "actual tool report, original file bytes decoded as UTF-8",
+      "source_file": "validation/reference-opt-20261115/baseline-ctest.json",
+      "source_sha256": "aae8e4d2169f35a5fe0ea984111368a41f0c5c65417422bd536a2d2b5c0d2d97",
+      "retained_experiment": true,
+      "raw_report": "{\n  \"passed\": true,\n  \"tests\": 70,\n  \"failures\": [],\n  \"xml_sha256\": \"6f793a208abaf23c5399694ada23eced4f7d81c167a4c5a9c4597b076ebb937b\"\n}\n"
+    },
+    {
+      "id": "candidate-ctest.json",
+      "source": "actual tool report, original file bytes decoded as UTF-8",
+      "source_file": "validation/reference-opt-20261115/candidate-ctest.json",
+      "source_sha256": "6a1ccc4193e76b97568e7f3984f1211a5dc12a1bf5d4ee9f799bfb9449086926",
+      "retained_experiment": true,
+      "raw_report": "{\n  \"passed\": true,\n  \"tests\": 70,\n  \"failures\": [],\n  \"xml_sha256\": \"ba6d6fa5f77df7d577e5cea2f65c6c105b85e3e086950c1f73c6ca8c408a023e\"\n}\n"
+    },
+    {
+      "id": "baseline-public.json",
+      "source": "actual tool report, original file bytes decoded as UTF-8",
+      "source_file": "validation/reference-opt-20261115/baseline-public.json",
+      "source_sha256": "d53f5c689e8c0f893be5cbba211959149924130f3140c7f538b69b134ae0cbcd",
+      "retained_experiment": true,
+      "raw_report": "{\n  \"scope\": \"public-protocol-check\",\n  \"passed\": true,\n  \"cases\": [\n    {\n      \"id\": \"sql_crud\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 44\n    },\n    {\n      \"id\": \"sql_comparisons\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 46\n    },\n    {\n      \"id\": \"sql_ordering\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 41\n    },\n    {\n      \"id\": \"sql_empty\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 40\n    },\n    {\n      \"id\": \"sql_primary_key\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 37\n    },\n    {\n      \"id\": \"sql_unicode\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 40\n    },\n    {\n      \"id\": \"sql_bigint\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 42\n    },\n    {\n      \"id\": \"sql_unsupported\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 36\n    },\n    {\n      \"id\": \"storage_restart\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 85\n    },\n    {\n      \"id\": \"vector_euclidean\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 46\n    },\n    {\n      \"id\": \"transaction_commit\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 36\n    },\n    {\n      \"id\": \"transaction_rollback\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 44\n    },\n    {\n      \"id\": \"storage_mutations\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 73\n    },\n    {\n      \"id\": \"storage_multiple_tables\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 71\n    },\n    {\n      \"id\": \"vector_ties_and_filter\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 36\n    },\n    {\n      \"id\": \"vector_float32\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 35\n    },\n    {\n      \"id\": \"vector_index_maintenance\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 76\n    },\n    {\n      \"id\": \"transaction_failed_insert\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 81\n    },\n    {\n      \"id\": \"transaction_autocommit_atomic\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 71\n    },\n    {\n      \"id\": \"transaction_shutdown_rollback\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 83\n    }\n  ],\n  \"note\": \"Local diagnostic only; no performance/Agent scores or platform callbacks.\"\n}\n"
+    },
+    {
+      "id": "candidate-public.json",
+      "source": "actual tool report, original file bytes decoded as UTF-8",
+      "source_file": "validation/reference-opt-20261115/candidate-public.json",
+      "source_sha256": "26c8e80c179b932419c79ffca547f24d6929d9138cf08e63fa28887251cdbe8b",
+      "retained_experiment": true,
+      "raw_report": "{\n  \"scope\": \"public-protocol-check\",\n  \"passed\": true,\n  \"cases\": [\n    {\n      \"id\": \"sql_crud\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 51\n    },\n    {\n      \"id\": \"sql_comparisons\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 40\n    },\n    {\n      \"id\": \"sql_ordering\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 38\n    },\n    {\n      \"id\": \"sql_empty\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 41\n    },\n    {\n      \"id\": \"sql_primary_key\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 43\n    },\n    {\n      \"id\": \"sql_unicode\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 36\n    },\n    {\n      \"id\": \"sql_bigint\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 34\n    },\n    {\n      \"id\": \"sql_unsupported\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 41\n    },\n    {\n      \"id\": \"storage_restart\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 73\n    },\n    {\n      \"id\": \"vector_euclidean\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 36\n    },\n    {\n      \"id\": \"transaction_commit\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 42\n    },\n    {\n      \"id\": \"transaction_rollback\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 40\n    },\n    {\n      \"id\": \"storage_mutations\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 70\n    },\n    {\n      \"id\": \"storage_multiple_tables\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 89\n    },\n    {\n      \"id\": \"vector_ties_and_filter\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 42\n    },\n    {\n      \"id\": \"vector_float32\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 39\n    },\n    {\n      \"id\": \"vector_index_maintenance\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 80\n    },\n    {\n      \"id\": \"transaction_failed_insert\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 87\n    },\n    {\n      \"id\": \"transaction_autocommit_atomic\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 73\n    },\n    {\n      \"id\": \"transaction_shutdown_rollback\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 82\n    }\n  ],\n  \"note\": \"Local diagnostic only; no performance/Agent scores or platform callbacks.\"\n}\n"
+    },
+    {
+      "id": "parity.json",
+      "source": "actual tool report, original file bytes decoded as UTF-8",
+      "source_file": "validation/reference-opt-20261115/parity.json",
+      "source_sha256": "1a3538d39e83510c9130657ec46e0b1fc6c79db0d68ee167977b2f1cc61fd96d",
+      "retained_experiment": true,
+      "raw_report": "{\n  \"passed\": true,\n  \"observations\": 7862,\n  \"qualifying_failure_count\": 0,\n  \"failures\": [],\n  \"reference_rejections_accepted_by_candidate\": [],\n  \"seed\": 120055,\n  \"phase\": \"all\",\n  \"candidate_sha256\": \"6fd307974aafc6cd51fb33469fdaa4a882cd6e8bacea6ad55a59feae6b9e8ade\",\n  \"reference_sha256\": \"1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66\",\n  \"reference_commit\": \"a08e66e299847ca539c419cfbc67593357246627\",\n  \"scope\": \"Actual hardened native processes; finite differential checks, no formal score.\"\n}\n"
+    },
+    {
+      "id": "sanitizers.json",
+      "source": "actual tool report, original file bytes decoded as UTF-8",
+      "source_file": "validation/reference-opt-20261115/sanitizers.json",
+      "source_sha256": "9d2d986157dd9956e4210d582ebfa78cecd26b6f004ec8a2fdf21e8d9b793966",
+      "retained_experiment": true,
+      "raw_report": "{\n  \"passed\": true,\n  \"runtime_core\": \"c2c2b42f6782549049b14764c7a105389cb5289f\",\n  \"binary_sha256\": \"e68663238442838f14e8e34b714aa2bffd6405a501ae60936bdaba0a764a07b4\",\n  \"leak_detection\": true,\n  \"stages\": [\n    {\n      \"stage\": \"vector_literals\",\n      \"exit_code\": 0\n    },\n    {\n      \"stage\": \"numeric_maximum\",\n      \"exit_code\": 0\n    },\n    {\n      \"stage\": \"numeric_ties\",\n      \"exit_code\": 0\n    },\n    {\n      \"stage\": \"public\",\n      \"exit_code\": 0\n    },\n    {\n      \"stage\": \"parity\",\n      \"exit_code\": 0\n    },\n    {\n      \"stage\": \"wire\",\n      \"exit_code\": 0\n    }\n  ],\n  \"scope\": \"Same production source under ASan/UBSan; native diagnostic binary is not the release binary.\"\n}\n"
+    },
+    {
+      "id": "asan-public.json",
+      "source": "actual tool report, original file bytes decoded as UTF-8",
+      "source_file": "validation/reference-opt-20261115/asan-public.json",
+      "source_sha256": "c98758c739a6876268a9b6c1600f8525f28b47de0e5d875c7360247be74f1e21",
+      "retained_experiment": true,
+      "raw_report": "{\n  \"scope\": \"public-protocol-check\",\n  \"passed\": true,\n  \"cases\": [\n    {\n      \"id\": \"sql_crud\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 92\n    },\n    {\n      \"id\": \"sql_comparisons\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 91\n    },\n    {\n      \"id\": \"sql_ordering\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 87\n    },\n    {\n      \"id\": \"sql_empty\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 92\n    },\n    {\n      \"id\": \"sql_primary_key\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 92\n    },\n    {\n      \"id\": \"sql_unicode\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 89\n    },\n    {\n      \"id\": \"sql_bigint\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 85\n    },\n    {\n      \"id\": \"sql_unsupported\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 90\n    },\n    {\n      \"id\": \"storage_restart\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 182\n    },\n    {\n      \"id\": \"vector_euclidean\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 88\n    },\n    {\n      \"id\": \"transaction_commit\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 87\n    },\n    {\n      \"id\": \"transaction_rollback\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 97\n    },\n    {\n      \"id\": \"storage_mutations\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 184\n    },\n    {\n      \"id\": \"storage_multiple_tables\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 178\n    },\n    {\n      \"id\": \"vector_ties_and_filter\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 90\n    },\n    {\n      \"id\": \"vector_float32\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 88\n    },\n    {\n      \"id\": \"vector_index_maintenance\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 176\n    },\n    {\n      \"id\": \"transaction_failed_insert\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 178\n    },\n    {\n      \"id\": \"transaction_autocommit_atomic\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 170\n    },\n    {\n      \"id\": \"transaction_shutdown_rollback\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 170\n    }\n  ],\n  \"note\": \"Local diagnostic only; no performance/Agent scores or platform callbacks.\"\n}\n"
+    },
+    {
+      "id": "asan-parity.json",
+      "source": "actual tool report, original file bytes decoded as UTF-8",
+      "source_file": "validation/reference-opt-20261115/asan-parity.json",
+      "source_sha256": "5e7e6593363a43a30b83e385c2a4da74e0b31d5614152b6abdf4bc25a0507f24",
+      "retained_experiment": true,
+      "raw_report": "{\n  \"passed\": true,\n  \"observations\": 7862,\n  \"qualifying_failure_count\": 0,\n  \"failures\": [],\n  \"reference_rejections_accepted_by_candidate\": [],\n  \"seed\": 120055,\n  \"phase\": \"all\",\n  \"candidate_sha256\": \"e68663238442838f14e8e34b714aa2bffd6405a501ae60936bdaba0a764a07b4\",\n  \"reference_sha256\": \"1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66\",\n  \"reference_commit\": \"a08e66e299847ca539c419cfbc67593357246627\",\n  \"scope\": \"Actual hardened native processes; finite differential checks, no formal score.\"\n}\n"
+    },
+    {
+      "id": "asan-wire.json",
+      "source": "actual tool report, original file bytes decoded as UTF-8",
+      "source_file": "validation/reference-opt-20261115/asan-wire.json",
+      "source_sha256": "ff837a7d2581766c345fae38df3ddbb11b3aec568df2a9e6224529ec5412103e",
+      "retained_experiment": true,
+      "raw_report": "{\n  \"passed\": true,\n  \"observations\": 6,\n  \"results\": [\n    {\n      \"category\": \"id_near_response_limit\",\n      \"id_bytes\": 1,\n      \"request_bytes\": 65,\n      \"request_within_reference_limit\": true,\n      \"ours\": {\n        \"ok\": true,\n        \"id_exact\": true,\n        \"affected_rows\": 0,\n        \"error\": null\n      },\n      \"reference\": {\n        \"ok\": true,\n        \"id_exact\": true,\n        \"affected_rows\": 0,\n        \"error\": null\n      },\n      \"qualifying_failure\": false\n    },\n    {\n      \"category\": \"id_near_response_limit\",\n      \"id_bytes\": 16776704,\n      \"request_bytes\": 16776768,\n      \"request_within_reference_limit\": true,\n      \"ours\": {\n        \"ok\": true,\n        \"id_exact\": true,\n        \"affected_rows\": 0,\n        \"error\": null\n      },\n      \"reference\": {\n        \"ok\": true,\n        \"id_exact\": true,\n        \"affected_rows\": 0,\n        \"error\": null\n      },\n      \"qualifying_failure\": false\n    },\n    {\n      \"category\": \"id_near_response_limit\",\n      \"id_bytes\": 16776960,\n      \"request_bytes\": 16777024,\n      \"request_within_reference_limit\": true,\n      \"ours\": {\n        \"ok\": true,\n        \"id_exact\": true,\n        \"affected_rows\": 0,\n        \"error\": null\n      },\n      \"reference\": {\n        \"ok\": true,\n        \"id_exact\": true,\n        \"affected_rows\": 0,\n        \"error\": null\n      },\n      \"qualifying_failure\": false\n    },\n    {\n      \"category\": \"id_near_response_limit\",\n      \"id_bytes\": 16777000,\n      \"request_bytes\": 16777064,\n      \"request_within_reference_limit\": true,\n      \"ours\": {\n        \"ok\": true,\n        \"id_exact\": true,\n        \"affected_rows\": 0,\n        \"error\": null\n      },\n      \"reference\": {\n        \"ok\": true,\n        \"id_exact\": true,\n        \"affected_rows\": 0,\n        \"error\": null\n      },\n      \"qualifying_failure\": false\n    },\n    {\n      \"category\": \"id_near_response_limit\",\n      \"id_bytes\": 16777088,\n      \"request_bytes\": 16777152,\n      \"request_within_reference_limit\": true,\n      \"ours\": {\n        \"ok\": true,\n        \"id_exact\": true,\n        \"affected_rows\": 0,\n        \"error\": null\n      },\n      \"reference\": {\n        \"ok\": true,\n        \"id_exact\": true,\n        \"affected_rows\": 0,\n        \"error\": null\n      },\n      \"qualifying_failure\": false\n    },\n    {\n      \"category\": \"id_near_response_limit\",\n      \"id_bytes\": 16777120,\n      \"request_bytes\": 16777184,\n      \"request_within_reference_limit\": true,\n      \"ours\": {\n        \"ok\": true,\n        \"id_exact\": true,\n        \"affected_rows\": 0,\n        \"error\": null\n      },\n      \"reference\": {\n        \"ok\": true,\n        \"id_exact\": true,\n        \"affected_rows\": 0,\n        \"error\": null\n      },\n      \"qualifying_failure\": false\n    }\n  ],\n  \"candidate_sha256\": \"e68663238442838f14e8e34b714aa2bffd6405a501ae60936bdaba0a764a07b4\",\n  \"reference_sha256\": \"1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66\",\n  \"scope\": \"Actual JSONL requests within the unchanged official response bound; IDs summarized by size, no formal score.\"\n}\n"
+    },
+    {
+      "id": "default-contract.json",
+      "source": "actual tool report, original file bytes decoded as UTF-8",
+      "source_file": "validation/reference-opt-20261115/default-contract.json",
+      "source_sha256": "439958966c4094cac23c17b7a426b65815db3a0667e7212031d64244075c0169",
+      "retained_experiment": true,
+      "raw_report": "{\n  \"passed\": true,\n  \"checks\": 18,\n  \"environment\": {\n    \"uid\": [\n      \"65534\",\n      \"65534\",\n      \"65534\",\n      \"65534\"\n    ],\n    \"no_new_privileges\": \"1\",\n    \"root_flags\": 4097,\n    \"data_flags\": 4096,\n    \"routes\": [],\n    \"cgroup\": \"0::/mvd-reference-opt-20261115-39q88lpc\\n\"\n  },\n  \"entrypoint_arguments\": [],\n  \"ready\": \"Original official Session.start verified the ready object\",\n  \"shutdown_eof_and_sigkill_rollback\": true,\n  \"failed_statement_preserves_prior_transaction\": true,\n  \"same_index_name_on_distinct_tables\": true,\n  \"binary_sha256\": \"6fd307974aafc6cd51fb33469fdaa4a882cd6e8bacea6ad55a59feae6b9e8ade\"\n}\n"
+    },
+    {
+      "id": "benchmark.json",
+      "source": "actual tool report, original file bytes decoded as UTF-8",
+      "source_file": "validation/reference-opt-20261115/benchmark.json",
+      "source_sha256": "b4bfff9617c7b4c24b6b92c4bc574d0c38b6d1739ffa0783ab84c2d51e17a80d",
+      "retained_experiment": true,
+      "raw_report": "{\n  \"passed\": true,\n  \"rows\": 10000,\n  \"dimensions\": 128,\n  \"queries\": 1000,\n  \"rounds\": 6,\n  \"batch\": 100,\n  \"warmup\": 10,\n  \"cpu_affinity\": [\n    2,\n    3\n  ],\n  \"versions\": {\n    \"baseline\": {\n      \"binary\": \"/tmp/mvd-reference-opt-20261115-39q88lpc/build/baseline\",\n      \"sha256\": \"1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66\"\n    },\n    \"candidate\": {\n      \"binary\": \"/tmp/mvd-reference-opt-20261115-39q88lpc/build/numeric\",\n      \"sha256\": \"6fd307974aafc6cd51fb33469fdaa4a882cd6e8bacea6ad55a59feae6b9e8ade\"\n    }\n  },\n  \"fixture_sha256\": \"8c5f1e90a45d840735849349b800d013d53ccc3fbf38ee35d803594a294c2d95\",\n  \"oracle_source_sha256\": \"d818386c615725b3f525b4c7b463decce16ee8c7d82a4f616ce832f081010ae7\",\n  \"oracle_binary_sha256\": \"338e9487c2adb1eb54a074e411d646ed40e62b9a24befa568968bbc701b36459\",\n  \"samples\": 48,\n  \"verified_queries\": 48000,\n  \"summary\": {\n    \"bigint-idx0\": {\n      \"medians\": {\n        \"baseline\": {\n          \"write_ms\": 487.14772399999987,\n          \"query_ms\": 166.13865699999982,\n          \"cycle_ms\": 653.2266299999999\n        },\n        \"candidate\": {\n          \"write_ms\": 484.477298,\n          \"query_ms\": 165.84243899999996,\n          \"cycle_ms\": 650.1364715000002\n        }\n      },\n      \"paired_speedups\": {\n        \"write_ms\": [\n          1.0114075110671108,\n          1.0057347043335187,\n          1.015305786216999,\n          0.998205346322219,\n          1.0052574555059968,\n          0.9941029095732742\n        ],\n        \"query_ms\": [\n          1.0031354850959366,\n          1.0014287428962427,\n          0.9996615292595603,\n          1.0060903435687778,\n          1.005337573562952,\n          0.9432722253738599\n        ],\n        \"cycle_ms\": [\n          1.009297599997779,\n          1.0046383412100541,\n          1.0112903160366224,\n          1.0002270752255262,\n          1.0052778656257637,\n          0.9806081766847415\n        ]\n      },\n      \"median_paired_speedup\": {\n        \"write_ms\": 1.0054960799197579,\n        \"query_ms\": 1.0022821139960896,\n        \"cycle_ms\": 1.004958103417909\n      }\n    },\n    \"bigint-idx1\": {\n      \"medians\": {\n        \"baseline\": {\n          \"write_ms\": 487.75586899999985,\n          \"query_ms\": 167.62885799999998,\n          \"cycle_ms\": 693.0206379999998\n        },\n        \"candidate\": {\n          \"write_ms\": 487.29400449999997,\n          \"query_ms\": 166.4763970000002,\n          \"cycle_ms\": 690.0862735000001\n        }\n      },\n      \"paired_speedups\": {\n        \"write_ms\": [\n          0.9939591710389505,\n          1.0096378404132045,\n          0.9899852421690462,\n          1.0093421584322915,\n          0.9814372123650246,\n          0.9974293557480985\n        ],\n        \"query_ms\": [\n          1.0083432940276842,\n          1.0055061426798515,\n          1.0425806692860282,\n          0.9966751743545276,\n          1.0013668140067085,\n          1.004380193421224\n        ],\n        \"cycle_ms\": [\n          0.997884871535504,\n          1.0085544611354187,\n          1.0030779367144997,\n          1.006096977238623,\n          0.986960493267583,\n          0.9999739604010938\n        ]\n      },\n      \"median_paired_speedup\": {\n        \"write_ms\": 0.9956942633935245,\n        \"query_ms\": 1.0049431680505378,\n        \"cycle_ms\": 1.0015259485577968\n      }\n    },\n    \"text-idx0\": {\n      \"medians\": {\n        \"baseline\": {\n          \"write_ms\": 488.07584,\n          \"query_ms\": 167.5366684999999,\n          \"cycle_ms\": 653.5943454999999\n        },\n        \"candidate\": {\n          \"write_ms\": 481.18911249999996,\n          \"query_ms\": 166.62300650000014,\n          \"cycle_ms\": 651.3103184999998\n        }\n      },\n      \"paired_speedups\": {\n        \"write_ms\": [\n          1.001099754071174,\n          1.0095476683882425,\n          1.0141696755373995,\n          1.0014935948913215,\n          1.0263931622702267,\n          1.0019417938648876\n        ],\n        \"query_ms\": [\n          0.9921326519432845,\n          1.0029431131712878,\n          1.0140613623466748,\n          1.0226001222720107,\n          0.6249899376802331,\n          0.991349206832585\n        ],\n        \"cycle_ms\": [\n          0.9987741462546628,\n          1.0078663497723575,\n          1.0141422319936189,\n          1.006929816993004,\n          0.8804942375897644,\n          0.9992388205007166\n        ]\n      },\n      \"median_paired_speedup\": {\n        \"write_ms\": 1.005744731126565,\n        \"query_ms\": 0.9975378825572861,\n        \"cycle_ms\": 1.0030843187468603\n      }\n    },\n    \"text-idx1\": {\n      \"medians\": {\n        \"baseline\": {\n          \"write_ms\": 482.5624679999999,\n          \"query_ms\": 167.36302599999982,\n          \"cycle_ms\": 693.9902644999997\n        },\n        \"candidate\": {\n          \"write_ms\": 494.48732199999995,\n          \"query_ms\": 167.23558499999993,\n          \"cycle_ms\": 699.1759555000001\n        }\n      },\n      \"paired_speedups\": {\n        \"write_ms\": [\n          0.984766276862121,\n          0.8303914970253965,\n          0.9570046299717702,\n          1.0083929888716585,\n          0.9945169549084162,\n          0.9780225363842738\n        ],\n        \"query_ms\": [\n          1.0009843151159354,\n          1.1751970684519908,\n          0.9882296545850703,\n          1.0014016333790763,\n          1.1761119448862851,\n          0.9445467627320073\n        ],\n        \"cycle_ms\": [\n          0.991588706702123,\n          0.9115494970776715,\n          0.9651405463071647,\n          1.0051792602613807,\n          1.0396383757195267,\n          0.971766514791852\n        ]\n      },\n      \"median_paired_speedup\": {\n        \"write_ms\": 0.9813944066231974,\n        \"query_ms\": 1.0011929742475059,\n        \"cycle_ms\": 0.9816776107469876\n      }\n    }\n  },\n  \"timing\": \"Sum of actual JSONL request round trips; input and oracle generation, warmup, verification and restart excluded. Fresh database per sample; version/order counterbalanced.\",\n  \"resources\": \"Per-process VmHWM and /proc/io retained; not formal T/B/M. CPU quota and memory ceiling enforced by launcher.\",\n  \"formal_score\": null\n}\n"
+    },
+    {
+      "id": "wide-bind.json",
+      "source": "actual tool report, original file bytes decoded as UTF-8",
+      "source_file": "validation/reference-opt-20261115/wide-bind.json",
+      "source_sha256": "b25f15e33eb05f2b5b97096708732160fa075c7c7cf64c2a8e85972c104cedbd",
+      "retained_experiment": true,
+      "raw_report": "{\n  \"passed\": true,\n  \"samples\": [\n    {\n      \"dimension\": 128,\n      \"round\": 0,\n      \"version\": \"baseline\",\n      \"request_bytes\": 364,\n      \"elapsed_ms\": 0.10591,\n      \"process_vmhwm_kib\": 2736,\n      \"passed\": true\n    },\n    {\n      \"dimension\": 128,\n      \"round\": 0,\n      \"version\": \"candidate\",\n      \"request_bytes\": 364,\n      \"elapsed_ms\": 0.12044,\n      \"process_vmhwm_kib\": 2736,\n      \"passed\": true\n    },\n    {\n      \"dimension\": 128,\n      \"round\": 1,\n      \"version\": \"candidate\",\n      \"request_bytes\": 364,\n      \"elapsed_ms\": 0.11285,\n      \"process_vmhwm_kib\": 2736,\n      \"passed\": true\n    },\n    {\n      \"dimension\": 128,\n      \"round\": 1,\n      \"version\": \"baseline\",\n      \"request_bytes\": 364,\n      \"elapsed_ms\": 0.10769,\n      \"process_vmhwm_kib\": 2732,\n      \"passed\": true\n    },\n    {\n      \"dimension\": 128,\n      \"round\": 2,\n      \"version\": \"baseline\",\n      \"request_bytes\": 364,\n      \"elapsed_ms\": 0.1053,\n      \"process_vmhwm_kib\": 2736,\n      \"passed\": true\n    },\n    {\n      \"dimension\": 128,\n      \"round\": 2,\n      \"version\": \"candidate\",\n      \"request_bytes\": 364,\n      \"elapsed_ms\": 0.11005,\n      \"process_vmhwm_kib\": 2732,\n      \"passed\": true\n    },\n    {\n      \"dimension\": 128,\n      \"round\": 3,\n      \"version\": \"candidate\",\n      \"request_bytes\": 364,\n      \"elapsed_ms\": 0.11422,\n      \"process_vmhwm_kib\": 2732,\n      \"passed\": true\n    },\n    {\n      \"dimension\": 128,\n      \"round\": 3,\n      \"version\": \"baseline\",\n      \"request_bytes\": 364,\n      \"elapsed_ms\": 0.10977,\n      \"process_vmhwm_kib\": 2736,\n      \"passed\": true\n    },\n    {\n      \"dimension\": 131072,\n      \"round\": 0,\n      \"version\": \"baseline\",\n      \"request_bytes\": 262252,\n      \"elapsed_ms\": 15.219966,\n      \"process_vmhwm_kib\": 5264,\n      \"passed\": true\n    },\n    {\n      \"dimension\": 131072,\n      \"round\": 0,\n      \"version\": \"candidate\",\n      \"request_bytes\": 262252,\n      \"elapsed_ms\": 14.655225,\n      \"process_vmhwm_kib\": 4212,\n      \"passed\": true\n    },\n    {\n      \"dimension\": 131072,\n      \"round\": 1,\n      \"version\": \"candidate\",\n      \"request_bytes\": 262252,\n      \"elapsed_ms\": 14.652235,\n      \"process_vmhwm_kib\": 4212,\n      \"passed\": true\n    },\n    {\n      \"dimension\": 131072,\n      \"round\": 1,\n      \"version\": \"baseline\",\n      \"request_bytes\": 262252,\n      \"elapsed_ms\": 15.223166,\n      \"process_vmhwm_kib\": 5272,\n      \"passed\": true\n    },\n    {\n      \"dimension\": 131072,\n      \"round\": 2,\n      \"version\": \"baseline\",\n      \"request_bytes\": 262252,\n      \"elapsed_ms\": 15.225706,\n      \"process_vmhwm_kib\": 5268,\n      \"passed\": true\n    },\n    {\n      \"dimension\": 131072,\n      \"round\": 2,\n      \"version\": \"candidate\",\n      \"request_bytes\": 262252,\n      \"elapsed_ms\": 14.757485,\n      \"process_vmhwm_kib\": 4212,\n      \"passed\": true\n    },\n    {\n      \"dimension\": 131072,\n      \"round\": 3,\n      \"version\": \"candidate\",\n      \"request_bytes\": 262252,\n      \"elapsed_ms\": 14.855395,\n      \"process_vmhwm_kib\": 4212,\n      \"passed\": true\n    },\n    {\n      \"dimension\": 131072,\n      \"round\": 3,\n      \"version\": \"baseline\",\n      \"request_bytes\": 262252,\n      \"elapsed_ms\": 15.176295,\n      \"process_vmhwm_kib\": 5268,\n      \"passed\": true\n    },\n    {\n      \"dimension\": 1048576,\n      \"round\": 0,\n      \"version\": \"baseline\",\n      \"request_bytes\": 2097260,\n      \"elapsed_ms\": 121.940504,\n      \"process_vmhwm_kib\": 21312,\n      \"passed\": true\n    },\n    {\n      \"dimension\": 1048576,\n      \"round\": 0,\n      \"version\": \"candidate\",\n      \"request_bytes\": 2097260,\n      \"elapsed_ms\": 124.101544,\n      \"process_vmhwm_kib\": 13128,\n      \"passed\": true\n    },\n    {\n      \"dimension\": 1048576,\n      \"round\": 1,\n      \"version\": \"candidate\",\n      \"request_bytes\": 2097260,\n      \"elapsed_ms\": 123.850424,\n      \"process_vmhwm_kib\": 13128,\n      \"passed\": true\n    },\n    {\n      \"dimension\": 1048576,\n      \"round\": 1,\n      \"version\": \"baseline\",\n      \"request_bytes\": 2097260,\n      \"elapsed_ms\": 122.431714,\n      \"process_vmhwm_kib\": 21312,\n      \"passed\": true\n    },\n    {\n      \"dimension\": 1048576,\n      \"round\": 2,\n      \"version\": \"baseline\",\n      \"request_bytes\": 2097260,\n      \"elapsed_ms\": 122.235534,\n      \"process_vmhwm_kib\": 21316,\n      \"passed\": true\n    },\n    {\n      \"dimension\": 1048576,\n      \"round\": 2,\n      \"version\": \"candidate\",\n      \"request_bytes\": 2097260,\n      \"elapsed_ms\": 123.794684,\n      \"process_vmhwm_kib\": 13132,\n      \"passed\": true\n    },\n    {\n      \"dimension\": 1048576,\n      \"round\": 3,\n      \"version\": \"candidate\",\n      \"request_bytes\": 2097260,\n      \"elapsed_ms\": 123.773944,\n      \"process_vmhwm_kib\": 13132,\n      \"passed\": true\n    },\n    {\n      \"dimension\": 1048576,\n      \"round\": 3,\n      \"version\": \"baseline\",\n      \"request_bytes\": 2097260,\n      \"elapsed_ms\": 127.327236,\n      \"process_vmhwm_kib\": 21316,\n      \"passed\": true\n    },\n    {\n      \"dimension\": 4194304,\n      \"round\": 0,\n      \"version\": \"baseline\",\n      \"request_bytes\": 8388716,\n      \"elapsed_ms\": 486.294173,\n      \"process_vmhwm_kib\": 76564,\n      \"passed\": true\n    },\n    {\n      \"dimension\": 4194304,\n      \"round\": 0,\n      \"version\": \"candidate\",\n      \"request_bytes\": 8388716,\n      \"elapsed_ms\": 496.953788,\n      \"process_vmhwm_kib\": 43832,\n      \"passed\": true\n    },\n    {\n      \"dimension\": 4194304,\n      \"round\": 1,\n      \"version\": \"candidate\",\n      \"request_bytes\": 8388716,\n      \"elapsed_ms\": 493.158866,\n      \"process_vmhwm_kib\": 43828,\n      \"passed\": true\n    },\n    {\n      \"dimension\": 4194304,\n      \"round\": 1,\n      \"version\": \"baseline\",\n      \"request_bytes\": 8388716,\n      \"elapsed_ms\": 511.569193,\n      \"process_vmhwm_kib\": 76564,\n      \"passed\": true\n    },\n    {\n      \"dimension\": 4194304,\n      \"round\": 2,\n      \"version\": \"baseline\",\n      \"request_bytes\": 8388716,\n      \"elapsed_ms\": 508.852152,\n      \"process_vmhwm_kib\": 76564,\n      \"passed\": true\n    },\n    {\n      \"dimension\": 4194304,\n      \"round\": 2,\n      \"version\": \"candidate\",\n      \"request_bytes\": 8388716,\n      \"elapsed_ms\": 487.001384,\n      \"process_vmhwm_kib\": 43824,\n      \"passed\": true\n    },\n    {\n      \"dimension\": 4194304,\n      \"round\": 3,\n      \"version\": \"candidate\",\n      \"request_bytes\": 8388716,\n      \"elapsed_ms\": 493.752077,\n      \"process_vmhwm_kib\": 43828,\n      \"passed\": true\n    },\n    {\n      \"dimension\": 4194304,\n      \"round\": 3,\n      \"version\": \"baseline\",\n      \"request_bytes\": 8388716,\n      \"elapsed_ms\": 510.850173,\n      \"process_vmhwm_kib\": 76564,\n      \"passed\": true\n    }\n  ],\n  \"summary\": {\n    \"128\": {\n      \"baseline\": {\n        \"elapsed_ms\": 0.1068,\n        \"process_vmhwm_kib\": 2736.0\n      },\n      \"candidate\": {\n        \"elapsed_ms\": 0.113535,\n        \"process_vmhwm_kib\": 2734.0\n      }\n    },\n    \"131072\": {\n      \"baseline\": {\n        \"elapsed_ms\": 15.221566,\n        \"process_vmhwm_kib\": 5268.0\n      },\n      \"candidate\": {\n        \"elapsed_ms\": 14.706355,\n        \"process_vmhwm_kib\": 4212.0\n      }\n    },\n    \"1048576\": {\n      \"baseline\": {\n        \"elapsed_ms\": 122.333624,\n        \"process_vmhwm_kib\": 21314.0\n      },\n      \"candidate\": {\n        \"elapsed_ms\": 123.822554,\n        \"process_vmhwm_kib\": 13130.0\n      }\n    },\n    \"4194304\": {\n      \"baseline\": {\n        \"elapsed_ms\": 509.8511625,\n        \"process_vmhwm_kib\": 76564.0\n      },\n      \"candidate\": {\n        \"elapsed_ms\": 493.4554715,\n        \"process_vmhwm_kib\": 43828.0\n      }\n    }\n  },\n  \"versions\": {\n    \"baseline\": \"1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66\",\n    \"candidate\": \"6fd307974aafc6cd51fb33469fdaa4a882cd6e8bacea6ad55a59feae6b9e8ade\"\n  },\n  \"cpu_affinity\": [\n    2,\n    3\n  ],\n  \"scope\": \"Actual default JSONL process; valid zero-result distance projection still binds and validates its full vector. Per-process VmHWM includes startup and parsing. This is a wide-vector micro workload, not formal memory or a 128D workload speed claim.\"\n}\n"
+    },
+    {
+      "id": "rejected-ipo.json",
+      "source": "actual tool report, original file bytes decoded as UTF-8",
+      "source_file": "validation/reference-opt-20261115/rejected-ipo.json",
+      "source_sha256": "9cd7901cb63e99c08485462e3ab8b131b6595a47895bfdd90665b13b50fc3c28",
+      "retained_experiment": false,
+      "raw_report": "{\n  \"passed\": true,\n  \"rows\": 10000,\n  \"dimensions\": 128,\n  \"queries\": 1000,\n  \"rounds\": 3,\n  \"batch\": 100,\n  \"warmup\": 10,\n  \"versions\": {\n    \"baseline\": {\n      \"binary\": \"/tmp/mvd-reference-opt-20261115-39q88lpc/build/baseline\",\n      \"sha256\": \"1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66\"\n    },\n    \"candidate\": {\n      \"binary\": \"/tmp/mvd-reference-opt-20261115-39q88lpc/build/ipo\",\n      \"sha256\": \"fa75589918db739d6223ec171e97d79397870e14c19ee8785b586e78e286f662\"\n    }\n  },\n  \"fixture_sha256\": \"8c5f1e90a45d840735849349b800d013d53ccc3fbf38ee35d803594a294c2d95\",\n  \"oracle_source_sha256\": \"d818386c615725b3f525b4c7b463decce16ee8c7d82a4f616ce832f081010ae7\",\n  \"oracle_binary_sha256\": \"338e9487c2adb1eb54a074e411d646ed40e62b9a24befa568968bbc701b36459\",\n  \"samples\": 24,\n  \"verified_queries\": 24000,\n  \"summary\": {\n    \"bigint-idx0\": {\n      \"medians\": {\n        \"baseline\": {\n          \"write_ms\": 495.67236699999984,\n          \"query_ms\": 241.68346500000007,\n          \"cycle_ms\": 737.355832\n        },\n        \"candidate\": {\n          \"write_ms\": 553.0614580000001,\n          \"query_ms\": 251.95707399999986,\n          \"cycle_ms\": 805.018532\n        }\n      },\n      \"paired_speedups\": {\n        \"write_ms\": [\n          0.8918581287217452,\n          0.8591533513434926,\n          0.9452090464168666\n        ],\n        \"query_ms\": [\n          0.7369685044048416,\n          1.050051248430935,\n          0.9663683485667857\n        ],\n        \"cycle_ms\": [\n          0.8433803173614394,\n          0.9183269968269038,\n          0.9520416212597126\n        ]\n      },\n      \"median_paired_speedup\": {\n        \"write_ms\": 0.8918581287217452,\n        \"query_ms\": 0.9663683485667857,\n        \"cycle_ms\": 0.9183269968269038\n      }\n    },\n    \"bigint-idx1\": {\n      \"medians\": {\n        \"baseline\": {\n          \"write_ms\": 571.886355,\n          \"query_ms\": 284.30105,\n          \"cycle_ms\": 887.3552070000001\n        },\n        \"candidate\": {\n          \"write_ms\": 585.2107699999999,\n          \"query_ms\": 320.09013699999997,\n          \"cycle_ms\": 942.456411\n        }\n      },\n      \"paired_speedups\": {\n        \"write_ms\": [\n          0.9566066274443698,\n          0.9371353584817481,\n          0.977231425525542\n        ],\n        \"query_ms\": [\n          0.6225704074099608,\n          0.9682731441084879,\n          0.8991585061850059\n        ],\n        \"cycle_ms\": [\n          0.8448769295428884,\n          0.9486607760589536,\n          0.9474280057711868\n        ]\n      },\n      \"median_paired_speedup\": {\n        \"write_ms\": 0.9566066274443698,\n        \"query_ms\": 0.8991585061850059,\n        \"cycle_ms\": 0.9474280057711868\n      }\n    },\n    \"text-idx0\": {\n      \"medians\": {\n        \"baseline\": {\n          \"write_ms\": 559.7520390000003,\n          \"query_ms\": 300.2963400000004,\n          \"cycle_ms\": 858.1654680000001\n        },\n        \"candidate\": {\n          \"write_ms\": 573.9884750000003,\n          \"query_ms\": 291.49241399999966,\n          \"cycle_ms\": 865.4808889999999\n        }\n      },\n      \"paired_speedups\": {\n        \"write_ms\": [\n          1.0611841981199779,\n          0.913593914930086,\n          0.9571912305304442\n        ],\n        \"query_ms\": [\n          1.2243895473402175,\n          1.0302029335144232,\n          0.9865218598000791\n        ],\n        \"cycle_ms\": [\n          1.1166900972225915,\n          0.952867623631607,\n          0.967181336526069\n        ]\n      },\n      \"median_paired_speedup\": {\n        \"write_ms\": 0.9571912305304442,\n        \"query_ms\": 1.0302029335144232,\n        \"cycle_ms\": 0.967181336526069\n      }\n    },\n    \"text-idx1\": {\n      \"medians\": {\n        \"baseline\": {\n          \"write_ms\": 567.8343839999999,\n          \"query_ms\": 302.58435599999956,\n          \"cycle_ms\": 913.3345639999998\n        },\n        \"candidate\": {\n          \"write_ms\": 581.0797280000002,\n          \"query_ms\": 264.28334399999994,\n          \"cycle_ms\": 884.9138360000001\n        }\n      },\n      \"paired_speedups\": {\n        \"write_ms\": [\n          0.8491178976389963,\n          0.9866157712770793,\n          0.9896421829852762\n        ],\n        \"query_ms\": [\n          0.9544776798344129,\n          1.4229085495808038,\n          0.9459288376427512\n        ],\n        \"cycle_ms\": [\n          0.8836063254863604,\n          1.0953653495073195,\n          0.9730501695299504\n        ]\n      },\n      \"median_paired_speedup\": {\n        \"write_ms\": 0.9866157712770793,\n        \"query_ms\": 0.9544776798344129,\n        \"cycle_ms\": 0.9730501695299504\n      }\n    }\n  },\n  \"timing\": \"Sum of actual JSONL request round trips; input and oracle generation, warmup, verification and restart excluded. Fresh database per sample; version/order counterbalanced.\",\n  \"resources\": \"Per-process VmHWM and /proc/io retained; not formal T/B/M. CPU quota and memory ceiling enforced by launcher.\",\n  \"formal_score\": null\n}\n"
+    },
+    {
+      "id": "rejected-fp32-only.json",
+      "source": "actual tool report, original file bytes decoded as UTF-8",
+      "source_file": "validation/reference-opt-20261115/rejected-fp32-only.json",
+      "source_sha256": "a839b059fe21a2606912d318e8f9608ef3469ac698991b7149463f08504be300",
+      "retained_experiment": false,
+      "raw_report": "{\n  \"passed\": true,\n  \"rows\": 10000,\n  \"dimensions\": 128,\n  \"queries\": 1000,\n  \"rounds\": 2,\n  \"batch\": 100,\n  \"warmup\": 10,\n  \"cpu_affinity\": [\n    2,\n    3\n  ],\n  \"versions\": {\n    \"baseline\": {\n      \"binary\": \"/tmp/mvd-reference-opt-20261115-39q88lpc/build/baseline\",\n      \"sha256\": \"1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66\"\n    },\n    \"candidate\": {\n      \"binary\": \"/tmp/mvd-reference-opt-20261115-39q88lpc/build/fp32-only\",\n      \"sha256\": \"b3dc878de8312a36e20ec0e78274e9ee64fafa29e31e1fc5dfe455782b8942d4\"\n    }\n  },\n  \"fixture_sha256\": \"8c5f1e90a45d840735849349b800d013d53ccc3fbf38ee35d803594a294c2d95\",\n  \"oracle_source_sha256\": \"d818386c615725b3f525b4c7b463decce16ee8c7d82a4f616ce832f081010ae7\",\n  \"oracle_binary_sha256\": \"338e9487c2adb1eb54a074e411d646ed40e62b9a24befa568968bbc701b36459\",\n  \"samples\": 16,\n  \"verified_queries\": 16000,\n  \"summary\": {\n    \"bigint-idx0\": {\n      \"medians\": {\n        \"baseline\": {\n          \"write_ms\": 490.50203550000003,\n          \"query_ms\": 168.84548150000012,\n          \"cycle_ms\": 659.3475170000002\n        },\n        \"candidate\": {\n          \"write_ms\": 492.66725099999996,\n          \"query_ms\": 181.59188550000005,\n          \"cycle_ms\": 674.2591365000001\n        }\n      },\n      \"paired_speedups\": {\n        \"write_ms\": [\n          1.001364079145932,\n          0.9898887748284627\n        ],\n        \"query_ms\": [\n          0.9222673344355021,\n          0.9373068381970044\n        ],\n        \"cycle_ms\": [\n          0.9800459044792512,\n          0.9757378006386138\n        ]\n      },\n      \"median_paired_speedup\": {\n        \"write_ms\": 0.9956264269871973,\n        \"query_ms\": 0.9297870863162533,\n        \"cycle_ms\": 0.9778918525589325\n      }\n    },\n    \"bigint-idx1\": {\n      \"medians\": {\n        \"baseline\": {\n          \"write_ms\": 494.0806419999999,\n          \"query_ms\": 167.80118000000004,\n          \"cycle_ms\": 697.86758\n        },\n        \"candidate\": {\n          \"write_ms\": 490.9958105000002,\n          \"query_ms\": 183.75363749999997,\n          \"cycle_ms\": 711.4514565000002\n        }\n      },\n      \"paired_speedups\": {\n        \"write_ms\": [\n          1.0086707384504823,\n          1.0039109335915075\n        ],\n        \"query_ms\": [\n          0.914570446598391,\n          0.911803016970501\n        ],\n        \"cycle_ms\": [\n          0.9823503393243522,\n          0.9794698160318493\n        ]\n      },\n      \"median_paired_speedup\": {\n        \"write_ms\": 1.006290836020995,\n        \"query_ms\": 0.913186731784446,\n        \"cycle_ms\": 0.9809100776781008\n      }\n    },\n    \"text-idx0\": {\n      \"medians\": {\n        \"baseline\": {\n          \"write_ms\": 493.37058649999994,\n          \"query_ms\": 184.96410699999993,\n          \"cycle_ms\": 678.3346935\n        },\n        \"candidate\": {\n          \"write_ms\": 506.460106,\n          \"query_ms\": 184.12864350000007,\n          \"cycle_ms\": 690.5887495000001\n        }\n      },\n      \"paired_speedups\": {\n        \"write_ms\": [\n          0.9974709203297861,\n          0.952106310244775\n        ],\n        \"query_ms\": [\n          1.1005005471801264,\n          0.9097838873513158\n        ],\n        \"cycle_ms\": [\n          1.0253862150815602,\n          0.9409969155588593\n        ]\n      },\n      \"median_paired_speedup\": {\n        \"write_ms\": 0.9747886152872806,\n        \"query_ms\": 1.0051422172657212,\n        \"cycle_ms\": 0.9831915653202098\n      }\n    },\n    \"text-idx1\": {\n      \"medians\": {\n        \"baseline\": {\n          \"write_ms\": 488.11145950000014,\n          \"query_ms\": 168.82077700000013,\n          \"cycle_ms\": 693.3811095000002\n        },\n        \"candidate\": {\n          \"write_ms\": 492.063801,\n          \"query_ms\": 184.11462600000002,\n          \"cycle_ms\": 712.494895\n        }\n      },\n      \"paired_speedups\": {\n        \"write_ms\": [\n          0.998664389194076,\n          0.9853767190028488\n        ],\n        \"query_ms\": [\n          0.9170852738453825,\n          0.9167824248576211\n        ],\n        \"cycle_ms\": [\n          0.9771927964136796,\n          0.9692053550339844\n        ]\n      },\n      \"median_paired_speedup\": {\n        \"write_ms\": 0.9920205540984623,\n        \"query_ms\": 0.9169338493515018,\n        \"cycle_ms\": 0.973199075723832\n      }\n    }\n  },\n  \"timing\": \"Sum of actual JSONL request round trips; input and oracle generation, warmup, verification and restart excluded. Fresh database per sample; version/order counterbalanced.\",\n  \"resources\": \"Per-process VmHWM and /proc/io retained; not formal T/B/M. CPU quota and memory ceiling enforced by launcher.\",\n  \"formal_score\": null\n}\n"
+    },
+    {
+      "id": "rejected-no-bound.json",
+      "source": "actual tool report, original file bytes decoded as UTF-8",
+      "source_file": "validation/reference-opt-20261115/rejected-no-bound.json",
+      "source_sha256": "5635d68a37d78da328628a6b86ed20f345dca8fa58dc60e9076a839d2e7a2844",
+      "retained_experiment": false,
+      "raw_report": "{\n  \"passed\": true,\n  \"rows\": 10000,\n  \"dimensions\": 128,\n  \"queries\": 1000,\n  \"rounds\": 2,\n  \"batch\": 100,\n  \"warmup\": 10,\n  \"cpu_affinity\": [\n    2,\n    3\n  ],\n  \"versions\": {\n    \"baseline\": {\n      \"binary\": \"/tmp/mvd-reference-opt-20261115-39q88lpc/build/baseline\",\n      \"sha256\": \"1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66\"\n    },\n    \"candidate\": {\n      \"binary\": \"/tmp/mvd-reference-opt-20261115-39q88lpc/build/no-bound\",\n      \"sha256\": \"6da740a0f6710f6ecfe57a0d0ebef165057aebc42034cdffe7db9c28a704b6ee\"\n    }\n  },\n  \"fixture_sha256\": \"8c5f1e90a45d840735849349b800d013d53ccc3fbf38ee35d803594a294c2d95\",\n  \"oracle_source_sha256\": \"d818386c615725b3f525b4c7b463decce16ee8c7d82a4f616ce832f081010ae7\",\n  \"oracle_binary_sha256\": \"338e9487c2adb1eb54a074e411d646ed40e62b9a24befa568968bbc701b36459\",\n  \"samples\": 16,\n  \"verified_queries\": 16000,\n  \"summary\": {\n    \"bigint-idx0\": {\n      \"medians\": {\n        \"baseline\": {\n          \"write_ms\": 493.40093649999994,\n          \"query_ms\": 233.6681075000002,\n          \"cycle_ms\": 727.0690440000001\n        },\n        \"candidate\": {\n          \"write_ms\": 494.02983200000006,\n          \"query_ms\": 285.9492789999999,\n          \"cycle_ms\": 779.9791109999999\n        }\n      },\n      \"paired_speedups\": {\n        \"write_ms\": [\n          0.9980719868984027,\n          0.999381433220704\n        ],\n        \"query_ms\": [\n          1.0544263460659113,\n          0.5799214329927759\n        ],\n        \"cycle_ms\": [\n          1.018737698531745,\n          0.8456439347065108\n        ]\n      },\n      \"median_paired_speedup\": {\n        \"write_ms\": 0.9987267100595534,\n        \"query_ms\": 0.8171738895293437,\n        \"cycle_ms\": 0.9321908166191278\n      }\n    },\n    \"bigint-idx1\": {\n      \"medians\": {\n        \"baseline\": {\n          \"write_ms\": 488.54618500000004,\n          \"query_ms\": 173.23570150000006,\n          \"cycle_ms\": 697.9119995000001\n        },\n        \"candidate\": {\n          \"write_ms\": 492.4480609999999,\n          \"query_ms\": 285.97652900000014,\n          \"cycle_ms\": 814.545093\n        }\n      },\n      \"paired_speedups\": {\n        \"write_ms\": [\n          0.9909748878675559,\n          0.9931787858407751\n        ],\n        \"query_ms\": [\n          0.6267265052718854,\n          0.5848637692489836\n        ],\n        \"cycle_ms\": [\n          0.863888255418446,\n          0.849736745721035\n        ]\n      },\n      \"median_paired_speedup\": {\n        \"write_ms\": 0.9920768368541655,\n        \"query_ms\": 0.6057951372604345,\n        \"cycle_ms\": 0.8568125005697405\n      }\n    },\n    \"text-idx0\": {\n      \"medians\": {\n        \"baseline\": {\n          \"write_ms\": 509.4288670000001,\n          \"query_ms\": 205.33924250000007,\n          \"cycle_ms\": 714.7681095000003\n        },\n        \"candidate\": {\n          \"write_ms\": 489.59321950000003,\n          \"query_ms\": 286.5050090000001,\n          \"cycle_ms\": 776.0982285000001\n        }\n      },\n      \"paired_speedups\": {\n        \"write_ms\": [\n          0.9737355625668576,\n          1.108490010192621\n        ],\n        \"query_ms\": [\n          0.5970348326749856,\n          0.8368766685827581\n        ],\n        \"cycle_ms\": [\n          0.8352633122603799,\n          1.007789514665829\n        ]\n      },\n      \"median_paired_speedup\": {\n        \"write_ms\": 1.0411127863797391,\n        \"query_ms\": 0.7169557506288718,\n        \"cycle_ms\": 0.9215264134631044\n      }\n    },\n    \"text-idx1\": {\n      \"medians\": {\n        \"baseline\": {\n          \"write_ms\": 489.14766050000014,\n          \"query_ms\": 166.23664550000007,\n          \"cycle_ms\": 692.3748590000001\n        },\n        \"candidate\": {\n          \"write_ms\": 491.6299854999999,\n          \"query_ms\": 287.0756090000001,\n          \"cycle_ms\": 815.297998\n        }\n      },\n      \"paired_speedups\": {\n        \"write_ms\": [\n          0.9928795721194644,\n          0.9970611713173134\n        ],\n        \"query_ms\": [\n          0.5809535644962917,\n          0.5771890184782735\n        ],\n        \"cycle_ms\": [\n          0.8504273612943732,\n          0.8480184802332575\n        ]\n      },\n      \"median_paired_speedup\": {\n        \"write_ms\": 0.9949703717183889,\n        \"query_ms\": 0.5790712914872826,\n        \"cycle_ms\": 0.8492229207638153\n      }\n    }\n  },\n  \"timing\": \"Sum of actual JSONL request round trips; input and oracle generation, warmup, verification and restart excluded. Fresh database per sample; version/order counterbalanced.\",\n  \"resources\": \"Per-process VmHWM and /proc/io retained; not formal T/B/M. CPU quota and memory ceiling enforced by launcher.\",\n  \"formal_score\": null\n}\n"
+    },
+    {
+      "id": "source-identity.json",
+      "source": "actual tool report, original file bytes decoded as UTF-8",
+      "source_file": "validation/reference-opt-20261115/source-identity.json",
+      "source_sha256": "e2da0508c393853f7f77d04eb3a8a6d7f2e214d73ee33d4c00c9d652ea8ef092",
+      "retained_experiment": true,
+      "raw_report": "{\n  \"passed\": true,\n  \"runtime_core\": \"c2c2b42f6782549049b14764c7a105389cb5289f\",\n  \"runtime_inputs\": 38,\n  \"release_binary_sha256\": \"6fd307974aafc6cd51fb33469fdaa4a882cd6e8bacea6ad55a59feae6b9e8ade\",\n  \"baseline_binary_sha256\": \"1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66\",\n  \"compiler\": \"g++ (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0\",\n  \"kernel\": \"Linux-5.15.0-202-generic-x86_64-with-glibc2.35\",\n  \"architecture\": \"x86_64\",\n  \"formal_submitted\": false,\n  \"docker_used\": false\n}\n"
+    },
+    {
+      "id": "native-replay.json",
+      "source": "actual tool report, original file bytes decoded as UTF-8",
+      "source_file": "validation/reference-opt-20261115/native-replay.json",
+      "source_sha256": "ae449bc6af73256b001aba7f2053099f44451d889ab2ee4a160894df8325117f",
+      "retained_experiment": true,
+      "raw_report": "{\n  \"passed\": true,\n  \"runtime_core\": \"c2c2b42f6782549049b14764c7a105389cb5289f\",\n  \"workspace\": \"/tmp/mvd-ref-native-r88ssbt3\",\n  \"stages\": [\n    {\n      \"name\": \"ctest\",\n      \"exit_code\": 0,\n      \"seconds\": 23.163278083025943,\n      \"argv\": [\n        \"ctest\",\n        \"--test-dir\",\n        \"/tmp/mvd-reference-opt-20261115-39q88lpc/numeric-build\",\n        \"--output-on-failure\",\n        \"--parallel\",\n        \"2\",\n        \"--output-junit\",\n        \"/tmp/mvd-ref-native-r88ssbt3/native-evidence/ctest.xml\"\n      ]\n    },\n    {\n      \"name\": \"public\",\n      \"exit_code\": 0,\n      \"seconds\": 1.1158735289936885,\n      \"argv\": [\n        \"/usr/bin/python3\",\n        \"/tmp/mvd-ref-native-r88ssbt3/official-kit/protocol_check/run.py\",\n        \"--command\",\n        \"[\\\"/usr/bin/python3\\\", \\\"/tmp/mvd-ref-native-r88ssbt3/native_launcher_hardened.py\\\", \\\"{data_dir}\\\"]\",\n        \"--output\",\n        \"/tmp/mvd-ref-native-r88ssbt3/native-evidence/public\"\n      ]\n    },\n    {\n      \"name\": \"parity\",\n      \"exit_code\": 0,\n      \"seconds\": 7.132309451000765,\n      \"argv\": [\n        \"/usr/bin/python3\",\n        \"/tmp/mvd-ref-native-r88ssbt3/native_parity_audit.py\",\n        \"--output\",\n        \"/tmp/mvd-ref-native-r88ssbt3/native-evidence/parity\",\n        \"--candidate\",\n        \"/tmp/mvd-ref-native-r88ssbt3/build/candidate\",\n        \"--reference\",\n        \"/tmp/mvd-ref-native-r88ssbt3/build/baseline\"\n      ]\n    },\n    {\n      \"name\": \"wire\",\n      \"exit_code\": 0,\n      \"seconds\": 4.67487088200869,\n      \"argv\": [\n        \"/usr/bin/python3\",\n        \"/tmp/mvd-ref-native-r88ssbt3/native_wire_boundaries.py\",\n        \"--output\",\n        \"/tmp/mvd-ref-native-r88ssbt3/native-evidence/wire\",\n        \"--candidate\",\n        \"/tmp/mvd-ref-native-r88ssbt3/build/candidate\",\n        \"--reference\",\n        \"/tmp/mvd-ref-native-r88ssbt3/build/baseline\"\n      ]\n    },\n    {\n      \"name\": \"default-contract\",\n      \"exit_code\": 0,\n      \"seconds\": 0.2650589040131308,\n      \"argv\": [\n        \"/usr/bin/python3\",\n        \"/tmp/mvd-ref-native-r88ssbt3/default_contract.py\",\n        \"default-contract\",\n        \"/tmp/mvd-ref-native-r88ssbt3/build/candidate\"\n      ]\n    }\n  ],\n  \"binary_sha256\": \"6fd307974aafc6cd51fb33469fdaa4a882cd6e8bacea6ad55a59feae6b9e8ade\",\n  \"existing_build_reused\": true,\n  \"benchmark\": false,\n  \"docker_used\": false,\n  \"formal_submitted\": false\n}\n"
+    },
+    {
+      "id": "wire.json",
+      "source": "actual tool report, original file bytes decoded as UTF-8",
+      "source_file": "validation/reference-opt-20261115/wire.json",
+      "source_sha256": "03a940d0439621704944c70156792e62c2dad01be734fcfe1e7b1fcc4e109c30",
+      "retained_experiment": true,
+      "raw_report": "{\n  \"passed\": true,\n  \"observations\": 6,\n  \"results\": [\n    {\n      \"category\": \"id_near_response_limit\",\n      \"id_bytes\": 1,\n      \"request_bytes\": 65,\n      \"request_within_reference_limit\": true,\n      \"ours\": {\n        \"ok\": true,\n        \"id_exact\": true,\n        \"affected_rows\": 0,\n        \"error\": null\n      },\n      \"reference\": {\n        \"ok\": true,\n        \"id_exact\": true,\n        \"affected_rows\": 0,\n        \"error\": null\n      },\n      \"qualifying_failure\": false\n    },\n    {\n      \"category\": \"id_near_response_limit\",\n      \"id_bytes\": 16776704,\n      \"request_bytes\": 16776768,\n      \"request_within_reference_limit\": true,\n      \"ours\": {\n        \"ok\": true,\n        \"id_exact\": true,\n        \"affected_rows\": 0,\n        \"error\": null\n      },\n      \"reference\": {\n        \"ok\": true,\n        \"id_exact\": true,\n        \"affected_rows\": 0,\n        \"error\": null\n      },\n      \"qualifying_failure\": false\n    },\n    {\n      \"category\": \"id_near_response_limit\",\n      \"id_bytes\": 16776960,\n      \"request_bytes\": 16777024,\n      \"request_within_reference_limit\": true,\n      \"ours\": {\n        \"ok\": true,\n        \"id_exact\": true,\n        \"affected_rows\": 0,\n        \"error\": null\n      },\n      \"reference\": {\n        \"ok\": true,\n        \"id_exact\": true,\n        \"affected_rows\": 0,\n        \"error\": null\n      },\n      \"qualifying_failure\": false\n    },\n    {\n      \"category\": \"id_near_response_limit\",\n      \"id_bytes\": 16777000,\n      \"request_bytes\": 16777064,\n      \"request_within_reference_limit\": true,\n      \"ours\": {\n        \"ok\": true,\n        \"id_exact\": true,\n        \"affected_rows\": 0,\n        \"error\": null\n      },\n      \"reference\": {\n        \"ok\": true,\n        \"id_exact\": true,\n        \"affected_rows\": 0,\n        \"error\": null\n      },\n      \"qualifying_failure\": false\n    },\n    {\n      \"category\": \"id_near_response_limit\",\n      \"id_bytes\": 16777088,\n      \"request_bytes\": 16777152,\n      \"request_within_reference_limit\": true,\n      \"ours\": {\n        \"ok\": true,\n        \"id_exact\": true,\n        \"affected_rows\": 0,\n        \"error\": null\n      },\n      \"reference\": {\n        \"ok\": true,\n        \"id_exact\": true,\n        \"affected_rows\": 0,\n        \"error\": null\n      },\n      \"qualifying_failure\": false\n    },\n    {\n      \"category\": \"id_near_response_limit\",\n      \"id_bytes\": 16777120,\n      \"request_bytes\": 16777184,\n      \"request_within_reference_limit\": true,\n      \"ours\": {\n        \"ok\": true,\n        \"id_exact\": true,\n        \"affected_rows\": 0,\n        \"error\": null\n      },\n      \"reference\": {\n        \"ok\": true,\n        \"id_exact\": true,\n        \"affected_rows\": 0,\n        \"error\": null\n      },\n      \"qualifying_failure\": false\n    }\n  ],\n  \"candidate_sha256\": \"6fd307974aafc6cd51fb33469fdaa4a882cd6e8bacea6ad55a59feae6b9e8ade\",\n  \"reference_sha256\": \"1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66\",\n  \"scope\": \"Actual JSONL requests within the unchanged official response bound; IDs summarized by size, no formal score.\"\n}\n"
+    },
+    {
+      "id": "current_large_id_wire_example",
+      "source": "Actual additional protocol raw trace for the current frozen candidate",
+      "stage": "current_candidate_followup",
+      "request": "{\"id\":18446744073709551616,\"op\":\"execute\",\"sql\":\"SELECT id FROM t;\"}\n",
+      "candidate_stdout": "{\"id\":18446744073709551616,\"ok\":true,\"columns\":[\"id\"],\"rows\":[[1]]}\n",
+      "reference_stdout": "{\"id\":18446744073709551616,\"ok\":true,\"columns\":[\"id\"],\"rows\":[[1]]}\n",
+      "candidate_binary_sha256": "6fd307974aafc6cd51fb33469fdaa4a882cd6e8bacea6ad55a59feae6b9e8ade",
+      "reference_binary_sha256": "1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66"
+    },
+    {
+      "id": "production_diff_review",
+      "source": "actual tool result",
+      "stage": "current_candidate_followup",
+      "raw_report": "{\n  \"passed\": true,\n  \"candidate_commit\": \"4da36e6b47dc698a5115f66c6bee9833b001364d\",\n  \"production_changes\": [\n    \"src/sql/binder.cpp\",\n    \"src/types/float32.hpp\",\n    \"src/types/value.cpp\"\n  ],\n  \"float32_conversion_tokens_identical_after_replacing_vector_append_with_scalar_return\": true,\n  \"old_fragment_sha256\": \"48862cdb2e33f9ffecf1ea138698640b970fa8be2481f2b2dfe7658a505a0998\",\n  \"new_fragment_sha256\": \"af4310f7734d8cd581a7854be88acd2560110e02263256fffe708c98c889c464\",\n  \"scope\": \"Token equality for the extracted scalar conversion logic; binder error precedence reviewed separately. This is not a whole-program formal equivalence proof.\"\n}\n"
+    }
+  ],
+  "candidate_evidence_chains": [
+    {
+      "topic": "协议边界与独立对照要求",
+      "owner_evidence": [
+        {
+          "pointer": "/messages/8/content",
+          "quote": "你不应该对着协议一个一个排查吗"
+        },
+        {
+          "pointer": "/messages/7/content",
+          "quote": "请你看看有没有边界情况是参考代码可以完成的，而我们的则会失败"
+        }
+      ],
+      "observed_result": [
+        {
+          "pointer": "/experiments/18/candidate_stdout",
+          "quote": "{\"id\":18446744073709551616,\"ok\":true,\"columns\":[\"id\"],\"rows\":[[1]]}"
+        }
+      ],
+      "attribution": "用户提出具体类型/精度问题和逐项对照要求；实际复现、测试与修复由 Agent 完成。问题来自旧路线，所列结果是新候选的再次验证，不把不同源码阶段写成同一次修复。两条要求属于同一问题链，不拆成两次计分。"
+    },
+    {
+      "topic": "质疑迁移方式并更换实现基础",
+      "owner_evidence": [
+        {
+          "pointer": "/messages/15/content",
+          "quote": "为什么别人不会出现这种问题，但我们会"
+        },
+        {
+          "pointer": "/messages/16/content",
+          "quote": "要不你直接在别人的代码基础上优化吧，我们现在的代码就废弃了吧"
+        }
+      ],
+      "observed_result": [
+        {
+          "pointer": "/experiments/19/raw_report",
+          "quote": "\"production_changes\": [\n    \"src/sql/binder.cpp\",\n    \"src/types/float32.hpp\",\n    \"src/types/value.cpp\"\n  ]"
+        }
+      ],
+      "attribution": "用户决定放弃独立实现，直接继承得分反馈对应的参考版本。代码移植、后续内存优化和测试由 Agent 执行；未声称用户解释了数据库内部机制。"
+    },
+    {
+      "topic": "将 MySQL 准入作为提测前检查条件",
+      "owner_evidence": [
+        {
+          "pointer": "/messages/10/content",
+          "quote": "请你确定mysol的样例要不通过，否则不得分"
+        }
+      ],
+      "observed_result": [
+        {
+          "pointer": "/experiments/3/raw_report",
+          "quote": "\"passed\": true"
+        }
+      ],
+      "attribution": "保留用户原文中的拼写，不替用户改写技术表达。该结果仅为候选的公开用例验证，不能当成正式隐藏准入通过；是否构成独立学习实例由评审判断。"
+    }
+  ],
+  "agent_observations": [
+    "The owner explicitly abandoned the independent implementation. A clean fork of the scored-runtime-qualified reference replaced it as the development base; protocol, parser, store, transaction and recovery implementations were inherited directly.",
+    "The source comparison against the upstream runtime is three files: binder.cpp, value.cpp and a shared float32 conversion header. The numerical path still converts decimal to binary64 and then binary32. Complete lexical validity, numeric failure, dimension and float32 range error priority is retained, including errors after an earlier range overflow.",
+    "The optimization avoids the temporary double component array for simple quoted vectors; complex syntax keeps the original lexer path. Existing slow/fast binder checks plus added error priority combinations compare bitwise values and exact errors.",
+    "Three preliminary changes did not yield stable gains and were discarded: IPO, disabling integer screening and disabling conservative screening. Their actual successful-correctness benchmark results remain available and are not called performance wins.",
+    "Six paired rounds verify 48000 standard-workload query results. Median cycle speedups across four shapes are approximately 1.005, 1.002, 1.003 and 0.982. This does not establish a consistent 128D speed benefit. No slow sample was removed.",
+    "The retained memory result is a separate valid wide-vector binding workload with LIMIT 0 on an empty table. Actual process VmHWM medians at dimension 4194304 are 76564 KiB and 43828 KiB, a 42.8 percent reduction. It is not formal M, full-database capacity or a default-workload speed claim.",
+    "Original and candidate each pass 70 CTests and 20 unchanged public protocol cases. The candidate also passes 7862 reference comparisons, independent scalar expected values, large IDs, ASan/UBSan/leak diagnostics and actual hardened default-entrypoint transaction/restart checks.",
+    "Initial local runner calibration failed on a temporary-directory guard and on copied executable permissions; logs were retained. Corrected runs are separately named. An original mixed-CRLF CMake file caused a normalized-hash/raw-byte mismatch during evidence checks; the input manifest now retains both raw Git byte hashes and normalized hashes, and all 38 exact runtime inputs were checked.",
+    "The new native reproduction runner was actually replayed in a fresh temporary directory while reusing verified existing binaries, explicitly recorded as such. Docker builds and remote GitHub Actions were not run. Author-reported success is not a formal evaluation of this fork."
+  ],
+  "limitations": [
+    "当前材料是审阅草稿，尚未替换冻结版本。",
+    "公开用例及本地性能不是新候选正式成绩；新候选没有隐藏准入或 Prompt 评价结果。",
+    "保留来源和阶段，不能把 Agent 的解释改写成用户理解；没有证据的个人实现或知识迁移不作声称。"
+  ]
+}

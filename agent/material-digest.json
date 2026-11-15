@@ -1,7 +1,9 @@
 {
-  "material_sha256": "8f1d1778fe34a1b6aa42d9722fb7dfe1ade6ec8c32789fd04a7c99b76d510042",
-  "bytes": 58998,
-  "runtime_core": "c2c2b42f6782549049b14764c7a105389cb5289f",
+  "material_sha256": "377df621ddd9b2f4fd4f4c04713c8d43e958ef21ba5d118fad4a884e088c760a",
+  "bytes": 83266,
+  "runtime_core": "728c945bbca3ee9f34f9cb947ac8d56944cf67c9",
   "synthetic": false,
-  "scope": "Local integrity only; not a platform Prompt digest or score"
+  "owner_messages": 18,
+  "source_quotes_unchanged": true,
+  "scope": "Local integrity and attribution only; not a platform Prompt score or summary"
 }

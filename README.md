@@ -1,10 +1,12 @@
 # MiniVectorDB
 
-本分支是用户要求的参考实现衍生候选，直接继承 `juanzhi-gcb/seekdb@a08e66e299847ca539c419cfbc67593357246627`；旧 Dot/Codex 独立实现已退出主线。当前运行核心 `c2c2b42f6782549049b14764c7a105389cb5289f` 只对原向量解析缓冲作优化，协议、存储格式与提交逻辑沿用参考。
+本分支是用户要求的参考实现衍生候选，直接继承 `juanzhi-gcb/seekdb@a08e66e299847ca539c419cfbc67593357246627`；旧 Dot/Codex 独立实现已退出主线。生产数据库源码核心 `c2c2b42f6782549049b14764c7a105389cb5289f` 保持不变；测试兼容快照 `728c945bbca3ee9f34f9cb947ac8d56944cf67c9` 修正新版 libc 下的读取故障注入，默认程序重编译后与原版本逐字节相同。协议、存储格式与提交逻辑沿用参考。
 
 原版和候选均通过 70/70 自测、官方 20/20；候选另有 7862 次边界对拍、48000 次标准负载查询及 Sanitizer 验证。大维度解析峰值内存实测下降，标准 128 维负载没有一致加速，不将本地结果换算正式得分。详见[当前报告](docs/REFERENCE_BASED_20261115.md)。
 
-当前入口材料只记录本用户的真实指令和本轮 Agent 工作，明确代码来源。用 `python3 scripts/check-reference-candidate.py` 检查材料与证据；在已授权 A6000 原生环境用 `python3 tools/native/verify.py` 重现。Docker 与远端 GitHub CI 本轮未运行；未推送、未正式提测。
+当前入口材料恢复18条真实用户记录，先展示做题人对目标、验收和路线选择的主导，再给出原话和实际结果；新增概述明确标为 Agent 整理，不改写用户原话或技术来源。材料修改说明见[Prompt 编排说明](docs/PROMPT_RECORD_REVIEW_20261115.md)。用 `python3 scripts/check-reference-candidate.py` 检查，在已授权 Linux 环境用 `python3 tools/native/verify.py` 重现。
+
+Docker 本轮未运行；旧完整 CI 的三项故障注入失败、原版对照诊断及测试兼容修复保留在[CI 记录](docs/CI_READ_INJECTION_20261115.md)。最终完整 CI 以对应提交的实际结果为准。本候选未正式提测，不将旧 e860453 的正式通过和性能指标归到本版本。
 
 ## 上游 README 归档
 

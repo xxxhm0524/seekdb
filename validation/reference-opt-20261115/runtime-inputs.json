@@ -1,8 +1,8 @@
 {
-  "runtime_core": "c2c2b42f6782549049b14764c7a105389cb5289f",
+  "runtime_core": "728c945bbca3ee9f34f9cb947ac8d56944cf67c9",
   "upstream_commit": "a08e66e299847ca539c419cfbc67593357246627",
   "sha256_lf": {
-    "CMakeLists.txt": "6d5c2c610ac6640d52f49f13fd880f58b0210686f3d4e14b1d83e8be5fa3d513",
+    "CMakeLists.txt": "7fe0511bdd817917cea39da6bd56c94c8ef7894894b50f382e1a0c0d5e9fed77",
     "Dockerfile": "ff7dd719c0b41c72e33e9aa112c2dcf16eab763a3bd7c6118d368b4bd0c0c086",
     "include/minivectordb/database.hpp": "5cd6442e38ab0b6dea074cec6219389dcc28cf64511e9bdd290281ecea1e7661",
     "include/minivectordb/exact.hpp": "452fbb9e9fb0b0aa5500937e39fbf71f48b1959636b16733f94a5824a35b5b67",
@@ -47,7 +47,7 @@
     "src/types/float32.hpp"
   ],
   "sha256_raw_git": {
-    "CMakeLists.txt": "34e37669115ae43665c496b7a5d15ecacc444ceaec0d63e9d3a515a48c8809fc",
+    "CMakeLists.txt": "ebcc8a75ee5961a3ed7468c9eb9e30f48a93c5e44605ac93da327f6f8c7b3f87",
     "Dockerfile": "ff7dd719c0b41c72e33e9aa112c2dcf16eab763a3bd7c6118d368b4bd0c0c086",
     "include/minivectordb/database.hpp": "5cd6442e38ab0b6dea074cec6219389dcc28cf64511e9bdd290281ecea1e7661",
     "include/minivectordb/exact.hpp": "452fbb9e9fb0b0aa5500937e39fbf71f48b1959636b16733f94a5824a35b5b67",
@@ -85,5 +85,7 @@
     "src/vector/exact.cpp": "d2871ee2ef754703ea9fb216a159faf39881de7d61dcb09062ec5e7de8245a54",
     "src/vector/int8_bound.hpp": "81bcc2ed93c991d4e4570359ef92ed7c8d8b7ec8eb9db77a57434111032d3dcf",
     "src/vector/validated.hpp": "c3755be6fd1960d20099ed5414e0234ae08e43bd7915b85ce0c05f3b3481bcc0"
-  }
+  },
+  "production_source_core": "c2c2b42f6782549049b14764c7a105389cb5289f",
+  "test_only_change": "CMake adds fortified pread forwarding to existing test targets; production source and target flags unchanged."
 }

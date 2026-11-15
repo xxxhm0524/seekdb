@@ -1,47 +1,63 @@
-"""Build selected authentic owner/agent records for this independently forked candidate."""
+"""Deterministic selection of real history; editorial prose never replaces quotes."""
+import copy
 import hashlib
 import json
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[1]
 E=ROOT/'validation/reference-opt-20261115'
-provenance=json.loads((E/'provenance.json').read_text(encoding='utf-8'))
-messages=[
-    dict(role='user',source='actual owner message',content='要不你也不要用docker了，你直接在a6000上面完成题目吧'),
-    dict(role='user',source='actual owner message',content='[https://github.com/juanzhi-gcb/seekdb](https://github.com/juanzhi-gcb/seekdb)\n请你对照这个仓库进行修改，这个仓库的代码已经得分了'),
-    dict(role='user',source='actual owner message',content='你能不能确定参考代码能通过的边界情况我们的代码也能完美执行'),
-    dict(role='user',source='actual owner message',content='那么我觉得你可以继续检查'),
-    dict(role='user',source='actual owner message',content='你的代码不是在别人的基础上构建的吗，为什么别人不会出现这种问题，但我们会'),
-    dict(role='user',source='actual owner message',content='要不你直接在别人的代码基础上优化吧，我们现在的代码就废弃了吧'),
-    dict(role='assistant',source='Codex visible progress, actual excerpt',content='可以，停止修补现有实现，改为以已核对得分反馈的参考版本为基础优化。现有代码和证据保留归档。'),
-    dict(role='assistant',source='Codex visible progress, actual excerpt',content='三项无收益的尝试都已排除。现在测试一个较小的改动：减少向量解析时的中间缓冲分配，保持参考版本的数值转换结果和报错顺序，再检查端到端性能是否有稳定收益。'),
-    dict(role='assistant',source='Codex visible progress, actual excerpt',content='缓冲优化的收益已测到：约 419 万维的合法查询，进程峰值内存从约 **74.8 MiB 降至 42.8 MiB**。标准 128 维负载的速度没有稳定提升，我不会宣称它更快。')
+template=ROOT/'evidence/prompt-history-20261115/approved-history-draft.json'
+raw=template.read_bytes()
+assert hashlib.sha256(raw).hexdigest()=='444587056e43cbaa8eca3ca1b2dc67d0623eb079714276dd460792b614a8fde8'
+material=copy.deepcopy(json.loads(raw))
+identity=json.loads((E/'runtime-inputs.json').read_text(encoding='utf-8'))
+material['format']='reference-derived-authentic-history-v2'
+material['status']='selected_actual_history_for_current_candidate'
+material['provenance'].update(runtime_core=identity['runtime_core'],production_source_core=identity['production_source_core'],
+    approved_history_draft_sha256=hashlib.sha256(raw).hexdigest(),
+    editorial_scope='Owner accepted the real-history supplement and requested a clearer account of their direction-setting. Original messages remain exact; the added overview is Agent-authored editorial text, not historical dialogue.')
+for message in material['messages']:
+    if message['role']=='user' and '18446744073709551616' in message['content']:
+        message['attribution_note']='The defect description inside quotation marks is the owner quoting an Agent finding. The owner contribution is the subsequent challenge and request for item-by-item protocol review; the finding is not relabeled as an owner discovery.'
+material['owner_leadership_overview']={
+    'author':'Agent editorial summary based on the cited original owner messages; not a historical user utterance',
+    'text':'本题由做题人主导目标、验收要求和关键路线选择。做题人强调以 MySQL 准入为前提，要求逐项核对协议，重点寻找“参考实现能够通过而本实现失败”的边界，不把公开用例通过或借鉴过代码当成完全正确的证明。针对反复修补仍暴露问题的情况，做题人持续质疑，并最终决定弃用旧实现，直接以具有得分反馈的公开参考版本为基础开展优化。Agent 按这些明确要求执行实现、对照测试、问题定位和记录整理。',
+    'role_boundary':'项目目标、验收标准和路线选择按用户原话归属；参考作者的实现、Agent 提出的具体优化和实际工具操作保留实际来源。本说明不声称所有技术方案由用户原创。',
+    'presentation_order':'用户提出要求或质疑 → Agent 执行与真实结果 → 用户后续要求或路线调整。未发生的用户解释、操作或结论不补写。'
+}
+material['historical_agent_observations_at_4da36e6']=material.pop('agent_observations')
+material['agent_observations']=[
+    'The prior material selection was too focused on acceptance logs. The approved supplement restores the actual initial goal and specific owner challenges, preserves exact messages and stages, and indexes observations without claiming a score.',
+    'Ubuntu 24.04 CI initially failed three read-failure tests for both the unchanged reference and the candidate. Symbol inspection showed fortified __pread_chk reads bypassed the pread-only test injector; diagnostics observed zero injected failures. This was not presented as a database semantic failure or a passing CI.',
+    'A test-only forwarding wrapper retains libc bounds checks and routes safe fortified reads through the existing injector. Both versions then passed the same three assertions; their default database binary hashes remained unchanged. The main test configuration applies the same compatibility repair to all five read-wrapped suites.',
+    'The new source snapshot changes test linkage and the learning material. Database production source, public protocol, persistence format and commit semantics remain those of the prior runtime. Existing reports retain their original core and binary attribution; new binary identity and tests are recorded separately.'
 ]
-experiments=[]
-for name,record in provenance['reports'].items():
-    raw=(E/name).read_bytes();assert hashlib.sha256(raw).hexdigest()==record['sha256']
-    result=json.loads(raw);assert result['passed'] is True
-    if name=='wide-bind.json':result={k:v for k,v in result.items() if k!='samples'}
-    if name=='native-replay.json':result={**result,'stages':[{k:v for k,v in s.items() if k!='argv'} for s in result['stages']]}
-    experiments.append(dict(source='actual A6000 native tool result',file='validation/reference-opt-20261115/'+name,sha256=record['sha256'],retained_experiment=record['retained_experiment'],result=result))
-material=dict(format='reference-derived-actual-evidence-v1',synthetic=False,date='2026-11-15',
-    provenance=dict(code_repository='https://github.com/juanzhi-gcb/seekdb',upstream_commit=provenance['baseline_commit'],runtime_core=provenance['runtime_core'],code_attribution='The full implementation is derived from the named public reference. Codex changed three runtime files for quoted-vector buffering; the previous independent implementation is not the runtime base.'),
-    owner_contribution_limit='Owner messages are instructions and reviews. They do not establish personal implementation or technical learning. The reference author dialogue, learning evidence and platform results are not this owner contribution. All new implementation, benchmark interpretation and tests are Agent work.',
-    messages=messages,experiments=experiments,
-    agent_observations=[
-        'The owner explicitly abandoned the independent implementation. A clean fork of the scored-runtime-qualified reference replaced it as the development base; protocol, parser, store, transaction and recovery implementations were inherited directly.',
-        'The source comparison against the upstream runtime is three files: binder.cpp, value.cpp and a shared float32 conversion header. The numerical path still converts decimal to binary64 and then binary32. Complete lexical validity, numeric failure, dimension and float32 range error priority is retained, including errors after an earlier range overflow.',
-        'The optimization avoids the temporary double component array for simple quoted vectors; complex syntax keeps the original lexer path. Existing slow/fast binder checks plus added error priority combinations compare bitwise values and exact errors.',
-        'Three preliminary changes did not yield stable gains and were discarded: IPO, disabling integer screening and disabling conservative screening. Their actual successful-correctness benchmark results remain available and are not called performance wins.',
-        'Six paired rounds verify 48000 standard-workload query results. Median cycle speedups across four shapes are approximately 1.005, 1.002, 1.003 and 0.982. This does not establish a consistent 128D speed benefit. No slow sample was removed.',
-        'The retained memory result is a separate valid wide-vector binding workload with LIMIT 0 on an empty table. Actual process VmHWM medians at dimension 4194304 are 76564 KiB and 43828 KiB, a 42.8 percent reduction. It is not formal M, full-database capacity or a default-workload speed claim.',
-        'Original and candidate each pass 70 CTests and 20 unchanged public protocol cases. The candidate also passes 7862 reference comparisons, independent scalar expected values, large IDs, ASan/UBSan/leak diagnostics and actual hardened default-entrypoint transaction/restart checks.',
-        'Initial local runner calibration failed on a temporary-directory guard and on copied executable permissions; logs were retained. Corrected runs are separately named. An original mixed-CRLF CMake file caused a normalized-hash/raw-byte mismatch during evidence checks; the input manifest now retains both raw Git byte hashes and normalized hashes, and all 38 exact runtime inputs were checked.',
-        'The new native reproduction runner was actually replayed in a fresh temporary directory while reusing verified existing binaries, explicitly recorded as such. Docker builds and remote GitHub Actions were not run. Author-reported success is not a formal evaluation of this fork.'
-    ],
-    limitations=['No official hidden admission, performance score, Prompt score or rank exists for this candidate.','No new Docker build/cold pull or remote GitHub CI result exists. GCC 11.4 native runs do not establish the Alpine builder path.','Finite comparison cases are not a universal proof. The inherited depth/resource/history limits still apply.','Formal push/submission is not authorized. A later formal attempt needs owner approval for the complete final SHA, after 22:00 Asia/Shanghai, at most once per day, no adjacent midnight attempts, current quota/history checks and a durable one-attempt marker.'])
-raw=(json.dumps(material,ensure_ascii=False,indent=2,allow_nan=False)+'\n').encode('utf-8');assert len(raw)<=131072
-for name in ['agent/conversation.json','conversation.json']:(ROOT/name).write_bytes(raw)
-digest=dict(material_sha256=hashlib.sha256(raw).hexdigest(),bytes=len(raw),runtime_core=provenance['runtime_core'],synthetic=False,scope='Local integrity only; not a platform Prompt digest or score')
-(ROOT/'agent/material-digest.json').write_bytes((json.dumps(digest,indent=2)+'\n').encode())
+for name in ('fortified-read-compatibility.json','binary-identity-728c.json'):
+    path=E/name
+    if path.exists():
+        report=path.read_bytes();assert json.loads(report)['passed'] is True
+        material['experiments'].append(dict(id=name,source='Actual CI/native result or explicitly derived verification summary',
+            source_file='validation/reference-opt-20261115/'+name,source_sha256=hashlib.sha256(report).hexdigest(),raw_report=report.decode('utf-8')))
+material['limitations']=[
+    'Original message wording is unchanged. Owner contribution and Agent/reference-author work are distinguished; editorial summaries and evidence-chain indexes are not historical user messages or official grading reports.',
+    'The old e860453 formal result belongs to another implementation. This new candidate has no formal hidden admission, performance score, Prompt result or rank.',
+    'The wide-vector binding memory result is a separate workload. The standard 128D paired runs did not show a consistent speed gain; slow samples and rejected experiments remain.',
+    'Earlier CI failure and the test compatibility diagnosis are preserved. A subsequent complete CI must be checked for the final full SHA; neither a diagnostic job nor local checks substitute for formal evaluation.',
+    'Docker was not run in this native workflow. Native compiler evidence does not establish the Alpine image build path. Finite checks are not a proof for all inputs.'
+]
+material['material_summary']='做题人明确目标与准入优先级，持续要求逐项协议核对和参考对照，并在反复暴露问题后决定更换实现基础。Agent 执行实现、实验及记录整理。下文先展示角色分工与原话索引，再给出完整选摘和真实结果；整理文字不替代原话，也不预设评分。'
+front=['format','synthetic','status','date','material_summary','owner_leadership_overview','provenance','context','attribution_policy','candidate_evidence_chains','messages','experiments']
+material={**{k:material[k] for k in front},**{k:v for k,v in material.items() if k not in front}}
+assert [m['content'] for m in material['messages']]==[m['content'] for m in json.loads(raw)['messages']]
+for chain in material['candidate_evidence_chains']:
+    for evidence in chain['owner_evidence']+chain['observed_result']:
+        value=material
+        for part in evidence['pointer'].split('/')[1:]:value=value[int(part)] if isinstance(value,list) else value[part]
+        assert isinstance(value,str) and evidence['quote'] in value and len(evidence['quote'])<=240
+result=(json.dumps(material,ensure_ascii=False,indent=2,allow_nan=False)+'\n').encode('utf-8');assert len(result)<=131072
+for name in ('agent/conversation.json','conversation.json'):(ROOT/name).write_bytes(result)
+digest=dict(material_sha256=hashlib.sha256(result).hexdigest(),bytes=len(result),runtime_core=identity['runtime_core'],synthetic=False,
+            owner_messages=sum(m['role']=='user' for m in material['messages']),source_quotes_unchanged=True,
+            scope='Local integrity and attribution only; not a platform Prompt score or summary')
+(ROOT/'agent/material-digest.json').write_bytes((json.dumps(digest,indent=2)+'\n').encode('utf-8'))
 print(json.dumps(digest))

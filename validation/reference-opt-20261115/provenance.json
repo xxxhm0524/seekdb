@@ -1,97 +1,127 @@
 {
-  "runtime_core": "c2c2b42f6782549049b14764c7a105389cb5289f",
-  "runtime_inputs_sha256": "545d03ff0075741bd74342110023fcd5a736172addc834d27dd48fbdfb11c97c",
+  "runtime_core": "728c945bbca3ee9f34f9cb947ac8d56944cf67c9",
+  "runtime_inputs_sha256": "15cff7d583eeaa25e0715faef2cc7b8c9e313dea51933ff701afa5b7cc76458f",
   "baseline_commit": "a08e66e299847ca539c419cfbc67593357246627",
   "reports": {
     "baseline-ctest.json": {
       "sha256": "aae8e4d2169f35a5fe0ea984111368a41f0c5c65417422bd536a2d2b5c0d2d97",
       "source_file": "baseline-ctest.json",
-      "retained_experiment": true
+      "retained_experiment": true,
+      "validated_runtime_core": "c2c2b42f6782549049b14764c7a105389cb5289f"
     },
     "candidate-ctest.json": {
       "sha256": "6a1ccc4193e76b97568e7f3984f1211a5dc12a1bf5d4ee9f799bfb9449086926",
       "source_file": "candidate-ctest.json",
-      "retained_experiment": true
+      "retained_experiment": true,
+      "validated_runtime_core": "c2c2b42f6782549049b14764c7a105389cb5289f"
     },
     "baseline-public.json": {
       "sha256": "d53f5c689e8c0f893be5cbba211959149924130f3140c7f538b69b134ae0cbcd",
       "source_file": "baseline-public-final/result.json",
-      "retained_experiment": true
+      "retained_experiment": true,
+      "validated_runtime_core": "c2c2b42f6782549049b14764c7a105389cb5289f"
     },
     "candidate-public.json": {
       "sha256": "26c8e80c179b932419c79ffca547f24d6929d9138cf08e63fa28887251cdbe8b",
       "source_file": "candidate-public-final/result.json",
-      "retained_experiment": true
+      "retained_experiment": true,
+      "validated_runtime_core": "c2c2b42f6782549049b14764c7a105389cb5289f"
     },
     "parity.json": {
       "sha256": "1a3538d39e83510c9130657ec46e0b1fc6c79db0d68ee167977b2f1cc61fd96d",
       "source_file": "candidate-parity/report.json",
-      "retained_experiment": true
+      "retained_experiment": true,
+      "validated_runtime_core": "c2c2b42f6782549049b14764c7a105389cb5289f"
     },
     "sanitizers.json": {
       "sha256": "9d2d986157dd9956e4210d582ebfa78cecd26b6f004ec8a2fdf21e8d9b793966",
       "source_file": "sanitizers.json",
-      "retained_experiment": true
+      "retained_experiment": true,
+      "validated_runtime_core": "c2c2b42f6782549049b14764c7a105389cb5289f"
     },
     "asan-public.json": {
       "sha256": "c98758c739a6876268a9b6c1600f8525f28b47de0e5d875c7360247be74f1e21",
       "source_file": "asan-public/result.json",
-      "retained_experiment": true
+      "retained_experiment": true,
+      "validated_runtime_core": "c2c2b42f6782549049b14764c7a105389cb5289f"
     },
     "asan-parity.json": {
       "sha256": "5e7e6593363a43a30b83e385c2a4da74e0b31d5614152b6abdf4bc25a0507f24",
       "source_file": "asan-parity/report.json",
-      "retained_experiment": true
+      "retained_experiment": true,
+      "validated_runtime_core": "c2c2b42f6782549049b14764c7a105389cb5289f"
     },
     "asan-wire.json": {
       "sha256": "ff837a7d2581766c345fae38df3ddbb11b3aec568df2a9e6224529ec5412103e",
       "source_file": "asan-wire/report.json",
-      "retained_experiment": true
+      "retained_experiment": true,
+      "validated_runtime_core": "c2c2b42f6782549049b14764c7a105389cb5289f"
     },
     "default-contract.json": {
       "sha256": "439958966c4094cac23c17b7a426b65815db3a0667e7212031d64244075c0169",
       "source_file": "candidate-default/report.json",
-      "retained_experiment": true
+      "retained_experiment": true,
+      "validated_runtime_core": "c2c2b42f6782549049b14764c7a105389cb5289f"
     },
     "benchmark.json": {
       "sha256": "b4bfff9617c7b4c24b6b92c4bc574d0c38b6d1739ffa0783ab84c2d51e17a80d",
       "source_file": "ab-numeric/report.json",
-      "retained_experiment": true
+      "retained_experiment": true,
+      "validated_runtime_core": "c2c2b42f6782549049b14764c7a105389cb5289f"
     },
     "wide-bind.json": {
       "sha256": "b25f15e33eb05f2b5b97096708732160fa075c7c7cf64c2a8e85972c104cedbd",
       "source_file": "wide-numeric/report.json",
-      "retained_experiment": true
+      "retained_experiment": true,
+      "validated_runtime_core": "c2c2b42f6782549049b14764c7a105389cb5289f"
     },
     "rejected-ipo.json": {
       "sha256": "9cd7901cb63e99c08485462e3ab8b131b6595a47895bfdd90665b13b50fc3c28",
       "source_file": "ipo-ab/report.json",
-      "retained_experiment": false
+      "retained_experiment": false,
+      "validated_runtime_core": "c2c2b42f6782549049b14764c7a105389cb5289f"
     },
     "rejected-fp32-only.json": {
       "sha256": "a839b059fe21a2606912d318e8f9608ef3469ac698991b7149463f08504be300",
       "source_file": "ab-fp32-only/report.json",
-      "retained_experiment": false
+      "retained_experiment": false,
+      "validated_runtime_core": "c2c2b42f6782549049b14764c7a105389cb5289f"
     },
     "rejected-no-bound.json": {
       "sha256": "5635d68a37d78da328628a6b86ed20f345dca8fa58dc60e9076a839d2e7a2844",
       "source_file": "ab-no-bound/report.json",
-      "retained_experiment": false
+      "retained_experiment": false,
+      "validated_runtime_core": "c2c2b42f6782549049b14764c7a105389cb5289f"
     },
     "source-identity.json": {
       "sha256": "e2da0508c393853f7f77d04eb3a8a6d7f2e214d73ee33d4c00c9d652ea8ef092",
       "source_file": "source-identity.json",
-      "retained_experiment": true
+      "retained_experiment": true,
+      "validated_runtime_core": "c2c2b42f6782549049b14764c7a105389cb5289f"
     },
     "native-replay.json": {
       "sha256": "ae449bc6af73256b001aba7f2053099f44451d889ab2ee4a160894df8325117f",
       "source_file": "fresh-native-replay/ci.json",
-      "retained_experiment": true
+      "retained_experiment": true,
+      "validated_runtime_core": "c2c2b42f6782549049b14764c7a105389cb5289f"
     },
     "wire.json": {
       "sha256": "03a940d0439621704944c70156792e62c2dad01be734fcfe1e7b1fcc4e109c30",
       "source_file": "fresh-native-replay/wire/report.json",
-      "retained_experiment": true
+      "retained_experiment": true,
+      "validated_runtime_core": "c2c2b42f6782549049b14764c7a105389cb5289f"
+    },
+    "fortified-read-compatibility.json": {
+      "sha256": "eb0eae3421369e7d74dc939e2bafa7c2cb930f8b9e62db6345f1a8ff2322de6e",
+      "source_file": "fortified-read-compatibility.json",
+      "retained_experiment": true,
+      "validated_runtime_core": "c2c2b42f6782549049b14764c7a105389cb5289f"
+    },
+    "binary-identity-728c.json": {
+      "sha256": "30d4bd75ad30e91e47ad4e7f375891006731ffce9ad9c9b0d6a3ab76a6e54cf9",
+      "source_file": "binary-identity-728c.json",
+      "retained_experiment": true,
+      "validated_runtime_core": "728c945bbca3ee9f34f9cb947ac8d56944cf67c9"
     }
   },
   "release_binary_sha256": "6fd307974aafc6cd51fb33469fdaa4a882cd6e8bacea6ad55a59feae6b9e8ade",
@@ -100,5 +130,7 @@
   "pushed": false,
   "formal_submitted": false,
   "docker_used": false,
-  "remote_github_ci": "not run"
+  "remote_github_ci": "not run",
+  "production_source_core": "c2c2b42f6782549049b14764c7a105389cb5289f",
+  "previous_validation_binding": "Previous report bytes remain unchanged and retain core c2; the new default executable was freshly rebuilt and verified byte-identical. New test compatibility results are separate."
 }

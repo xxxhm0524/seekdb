@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "runtime_core": "728c945bbca3ee9f34f9cb947ac8d56944cf67c9",
+  "production_source_core": "c2c2b42f6782549049b14764c7a105389cb5289f",
+  "tests": 70,
+  "release_binary_sha256": "6fd307974aafc6cd51fb33469fdaa4a882cd6e8bacea6ad55a59feae6b9e8ade",
+  "identical_to_previous_release": true,
+  "change_scope": "Only test interception/linkage changed; default database executable is byte-identical."
+}

@@ -29,5 +29,14 @@ data=(ROOT/'agent/conversation.json').read_bytes();assert data==(ROOT/'conversat
 material=read(ROOT/'agent/conversation.json');digest=read(ROOT/'agent/material-digest.json')
 assert material['synthetic'] is False and material['provenance']['upstream_commit']==provenance['baseline_commit']
 assert digest['material_sha256']==hashlib.sha256(data).hexdigest() and digest['runtime_core']==runtime['runtime_core']
+if material.get('format')=='reference-derived-authentic-history-v2':
+    template=read(ROOT/'evidence/prompt-history-20261115/approved-history-draft.json')
+    assert [m['content'] for m in material['messages']]==[m['content'] for m in template['messages']]
+    assert sum(m['role']=='user' for m in material['messages'])==18
+    assert 'Agent editorial summary' in material['owner_leadership_overview']['author']
+if 'binary-identity-728c.json' in provenance['reports']:
+    binding=read(E/'binary-identity-728c.json')
+    assert binding['runtime_core']==runtime['runtime_core'] and binding['identical_to_previous_release'] is True
+    assert binding['release_binary_sha256']==provenance['release_binary_sha256']
 subprocess.run([sys.executable,'-B',str(ROOT/'scripts/check-submission-contract.py'),'--repository',str(ROOT),'--check-internal-references'],check=True,stdout=subprocess.PIPE)
 print(json.dumps(dict(passed=True,runtime_core=runtime['runtime_core'],runtime_inputs=len(runtime['sha256_lf']),reports=len(provenance['reports']),material_bytes=len(data),material_sha256=hashlib.sha256(data).hexdigest(),formal_submitted=False)))

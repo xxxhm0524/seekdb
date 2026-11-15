@@ -1,0 +1,1726 @@
+{
+  "format": "reference-derived-actual-evidence-v1",
+  "synthetic": false,
+  "date": "2026-11-15",
+  "provenance": {
+    "code_repository": "https://github.com/juanzhi-gcb/seekdb",
+    "upstream_commit": "a08e66e299847ca539c419cfbc67593357246627",
+    "runtime_core": "c2c2b42f6782549049b14764c7a105389cb5289f",
+    "code_attribution": "The full implementation is derived from the named public reference. Codex changed three runtime files for quoted-vector buffering; the previous independent implementation is not the runtime base."
+  },
+  "owner_contribution_limit": "Owner messages are instructions and reviews. They do not establish personal implementation or technical learning. The reference author dialogue, learning evidence and platform results are not this owner contribution. All new implementation, benchmark interpretation and tests are Agent work.",
+  "messages": [
+    {
+      "role": "user",
+      "source": "actual owner message",
+      "content": "要不你也不要用docker了，你直接在a6000上面完成题目吧"
+    },
+    {
+      "role": "user",
+      "source": "actual owner message",
+      "content": "[https://github.com/juanzhi-gcb/seekdb](https://github.com/juanzhi-gcb/seekdb)\n请你对照这个仓库进行修改，这个仓库的代码已经得分了"
+    },
+    {
+      "role": "user",
+      "source": "actual owner message",
+      "content": "你能不能确定参考代码能通过的边界情况我们的代码也能完美执行"
+    },
+    {
+      "role": "user",
+      "source": "actual owner message",
+      "content": "那么我觉得你可以继续检查"
+    },
+    {
+      "role": "user",
+      "source": "actual owner message",
+      "content": "你的代码不是在别人的基础上构建的吗，为什么别人不会出现这种问题，但我们会"
+    },
+    {
+      "role": "user",
+      "source": "actual owner message",
+      "content": "要不你直接在别人的代码基础上优化吧，我们现在的代码就废弃了吧"
+    },
+    {
+      "role": "assistant",
+      "source": "Codex visible progress, actual excerpt",
+      "content": "可以，停止修补现有实现，改为以已核对得分反馈的参考版本为基础优化。现有代码和证据保留归档。"
+    },
+    {
+      "role": "assistant",
+      "source": "Codex visible progress, actual excerpt",
+      "content": "三项无收益的尝试都已排除。现在测试一个较小的改动：减少向量解析时的中间缓冲分配，保持参考版本的数值转换结果和报错顺序，再检查端到端性能是否有稳定收益。"
+    },
+    {
+      "role": "assistant",
+      "source": "Codex visible progress, actual excerpt",
+      "content": "缓冲优化的收益已测到：约 419 万维的合法查询，进程峰值内存从约 **74.8 MiB 降至 42.8 MiB**。标准 128 维负载的速度没有稳定提升，我不会宣称它更快。"
+    }
+  ],
+  "experiments": [
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/baseline-ctest.json",
+      "sha256": "aae8e4d2169f35a5fe0ea984111368a41f0c5c65417422bd536a2d2b5c0d2d97",
+      "retained_experiment": true,
+      "result": {
+        "passed": true,
+        "tests": 70,
+        "failures": [],
+        "xml_sha256": "6f793a208abaf23c5399694ada23eced4f7d81c167a4c5a9c4597b076ebb937b"
+      }
+    },
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/candidate-ctest.json",
+      "sha256": "6a1ccc4193e76b97568e7f3984f1211a5dc12a1bf5d4ee9f799bfb9449086926",
+      "retained_experiment": true,
+      "result": {
+        "passed": true,
+        "tests": 70,
+        "failures": [],
+        "xml_sha256": "ba6d6fa5f77df7d577e5cea2f65c6c105b85e3e086950c1f73c6ca8c408a023e"
+      }
+    },
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/baseline-public.json",
+      "sha256": "d53f5c689e8c0f893be5cbba211959149924130f3140c7f538b69b134ae0cbcd",
+      "retained_experiment": true,
+      "result": {
+        "scope": "public-protocol-check",
+        "passed": true,
+        "cases": [
+          {
+            "id": "sql_crud",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 44
+          },
+          {
+            "id": "sql_comparisons",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 46
+          },
+          {
+            "id": "sql_ordering",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 41
+          },
+          {
+            "id": "sql_empty",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 40
+          },
+          {
+            "id": "sql_primary_key",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 37
+          },
+          {
+            "id": "sql_unicode",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 40
+          },
+          {
+            "id": "sql_bigint",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 42
+          },
+          {
+            "id": "sql_unsupported",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 36
+          },
+          {
+            "id": "storage_restart",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 85
+          },
+          {
+            "id": "vector_euclidean",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 46
+          },
+          {
+            "id": "transaction_commit",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 36
+          },
+          {
+            "id": "transaction_rollback",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 44
+          },
+          {
+            "id": "storage_mutations",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 73
+          },
+          {
+            "id": "storage_multiple_tables",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 71
+          },
+          {
+            "id": "vector_ties_and_filter",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 36
+          },
+          {
+            "id": "vector_float32",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 35
+          },
+          {
+            "id": "vector_index_maintenance",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 76
+          },
+          {
+            "id": "transaction_failed_insert",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 81
+          },
+          {
+            "id": "transaction_autocommit_atomic",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 71
+          },
+          {
+            "id": "transaction_shutdown_rollback",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 83
+          }
+        ],
+        "note": "Local diagnostic only; no performance/Agent scores or platform callbacks."
+      }
+    },
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/candidate-public.json",
+      "sha256": "26c8e80c179b932419c79ffca547f24d6929d9138cf08e63fa28887251cdbe8b",
+      "retained_experiment": true,
+      "result": {
+        "scope": "public-protocol-check",
+        "passed": true,
+        "cases": [
+          {
+            "id": "sql_crud",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 51
+          },
+          {
+            "id": "sql_comparisons",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 40
+          },
+          {
+            "id": "sql_ordering",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 38
+          },
+          {
+            "id": "sql_empty",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 41
+          },
+          {
+            "id": "sql_primary_key",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 43
+          },
+          {
+            "id": "sql_unicode",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 36
+          },
+          {
+            "id": "sql_bigint",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 34
+          },
+          {
+            "id": "sql_unsupported",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 41
+          },
+          {
+            "id": "storage_restart",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 73
+          },
+          {
+            "id": "vector_euclidean",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 36
+          },
+          {
+            "id": "transaction_commit",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 42
+          },
+          {
+            "id": "transaction_rollback",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 40
+          },
+          {
+            "id": "storage_mutations",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 70
+          },
+          {
+            "id": "storage_multiple_tables",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 89
+          },
+          {
+            "id": "vector_ties_and_filter",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 42
+          },
+          {
+            "id": "vector_float32",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 39
+          },
+          {
+            "id": "vector_index_maintenance",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 80
+          },
+          {
+            "id": "transaction_failed_insert",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 87
+          },
+          {
+            "id": "transaction_autocommit_atomic",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 73
+          },
+          {
+            "id": "transaction_shutdown_rollback",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 82
+          }
+        ],
+        "note": "Local diagnostic only; no performance/Agent scores or platform callbacks."
+      }
+    },
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/parity.json",
+      "sha256": "1a3538d39e83510c9130657ec46e0b1fc6c79db0d68ee167977b2f1cc61fd96d",
+      "retained_experiment": true,
+      "result": {
+        "passed": true,
+        "observations": 7862,
+        "qualifying_failure_count": 0,
+        "failures": [],
+        "reference_rejections_accepted_by_candidate": [],
+        "seed": 120055,
+        "phase": "all",
+        "candidate_sha256": "6fd307974aafc6cd51fb33469fdaa4a882cd6e8bacea6ad55a59feae6b9e8ade",
+        "reference_sha256": "1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66",
+        "reference_commit": "a08e66e299847ca539c419cfbc67593357246627",
+        "scope": "Actual hardened native processes; finite differential checks, no formal score."
+      }
+    },
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/sanitizers.json",
+      "sha256": "9d2d986157dd9956e4210d582ebfa78cecd26b6f004ec8a2fdf21e8d9b793966",
+      "retained_experiment": true,
+      "result": {
+        "passed": true,
+        "runtime_core": "c2c2b42f6782549049b14764c7a105389cb5289f",
+        "binary_sha256": "e68663238442838f14e8e34b714aa2bffd6405a501ae60936bdaba0a764a07b4",
+        "leak_detection": true,
+        "stages": [
+          {
+            "stage": "vector_literals",
+            "exit_code": 0
+          },
+          {
+            "stage": "numeric_maximum",
+            "exit_code": 0
+          },
+          {
+            "stage": "numeric_ties",
+            "exit_code": 0
+          },
+          {
+            "stage": "public",
+            "exit_code": 0
+          },
+          {
+            "stage": "parity",
+            "exit_code": 0
+          },
+          {
+            "stage": "wire",
+            "exit_code": 0
+          }
+        ],
+        "scope": "Same production source under ASan/UBSan; native diagnostic binary is not the release binary."
+      }
+    },
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/asan-public.json",
+      "sha256": "c98758c739a6876268a9b6c1600f8525f28b47de0e5d875c7360247be74f1e21",
+      "retained_experiment": true,
+      "result": {
+        "scope": "public-protocol-check",
+        "passed": true,
+        "cases": [
+          {
+            "id": "sql_crud",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 92
+          },
+          {
+            "id": "sql_comparisons",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 91
+          },
+          {
+            "id": "sql_ordering",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 87
+          },
+          {
+            "id": "sql_empty",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 92
+          },
+          {
+            "id": "sql_primary_key",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 92
+          },
+          {
+            "id": "sql_unicode",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 89
+          },
+          {
+            "id": "sql_bigint",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 85
+          },
+          {
+            "id": "sql_unsupported",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 90
+          },
+          {
+            "id": "storage_restart",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 182
+          },
+          {
+            "id": "vector_euclidean",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 88
+          },
+          {
+            "id": "transaction_commit",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 87
+          },
+          {
+            "id": "transaction_rollback",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 97
+          },
+          {
+            "id": "storage_mutations",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 184
+          },
+          {
+            "id": "storage_multiple_tables",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 178
+          },
+          {
+            "id": "vector_ties_and_filter",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 90
+          },
+          {
+            "id": "vector_float32",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 88
+          },
+          {
+            "id": "vector_index_maintenance",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 176
+          },
+          {
+            "id": "transaction_failed_insert",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 178
+          },
+          {
+            "id": "transaction_autocommit_atomic",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 170
+          },
+          {
+            "id": "transaction_shutdown_rollback",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 170
+          }
+        ],
+        "note": "Local diagnostic only; no performance/Agent scores or platform callbacks."
+      }
+    },
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/asan-parity.json",
+      "sha256": "5e7e6593363a43a30b83e385c2a4da74e0b31d5614152b6abdf4bc25a0507f24",
+      "retained_experiment": true,
+      "result": {
+        "passed": true,
+        "observations": 7862,
+        "qualifying_failure_count": 0,
+        "failures": [],
+        "reference_rejections_accepted_by_candidate": [],
+        "seed": 120055,
+        "phase": "all",
+        "candidate_sha256": "e68663238442838f14e8e34b714aa2bffd6405a501ae60936bdaba0a764a07b4",
+        "reference_sha256": "1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66",
+        "reference_commit": "a08e66e299847ca539c419cfbc67593357246627",
+        "scope": "Actual hardened native processes; finite differential checks, no formal score."
+      }
+    },
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/asan-wire.json",
+      "sha256": "ff837a7d2581766c345fae38df3ddbb11b3aec568df2a9e6224529ec5412103e",
+      "retained_experiment": true,
+      "result": {
+        "passed": true,
+        "observations": 6,
+        "results": [
+          {
+            "category": "id_near_response_limit",
+            "id_bytes": 1,
+            "request_bytes": 65,
+            "request_within_reference_limit": true,
+            "ours": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "reference": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "qualifying_failure": false
+          },
+          {
+            "category": "id_near_response_limit",
+            "id_bytes": 16776704,
+            "request_bytes": 16776768,
+            "request_within_reference_limit": true,
+            "ours": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "reference": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "qualifying_failure": false
+          },
+          {
+            "category": "id_near_response_limit",
+            "id_bytes": 16776960,
+            "request_bytes": 16777024,
+            "request_within_reference_limit": true,
+            "ours": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "reference": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "qualifying_failure": false
+          },
+          {
+            "category": "id_near_response_limit",
+            "id_bytes": 16777000,
+            "request_bytes": 16777064,
+            "request_within_reference_limit": true,
+            "ours": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "reference": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "qualifying_failure": false
+          },
+          {
+            "category": "id_near_response_limit",
+            "id_bytes": 16777088,
+            "request_bytes": 16777152,
+            "request_within_reference_limit": true,
+            "ours": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "reference": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "qualifying_failure": false
+          },
+          {
+            "category": "id_near_response_limit",
+            "id_bytes": 16777120,
+            "request_bytes": 16777184,
+            "request_within_reference_limit": true,
+            "ours": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "reference": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "qualifying_failure": false
+          }
+        ],
+        "candidate_sha256": "e68663238442838f14e8e34b714aa2bffd6405a501ae60936bdaba0a764a07b4",
+        "reference_sha256": "1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66",
+        "scope": "Actual JSONL requests within the unchanged official response bound; IDs summarized by size, no formal score."
+      }
+    },
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/default-contract.json",
+      "sha256": "439958966c4094cac23c17b7a426b65815db3a0667e7212031d64244075c0169",
+      "retained_experiment": true,
+      "result": {
+        "passed": true,
+        "checks": 18,
+        "environment": {
+          "uid": [
+            "65534",
+            "65534",
+            "65534",
+            "65534"
+          ],
+          "no_new_privileges": "1",
+          "root_flags": 4097,
+          "data_flags": 4096,
+          "routes": [],
+          "cgroup": "0::/mvd-reference-opt-20261115-39q88lpc\n"
+        },
+        "entrypoint_arguments": [],
+        "ready": "Original official Session.start verified the ready object",
+        "shutdown_eof_and_sigkill_rollback": true,
+        "failed_statement_preserves_prior_transaction": true,
+        "same_index_name_on_distinct_tables": true,
+        "binary_sha256": "6fd307974aafc6cd51fb33469fdaa4a882cd6e8bacea6ad55a59feae6b9e8ade"
+      }
+    },
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/benchmark.json",
+      "sha256": "b4bfff9617c7b4c24b6b92c4bc574d0c38b6d1739ffa0783ab84c2d51e17a80d",
+      "retained_experiment": true,
+      "result": {
+        "passed": true,
+        "rows": 10000,
+        "dimensions": 128,
+        "queries": 1000,
+        "rounds": 6,
+        "batch": 100,
+        "warmup": 10,
+        "cpu_affinity": [
+          2,
+          3
+        ],
+        "versions": {
+          "baseline": {
+            "binary": "/tmp/mvd-reference-opt-20261115-39q88lpc/build/baseline",
+            "sha256": "1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66"
+          },
+          "candidate": {
+            "binary": "/tmp/mvd-reference-opt-20261115-39q88lpc/build/numeric",
+            "sha256": "6fd307974aafc6cd51fb33469fdaa4a882cd6e8bacea6ad55a59feae6b9e8ade"
+          }
+        },
+        "fixture_sha256": "8c5f1e90a45d840735849349b800d013d53ccc3fbf38ee35d803594a294c2d95",
+        "oracle_source_sha256": "d818386c615725b3f525b4c7b463decce16ee8c7d82a4f616ce832f081010ae7",
+        "oracle_binary_sha256": "338e9487c2adb1eb54a074e411d646ed40e62b9a24befa568968bbc701b36459",
+        "samples": 48,
+        "verified_queries": 48000,
+        "summary": {
+          "bigint-idx0": {
+            "medians": {
+              "baseline": {
+                "write_ms": 487.14772399999987,
+                "query_ms": 166.13865699999982,
+                "cycle_ms": 653.2266299999999
+              },
+              "candidate": {
+                "write_ms": 484.477298,
+                "query_ms": 165.84243899999996,
+                "cycle_ms": 650.1364715000002
+              }
+            },
+            "paired_speedups": {
+              "write_ms": [
+                1.0114075110671108,
+                1.0057347043335187,
+                1.015305786216999,
+                0.998205346322219,
+                1.0052574555059968,
+                0.9941029095732742
+              ],
+              "query_ms": [
+                1.0031354850959366,
+                1.0014287428962427,
+                0.9996615292595603,
+                1.0060903435687778,
+                1.005337573562952,
+                0.9432722253738599
+              ],
+              "cycle_ms": [
+                1.009297599997779,
+                1.0046383412100541,
+                1.0112903160366224,
+                1.0002270752255262,
+                1.0052778656257637,
+                0.9806081766847415
+              ]
+            },
+            "median_paired_speedup": {
+              "write_ms": 1.0054960799197579,
+              "query_ms": 1.0022821139960896,
+              "cycle_ms": 1.004958103417909
+            }
+          },
+          "bigint-idx1": {
+            "medians": {
+              "baseline": {
+                "write_ms": 487.75586899999985,
+                "query_ms": 167.62885799999998,
+                "cycle_ms": 693.0206379999998
+              },
+              "candidate": {
+                "write_ms": 487.29400449999997,
+                "query_ms": 166.4763970000002,
+                "cycle_ms": 690.0862735000001
+              }
+            },
+            "paired_speedups": {
+              "write_ms": [
+                0.9939591710389505,
+                1.0096378404132045,
+                0.9899852421690462,
+                1.0093421584322915,
+                0.9814372123650246,
+                0.9974293557480985
+              ],
+              "query_ms": [
+                1.0083432940276842,
+                1.0055061426798515,
+                1.0425806692860282,
+                0.9966751743545276,
+                1.0013668140067085,
+                1.004380193421224
+              ],
+              "cycle_ms": [
+                0.997884871535504,
+                1.0085544611354187,
+                1.0030779367144997,
+                1.006096977238623,
+                0.986960493267583,
+                0.9999739604010938
+              ]
+            },
+            "median_paired_speedup": {
+              "write_ms": 0.9956942633935245,
+              "query_ms": 1.0049431680505378,
+              "cycle_ms": 1.0015259485577968
+            }
+          },
+          "text-idx0": {
+            "medians": {
+              "baseline": {
+                "write_ms": 488.07584,
+                "query_ms": 167.5366684999999,
+                "cycle_ms": 653.5943454999999
+              },
+              "candidate": {
+                "write_ms": 481.18911249999996,
+                "query_ms": 166.62300650000014,
+                "cycle_ms": 651.3103184999998
+              }
+            },
+            "paired_speedups": {
+              "write_ms": [
+                1.001099754071174,
+                1.0095476683882425,
+                1.0141696755373995,
+                1.0014935948913215,
+                1.0263931622702267,
+                1.0019417938648876
+              ],
+              "query_ms": [
+                0.9921326519432845,
+                1.0029431131712878,
+                1.0140613623466748,
+                1.0226001222720107,
+                0.6249899376802331,
+                0.991349206832585
+              ],
+              "cycle_ms": [
+                0.9987741462546628,
+                1.0078663497723575,
+                1.0141422319936189,
+                1.006929816993004,
+                0.8804942375897644,
+                0.9992388205007166
+              ]
+            },
+            "median_paired_speedup": {
+              "write_ms": 1.005744731126565,
+              "query_ms": 0.9975378825572861,
+              "cycle_ms": 1.0030843187468603
+            }
+          },
+          "text-idx1": {
+            "medians": {
+              "baseline": {
+                "write_ms": 482.5624679999999,
+                "query_ms": 167.36302599999982,
+                "cycle_ms": 693.9902644999997
+              },
+              "candidate": {
+                "write_ms": 494.48732199999995,
+                "query_ms": 167.23558499999993,
+                "cycle_ms": 699.1759555000001
+              }
+            },
+            "paired_speedups": {
+              "write_ms": [
+                0.984766276862121,
+                0.8303914970253965,
+                0.9570046299717702,
+                1.0083929888716585,
+                0.9945169549084162,
+                0.9780225363842738
+              ],
+              "query_ms": [
+                1.0009843151159354,
+                1.1751970684519908,
+                0.9882296545850703,
+                1.0014016333790763,
+                1.1761119448862851,
+                0.9445467627320073
+              ],
+              "cycle_ms": [
+                0.991588706702123,
+                0.9115494970776715,
+                0.9651405463071647,
+                1.0051792602613807,
+                1.0396383757195267,
+                0.971766514791852
+              ]
+            },
+            "median_paired_speedup": {
+              "write_ms": 0.9813944066231974,
+              "query_ms": 1.0011929742475059,
+              "cycle_ms": 0.9816776107469876
+            }
+          }
+        },
+        "timing": "Sum of actual JSONL request round trips; input and oracle generation, warmup, verification and restart excluded. Fresh database per sample; version/order counterbalanced.",
+        "resources": "Per-process VmHWM and /proc/io retained; not formal T/B/M. CPU quota and memory ceiling enforced by launcher.",
+        "formal_score": null
+      }
+    },
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/wide-bind.json",
+      "sha256": "b25f15e33eb05f2b5b97096708732160fa075c7c7cf64c2a8e85972c104cedbd",
+      "retained_experiment": true,
+      "result": {
+        "passed": true,
+        "summary": {
+          "128": {
+            "baseline": {
+              "elapsed_ms": 0.1068,
+              "process_vmhwm_kib": 2736.0
+            },
+            "candidate": {
+              "elapsed_ms": 0.113535,
+              "process_vmhwm_kib": 2734.0
+            }
+          },
+          "131072": {
+            "baseline": {
+              "elapsed_ms": 15.221566,
+              "process_vmhwm_kib": 5268.0
+            },
+            "candidate": {
+              "elapsed_ms": 14.706355,
+              "process_vmhwm_kib": 4212.0
+            }
+          },
+          "1048576": {
+            "baseline": {
+              "elapsed_ms": 122.333624,
+              "process_vmhwm_kib": 21314.0
+            },
+            "candidate": {
+              "elapsed_ms": 123.822554,
+              "process_vmhwm_kib": 13130.0
+            }
+          },
+          "4194304": {
+            "baseline": {
+              "elapsed_ms": 509.8511625,
+              "process_vmhwm_kib": 76564.0
+            },
+            "candidate": {
+              "elapsed_ms": 493.4554715,
+              "process_vmhwm_kib": 43828.0
+            }
+          }
+        },
+        "versions": {
+          "baseline": "1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66",
+          "candidate": "6fd307974aafc6cd51fb33469fdaa4a882cd6e8bacea6ad55a59feae6b9e8ade"
+        },
+        "cpu_affinity": [
+          2,
+          3
+        ],
+        "scope": "Actual default JSONL process; valid zero-result distance projection still binds and validates its full vector. Per-process VmHWM includes startup and parsing. This is a wide-vector micro workload, not formal memory or a 128D workload speed claim."
+      }
+    },
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/rejected-ipo.json",
+      "sha256": "9cd7901cb63e99c08485462e3ab8b131b6595a47895bfdd90665b13b50fc3c28",
+      "retained_experiment": false,
+      "result": {
+        "passed": true,
+        "rows": 10000,
+        "dimensions": 128,
+        "queries": 1000,
+        "rounds": 3,
+        "batch": 100,
+        "warmup": 10,
+        "versions": {
+          "baseline": {
+            "binary": "/tmp/mvd-reference-opt-20261115-39q88lpc/build/baseline",
+            "sha256": "1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66"
+          },
+          "candidate": {
+            "binary": "/tmp/mvd-reference-opt-20261115-39q88lpc/build/ipo",
+            "sha256": "fa75589918db739d6223ec171e97d79397870e14c19ee8785b586e78e286f662"
+          }
+        },
+        "fixture_sha256": "8c5f1e90a45d840735849349b800d013d53ccc3fbf38ee35d803594a294c2d95",
+        "oracle_source_sha256": "d818386c615725b3f525b4c7b463decce16ee8c7d82a4f616ce832f081010ae7",
+        "oracle_binary_sha256": "338e9487c2adb1eb54a074e411d646ed40e62b9a24befa568968bbc701b36459",
+        "samples": 24,
+        "verified_queries": 24000,
+        "summary": {
+          "bigint-idx0": {
+            "medians": {
+              "baseline": {
+                "write_ms": 495.67236699999984,
+                "query_ms": 241.68346500000007,
+                "cycle_ms": 737.355832
+              },
+              "candidate": {
+                "write_ms": 553.0614580000001,
+                "query_ms": 251.95707399999986,
+                "cycle_ms": 805.018532
+              }
+            },
+            "paired_speedups": {
+              "write_ms": [
+                0.8918581287217452,
+                0.8591533513434926,
+                0.9452090464168666
+              ],
+              "query_ms": [
+                0.7369685044048416,
+                1.050051248430935,
+                0.9663683485667857
+              ],
+              "cycle_ms": [
+                0.8433803173614394,
+                0.9183269968269038,
+                0.9520416212597126
+              ]
+            },
+            "median_paired_speedup": {
+              "write_ms": 0.8918581287217452,
+              "query_ms": 0.9663683485667857,
+              "cycle_ms": 0.9183269968269038
+            }
+          },
+          "bigint-idx1": {
+            "medians": {
+              "baseline": {
+                "write_ms": 571.886355,
+                "query_ms": 284.30105,
+                "cycle_ms": 887.3552070000001
+              },
+              "candidate": {
+                "write_ms": 585.2107699999999,
+                "query_ms": 320.09013699999997,
+                "cycle_ms": 942.456411
+              }
+            },
+            "paired_speedups": {
+              "write_ms": [
+                0.9566066274443698,
+                0.9371353584817481,
+                0.977231425525542
+              ],
+              "query_ms": [
+                0.6225704074099608,
+                0.9682731441084879,
+                0.8991585061850059
+              ],
+              "cycle_ms": [
+                0.8448769295428884,
+                0.9486607760589536,
+                0.9474280057711868
+              ]
+            },
+            "median_paired_speedup": {
+              "write_ms": 0.9566066274443698,
+              "query_ms": 0.8991585061850059,
+              "cycle_ms": 0.9474280057711868
+            }
+          },
+          "text-idx0": {
+            "medians": {
+              "baseline": {
+                "write_ms": 559.7520390000003,
+                "query_ms": 300.2963400000004,
+                "cycle_ms": 858.1654680000001
+              },
+              "candidate": {
+                "write_ms": 573.9884750000003,
+                "query_ms": 291.49241399999966,
+                "cycle_ms": 865.4808889999999
+              }
+            },
+            "paired_speedups": {
+              "write_ms": [
+                1.0611841981199779,
+                0.913593914930086,
+                0.9571912305304442
+              ],
+              "query_ms": [
+                1.2243895473402175,
+                1.0302029335144232,
+                0.9865218598000791
+              ],
+              "cycle_ms": [
+                1.1166900972225915,
+                0.952867623631607,
+                0.967181336526069
+              ]
+            },
+            "median_paired_speedup": {
+              "write_ms": 0.9571912305304442,
+              "query_ms": 1.0302029335144232,
+              "cycle_ms": 0.967181336526069
+            }
+          },
+          "text-idx1": {
+            "medians": {
+              "baseline": {
+                "write_ms": 567.8343839999999,
+                "query_ms": 302.58435599999956,
+                "cycle_ms": 913.3345639999998
+              },
+              "candidate": {
+                "write_ms": 581.0797280000002,
+                "query_ms": 264.28334399999994,
+                "cycle_ms": 884.9138360000001
+              }
+            },
+            "paired_speedups": {
+              "write_ms": [
+                0.8491178976389963,
+                0.9866157712770793,
+                0.9896421829852762
+              ],
+              "query_ms": [
+                0.9544776798344129,
+                1.4229085495808038,
+                0.9459288376427512
+              ],
+              "cycle_ms": [
+                0.8836063254863604,
+                1.0953653495073195,
+                0.9730501695299504
+              ]
+            },
+            "median_paired_speedup": {
+              "write_ms": 0.9866157712770793,
+              "query_ms": 0.9544776798344129,
+              "cycle_ms": 0.9730501695299504
+            }
+          }
+        },
+        "timing": "Sum of actual JSONL request round trips; input and oracle generation, warmup, verification and restart excluded. Fresh database per sample; version/order counterbalanced.",
+        "resources": "Per-process VmHWM and /proc/io retained; not formal T/B/M. CPU quota and memory ceiling enforced by launcher.",
+        "formal_score": null
+      }
+    },
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/rejected-fp32-only.json",
+      "sha256": "a839b059fe21a2606912d318e8f9608ef3469ac698991b7149463f08504be300",
+      "retained_experiment": false,
+      "result": {
+        "passed": true,
+        "rows": 10000,
+        "dimensions": 128,
+        "queries": 1000,
+        "rounds": 2,
+        "batch": 100,
+        "warmup": 10,
+        "cpu_affinity": [
+          2,
+          3
+        ],
+        "versions": {
+          "baseline": {
+            "binary": "/tmp/mvd-reference-opt-20261115-39q88lpc/build/baseline",
+            "sha256": "1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66"
+          },
+          "candidate": {
+            "binary": "/tmp/mvd-reference-opt-20261115-39q88lpc/build/fp32-only",
+            "sha256": "b3dc878de8312a36e20ec0e78274e9ee64fafa29e31e1fc5dfe455782b8942d4"
+          }
+        },
+        "fixture_sha256": "8c5f1e90a45d840735849349b800d013d53ccc3fbf38ee35d803594a294c2d95",
+        "oracle_source_sha256": "d818386c615725b3f525b4c7b463decce16ee8c7d82a4f616ce832f081010ae7",
+        "oracle_binary_sha256": "338e9487c2adb1eb54a074e411d646ed40e62b9a24befa568968bbc701b36459",
+        "samples": 16,
+        "verified_queries": 16000,
+        "summary": {
+          "bigint-idx0": {
+            "medians": {
+              "baseline": {
+                "write_ms": 490.50203550000003,
+                "query_ms": 168.84548150000012,
+                "cycle_ms": 659.3475170000002
+              },
+              "candidate": {
+                "write_ms": 492.66725099999996,
+                "query_ms": 181.59188550000005,
+                "cycle_ms": 674.2591365000001
+              }
+            },
+            "paired_speedups": {
+              "write_ms": [
+                1.001364079145932,
+                0.9898887748284627
+              ],
+              "query_ms": [
+                0.9222673344355021,
+                0.9373068381970044
+              ],
+              "cycle_ms": [
+                0.9800459044792512,
+                0.9757378006386138
+              ]
+            },
+            "median_paired_speedup": {
+              "write_ms": 0.9956264269871973,
+              "query_ms": 0.9297870863162533,
+              "cycle_ms": 0.9778918525589325
+            }
+          },
+          "bigint-idx1": {
+            "medians": {
+              "baseline": {
+                "write_ms": 494.0806419999999,
+                "query_ms": 167.80118000000004,
+                "cycle_ms": 697.86758
+              },
+              "candidate": {
+                "write_ms": 490.9958105000002,
+                "query_ms": 183.75363749999997,
+                "cycle_ms": 711.4514565000002
+              }
+            },
+            "paired_speedups": {
+              "write_ms": [
+                1.0086707384504823,
+                1.0039109335915075
+              ],
+              "query_ms": [
+                0.914570446598391,
+                0.911803016970501
+              ],
+              "cycle_ms": [
+                0.9823503393243522,
+                0.9794698160318493
+              ]
+            },
+            "median_paired_speedup": {
+              "write_ms": 1.006290836020995,
+              "query_ms": 0.913186731784446,
+              "cycle_ms": 0.9809100776781008
+            }
+          },
+          "text-idx0": {
+            "medians": {
+              "baseline": {
+                "write_ms": 493.37058649999994,
+                "query_ms": 184.96410699999993,
+                "cycle_ms": 678.3346935
+              },
+              "candidate": {
+                "write_ms": 506.460106,
+                "query_ms": 184.12864350000007,
+                "cycle_ms": 690.5887495000001
+              }
+            },
+            "paired_speedups": {
+              "write_ms": [
+                0.9974709203297861,
+                0.952106310244775
+              ],
+              "query_ms": [
+                1.1005005471801264,
+                0.9097838873513158
+              ],
+              "cycle_ms": [
+                1.0253862150815602,
+                0.9409969155588593
+              ]
+            },
+            "median_paired_speedup": {
+              "write_ms": 0.9747886152872806,
+              "query_ms": 1.0051422172657212,
+              "cycle_ms": 0.9831915653202098
+            }
+          },
+          "text-idx1": {
+            "medians": {
+              "baseline": {
+                "write_ms": 488.11145950000014,
+                "query_ms": 168.82077700000013,
+                "cycle_ms": 693.3811095000002
+              },
+              "candidate": {
+                "write_ms": 492.063801,
+                "query_ms": 184.11462600000002,
+                "cycle_ms": 712.494895
+              }
+            },
+            "paired_speedups": {
+              "write_ms": [
+                0.998664389194076,
+                0.9853767190028488
+              ],
+              "query_ms": [
+                0.9170852738453825,
+                0.9167824248576211
+              ],
+              "cycle_ms": [
+                0.9771927964136796,
+                0.9692053550339844
+              ]
+            },
+            "median_paired_speedup": {
+              "write_ms": 0.9920205540984623,
+              "query_ms": 0.9169338493515018,
+              "cycle_ms": 0.973199075723832
+            }
+          }
+        },
+        "timing": "Sum of actual JSONL request round trips; input and oracle generation, warmup, verification and restart excluded. Fresh database per sample; version/order counterbalanced.",
+        "resources": "Per-process VmHWM and /proc/io retained; not formal T/B/M. CPU quota and memory ceiling enforced by launcher.",
+        "formal_score": null
+      }
+    },
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/rejected-no-bound.json",
+      "sha256": "5635d68a37d78da328628a6b86ed20f345dca8fa58dc60e9076a839d2e7a2844",
+      "retained_experiment": false,
+      "result": {
+        "passed": true,
+        "rows": 10000,
+        "dimensions": 128,
+        "queries": 1000,
+        "rounds": 2,
+        "batch": 100,
+        "warmup": 10,
+        "cpu_affinity": [
+          2,
+          3
+        ],
+        "versions": {
+          "baseline": {
+            "binary": "/tmp/mvd-reference-opt-20261115-39q88lpc/build/baseline",
+            "sha256": "1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66"
+          },
+          "candidate": {
+            "binary": "/tmp/mvd-reference-opt-20261115-39q88lpc/build/no-bound",
+            "sha256": "6da740a0f6710f6ecfe57a0d0ebef165057aebc42034cdffe7db9c28a704b6ee"
+          }
+        },
+        "fixture_sha256": "8c5f1e90a45d840735849349b800d013d53ccc3fbf38ee35d803594a294c2d95",
+        "oracle_source_sha256": "d818386c615725b3f525b4c7b463decce16ee8c7d82a4f616ce832f081010ae7",
+        "oracle_binary_sha256": "338e9487c2adb1eb54a074e411d646ed40e62b9a24befa568968bbc701b36459",
+        "samples": 16,
+        "verified_queries": 16000,
+        "summary": {
+          "bigint-idx0": {
+            "medians": {
+              "baseline": {
+                "write_ms": 493.40093649999994,
+                "query_ms": 233.6681075000002,
+                "cycle_ms": 727.0690440000001
+              },
+              "candidate": {
+                "write_ms": 494.02983200000006,
+                "query_ms": 285.9492789999999,
+                "cycle_ms": 779.9791109999999
+              }
+            },
+            "paired_speedups": {
+              "write_ms": [
+                0.9980719868984027,
+                0.999381433220704
+              ],
+              "query_ms": [
+                1.0544263460659113,
+                0.5799214329927759
+              ],
+              "cycle_ms": [
+                1.018737698531745,
+                0.8456439347065108
+              ]
+            },
+            "median_paired_speedup": {
+              "write_ms": 0.9987267100595534,
+              "query_ms": 0.8171738895293437,
+              "cycle_ms": 0.9321908166191278
+            }
+          },
+          "bigint-idx1": {
+            "medians": {
+              "baseline": {
+                "write_ms": 488.54618500000004,
+                "query_ms": 173.23570150000006,
+                "cycle_ms": 697.9119995000001
+              },
+              "candidate": {
+                "write_ms": 492.4480609999999,
+                "query_ms": 285.97652900000014,
+                "cycle_ms": 814.545093
+              }
+            },
+            "paired_speedups": {
+              "write_ms": [
+                0.9909748878675559,
+                0.9931787858407751
+              ],
+              "query_ms": [
+                0.6267265052718854,
+                0.5848637692489836
+              ],
+              "cycle_ms": [
+                0.863888255418446,
+                0.849736745721035
+              ]
+            },
+            "median_paired_speedup": {
+              "write_ms": 0.9920768368541655,
+              "query_ms": 0.6057951372604345,
+              "cycle_ms": 0.8568125005697405
+            }
+          },
+          "text-idx0": {
+            "medians": {
+              "baseline": {
+                "write_ms": 509.4288670000001,
+                "query_ms": 205.33924250000007,
+                "cycle_ms": 714.7681095000003
+              },
+              "candidate": {
+                "write_ms": 489.59321950000003,
+                "query_ms": 286.5050090000001,
+                "cycle_ms": 776.0982285000001
+              }
+            },
+            "paired_speedups": {
+              "write_ms": [
+                0.9737355625668576,
+                1.108490010192621
+              ],
+              "query_ms": [
+                0.5970348326749856,
+                0.8368766685827581
+              ],
+              "cycle_ms": [
+                0.8352633122603799,
+                1.007789514665829
+              ]
+            },
+            "median_paired_speedup": {
+              "write_ms": 1.0411127863797391,
+              "query_ms": 0.7169557506288718,
+              "cycle_ms": 0.9215264134631044
+            }
+          },
+          "text-idx1": {
+            "medians": {
+              "baseline": {
+                "write_ms": 489.14766050000014,
+                "query_ms": 166.23664550000007,
+                "cycle_ms": 692.3748590000001
+              },
+              "candidate": {
+                "write_ms": 491.6299854999999,
+                "query_ms": 287.0756090000001,
+                "cycle_ms": 815.297998
+              }
+            },
+            "paired_speedups": {
+              "write_ms": [
+                0.9928795721194644,
+                0.9970611713173134
+              ],
+              "query_ms": [
+                0.5809535644962917,
+                0.5771890184782735
+              ],
+              "cycle_ms": [
+                0.8504273612943732,
+                0.8480184802332575
+              ]
+            },
+            "median_paired_speedup": {
+              "write_ms": 0.9949703717183889,
+              "query_ms": 0.5790712914872826,
+              "cycle_ms": 0.8492229207638153
+            }
+          }
+        },
+        "timing": "Sum of actual JSONL request round trips; input and oracle generation, warmup, verification and restart excluded. Fresh database per sample; version/order counterbalanced.",
+        "resources": "Per-process VmHWM and /proc/io retained; not formal T/B/M. CPU quota and memory ceiling enforced by launcher.",
+        "formal_score": null
+      }
+    },
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/source-identity.json",
+      "sha256": "e2da0508c393853f7f77d04eb3a8a6d7f2e214d73ee33d4c00c9d652ea8ef092",
+      "retained_experiment": true,
+      "result": {
+        "passed": true,
+        "runtime_core": "c2c2b42f6782549049b14764c7a105389cb5289f",
+        "runtime_inputs": 38,
+        "release_binary_sha256": "6fd307974aafc6cd51fb33469fdaa4a882cd6e8bacea6ad55a59feae6b9e8ade",
+        "baseline_binary_sha256": "1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66",
+        "compiler": "g++ (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0",
+        "kernel": "Linux-5.15.0-202-generic-x86_64-with-glibc2.35",
+        "architecture": "x86_64",
+        "formal_submitted": false,
+        "docker_used": false
+      }
+    },
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/native-replay.json",
+      "sha256": "ae449bc6af73256b001aba7f2053099f44451d889ab2ee4a160894df8325117f",
+      "retained_experiment": true,
+      "result": {
+        "passed": true,
+        "runtime_core": "c2c2b42f6782549049b14764c7a105389cb5289f",
+        "workspace": "/tmp/mvd-ref-native-r88ssbt3",
+        "stages": [
+          {
+            "name": "ctest",
+            "exit_code": 0,
+            "seconds": 23.163278083025943
+          },
+          {
+            "name": "public",
+            "exit_code": 0,
+            "seconds": 1.1158735289936885
+          },
+          {
+            "name": "parity",
+            "exit_code": 0,
+            "seconds": 7.132309451000765
+          },
+          {
+            "name": "wire",
+            "exit_code": 0,
+            "seconds": 4.67487088200869
+          },
+          {
+            "name": "default-contract",
+            "exit_code": 0,
+            "seconds": 0.2650589040131308
+          }
+        ],
+        "binary_sha256": "6fd307974aafc6cd51fb33469fdaa4a882cd6e8bacea6ad55a59feae6b9e8ade",
+        "existing_build_reused": true,
+        "benchmark": false,
+        "docker_used": false,
+        "formal_submitted": false
+      }
+    },
+    {
+      "source": "actual A6000 native tool result",
+      "file": "validation/reference-opt-20261115/wire.json",
+      "sha256": "03a940d0439621704944c70156792e62c2dad01be734fcfe1e7b1fcc4e109c30",
+      "retained_experiment": true,
+      "result": {
+        "passed": true,
+        "observations": 6,
+        "results": [
+          {
+            "category": "id_near_response_limit",
+            "id_bytes": 1,
+            "request_bytes": 65,
+            "request_within_reference_limit": true,
+            "ours": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "reference": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "qualifying_failure": false
+          },
+          {
+            "category": "id_near_response_limit",
+            "id_bytes": 16776704,
+            "request_bytes": 16776768,
+            "request_within_reference_limit": true,
+            "ours": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "reference": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "qualifying_failure": false
+          },
+          {
+            "category": "id_near_response_limit",
+            "id_bytes": 16776960,
+            "request_bytes": 16777024,
+            "request_within_reference_limit": true,
+            "ours": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "reference": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "qualifying_failure": false
+          },
+          {
+            "category": "id_near_response_limit",
+            "id_bytes": 16777000,
+            "request_bytes": 16777064,
+            "request_within_reference_limit": true,
+            "ours": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "reference": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "qualifying_failure": false
+          },
+          {
+            "category": "id_near_response_limit",
+            "id_bytes": 16777088,
+            "request_bytes": 16777152,
+            "request_within_reference_limit": true,
+            "ours": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "reference": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "qualifying_failure": false
+          },
+          {
+            "category": "id_near_response_limit",
+            "id_bytes": 16777120,
+            "request_bytes": 16777184,
+            "request_within_reference_limit": true,
+            "ours": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "reference": {
+              "ok": true,
+              "id_exact": true,
+              "affected_rows": 0,
+              "error": null
+            },
+            "qualifying_failure": false
+          }
+        ],
+        "candidate_sha256": "6fd307974aafc6cd51fb33469fdaa4a882cd6e8bacea6ad55a59feae6b9e8ade",
+        "reference_sha256": "1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66",
+        "scope": "Actual JSONL requests within the unchanged official response bound; IDs summarized by size, no formal score."
+      }
+    }
+  ],
+  "agent_observations": [
+    "The owner explicitly abandoned the independent implementation. A clean fork of the scored-runtime-qualified reference replaced it as the development base; protocol, parser, store, transaction and recovery implementations were inherited directly.",
+    "The source comparison against the upstream runtime is three files: binder.cpp, value.cpp and a shared float32 conversion header. The numerical path still converts decimal to binary64 and then binary32. Complete lexical validity, numeric failure, dimension and float32 range error priority is retained, including errors after an earlier range overflow.",
+    "The optimization avoids the temporary double component array for simple quoted vectors; complex syntax keeps the original lexer path. Existing slow/fast binder checks plus added error priority combinations compare bitwise values and exact errors.",
+    "Three preliminary changes did not yield stable gains and were discarded: IPO, disabling integer screening and disabling conservative screening. Their actual successful-correctness benchmark results remain available and are not called performance wins.",
+    "Six paired rounds verify 48000 standard-workload query results. Median cycle speedups across four shapes are approximately 1.005, 1.002, 1.003 and 0.982. This does not establish a consistent 128D speed benefit. No slow sample was removed.",
+    "The retained memory result is a separate valid wide-vector binding workload with LIMIT 0 on an empty table. Actual process VmHWM medians at dimension 4194304 are 76564 KiB and 43828 KiB, a 42.8 percent reduction. It is not formal M, full-database capacity or a default-workload speed claim.",
+    "Original and candidate each pass 70 CTests and 20 unchanged public protocol cases. The candidate also passes 7862 reference comparisons, independent scalar expected values, large IDs, ASan/UBSan/leak diagnostics and actual hardened default-entrypoint transaction/restart checks.",
+    "Initial local runner calibration failed on a temporary-directory guard and on copied executable permissions; logs were retained. Corrected runs are separately named. An original mixed-CRLF CMake file caused a normalized-hash/raw-byte mismatch during evidence checks; the input manifest now retains both raw Git byte hashes and normalized hashes, and all 38 exact runtime inputs were checked.",
+    "The new native reproduction runner was actually replayed in a fresh temporary directory while reusing verified existing binaries, explicitly recorded as such. Docker builds and remote GitHub Actions were not run. Author-reported success is not a formal evaluation of this fork."
+  ],
+  "limitations": [
+    "No official hidden admission, performance score, Prompt score or rank exists for this candidate.",
+    "No new Docker build/cold pull or remote GitHub CI result exists. GCC 11.4 native runs do not establish the Alpine builder path.",
+    "Finite comparison cases are not a universal proof. The inherited depth/resource/history limits still apply.",
+    "Formal push/submission is not authorized. A later formal attempt needs owner approval for the complete final SHA, after 22:00 Asia/Shanghai, at most once per day, no adjacent midnight attempts, current quota/history checks and a durable one-attempt marker."
+  ]
+}
