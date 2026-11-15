@@ -1,0 +1,96 @@
+{
+  "passed": true,
+  "rows": 10000,
+  "queries": 1000,
+  "rounds": 6,
+  "with_body": false,
+  "driver_cpu": 3,
+  "server_cpu": 2,
+  "versions": {
+    "baseline": "738de307ee78c048d1bd8360f4650507b4d8a00c935d0499fabf05c6dd4033ae",
+    "candidate": "2f9932fbfff09bce4af53c713a1f5bbe6d0be03116bfe042f221a1f059a7ae54"
+  },
+  "fixture_sha256": "986b182f46b5be05a95315b6b4057dfb8672e4c7f7a2102c92c515bcce6e2a86",
+  "summary": {
+    "bigint-idx0": {
+      "paired_speedups": [
+        0.9949792688103858,
+        0.9860974593539495,
+        0.9842402592261631,
+        0.9865534885241728,
+        0.9885255099915864,
+        0.9886731911354025
+      ],
+      "median_paired_speedup": 0.9875394992578796,
+      "median_ms": {
+        "baseline": 142.62323500000002,
+        "candidate": 144.1420605
+      },
+      "median_read_calls": {
+        "baseline": 1000.0,
+        "candidate": 1000.0
+      }
+    },
+    "bigint-idx1": {
+      "paired_speedups": [
+        0.9926051602412629,
+        0.988740516159491,
+        0.9925406890695535,
+        0.9864051287437792,
+        0.9807479971203104,
+        0.9846944309090301
+      ],
+      "median_paired_speedup": 0.9875728224516351,
+      "median_ms": {
+        "baseline": 141.89730550000002,
+        "candidate": 143.095236
+      },
+      "median_read_calls": {
+        "baseline": 1000.0,
+        "candidate": 1000.0
+      }
+    },
+    "text-idx0": {
+      "paired_speedups": [
+        0.989647257946919,
+        0.9905280984164843,
+        0.9901884156085858,
+        0.9848981997364912,
+        0.9891883317312555,
+        0.99441679703918
+      ],
+      "median_paired_speedup": 0.9899178367777524,
+      "median_ms": {
+        "baseline": 142.95694650000002,
+        "candidate": 144.7597215
+      },
+      "median_read_calls": {
+        "baseline": 1000.0,
+        "candidate": 1000.0
+      }
+    },
+    "text-idx1": {
+      "paired_speedups": [
+        0.988796641931328,
+        0.9859236934251334,
+        0.9878500354906398,
+        0.9805037421427065,
+        0.9822919974638478,
+        0.9847813136983731
+      ],
+      "median_paired_speedup": 0.9853525035617532,
+      "median_ms": {
+        "baseline": 142.040778,
+        "candidate": 144.27095200000002
+      },
+      "median_read_calls": {
+        "baseline": 1000.0,
+        "candidate": 1000.0
+      }
+    }
+  },
+  "verified_queries": 48000,
+  "scope": "Real JSONL request times, blocks of 50 alternate versions on the same fixed server CPU (not reserved); driver on a distinct CPU. No official score is inferred.",
+  "selection_note": "Derived summary: raw report records remain in the verified evidence archive; no best samples were selected.",
+  "raw_report_sha256": "06d498a6f41f5313d3c77db850129ef5183cdaab91e10063722fce3e671eebff"
+}

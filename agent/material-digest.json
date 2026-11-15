@@ -1,0 +1,9 @@
+{
+  "bytes": 92139,
+  "sha256": "6c928162b1a252c05839840c88bc601c17a38f6e949e04ee5953d1945845761f",
+  "synthetic": false,
+  "owner_messages": 23,
+  "source_quotes_unchanged": true,
+  "production_core": "ba96b7b048d3c1ae8a910a0cf6f5e0e46bd87396",
+  "scope": "Local integrity only; no platform Prompt score claimed"
+}

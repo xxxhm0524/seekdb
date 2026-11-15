@@ -1,0 +1,51 @@
+{
+  "passed": true,
+  "rounds": 4,
+  "versions": {
+    "baseline": "738de307ee78c048d1bd8360f4650507b4d8a00c935d0499fabf05c6dd4033ae",
+    "candidate": "2f9932fbfff09bce4af53c713a1f5bbe6d0be03116bfe042f221a1f059a7ae54"
+  },
+  "driver_cpu": 3,
+  "server_cpu": 2,
+  "summary": {
+    "d128-body1024": {
+      "paired_speedups": [
+        0.9724741811690057,
+        0.9748846879045096,
+        0.9654165891003358,
+        0.9628830035967983
+      ],
+      "median_paired_speedup": 0.9689453851346708
+    },
+    "d128-body16": {
+      "paired_speedups": [
+        0.9598173983622579,
+        0.9621611784471129,
+        0.9599483357436568,
+        0.9629333160725079
+      ],
+      "median_paired_speedup": 0.9610547570953849
+    },
+    "d768-body1024": {
+      "paired_speedups": [
+        0.9603862323121027,
+        0.957540291678073,
+        0.9606788277345127,
+        0.9610472909620813
+      ],
+      "median_paired_speedup": 0.9605325300233077
+    },
+    "d768-body16": {
+      "paired_speedups": [
+        0.9534643698111405,
+        0.9552381758534055,
+        0.9538141655797938,
+        0.9556678242447195
+      ],
+      "median_paired_speedup": 0.9545261707165997
+    }
+  },
+  "scope": "Actual JSONL durable write request times, versions interleaved per batch. Fixed CPUs are not reserved. No formal E is inferred.",
+  "selection_note": "Derived summary: raw report records remain in the verified evidence archive; no best samples were selected.",
+  "raw_report_sha256": "88030ee234c0fad925c3394482145ab939ef7e99507318df0d7c1ad38eb17191"
+}

@@ -1,0 +1,29 @@
+{
+  "files_sha256_lf": {
+    "src/btree.cpp": "910ea0f74bc985589287e22ba64350db34da95b26a6a9d74d33503cf54b25722",
+    "src/compaction.cpp": "0f028ba2f15447f24382ba85032c23b115d840c14a3f005141ea68fa2f236e5f",
+    "src/engine.cpp": "1a122dfd010ee1a8b32ced82e27ebe8b182e565cc4c0b4a885b841223cdc387e",
+    "src/engine.hpp": "7a9124f68a40d30d8cb747e952bc6a93ac7794b80ad7f58163d0250200b0f76d",
+    "src/exact_batch.hpp": "0fbdc3429bb48120e764a839b274705ba0fa55a2e1d495c8c5e8e7759ecb40cb",
+    "src/main.cpp": "83af68555e74295a053f2116cc305b83c4779be9df9c17229753fd08abb0f475",
+    "src/model.cpp": "b890b730a7e9c56546779e570a4b85dfa984867f876b7e347d1b9bd31da1797e",
+    "src/model.hpp": "c735faa5ef8de815b53a52aa3b5de8a313acf07f1564974174bb1f4b8595c3c8",
+    "src/quantized_screen.hpp": "53e52859c326cfc30247ff3fe4feb90d67beffaf3d8c61b9a52b599cd868b7ad",
+    "src/query.cpp": "6879b6c0324d2ad9403bd293df31cf111738e02bcd6eb3c2ebbcc9c971e46bce",
+    "src/record_reader.cpp": "74c64390576ac63bd8d25e1128e31d4e957d2057297429f761f76ce59560ee74",
+    "src/request.cpp": "0dbc22559f74b9e366afaec1e4e0b6c92b0329e075a48e67178b72d9f7e87505",
+    "src/request.hpp": "5227882ddff07b251315511c1ee147f6546359743a37cc93fdb988e165beff2e",
+    "src/result.cpp": "2925f2c15c7fed849d3c4bfb8188fc4db1f7f8137f548b713038bd3e4a3fc262",
+    "src/result.hpp": "2ba8c9d6d1d19333d751b08e7b4a087d0f1f60d65bf23a9b0aca624a134ac9d6",
+    "src/sql.cpp": "37b6cb0e78d803305a8227a1dedc64a1410dcd31fba5bfc68bdbe39126d99c0f",
+    "src/sql.hpp": "1dd7a158b46c5afb8b254a052a721bbe6671f8d11864ff95ff6cdc56b8bb9089",
+    "src/storage.cpp": "0832294701400c2977296e7925ff87ef8bd0f429afdb596b13f01262249f09b7",
+    "src/storage.hpp": "72304134dd212a064dd860f6a1348e96046ae797e3d47eff975ea9a40cfaeda5",
+    "src/vector_index.cpp": "a240da6544aede2a85107fbca5f3a01ee460d8f9206b77c2aaa3f644045c7440",
+    "src/vector_index.hpp": "a906953fae09e81f8ee22bd4c93e507eed2d17561cbec974142ef48010d9b6bb",
+    "src/vector_literal.cpp": "f2ee612c5a701c7c6ac5372de394aae3d21da463d1c9b107580ce5605d9801c4",
+    "src/vector_literal.hpp": "ed7166c2b40fae917d2d5879228ea1b575e5ded55ea98d26449c6a0e37e3937f"
+  },
+  "binary_static": "738de307ee78c048d1bd8360f4650507b4d8a00c935d0499fabf05c6dd4033ae",
+  "binary_dynamic": "bc8592f65a30e88d9fa1860240871dbbe55559082ac1be09ba8b92521a82bf18"
+}

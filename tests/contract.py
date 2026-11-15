@@ -49,7 +49,27 @@ def main():
         assert strict(raw.decode("utf-8"))["passed"] is True, name
     hashes = strict((evidence/"runtime-source-sha256.json").read_text(encoding="utf-8"))
     assert len(hashes) == 26
-    for name, expected in hashes.items():
+    current_lock = ROOT/"validation/e860-opt-20261116/runtime-inputs.json"
+    current = strict(current_lock.read_text(encoding="utf-8")) if current_lock.exists() else None
+    if current is not None:
+        # Earlier green reports remain historical evidence. They must not be
+        # rebound to changed production sources merely by retaining their files.
+        assert hashlib.sha256((evidence/"runtime-source-sha256.json").read_bytes()).hexdigest() == "9217c7c79867452cc0383206fce3a32fae3d6de1e72fab5d14ca92443fbd4e26"
+        assert current["base"] == "e86045306f5940613bfcf4aa84b0ee4bf74c20f1"
+        assert current["formal_submitted"] is False and current["target_E"] == 4500
+        assert set(current["sha256_lf"]) == set(hashes)
+        for name, expected in current["sha256_lf"].items():
+            assert hashlib.sha256((ROOT/name).read_bytes().replace(b"\r\n", b"\n")).hexdigest() == expected, name
+        source = ROOT/"validation/e860-opt-20261116/production-source-match.json"
+        assert hashlib.sha256(source.read_bytes()).hexdigest() == current["source_match_sha256"]
+        source = strict(source.read_text(encoding="utf-8"))
+        for name, expected in source["files_sha256_lf"].items():
+            assert current["sha256_lf"][name] == expected, name
+        for name, expected in current["evidence_reports"].items():
+            raw = (ROOT/"validation/e860-opt-20261116"/name).read_bytes()
+            assert hashlib.sha256(raw).hexdigest() == expected, name
+            assert strict(raw.decode("utf-8"))["passed"] is True, name
+    for name, expected in ({} if current is not None else hashes).items():
         raw = (ROOT/name).read_bytes().replace(b"\r\n", b"\n")
         if name == "Dockerfile":
             # Allow only the two portability edits relative to the recipe in
@@ -73,6 +93,8 @@ def main():
                           material_sha256=hashlib.sha256(material).hexdigest(),
                           dependency_integrity=True, official_kit_unchanged=True,
                           retained_evidence_reports=len(provenance), runtime_source_files=len(hashes),
+                          historical_reports_are_current_runtime=current is None,
+                          current_evidence_reports=len(current["evidence_reports"]) if current is not None else 0,
                           requirement_entries=len(requirements), platform_pending=len(trace["platform_pending"]))))
 
 if __name__ == "__main__":

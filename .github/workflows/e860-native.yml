@@ -1,0 +1,30 @@
+name: Scored e860 native optimization verification
+"on":
+  workflow_dispatch:
+  push:
+    branches: ['native/e860-opt-*']
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Check candidate and versioned evidence
+        run: python3 tests/contract.py
+      - name: Prepare private mount target on disposable runner
+        run: |
+          if [ ! -e /data ]; then sudo mkdir --mode=0755 /data; fi
+          test -d /data
+      - name: Verify native code and resource boundaries
+        run: sudo -E python3 tools/native/verify.py
+      - name: Preserve reports and logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: e860-native-evidence
+          path: /tmp/mvd-e860-native-*/artifact/
+          retention-days: 14

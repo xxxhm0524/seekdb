@@ -1,0 +1,61 @@
+{
+  "read_at_beijing": "2026-11-15T21:56:20.017757+08:00",
+  "questionId": 600081,
+  "formal_post_invocations_this_reader": 0,
+  "today_records": [
+    {
+      "history": {
+        "id": 47254621,
+        "gmtCreate": "2026-11-15T07:34:56.000+00:00",
+        "commitId": "e86045306f5940613bfcf4aa84b0ee4bf74c20f1",
+        "branch": "2026-competition-round2",
+        "taskStatus": 2,
+        "failMsg": 0,
+        "errorMessage": null,
+        "successCount": 1,
+        "failCount": 0,
+        "strMachineScore": null,
+        "currentRetry": "0",
+        "testStartTime": "2026-11-15T07:34:57.000+00:00",
+        "testEndTime": "2026-11-15T07:41:03.000+00:00",
+        "testCaseResult": "[{\"testCase\":\"MySQL \\u6B63\\u5F0F\\u7528\\u4F8B\",\"resultStatus\":1,\"score\":\"0\",\"questionScore\":\"0\",\"message\":\"\\u6B64\\u9879\\u4E3A\\u51C6\\u5165\\u6761\\u4EF6\\uFF0C\\u4E0D\\u8BA1\\u6392\\u540D\\u5206\",\"playoffFeedback\":{\"performance\":\"\\u6027\\u80FD\\u8BC4\\u6D4B\\u5B8C\\u6210\\uFF1B\\u539F\\u59CB\\u6307\\u6807 E = 3115.658047\",\"prompt\":\"Prompt\\u7ED3\\u679C\\u65E0\\u6548\\u3001\\u5F85\\u590D\\u6838\\u3001\\u8D85\\u51FA\\u5E73\\u53F00\\u2013100\\u8303\\u56F4\\u6216\\u7F3A\\u5C11\\u6750\\u6599\\u6458\\u8981\\uFF0C\\u672C\\u9879\\u4E0D\\u53C2\\u4E0E\\u6392\\u540D\\uFF1B\\u672A\\u622A\\u65AD\\u6216\\u6362\\u7B97\\u672C\\u5730\\u5206\\u6570\\u3002\"}}]",
+        "parsed_test_case_result": [
+          {
+            "testCase": "MySQL 正式用例",
+            "resultStatus": 1,
+            "score": "0",
+            "questionScore": "0",
+            "message": "此项为准入条件，不计排名分",
+            "playoffFeedback": {
+              "performance": "性能评测完成；原始指标 E = 3115.658047",
+              "prompt": "Prompt结果无效、待复核、超出平台0–100范围或缺少材料摘要，本项不参与排名；未截断或换算本地分数。"
+            }
+          }
+        ]
+      },
+      "detail": [
+        {
+          "score": "—",
+          "message": "通过；此项为准入条件，不计排名分",
+          "questionScore": "—",
+          "test_case": "MySQL 正式用例",
+          "result_status": null
+        },
+        {
+          "score": "3115.658047",
+          "message": "性能评测完成；原始指标 E = 3115.658047",
+          "questionScore": "—",
+          "test_case": "性能原始分",
+          "result_status": null
+        },
+        {
+          "score": "—",
+          "message": "Prompt结果无效、待复核、超出平台0–100范围或缺少材料摘要，本项不参与排名；未截断或换算本地分数。",
+          "questionScore": "—",
+          "test_case": "Agent Prompt 原始分",
+          "result_status": null
+        }
+      ]
+    }
+  ]
+}

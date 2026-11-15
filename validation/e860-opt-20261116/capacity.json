@@ -1,0 +1,23 @@
+{
+  "passed": true,
+  "rows": 40000,
+  "logical_text_bytes": 2621440000,
+  "database_logical_bytes": 2681860599,
+  "database_allocated_bytes": 2641776640,
+  "memory_limit_bytes": 2147483648,
+  "sampled_cgroup_max_bytes": 2139557888,
+  "actual_memory_peak_bytes": null,
+  "sample_target_interval_ms": 5,
+  "memory_events": {
+    "low": 0,
+    "high": 0,
+    "max": 0,
+    "oom": 0,
+    "oom_kill": 0
+  },
+  "seconds": 59.532754890969954,
+  "exact_and_ann": true,
+  "committed_and_uncommitted_sigkill": true,
+  "private_cgroup": "/sys/fs/cgroup/mvd-e860-opt-20261115-nqiedj7i/capacity-combined-f-capacity",
+  "scope": "Actual native constrained default entrypoint and >2 GiB physical user data. Sampled memory.current is a lower bound when memory.peak is unavailable. No Docker or formal score."
+}
