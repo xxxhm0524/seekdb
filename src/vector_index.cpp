@@ -329,8 +329,8 @@ std::optional<std::vector<VectorIndex::Hit>> VectorIndex::screen_search(const st
         selected += std::popcount(mask);
         if (stats) stats->screened_rows += std::popcount(mask);
         std::array<int32_t, QuantizedScreen::width> estimates{};
-        screen_->scores(encoded, first, estimates);
-        if (count == capacity && *std::min_element(estimates.begin(), estimates.end()) >= candidates[0].score) continue;
+        const int32_t block_minimum = screen_->scores(encoded, first, estimates);
+        if (count == capacity && block_minimum >= candidates[0].score) continue;
         for (size_t lane = 0; lane < QuantizedScreen::width; ++lane) if (mask & (1U << lane)) {
             const int32_t score = estimates[lane];
             Estimate candidate{score, first + lane};

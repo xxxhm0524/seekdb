@@ -39,9 +39,13 @@ int main(int argc, char** argv) try {
         if (!QuantizedScreen::supported(dimensions)) { require(!index, "unsupported screen was built"); continue; }
         require(bool(index), "numeric screen construction refused"); const auto encoded = index->query(query);
         for (size_t first = 0; first < count; first += QuantizedScreen::width) {
-            std::array<int32_t, QuantizedScreen::width> portable{}; index->scores(encoded, first, portable, 1);
+            std::array<int32_t, QuantizedScreen::width> portable{};
+            const int32_t portable_minimum = index->scores(encoded, first, portable, 1);
+            require(portable_minimum == *std::min_element(portable.begin(), portable.end()), "scalar block minimum");
             for (const auto kernel : kernels) {
-                std::array<int32_t, QuantizedScreen::width> scores{}; index->scores(encoded, first, scores, kernel);
+                std::array<int32_t, QuantizedScreen::width> scores{};
+                const int32_t minimum = index->scores(encoded, first, scores, kernel);
+                require(minimum == portable_minimum && minimum == *std::min_element(scores.begin(), scores.end()), "SIMD block minimum");
                 require(scores == portable, "integer SIMD mismatch");
                 for (size_t lane = 0; lane < QuantizedScreen::width && first + lane < count; ++lane) {
                     require(scores[lane] >= 0, "negative integer square"); double squared = 0;
