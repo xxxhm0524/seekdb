@@ -22,6 +22,10 @@ private:
     size_t dimensions_ = 0;
     std::vector<bool> columns_;
     std::vector<float> coordinates_;
+    std::shared_ptr<const ReadMapping> mapped_source_;
+    std::vector<uint64_t> source_offsets_;
+    size_t source_copy_budget_ = 0;
+    bool materialize_source();
     std::vector<Entry> entries_;
     std::vector<size_t> order_;
     std::vector<Node> nodes_;
@@ -42,6 +46,8 @@ public:
     bool covers(const std::vector<bool>& wanted) const;
     const std::vector<bool>& columns() const { return columns_; }
     const std::vector<Entry>& entries() const { return entries_; }
+    bool uses_mapped_source() const noexcept { return bool(mapped_source_); }
+    size_t owned_coordinate_bytes() const noexcept { return coordinates_.capacity() * sizeof(float); }
     Row materialize(size_t entry) const;
     std::optional<std::pair<size_t, size_t>> equal_bounds(size_t column, const Value& value) const;
     std::vector<Hit> search(const std::vector<float>& query, size_t k,

@@ -31,34 +31,39 @@ private:
         const double error = up(std::abs(value - represented) + allowance);
         return up(sum + up(error * error));
     }
-    using Function = void (*)(const uint8_t*, const int8_t*, size_t, int32_t*);
+    using Function = void (*)(const uint8_t*, const int8_t*, size_t, int32_t, int32_t*);
     Function function_ = nullptr;
-    static void scalar(const uint8_t* rows, const int8_t* query, size_t groups, int32_t* output) {
+    static void scalar(const uint8_t* rows, const int8_t* query, size_t groups, int32_t, int32_t* output) {
         for (size_t lane = 0; lane < width; ++lane) output[lane] = 0;
         for (size_t group = 0; group < groups; ++group)
             for (size_t lane = 0; lane < width; ++lane)
                 for (size_t d = 0; d < 4; ++d) output[lane] += int32_t(rows[group * width * 4 + lane * 4 + d]) * int32_t(query[group * 4 + d]);
     }
 #ifdef MVD_BATCH_X86
-    __attribute__((target("avx2"))) static void avx2(const uint8_t* rows, const int8_t* query, size_t groups, int32_t* output) {
+    __attribute__((target("avx2"))) static void avx2(const uint8_t* rows, const int8_t* query, size_t groups, int32_t query_sum, int32_t* output) {
         __m256i sums[width / 8]; for (auto& sum : sums) sum = _mm256_setzero_si256();
-        const auto ones = _mm256_set1_epi16(1), low_mask = _mm256_set1_epi8(127);
+        const auto ones = _mm256_set1_epi16(1);
+        const auto bias = _mm256_set1_epi8(static_cast<char>(0x80));
         for (size_t group = 0; group < groups; ++group) {
             int32_t packed; std::memcpy(&packed, query + group * 4, 4);
-            // Split the unsigned row byte into <=127 and <=128 components.
-            // Each signed-16 pair is <=32512 in magnitude; maddubs cannot
-            // saturate. Combine only after widening each pair sum to int32.
             const auto q = _mm256_set1_epi32(packed);
             for (size_t part = 0; part < width / 8; ++part) {
-                const auto values = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(rows + group * width * 4 + part * 32));
-                const auto low = _mm256_maddubs_epi16(_mm256_and_si256(values, low_mask), q);
-                const auto high = _mm256_maddubs_epi16(_mm256_andnot_si256(low_mask, values), q);
-                sums[part] = _mm256_add_epi32(sums[part], _mm256_add_epi32(_mm256_madd_epi16(low, ones), _mm256_madd_epi16(high, ones)));
+                const auto encoded = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(rows + group * width * 4 + part * 32));
+                const auto values = _mm256_xor_si256(encoded, bias);
+                // Row and query codes both lie in [-127,127]. Move each row
+                // sign to the query, then multiply its unsigned magnitude.
+                // Each maddubs pair is <= 2*127*127 = 32258, so no signed-16
+                // saturation is possible. The original quantizer is unchanged.
+                const auto pairs = _mm256_maddubs_epi16(_mm256_abs_epi8(values), _mm256_sign_epi8(q, values));
+                sums[part] = _mm256_add_epi32(sums[part], _mm256_madd_epi16(pairs, ones));
             }
         }
-        for (size_t part = 0; part < width / 8; ++part) _mm256_storeu_si256(reinterpret_cast<__m256i*>(output + part * 8), sums[part]);
+        // Restore the unsigned row bias expected by the common score formula.
+        const auto correction = _mm256_set1_epi32(128 * query_sum);
+        for (size_t part = 0; part < width / 8; ++part)
+            _mm256_storeu_si256(reinterpret_cast<__m256i*>(output + part * 8), _mm256_add_epi32(sums[part], correction));
     }
-    __attribute__((target("avx512f,avx512vnni"))) static void vnni(const uint8_t* rows, const int8_t* query, size_t groups, int32_t* output) {
+    __attribute__((target("avx512f,avx512vnni"))) static void vnni(const uint8_t* rows, const int8_t* query, size_t groups, int32_t, int32_t* output) {
         __m512i sums[width / 16]; for (auto& sum : sums) sum = _mm512_setzero_si512();
         for (size_t group = 0; group < groups; ++group) {
             int32_t packed; std::memcpy(&packed, query + group * 4, 4);
@@ -127,7 +132,7 @@ public:
         if (implementation == 2) function = avx2;
         if (implementation == 3) function = vnni;
 #endif
-        function(codes_.data() + (first / width) * groups_ * width * 4, query.codes.data(), groups_, output.data());
+        function(codes_.data() + (first / width) * groups_ * width * 4, query.codes.data(), groups_, query.sum, output.data());
         for (size_t lane = 0; lane < width; ++lane)
             output[lane] = norms_[first + lane] + query.norm + 256 * query.sum - 2 * output[lane];
     }

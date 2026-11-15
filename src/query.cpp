@@ -258,10 +258,19 @@ Result Engine::select(const Statement& s) {
             std::function<bool(const Row&)> filter;
             if (!complete) filter = [&](const Row& row) { return matches(row, predicates); };
             auto hits = vector_index_->search(ordering[0].query, static_cast<size_t>(limit), filter, begin, end);
-            bool projection_cached = vector_index_->covers(wanted);
+            // Winners already have exact ordering distances and a validated
+            // immutable working-column snapshot. Fetch only missing projected
+            // ordinary columns, rather than re-reading predicate/vector data.
+            std::vector<bool> missing;
+            bool need_missing = false;
+            for (const auto& p : projections) if (!p.distance && !vector_index_->columns()[p.column]) {
+                if (missing.empty()) missing.assign(table.columns.size(), false);
+                missing[p.column] = true; need_missing = true;
+            }
             for (const auto& hit : hits) {
                 const auto& entry = vector_index_->entries()[hit.entry];
-                if (!projection_cached) { output(load(entry.key, entry.ref)); continue; }
+                std::optional<Row> disk;
+                if (need_missing) disk = storage_.read_selected(table, entry.ref, missing);
                 std::optional<Row> row;
                 std::string values = "["; bool first = true;
                 for (const auto& p : projections) {
@@ -272,7 +281,8 @@ Result Engine::select(const Statement& s) {
                         if (!row) row = vector_index_->materialize(hit.entry);
                         if (p.distance) append_distance_json(values, distance(std::get<std::vector<float>>((*row)[p.column]), p.query));
                         else append_value_json(values, (*row)[p.column]);
-                    } else append_value_json(values, entry.row[p.column]);
+                    } else if (vector_index_->columns()[p.column]) append_value_json(values, entry.row[p.column]);
+                    else append_value_json(values, (*disk)[p.column]);
                 }
                 values.push_back(']');
                 result.rows->add(values);

@@ -1,5 +1,6 @@
 #include "storage.hpp"
 #include <bit>
+#include <cstring>
 
 namespace mvd {
 namespace { struct MaterializationLimit {}; }
@@ -10,7 +11,12 @@ std::optional<Row> Storage::read_selected_bounded(const Table& table, Ref ref, c
     try { return read_selected_impl(table, ref, wanted, limit); }
     catch (const MaterializationLimit&) { return std::nullopt; }
 }
-Row Storage::read_selected_impl(const Table& table, Ref ref, const std::vector<bool>& wanted, size_t limit) const {
+std::optional<Row> Storage::read_selected_source_bounded(const Table& table, Ref ref, const std::vector<bool>& wanted, size_t limit, Ref& source) const {
+    source = {};
+    try { return read_selected_impl(table, ref, wanted, limit, &source); }
+    catch (const MaterializationLimit&) { return std::nullopt; }
+}
+Row Storage::read_selected_impl(const Table& table, Ref ref, const std::vector<bool>& wanted, size_t limit, Ref* vector_source) const {
     if (wanted.size() != table.columns.size()) throw IoError("invalid projected record shape");
     if (ref.offset < 8192 || ref.offset > end_ || ref.length > end_ - ref.offset)
         throw IoError("invalid projected record reference");
@@ -43,15 +49,23 @@ Row Storage::read_selected_impl(const Table& table, Ref ref, const std::vector<b
         } else {
             uint64_t size = uint64_t(column.width) * sizeof(float);
             if (position > ref.length || size > ref.length - position) throw IoError("truncated projected vector");
-            if (wanted[i]) {
+            if (wanted[i] && vector_source) {
+                *vector_source = {ref.offset + position, static_cast<uint32_t>(size)};
+                range(size, nullptr);
+            } else if (wanted[i]) {
                 if (size > limit) throw MaterializationLimit{};
                 limit -= static_cast<size_t>(size);
-                std::string bytes(static_cast<size_t>(size), '\0');
-                range(size, bytes.data());
-                std::vector<float> vector; vector.reserve(column.width);
-                for (uint32_t j = 0; j < column.width; ++j)
-                    vector.push_back(std::bit_cast<float>(static_cast<uint32_t>(read_le(
-                        reinterpret_cast<const unsigned char*>(bytes.data()) + uint64_t(j) * 4, 4))));
+                std::vector<float> vector;
+                if constexpr (std::endian::native == std::endian::little) {
+                    vector.resize(column.width);
+                    range(size, vector.data());
+                } else {
+                    std::string bytes(static_cast<size_t>(size), '\0');
+                    range(size, bytes.data()); vector.reserve(column.width);
+                    for (uint32_t j = 0; j < column.width; ++j)
+                        vector.push_back(std::bit_cast<float>(static_cast<uint32_t>(read_le(
+                            reinterpret_cast<const unsigned char*>(bytes.data()) + uint64_t(j) * 4, 4))));
+                }
                 row[i] = std::move(vector);
             } else range(size, nullptr);
         }

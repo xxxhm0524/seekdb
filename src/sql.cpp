@@ -113,10 +113,10 @@ class Parser {
             }
             return {s + "]", false};
         }
-        auto t = tokens[at++];
+        auto t = std::move(tokens[at++]);
         if (!t.quoted && (t.identifier || t.text == ")" || t.text == "," || t.text == ";"))
             fail("invalid_value", "expected a supported literal");
-        return {t.text, t.quoted};
+        return {std::move(t.text), t.quoted};
     }
     Expr expr(bool alias) {
         Expr e;

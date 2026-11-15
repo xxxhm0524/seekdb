@@ -2,6 +2,7 @@
 #include "exact_batch.hpp"
 #include <bit>
 #include <cstdlib>
+#include <cstring>
 #include <numeric>
 #include <queue>
 namespace mvd {
@@ -27,38 +28,62 @@ std::unique_ptr<VectorIndex> VectorIndex::create(Storage& store, const Table& ta
     if (!budget || column == table.columns.size()) return nullptr;
     auto index = std::make_unique<VectorIndex>(table.root, table.name); index->vector_column_ = column;
     index->dimensions_ = table.columns[column].width;
+    if (QuantizedScreen::supported(index->dimensions_)) index->mapped_source_ = store.read_mapping();
     if (!wanted.empty() && wanted.size() != table.columns.size()) throw IoError("invalid vector snapshot projection");
     index->columns_ = wanted.empty() ? std::vector<bool>(table.columns.size(), false) : wanted;
     index->columns_[column] = index->columns_[table.primary] = true;
+    // The indexed vector lives in coordinates_. Keep only the ordinary-column
+    // prefix required by this snapshot. Table column numbers remain unchanged,
+    // so filters can read their bound positions without a per-row remap.
+    size_t row_columns = 0;
+    for (size_t i = 0; i < index->columns_.size(); ++i)
+        if (i != column && index->columns_[i]) row_columns = i + 1;
     // Reserve by the known row count, but never reserve beyond the entire budget.
-    if (table.count > budget / (sizeof(Entry) + sizeof(size_t) + table.columns.size() * sizeof(Value))) return nullptr;
+    if (table.count > budget / (sizeof(Entry) + sizeof(size_t) + row_columns * sizeof(Value))) return nullptr;
     size_t count = static_cast<size_t>(table.count), blocks = (count + batch::width - 1) / batch::width;
-    if (blocks && index->dimensions_ > budget / (blocks * batch::width * sizeof(float))) return nullptr;
+    if (!index->mapped_source_ && blocks && index->dimensions_ > budget / (blocks * batch::width * sizeof(float))) return nullptr;
     size_t coordinate_bytes = blocks * index->dimensions_ * batch::width * sizeof(float);
     if (index->dimensions_ > budget / (2 * sizeof(float))) return nullptr;
     size_t scratch = index->dimensions_ * 2 * sizeof(float);
     const size_t fixed = sizeof(VectorIndex) + index->table_.capacity() + index->columns_.capacity() / 8 + scratch;
-    size_t initial_bytes = coordinate_bytes + count * sizeof(Entry) + fixed;
+    size_t source_bytes = index->mapped_source_ ? count * sizeof(uint64_t) : coordinate_bytes;
+    size_t initial_bytes = source_bytes + count * sizeof(Entry) + fixed;
     if (initial_bytes > budget) return nullptr;
-    index->coordinates_.resize(coordinate_bytes / sizeof(float));
+    if (index->mapped_source_) index->source_offsets_.reserve(count);
+    else index->coordinates_.resize(coordinate_bytes / sizeof(float));
     index->entries_.reserve(static_cast<size_t>(table.count));
     size_t used = index->entries_.capacity() * sizeof(Entry) + index->coordinates_.capacity() * sizeof(float)
-                  + fixed;
+                  + index->source_offsets_.capacity() * sizeof(uint64_t) + fixed;
     if (used > budget) return nullptr;
     bool complete = true;
     BTree tree(store);
     tree.scan(table.root, [&](int64_t key, Ref ref) {
-        auto materialized = store.read_selected_bounded(table, ref, index->columns_, budget - std::min(budget, used));
+        Ref source;
+        auto materialized = index->mapped_source_
+            ? store.read_selected_source_bounded(table, ref, index->columns_, budget - std::min(budget, used), source)
+            : store.read_selected_bounded(table, ref, index->columns_, budget - std::min(budget, used));
         if (!materialized) { complete = false; return false; }
         Row row = std::move(*materialized); row[table.primary] = key;
         size_t position = index->entries_.size();
         if (position >= count) throw IoError("inconsistent vector snapshot row count");
-        const auto& vector = std::get<std::vector<float>>(row[column]);
+        if (index->mapped_source_) {
+            if (source.length != uint64_t(index->dimensions_) * sizeof(float) || source.offset > index->mapped_source_->size() || source.length > index->mapped_source_->size() - source.offset) {
+                complete = false; return false;
+            }
+            index->source_offsets_.push_back(source.offset);
+        } else {
+            const auto& vector = std::get<std::vector<float>>(row[column]);
+            for (size_t d = 0; d < index->dimensions_; ++d)
+                index->coordinates_[(position / batch::width) * index->dimensions_ * batch::width + d * batch::width + position % batch::width] = vector[d];
+        }
         if (index->uniform_ && position) for (size_t d = 0; d < index->dimensions_; ++d)
-            if (vector[d] != index->coordinate(0, d)) { index->uniform_ = false; break; }
-        for (size_t d = 0; d < index->dimensions_; ++d)
-            index->coordinates_[(position / batch::width) * index->dimensions_ * batch::width + d * batch::width + position % batch::width] = vector[d];
-        row[column] = int64_t(0); // The float32 payload is owned once by coordinates_.
+            if (index->coordinate(position, d) != index->coordinate(0, d)) { index->uniform_ = false; break; }
+        Row compact; compact.reserve(row_columns);
+        for (size_t i = 0; i < row_columns; ++i) {
+            if (i != column && index->columns_[i]) compact.push_back(std::move(row[i]));
+            else compact.emplace_back(int64_t(0));
+        }
+        row = std::move(compact); // Drop the vector and unused trailing slots.
         used += row.capacity() * sizeof(Value) + 32; // allocation metadata/alignment
         for (const auto& v : row) {
             if (auto s = std::get_if<std::string>(&v)) used += s->capacity() + 32;
@@ -89,7 +114,7 @@ std::unique_ptr<VectorIndex> VectorIndex::create(Storage& store, const Table& ta
     // Follow the successful reference's TypedScanCache::finish layout choice:
     // certificate reranking consumes individual source vectors, so retain
     // contiguous rows when the auxiliary index and preparation scratch fit.
-    if (index->screen_ && index->screen_->bytes() <= budget - used) {
+    if (index->screen_ && !index->mapped_source_ && index->screen_->bytes() <= budget - used) {
         const size_t spare = budget - used - index->screen_->bytes();
         if (index->dimensions_ <= spare / (batch::width * sizeof(float))) try {
             std::vector<float> scratch(index->dimensions_ * batch::width);
@@ -104,16 +129,37 @@ std::unique_ptr<VectorIndex> VectorIndex::create(Storage& store, const Table& ta
             }
         } catch (const std::bad_alloc&) {} // Allocation precedes any layout edit.
     }
+    index->source_copy_budget_ = budget - used;
+    if (index->screen_) index->source_copy_budget_ -= index->screen_->bytes();
     return index;
 }
+bool VectorIndex::materialize_source() {
+    if (!mapped_source_) return true;
+    const size_t blocks = (entries_.size() + batch::width - 1) / batch::width;
+    if (blocks && dimensions_ > source_copy_budget_ / (blocks * batch::width * sizeof(float))) return false;
+    try {
+        std::vector<float> prepared(blocks * batch::width * dimensions_);
+        if (prepared.capacity() * sizeof(float) > source_copy_budget_) return false;
+        for (size_t entry = 0; entry < entries_.size(); ++entry) for (size_t d = 0; d < dimensions_; ++d)
+            prepared[(entry / batch::width) * dimensions_ * batch::width + d * batch::width + entry % batch::width] = coordinate(entry, d);
+        coordinates_.swap(prepared); rowwise_ = false;
+        mapped_source_.reset(); std::vector<uint64_t>().swap(source_offsets_);
+        return true;
+    } catch (const std::bad_alloc&) { return false; } // Keep the bounded mapped scalar fallback.
+}
 float VectorIndex::coordinate(size_t entry, size_t dimension) const {
+    if (mapped_source_) {
+        float value;
+        std::memcpy(&value, mapped_source_->data() + source_offsets_[entry] + dimension * sizeof(float), sizeof(value));
+        return value;
+    }
     if (rowwise_) return coordinates_[entry * dimensions_ + dimension];
     return coordinates_[(entry / batch::width) * dimensions_ * batch::width + dimension * batch::width + entry % batch::width];
 }
 void VectorIndex::cluster(size_t column) {
     // One permutation plus one vector of scratch; all allocations precede edits.
     std::vector<size_t> permutation(entries_.size());
-    std::vector<float> scratch(dimensions_);
+    std::vector<float> scratch; if (!mapped_source_) scratch.resize(dimensions_);
     std::iota(permutation.begin(), permutation.end(), 0);
     std::sort(permutation.begin(), permutation.end(), [&](size_t a, size_t b) {
         const auto& x = entries_[a].row[column]; const auto& y = entries_[b].row[column];
@@ -124,15 +170,18 @@ void VectorIndex::cluster(size_t column) {
     };
     for (size_t i = 0; i < permutation.size(); ++i) if (permutation[i] != i) {
         Entry saved = std::move(entries_[i]);
-        for (size_t d = 0; d < dimensions_; ++d) scratch[d] = coordinate(i, d);
+        const uint64_t saved_offset = mapped_source_ ? source_offsets_[i] : 0;
+        if (!mapped_source_) for (size_t d = 0; d < dimensions_; ++d) scratch[d] = coordinate(i, d);
         size_t to = i;
         while (permutation[to] != i) {
             size_t from = permutation[to]; entries_[to] = std::move(entries_[from]);
-            for (size_t d = 0; d < dimensions_; ++d) set(to, d, coordinate(from, d));
+            if (mapped_source_) source_offsets_[to] = source_offsets_[from];
+            else for (size_t d = 0; d < dimensions_; ++d) set(to, d, coordinate(from, d));
             permutation[to] = to; to = from;
         }
         entries_[to] = std::move(saved);
-        for (size_t d = 0; d < dimensions_; ++d) set(to, d, scratch[d]);
+        if (mapped_source_) source_offsets_[to] = saved_offset;
+        else for (size_t d = 0; d < dimensions_; ++d) set(to, d, scratch[d]);
         permutation[to] = to;
     }
     clustered_column_ = column;
@@ -146,7 +195,7 @@ std::optional<std::pair<size_t, size_t>> VectorIndex::equal_bounds(size_t column
     return std::pair<size_t, size_t>{first - entries_.begin(), last - entries_.begin()};
 }
 Row VectorIndex::materialize(size_t entry) const {
-    Row row = entries_.at(entry).row;
+    Row row = entries_.at(entry).row; row.resize(columns_.size());
     std::vector<float> vector; vector.reserve(dimensions_);
     for (size_t d = 0; d < dimensions_; ++d) vector.push_back(coordinate(entry, d));
     row[vector_column_] = std::move(vector); return row;
@@ -179,7 +228,7 @@ int VectorIndex::build(size_t begin, size_t end) {
 std::vector<VectorIndex::Hit> VectorIndex::search(const std::vector<float>& query, size_t k,
                     const std::function<bool(const Row&)>& predicate, size_t begin, size_t end,
                     SearchStats* stats, bool screening) {
-    if (stats) { *stats = {}; stats->rowwise_source = rowwise_; }
+    if (stats) { *stats = {}; stats->rowwise_source = rowwise_ || bool(mapped_source_); }
     auto better = [&](const Hit& a, const Hit& b) {
         return a.distance == b.distance ? entries_[a.entry].key < entries_[b.entry].key : a.distance < b.distance;
     };
@@ -225,6 +274,14 @@ std::vector<VectorIndex::Hit> VectorIndex::search(const std::vector<float>& quer
         else { walk(node.right, right); walk(node.left, left); }
     };
     if (nodes_.empty()) {
+        bool mapped_fallback = bool(mapped_source_);
+        if (mapped_fallback && materialize_source()) {
+            if (stats) stats->source_reblocked = true;
+            mapped_fallback = false;
+        }
+        if (mapped_fallback) {
+            for (size_t i = begin; i < end; ++i) visit(i);
+        } else {
         const auto kernel = batch::select();
         if (rowwise_) {
             // A complete scan has different locality needs. Reblock once per
@@ -248,6 +305,7 @@ std::vector<VectorIndex::Hit> VectorIndex::search(const std::vector<float>& quer
             double distances[batch::width];
             kernel.evaluate(coordinates_.data() + first * dimensions_, query.data(), dimensions_, distances);
             for (size_t lane = 0; lane < batch::width; ++lane) if (mask & (1U << lane)) consider(first + lane, distances[lane]);
+        }
         }
     }
     else walk(0, lower_bound(0));
@@ -294,7 +352,13 @@ std::optional<std::vector<VectorIndex::Hit>> VectorIndex::screen_search(const st
     };
     for (size_t i = 0; i < count; ++i) {
         const size_t entry = candidates[i].entry; double sum = 0;
-        if (rowwise_) {
+        if (mapped_source_) {
+            const auto* values = mapped_source_->data() + source_offsets_[entry];
+            for (size_t d = 0; d < dimensions_; ++d) {
+                float value; std::memcpy(&value, values + d * sizeof(float), sizeof(value));
+                double delta = double(value) - double(query[d]); sum += delta * delta;
+            }
+        } else if (rowwise_) {
             const float* values = coordinates_.data() + entry * dimensions_;
             for (size_t d = 0; d < dimensions_; ++d) { double delta = double(values[d]) - double(query[d]); sum += delta * delta; }
         } else for (size_t d = 0; d < dimensions_; ++d) { double delta = double(coordinate(entry, d)) - double(query[d]); sum += delta * delta; }

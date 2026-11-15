@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <functional>
 #include <list>
+#include <memory>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -14,14 +15,36 @@ uint64_t checksum(const void* data, size_t size);
 uint64_t read_le(const unsigned char* data, unsigned bytes);
 void write_le(unsigned char* data, uint64_t value, unsigned bytes);
 
+// A mapping owns its address range independently of the descriptor. Storage
+// only lends committed immutable record bytes. An index can therefore retain
+// its source through optional read-view release and atomic file replacement.
+class ReadMapping {
+    const unsigned char* data_;
+    size_t size_;
+public:
+    ReadMapping(const unsigned char* data, size_t size) noexcept : data_(data), size_(size) {}
+    ~ReadMapping();
+    ReadMapping(const ReadMapping&) = delete;
+    ReadMapping& operator=(const ReadMapping&) = delete;
+    const unsigned char* data() const noexcept { return data_; }
+    size_t size() const noexcept { return size_; }
+};
 class File {
     int fd_ = -1;
     std::filesystem::path path_;
+    mutable std::shared_ptr<const ReadMapping> read_mapping_;
+    mutable bool read_mapping_attempted_ = false;
+    uint64_t read_mapping_budget_;
 public:
     explicit File(const std::filesystem::path& path);
     ~File();
     File(const File&) = delete;
     File& operator=(const File&) = delete;
+    // Optional bounded view of the immutable committed prefix. Callers own
+    // their result buffers; no borrowed pointer survives a file mutation.
+    void prepare_read_mapping(uint64_t committed_end) const;
+    std::shared_ptr<const ReadMapping> read_mapping() const noexcept { return read_mapping_; }
+    void release_read_mapping() const noexcept;
     void read(uint64_t offset, void* data, size_t size) const;
     void write(uint64_t offset, const void* data, size_t size);
     uint64_t size() const;
@@ -43,10 +66,13 @@ class Storage {
     void evict();
     void flush_page(uint64_t offset, Cached& page);
     void cleanup_compaction_scratch();
-    Row read_selected_impl(const Table& table, Ref ref, const std::vector<bool>& wanted, size_t limit) const;
+    Row read_selected_impl(const Table& table, Ref ref, const std::vector<bool>& wanted, size_t limit, Ref* vector_source = nullptr) const;
 public:
     Catalog committed;
     explicit Storage(const std::filesystem::path& directory);
+    void prepare_read_mapping() const { file_.prepare_read_mapping(durable_end_); }
+    std::shared_ptr<const ReadMapping> read_mapping() const noexcept { return file_.read_mapping(); }
+    void release_read_mapping() const noexcept { file_.release_read_mapping(); }
     Page page(uint64_t offset);
     void set_page(uint64_t offset, const Page& page);
     uint64_t allocate_page();
@@ -54,6 +80,7 @@ public:
     std::string read(Ref ref) const;
     Row read_selected(const Table& table, Ref ref, const std::vector<bool>& wanted) const;
     std::optional<Row> read_selected_bounded(const Table& table, Ref ref, const std::vector<bool>& wanted, size_t limit) const;
+    std::optional<Row> read_selected_source_bounded(const Table& table, Ref ref, const std::vector<bool>& wanted, size_t limit, Ref& source) const;
     uint64_t mark() const { return end_; }
     void rewind(uint64_t mark);
     void rollback() { rewind(durable_end_); }

@@ -15,6 +15,8 @@
 #include <sys/stat.h>
 #else
 #include <sys/file.h>
+#include <sys/mman.h>
+#include <sys/resource.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #endif
@@ -35,7 +37,25 @@ void write_le(unsigned char* p, uint64_t v, unsigned n) {
     for (unsigned i = 0; i < n; ++i) p[i] = static_cast<unsigned char>(v >> (8 * i));
 }
 static void io_failure(const char* op) { throw IoError(std::string(op) + ": " + std::strerror(errno)); }
-File::File(const std::filesystem::path& path) : path_(path) {
+static uint64_t read_mapping_budget() {
+#ifndef _WIN32
+    size_t mib = 64;
+    if (const char* value = std::getenv("MVD_READ_MAP_MIB")) {
+        mib = 0;
+        if (!*value) fail("invalid_config", "invalid read mapping size");
+        for (const char* p = value; *p; ++p) {
+            if (*p < '0' || *p > '9' || mib > 64 / 10)
+                fail("invalid_config", "read mapping maximum is 64 MiB");
+            mib = mib * 10 + static_cast<unsigned>(*p - '0');
+            if (mib > 64) fail("invalid_config", "read mapping maximum is 64 MiB");
+        }
+    }
+    return uint64_t(mib) * 1024 * 1024;
+#else
+    return 0;
+#endif
+}
+File::File(const std::filesystem::path& path) : path_(path), read_mapping_budget_(read_mapping_budget()) {
 #ifdef _WIN32
     fd_ = _wopen(path.wstring().c_str(), _O_RDWR | _O_CREAT | _O_BINARY, _S_IREAD | _S_IWRITE);
 #else
@@ -52,7 +72,13 @@ File::File(const std::filesystem::path& path) : path_(path) {
     }
 #endif
 }
+ReadMapping::~ReadMapping() {
+#ifndef _WIN32
+    ::munmap(const_cast<unsigned char*>(data_), size_);
+#endif
+}
 File::~File() {
+    release_read_mapping();
     if (fd_ < 0) return;
 #ifdef _WIN32
     _close(fd_);
@@ -60,7 +86,32 @@ File::~File() {
     ::close(fd_);
 #endif
 }
+void File::prepare_read_mapping(uint64_t committed_end) const {
+#ifndef _WIN32
+    if (read_mapping_ || read_mapping_attempted_) return;
+    read_mapping_attempted_ = true;
+    uint64_t budget = read_mapping_budget_;
+    struct rlimit limit {};
+    if (::getrlimit(RLIMIT_AS, &limit) == 0 && limit.rlim_cur != RLIM_INFINITY)
+        budget = std::min<uint64_t>(budget, limit.rlim_cur / 4);
+    if (!committed_end || committed_end > budget || committed_end > SIZE_MAX || committed_end > size()) return;
+    void* mapping = ::mmap(nullptr, static_cast<size_t>(committed_end), PROT_READ, MAP_SHARED, fd_, 0);
+    if (mapping == MAP_FAILED) return; // The positional-read path remains valid.
+    try {
+        read_mapping_ = std::make_shared<ReadMapping>(static_cast<const unsigned char*>(mapping), static_cast<size_t>(committed_end));
+    } catch (const std::bad_alloc&) { ::munmap(mapping, static_cast<size_t>(committed_end)); }
+#else
+    (void)committed_end;
+#endif
+}
+void File::release_read_mapping() const noexcept {
+    read_mapping_.reset(); read_mapping_attempted_ = false;
+}
 void File::read(uint64_t offset, void* data, size_t n) const {
+    if (read_mapping_ && offset <= read_mapping_->size() && n <= read_mapping_->size() - offset) {
+        if (n) std::memcpy(data, read_mapping_->data() + offset, n);
+        return;
+    }
     auto* p = static_cast<unsigned char*>(data);
     while (n) {
         size_t chunk = std::min(n, size_t(1) << 30);
@@ -77,6 +128,7 @@ void File::read(uint64_t offset, void* data, size_t n) const {
     }
 }
 void File::write(uint64_t offset, const void* data, size_t n) {
+    release_read_mapping();
     const auto* p = static_cast<const unsigned char*>(data);
     while (n) {
         size_t chunk = std::min(n, size_t(1) << 30);
@@ -102,6 +154,7 @@ uint64_t File::size() const {
     return static_cast<uint64_t>(s.st_size);
 }
 void File::truncate(uint64_t size) {
+    release_read_mapping();
 #ifdef _WIN32
     if (_chsize_s(fd_, size)) io_failure("truncate");
 #else
@@ -118,6 +171,7 @@ void File::sync() {
 #endif
 }
 void File::replace_with(const std::filesystem::path& replacement) {
+    release_read_mapping();
     // Closing first also permits atomic replacement on Windows, whose CRT
     // handles do not share deletion. No SQL cursor is live during compaction.
 #ifdef _WIN32

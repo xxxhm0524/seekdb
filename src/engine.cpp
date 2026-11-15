@@ -36,16 +36,19 @@ Engine::Engine(const std::filesystem::path& dir) : directory_(dir), storage_(dir
     }
     // All rebuild work that can fit the bounded index budget completes before
     // the protocol's ready handshake. Oversized tables use disk exact scans.
+    storage_.prepare_read_mapping();
     for (const auto& table : active_) if (!table.indexes.empty()) {
         vector_index_.reset();
         vector_index_ = VectorIndex::create(storage_, table);
     }
+    // An index can retain source bytes; keep the same optional view for SELECT.
 }
 size_t Engine::table_index(const std::string& name) const {
     for (size_t i = 0; i < active_.size(); ++i) if (active_[i].name == lower(name)) return i;
     fail("unknown_table", "unknown table: " + name);
 }
 void Engine::shutdown() {
+    storage_.release_read_mapping();
     vector_index_.reset(); refused_vector_root_.reset();
     if (transaction_) {
         Catalog next = storage_.committed;
@@ -55,7 +58,11 @@ void Engine::shutdown() {
 Result Engine::execute(const std::string& sql, const std::string& mode) {
     if (mode != "exact" && mode != "ann") fail("invalid_request", "unknown search_mode");
     Statement s = parse_sql(sql);
-    if (s.kind == Statement::Select) return select(s);
+    if (s.kind == Statement::Select) {
+        if (!transaction_) storage_.prepare_read_mapping();
+        return select(s);
+    }
+    storage_.release_read_mapping();
     vector_index_.reset(); refused_vector_root_.reset();
     if (!transaction_ && storage_.compact_if_needed()) active_ = storage_.committed;
     if (s.kind == Statement::Begin) {
@@ -86,6 +93,7 @@ Result Engine::execute(const std::string& sql, const std::string& mode) {
                 if (t.columns[col].type != Type::Vector) fail("type_error", "vector index requires VECTOR column");
                 for (const auto& name : t.indexes) if (lower(name) == lower(s.index)) fail("index_exists", "index already exists");
                 t.indexes.push_back(s.index);
+                if (!transaction_) storage_.prepare_read_mapping();
                 built_index = VectorIndex::create(storage_, t);
             } else if (s.kind == Statement::Insert) {
                 std::vector<size_t> order;

@@ -8,7 +8,12 @@
 namespace mvd {
 size_t utf8_length(const std::string& s) {
     size_t n = 0;
-    for (size_t i = 0; i < s.size(); ++n) {
+    for (size_t i = 0; i < s.size();) {
+        if (s.size() - i >= sizeof(uint64_t)) {
+            uint64_t word; std::memcpy(&word, s.data() + i, sizeof(word));
+            if (!(word & UINT64_C(0x8080808080808080))) { i += sizeof(word); n += sizeof(word); continue; }
+        }
+        ++n;
         uint8_t first = static_cast<uint8_t>(s[i++]);
         if (first < 128) continue;
         unsigned extra; uint32_t cp, minimum;
@@ -55,7 +60,27 @@ static uint64_t get(const std::string& s, size_t& at, unsigned n) {
     return v;
 }
 std::string encode_row(const Table& t, const Row& row) {
-    std::string s;
+    size_t bytes = 0;
+    for (size_t i = 0; i < t.columns.size(); ++i) {
+        size_t add = 0;
+        switch (t.columns[i].type) {
+        case Type::Integer: add = 8; break;
+        case Type::Text: {
+            const auto size = std::get<std::string>(row[i]).size();
+            if (size > UINT32_MAX) fail("resource_limit", "string is too large");
+            if (size > UINT32_MAX - 4u) fail("resource_limit", "record too large");
+            add = 4 + size; break;
+        }
+        case Type::Vector: {
+            const auto size = std::get<std::vector<float>>(row[i]).size();
+            if (size > UINT32_MAX / 4u) fail("resource_limit", "record too large");
+            add = 4 * size; break;
+        }
+        }
+        if (add > UINT32_MAX - bytes) fail("resource_limit", "record too large");
+        bytes += add;
+    }
+    std::string s; s.reserve(bytes);
     for (size_t i = 0; i < t.columns.size(); ++i) {
         switch (t.columns[i].type) {
         case Type::Integer: put(s, std::bit_cast<uint64_t>(std::get<int64_t>(row[i])), 8); break;
@@ -64,9 +89,13 @@ std::string encode_row(const Table& t, const Row& row) {
             if (v.size() > UINT32_MAX) fail("resource_limit", "string is too large");
             put(s, v.size(), 4); s.append(v); break;
         }
-        case Type::Vector:
-            for (float f : std::get<std::vector<float>>(row[i])) put(s, std::bit_cast<uint32_t>(f), 4);
+        case Type::Vector: {
+            const auto& values = std::get<std::vector<float>>(row[i]);
+            if constexpr (std::endian::native == std::endian::little) {
+                if (!values.empty()) s.append(reinterpret_cast<const char*>(values.data()), values.size() * sizeof(float));
+            } else for (float f : values) put(s, std::bit_cast<uint32_t>(f), 4);
             break;
+        }
         }
     }
     return s;
@@ -83,8 +112,15 @@ Row decode_row(const Table& t, const std::string& s) {
         }
         case Type::Vector: {
             if (c.width > (s.size() - at) / 4) throw IoError("truncated vector");
-            std::vector<float> v; v.reserve(c.width);
-            for (uint32_t i = 0; i < c.width; ++i) v.push_back(std::bit_cast<float>(static_cast<uint32_t>(get(s, at, 4))));
+            std::vector<float> v;
+            if constexpr (std::endian::native == std::endian::little) {
+                v.resize(c.width);
+                if (!v.empty()) std::memcpy(v.data(), s.data() + at, v.size() * sizeof(float));
+                at += v.size() * sizeof(float);
+            } else {
+                v.reserve(c.width);
+                for (uint32_t i = 0; i < c.width; ++i) v.push_back(std::bit_cast<float>(static_cast<uint32_t>(get(s, at, 4))));
+            }
             row.emplace_back(std::move(v)); break;
         }
         }
