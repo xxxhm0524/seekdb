@@ -43,12 +43,19 @@ for label,source in sources.items():
         var='rejected' if name=='cache_admission_tests.cpp' else 'failed'
         prefix='std::cerr<<"[DIAG] caught="<<'+var+'<<" failed_reads="<<failed_reads<<"\\n";'
         p.write_text(s.replace(needle,prefix+needle))
+    # Add only test instrumentation. Database source and production target flags
+    # remain unchanged in both copies; all original assertions still execute.
+    config=source/'CMakeLists.txt'
+    extra='\nforeach(t unindexed_snapshot_tests typed_scan_tests cache_admission_tests)\n'
+    extra+=' target_link_options(${t} PRIVATE -Wl,--wrap=__pread_chk)\n'
+    extra+=' target_sources(${t} PRIVATE "'+str(repo/'tools/native/fortified_pread_wrap.cpp')+'")\nendforeach()\n'
+    config.write_bytes(config.read_bytes()+extra.encode())
     b=w/(label+'-build')
     run(label+'-configure',['cmake','-S',str(source),'-B',str(b),'-G','Unix Makefiles','-DCMAKE_BUILD_TYPE=Release','-DCMAKE_EXE_LINKER_FLAGS=-static'])
     run(label+'-build',['cmake','--build',str(b),'--target','unindexed_snapshot_tests','typed_scan_tests','cache_admission_tests','minivectordb','--parallel','2','--verbose'])
     nm=run(label+'-symbols',['nm','-A',str(b/'libminivectordb_core.a')])
     lines=[line for line in nm.stdout.splitlines() if any(n in line for n in ('pread','pwrite','__read','_chk'))]
     (e/(label+'-relevant-symbols.log')).write_text('\n'.join(lines)+'\n');print(label,lines,flush=True)
-    tests=run(label+'-tests',['ctest','--test-dir',str(b),'-R','core_(unindexed_snapshot|typed_scan|cache_admission)$','--output-on-failure','--output-junit',str(e/(label+'-tests.xml'))],False)
+    tests=run(label+'-tests',['ctest','--test-dir',str(b),'-R','core_(unindexed_snapshot|typed_scan|cache_admission)$','--output-on-failure','--output-junit',str(e/(label+'-tests.xml'))])
     results[label]=dict(exit_code=tests.returncode,output=tests.stdout+tests.stderr,binary_sha256=hashlib.sha256((b/'minivectordb').read_bytes()).hexdigest())
 (e/'results.json').write_text(json.dumps(results,indent=2)+'\n');print(json.dumps(results),flush=True)
