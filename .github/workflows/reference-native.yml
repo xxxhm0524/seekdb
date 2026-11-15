@@ -15,6 +15,12 @@ jobs:
           persist-credentials: false
       - name: Verify source and authentic material
         run: python3 scripts/check-reference-candidate.py
+      - name: Prepare mount target on the ephemeral runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -e /data ]; then sudo mkdir --mode=0755 /data; fi
+          test -d /data
       - name: Run native correctness checks
         run: sudo -E python3 tools/native/verify.py
       - name: Preserve native evidence

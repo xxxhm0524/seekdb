@@ -24,6 +24,7 @@ def main():
     p.add_argument('--benchmark',action='store_true')
     args=p.parse_args()
     assert sys.platform.startswith('linux') and os.geteuid()==0,'Use the already authorized root Linux environment.'
+    assert Path('/data').is_dir(),'An existing /data mount target is required. Only the disposable CI runner creates it; this verifier does not alter host data directories.'
     manifest=json.loads((REPO/'validation/reference-opt-20261115/runtime-inputs.json').read_text())
     for n,h in manifest['sha256_lf'].items():assert hashlib.sha256((REPO/n).read_bytes().replace(b'\r\n',b'\n')).hexdigest()==h,n
     w=Path(tempfile.mkdtemp(prefix='mvd-ref-native-',dir=args.work_parent));w.chmod(0o755)
