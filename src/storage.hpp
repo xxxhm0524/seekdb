@@ -35,6 +35,7 @@ class File {
     mutable std::shared_ptr<const ReadMapping> read_mapping_;
     mutable bool read_mapping_attempted_ = false;
     uint64_t read_mapping_budget_;
+    bool hole_punch_supported_ = true;
 public:
     explicit File(const std::filesystem::path& path);
     ~File();
@@ -50,10 +51,11 @@ public:
     uint64_t size() const;
     void truncate(uint64_t size);
     void sync();
+    bool reclaim_range(uint64_t offset, uint64_t length) noexcept;
     void replace_with(const std::filesystem::path& replacement);
 };
 
-// Committed pages are immutable. Only pages owned by the current SQL statement
+// Reachable committed pages are immutable. Only pages owned by the current SQL statement
 // can be edited; errors therefore discard a tail, never overwrite live data.
 class Storage {
     std::filesystem::path directory_;
@@ -63,6 +65,9 @@ class Storage {
     std::list<uint64_t> lru_;
     size_t cache_pages_;
     uint64_t end_ = PAGE_SIZE * 2, durable_end_ = PAGE_SIZE * 2, generation_ = 0;
+    struct RetiredPage { uint64_t source, replacement; };
+    std::vector<RetiredPage> retired_pending_, retired_previous_;
+    bool track_retirements_ = true;
     void evict();
     void flush_page(uint64_t offset, Cached& page);
     void cleanup_compaction_scratch();
@@ -76,6 +81,8 @@ public:
     Page page(uint64_t offset);
     void set_page(uint64_t offset, const Page& page);
     uint64_t allocate_page();
+    // Best-effort reclamation metadata cannot make a valid SQL statement fail.
+    void retire_page(uint64_t source, uint64_t replacement) noexcept;
     Ref append(const std::string& bytes);
     std::string read(Ref ref) const;
     Row read_selected(const Table& table, Ref ref, const std::vector<bool>& wanted) const;

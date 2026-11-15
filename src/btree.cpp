@@ -53,7 +53,7 @@ uint64_t BTree::own(uint64_t offset) {
     if (owned_.contains(offset)) return offset;
     Page p = store_.page(offset);
     uint64_t next = store_.allocate_page();
-    owned_.insert(next); store_.set_page(next, p); return next;
+    owned_.insert(next); store_.set_page(next, p); store_.retire_page(offset, next); return next;
 }
 std::optional<Ref> BTree::find(uint64_t root, int64_t key) {
     while (root) {

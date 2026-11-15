@@ -51,6 +51,7 @@ bool Storage::compact_if_needed() {
     }
     file_.replace_with(scratch / "database.mvd");
     pages_.clear(); lru_.clear();
+    retired_pending_.clear(); retired_previous_.clear(); track_retirements_ = true;
     committed.swap(replacement);
     end_ = durable_end_ = replacement_end; generation_ = replacement_generation;
     cleanup_compaction_scratch();

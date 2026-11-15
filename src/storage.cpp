@@ -16,6 +16,9 @@
 #else
 #include <sys/file.h>
 #include <sys/mman.h>
+#ifdef __linux__
+#include <linux/falloc.h>
+#endif
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -170,6 +173,20 @@ void File::sync() {
     if (rc) io_failure("sync");
 #endif
 }
+bool File::reclaim_range(uint64_t offset, uint64_t length) noexcept {
+#ifdef __linux__
+    if (!hole_punch_supported_ || !length || offset < PAGE_SIZE * 2 || offset % PAGE_SIZE || length % PAGE_SIZE ||
+        offset > uint64_t(INT64_MAX) || length > uint64_t(INT64_MAX) - offset) return false;
+    int rc;
+    do { rc = ::fallocate(fd_, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE, static_cast<off_t>(offset), static_cast<off_t>(length)); }
+    while (rc < 0 && errno == EINTR);
+    if (!rc) return true;
+    if (errno == EOPNOTSUPP || errno == ENOSYS || errno == EINVAL || errno == EPERM) hole_punch_supported_ = false;
+#else
+    (void)offset; (void)length;
+#endif
+    return false;
+}
 void File::replace_with(const std::filesystem::path& replacement) {
     release_read_mapping();
     // Closing first also permits atomic replacement on Windows, whose CRT
@@ -304,6 +321,16 @@ uint64_t Storage::allocate_page() {
     if (offset > uint64_t(INT64_MAX) - PAGE_SIZE) fail("resource_limit", "database file too large");
     end_ = offset + PAGE_SIZE; return offset;
 }
+void Storage::retire_page(uint64_t source, uint64_t replacement) noexcept {
+    if (!track_retirements_) return;
+    // Two journals together use at most 2 MiB of entry storage. Dropping the
+    // optional journal only leaves old garbage in place, never live data loss.
+    constexpr size_t maximum = 65536;
+    try {
+        if (retired_pending_.size() < maximum) { retired_pending_.push_back({source, replacement}); return; }
+    } catch (const std::bad_alloc&) {}
+    std::vector<RetiredPage>().swap(retired_pending_); track_retirements_ = false;
+}
 Ref Storage::append(const std::string& bytes) {
     if (bytes.size() > UINT32_MAX || end_ > uint64_t(INT64_MAX) - bytes.size()) fail("resource_limit", "record too large");
     Ref r{end_, static_cast<uint32_t>(bytes.size())};
@@ -318,6 +345,8 @@ void Storage::rewind(uint64_t mark) {
     for (auto it = pages_.begin(); it != pages_.end();) {
         if (it->first >= mark) { lru_.erase(it->second.lru); it = pages_.erase(it); } else ++it;
     }
+    while (!retired_pending_.empty() && retired_pending_.back().replacement >= mark) retired_pending_.pop_back();
+    if (mark == durable_end_) track_retirements_ = true;
     file_.truncate(mark); end_ = mark;
 }
 void Storage::commit(const Catalog& catalog) {
@@ -331,9 +360,29 @@ void Storage::commit(const Catalog& catalog) {
     // writes remain visible to recovery in the surviving kernel. Publish only
     // after every data/page write returns, then sync the entire file before ACK.
     // A machine/power-loss ordering guarantee would require an earlier barrier.
+    std::sort(retired_previous_.begin(), retired_previous_.end(), [](const RetiredPage& a, const RetiredPage& b) { return a.source < b.source; });
     Page header = commit_header(generation_ + 1, ref, end_, bytes);
     file_.write(((generation_ + 1) % 2) * PAGE_SIZE, header.data(), header.size());
+    // The complete new root replaced the oldest root slot. Pages retired by
+    // the preceding commit are now unreachable from BOTH recoverable catalogs.
+    // Reclaim only those complete B+tree pages, never row/catalog payloads.
+    // All optional hole metadata is covered by the same existing sync barrier.
+    uint64_t first = 0, last = 0;
+    auto reclaim = [&] {
+        if (first) file_.reclaim_range(first, last - first + PAGE_SIZE);
+    };
+    for (const auto& retired : retired_previous_) {
+        const uint64_t offset = retired.source;
+        if (offset < PAGE_SIZE * 2 || offset % PAGE_SIZE || offset > durable_end_ || PAGE_SIZE > durable_end_ - offset) continue;
+        auto cached = pages_.find(offset);
+        if (cached != pages_.end()) { lru_.erase(cached->second.lru); pages_.erase(cached); }
+        if (first && offset == last) continue;
+        if (first && offset == last + PAGE_SIZE) last = offset;
+        else { reclaim(); first = last = offset; }
+    }
+    reclaim();
     file_.sync();
+    retired_previous_.swap(retired_pending_); retired_pending_.clear(); track_retirements_ = true;
     ++generation_; durable_end_ = end_; committed.swap(next);
 }
 }
