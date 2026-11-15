@@ -1,0 +1,14 @@
+{
+  "upstream_commit": "a08e66e299847ca539c419cfbc67593357246627",
+  "attribution": "Unmodified public upstream author documents; historical source archive only, not this owner learning or submission evidence.",
+  "sha256": {
+    "README.md": "03ef967d3501a724f36160980495ba38a8e2536baf78fbf60deed8d862056ff7",
+    "technical-explanation.txt": "0df82a175aad5ddc062a841c5e3f51f168b6ede33dfc4176778852f57b6d6e3a",
+    "participant-explanation-draft.txt": "f8c77b8e4042b853a956076fcc86dbb676b3c4b4633ebabb69378fc92c138fa2",
+    "next-task-prompt.txt": "37568760cfd9a742bfa1893ee4b1eac1dcfff7656878c6fc950d924b9c396160",
+    "implementation-prompt.txt": "db9e26498fd622ec4a8e898d0cfcdff182ccc40593b163c171bd54ba47a54e5a",
+    "design-decisions.txt": "d0dcbc9c59fa7cadf1df2bc4f1f1b925ef82c8ee098e9b7ae4874032ee2d50a2",
+    "a24-contract-inputs.txt": "3143a769712f24c0873b1cab0b4123de7dd618f413bca8c1b8e9a73c5b2004fe",
+    "a24-algorithm-contract.txt": "cbcf585d8864170b52ecf276a19fb206c1f28327105e1aa343581e265750e9e3"
+  }
+}
