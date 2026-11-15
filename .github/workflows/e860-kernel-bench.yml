@@ -1,0 +1,29 @@
+name: Exact integer kernel comparison
+"on":
+  workflow_dispatch:
+  push:
+    branches: ['bench/e860-kernel-*']
+permissions:
+  contents: read
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Build independent kernel pair
+        run: |
+          mkdir -p kernel-results
+          g++ --version > kernel-results/compiler.txt
+          lscpu > kernel-results/cpu.txt
+          g++ -Isrc -std=c++20 -O3 -DNDEBUG -ffp-contract=off bench/e860-kernels/compare.cpp -o kernel-results/compare
+      - name: Compare every score and minimum before timing
+        run: kernel-results/compare > kernel-results/report.jsonl
+      - name: Preserve paired evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: integer-kernel-pair
+          path: kernel-results/

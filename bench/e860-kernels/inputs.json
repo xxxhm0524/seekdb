@@ -1,0 +1,10 @@
+{
+  "parent_verified_candidate": "19db78c4d154d3cfe6cb65b15a589317199a8b6c",
+  "control_original_sha256": "633c050c74b7b1e9321cb6f48c56fc6a98e79d6f9e72aad7984d69023084ae49",
+  "candidate_original_sha256": "5fd086876b86f93a2a4dfb25c15b0cf5963f939b88de4b77732554ae251e949d",
+  "files": {
+    "candidate.hpp": "583cdcac37140be6bd31b344c90829a41b02d8d639828fb2130f34f465beed6a",
+    "control.hpp": "2ff97ca3ae1c250cec23019e0b4e04ff91e0b03d28248cdcabac05e9fcdfe3da"
+  },
+  "scope": "Private classes renamed only for paired tests; production source on this branch remains the verified candidate."
+}
