@@ -57,6 +57,16 @@ def main():
         assert hashlib.sha256((evidence/"runtime-source-sha256.json").read_bytes()).hexdigest() == "9217c7c79867452cc0383206fce3a32fae3d6de1e72fab5d14ca92443fbd4e26"
         assert current["base"] == "e86045306f5940613bfcf4aa84b0ee4bf74c20f1"
         assert current["formal_submitted"] is False and current["target_E"] == 4500
+        assert data["current_context"]["production_core"] == current["production_core"]
+        for experiment in data["experiments"]:
+            path = (ROOT/experiment["source_file"]).resolve()
+            path.relative_to(ROOT.resolve())
+            raw = path.read_bytes()
+            assert hashlib.sha256(raw).hexdigest() == experiment["source_sha256"], experiment["id"]
+            assert raw.decode("utf-8") == experiment["raw_report"], experiment["id"]
+        history = strict((ROOT/"evidence/e860-history-20261116/approved-owner-history.json").read_text(encoding="utf-8"))["messages"]
+        latest = strict((ROOT/"evidence/e860-history-20261116/latest-owner-history.json").read_text(encoding="utf-8"))["messages"]
+        assert [m["content"] for m in data["conversations"]] == [m["content"] for m in history+latest], "actual source messages were rewritten"
         assert set(current["sha256_lf"]) == set(hashes)
         for name, expected in current["sha256_lf"].items():
             assert hashlib.sha256((ROOT/name).read_bytes().replace(b"\r\n", b"\n")).hexdigest() == expected, name

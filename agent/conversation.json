@@ -452,9 +452,9 @@
       "source": "Actual retained report; not a new owner utterance",
       "stage": "Current e860 optimization, production core ca5228e04ad1f570157ea288b109ef7e3c81e9db",
       "source_file": "validation/e860-opt-20261116/verified-avx2-design.json",
-      "source_sha256": "abc3796483c14ff460b917a477e468db7399bf8433280d4616635ec2bd8851ea",
+      "source_sha256": "21b69c4f512cce5f85328c6180c09ce9c033902abd5d166eb7b6d5319e6c5759",
       "note": "Source design identity: the original scalar/VNNI dot kernels are retained, while AVX2 normalization/minimum and query-magnitude work are fused. An unmeasured VNNI unroll was not adopted.",
-      "raw_report": "{\r\n  \"base\": \"ba96b7b048d3c1ae8a910a0cf6f5e0e46bd87396\",\r\n  \"header_sha256\": \"28f1121ad45f197a0d40a5046c078102246028d6a05192f20e1eab73867c18ee\",\r\n  \"vnni_dot_kernel_byte_identical_to_base\": true,\r\n  \"vnni_block_sha256\": \"047872f1cf3ff638ab2e52578ab93667e2e957ad9fc4cc9a15407fe4e6eca72a\",\r\n  \"scope\": \"AVX2 exact normalization/minimum fusion and hoisted query magnitude; original scalar/VNNI dot products retained.\"\r\n}\r\n"
+      "raw_report": "{\n  \"base\": \"ba96b7b048d3c1ae8a910a0cf6f5e0e46bd87396\",\n  \"header_sha256\": \"28f1121ad45f197a0d40a5046c078102246028d6a05192f20e1eab73867c18ee\",\n  \"vnni_dot_kernel_byte_identical_to_base\": true,\n  \"vnni_block_sha256\": \"047872f1cf3ff638ab2e52578ab93667e2e957ad9fc4cc9a15407fe4e6eca72a\",\n  \"scope\": \"AVX2 exact normalization/minimum fusion and hoisted query magnitude; original scalar/VNNI dot products retained.\"\n}\n"
     }
   ],
   "candidate_evidence_chains": [
