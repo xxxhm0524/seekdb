@@ -22,11 +22,11 @@ def main():
     assert material == (ROOT/"conversation.json").read_bytes()
     assert 0 < len(material) <= 128*1024
     assert not material.startswith(b"\xef\xbb\xbf")
-    data = strict(material.decode("utf-8"))
-    assert isinstance(data, dict)
-    assert data["synthetic"] is False
-    assert len([x for x in data["conversations"] if x["role"] == "user"]) >= 2
-    assert data["experiments"]
+    material_document = strict(material.decode("utf-8"))
+    assert isinstance(material_document, dict)
+    assert material_document["synthetic"] is False
+    assert len([x for x in material_document["conversations"] if x["role"] == "user"]) >= 2
+    assert material_document["experiments"]
     dependencies = strict((ROOT/"third_party/DEPENDENCIES.json").read_text(encoding="utf-8"))
     for name in ["json.hpp", "json.LICENSE.MIT"]:
         assert hashlib.sha256((ROOT/"third_party"/name).read_bytes()).hexdigest() == dependencies["nlohmann/json"][name+".sha256"]
@@ -57,8 +57,8 @@ def main():
         assert hashlib.sha256((evidence/"runtime-source-sha256.json").read_bytes()).hexdigest() == "9217c7c79867452cc0383206fce3a32fae3d6de1e72fab5d14ca92443fbd4e26"
         assert current["base"] == "e86045306f5940613bfcf4aa84b0ee4bf74c20f1"
         assert current["formal_submitted"] is False and current["target_E"] == 4500
-        assert data["current_context"]["production_core"] == current["production_core"]
-        for experiment in data["experiments"]:
+        assert material_document["current_context"]["production_core"] == current["production_core"]
+        for experiment in material_document["experiments"]:
             path = (ROOT/experiment["source_file"]).resolve()
             path.relative_to(ROOT.resolve())
             raw = path.read_bytes()
@@ -66,7 +66,7 @@ def main():
             assert raw.decode("utf-8") == experiment["raw_report"], experiment["id"]
         history = strict((ROOT/"evidence/e860-history-20261116/approved-owner-history.json").read_text(encoding="utf-8"))["messages"]
         latest = strict((ROOT/"evidence/e860-history-20261116/latest-owner-history.json").read_text(encoding="utf-8"))["messages"]
-        assert [m["content"] for m in data["conversations"]] == [m["content"] for m in history+latest], "actual source messages were rewritten"
+        assert [m["content"] for m in material_document["conversations"]] == [m["content"] for m in history+latest], "actual source messages were rewritten"
         assert set(current["sha256_lf"]) == set(hashes)
         for name, expected in current["sha256_lf"].items():
             assert hashlib.sha256((ROOT/name).read_bytes().replace(b"\r\n", b"\n")).hexdigest() == expected, name
