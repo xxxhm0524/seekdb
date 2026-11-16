@@ -80,6 +80,16 @@ def main():
             raw = path.read_bytes()
             assert hashlib.sha256(raw).hexdigest() == experiment["source_sha256"], experiment["id"]
             assert raw.decode("utf-8") == experiment["raw_report"], experiment["id"]
+            report = strict(raw.decode("utf-8"))
+            if "derived_from" in report:
+                original = (path.parent/report["derived_from"]).resolve()
+                original.relative_to(ROOT.resolve())
+                original_bytes = original.read_bytes()
+                assert hashlib.sha256(original_bytes).hexdigest() == report["derived_from_sha256"]
+                original_report = strict(original_bytes.decode("utf-8"))
+                for key, value in report.items():
+                    if key not in ("derived_from", "derived_from_sha256", "selection"):
+                        assert original_report[key] == value, experiment["id"] + ":" + key
         if not technical_guidance:
             history = strict((ROOT/"evidence/e860-history-20261116/approved-owner-history.json").read_text(encoding="utf-8"))["messages"]
             latest = strict((ROOT/"evidence/e860-history-20261116/latest-owner-history.json").read_text(encoding="utf-8"))["messages"]

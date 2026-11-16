@@ -1,99 +1,75 @@
 {
   "passed": true,
   "versions": {
-    "baseline": "c36fafed171d63f7669631c281136a83e1826971143e796b28be9c035e9d4a9c",
-    "candidate": "8795394a7c75c49d669226ecd53aa16602f10946b7640289a915a9ae83760e35",
-    "reference": "82cb02da0791fc751504827ffdf41c3881ad0330ec094be958ae5c3e48efcdc7"
+    "baseline": "8795394a7c75c49d669226ecd53aa16602f10946b7640289a915a9ae83760e35",
+    "candidate": "1df55ac6910cf56cbf6c99f33ec9a07c49c6588fb00c042947a705a19fd7a418"
   },
   "fixture_sha256": "074f46cd83d2b7b38c59cb627ad4ae1337a918d36b92889e48d54ee4efa4c139",
   "rounds": 3,
   "queries": 200,
   "ordered_keys": true,
-  "verified_queries": 7200,
+  "verified_queries": 4800,
   "summary": {
     "bigint-idx0": {
       "baseline": {
-        "write_ms": 464.439016,
-        "prepare_ms": 96.998665,
-        "query_ms": 27.337499,
-        "sampled_cgroup_max_bytes": 13287424
+        "write_ms": 471.243588,
+        "prepare_ms": 52.429069,
+        "query_ms": 27.452989,
+        "sampled_cgroup_max_bytes": 12455936
       },
       "candidate": {
-        "write_ms": 467.937378,
-        "prepare_ms": 52.694128,
-        "query_ms": 27.39321,
+        "write_ms": 474.59415,
+        "prepare_ms": 52.460639,
+        "query_ms": 27.09068,
         "sampled_cgroup_max_bytes": 12464128
-      },
-      "reference": {
-        "write_ms": 481.787183,
-        "prepare_ms": 8.958453,
-        "query_ms": 27.932481,
-        "sampled_cgroup_max_bytes": 11608064
       }
     },
     "bigint-idx1": {
       "baseline": {
-        "write_ms": 469.151838,
-        "prepare_ms": 98.758415,
-        "query_ms": 27.225159,
-        "sampled_cgroup_max_bytes": 13271040
+        "write_ms": 471.897899,
+        "prepare_ms": 54.282729,
+        "query_ms": 27.40029,
+        "sampled_cgroup_max_bytes": 12443648
       },
       "candidate": {
-        "write_ms": 467.530107,
-        "prepare_ms": 54.30338,
-        "query_ms": 27.466939,
-        "sampled_cgroup_max_bytes": 12435456
-      },
-      "reference": {
-        "write_ms": 483.431453,
-        "prepare_ms": 10.633014,
-        "query_ms": 27.782449,
-        "sampled_cgroup_max_bytes": 11866112
+        "write_ms": 473.057969,
+        "prepare_ms": 54.337049,
+        "query_ms": 26.87994,
+        "sampled_cgroup_max_bytes": 12439552
       }
     },
     "text-idx0": {
       "baseline": {
-        "write_ms": 465.669146,
-        "prepare_ms": 98.065085,
-        "query_ms": 27.4011,
-        "sampled_cgroup_max_bytes": 13549568
+        "write_ms": 476.69462,
+        "prepare_ms": 53.849129,
+        "query_ms": 27.332771,
+        "sampled_cgroup_max_bytes": 12337152
       },
       "candidate": {
-        "write_ms": 467.605397,
-        "prepare_ms": 53.809139,
-        "query_ms": 27.2985,
-        "sampled_cgroup_max_bytes": 12333056
-      },
-      "reference": {
-        "write_ms": 481.883123,
-        "prepare_ms": 9.124813,
-        "query_ms": 27.95325,
-        "sampled_cgroup_max_bytes": 11608064
+        "write_ms": 476.33154,
+        "prepare_ms": 53.74136,
+        "query_ms": 27.08246,
+        "sampled_cgroup_max_bytes": 12337152
       }
     },
     "text-idx1": {
       "baseline": {
-        "write_ms": 469.039318,
-        "prepare_ms": 99.886196,
-        "query_ms": 27.247778,
-        "sampled_cgroup_max_bytes": 13529088
-      },
-      "candidate": {
-        "write_ms": 467.820418,
-        "prepare_ms": 55.61232,
-        "query_ms": 27.33271,
+        "write_ms": 473.004799,
+        "prepare_ms": 55.74302,
+        "query_ms": 27.24286,
         "sampled_cgroup_max_bytes": 12312576
       },
-      "reference": {
-        "write_ms": 479.535861,
-        "prepare_ms": 10.671373,
-        "query_ms": 28.07156,
-        "sampled_cgroup_max_bytes": 11866112
+      "candidate": {
+        "write_ms": 473.671399,
+        "prepare_ms": 55.73992,
+        "query_ms": 27.12684,
+        "sampled_cgroup_max_bytes": 12312576
       }
     }
   },
-  "identical_file_bytes_required": false,
+  "identical_file_bytes_required": true,
   "scope": "Fresh per-sample cgroups with 2 CPU/2 GiB/no swap. Native constrained default entrypoint. Sampled memory.current includes page cache but is a lower bound on the true peak. Raw device IO is retained without asserting the platform device attribution. No formal E is inferred.",
-  "raw_report_sha256": "966872b63fc2eb4cc31f55413d9e750348cab035803d010dee2957b6d8db02c4",
-  "selection": "All paired rounds retained in summary; raw records in verified native evidence archive."
+  "derived_from": "native-records/resources.json",
+  "derived_from_sha256": "5192edbae2c87c5411e82fc83ded35afc275b49dd1f1003d07829ec1c16651bf",
+  "selection": "保留全部配对轮次的加速比、汇总指标、正确性结论和版本；逐请求记录保存在原报告中。"
 }

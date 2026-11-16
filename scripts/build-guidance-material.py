@@ -18,16 +18,21 @@ public_view=dict(derived_from='public.json',derived_from_sha256=hashlib.sha256(p
 definitions=[
  ('public','public-for-material.json','current','官方 f4d 原驱动及断言；默认原生入口和受限运行环境。'),
  ('regression','regression.json','current','26 组原生断言；动态构建保证故障注入实际生效。'),
- ('baseline-parity','baseline-parity.json','current','与固定 e860 的严格差分，明确记录源码和二进制身份。'),
+ ('baseline-parity','baseline-parity.json','current','与报告中锁定版本的严格差分，明确记录源码和二进制身份。'),
  ('reclaim-recovery','reclaim-lifecycle.json','current','实际系统调用前后强杀、错误注入、两恢复根有效字节比较及旧程序读取。'),
  ('sanitizer','sanitizer.json','current','地址、未定义行为及泄漏检测；实际覆盖范围见结果。'),
  ('capacity','capacity.json','current','实际持久化用户数据超过 2 GiB，在 2 GiB、无 swap 预算内验证。'),
  ('scalar-cache','scalar-cache.json','current','独立逻辑数据对照：3 种列布局、2 种映射方式、重复/唯一/长文本，核对值、比较、范围与检索。'),
  ('rounding','rounding.json','current','非负有限 binary64 后继值与 nextafter 数值逐位一致，查询误差与下界逐位相同；不声称异常标记一致。'),
- ('current-resources','resources.json','current','当前原生三方对照：包含内存与准备时间收益，也保留写入取舍；不是正式 E。'),
- ('current-queries-id','queries-id.json','current','当前候选与锁定 3d6 基线六轮查询配对，保留全部轮次。'),
- ('current-queries-projection','queries-projection.json','current','当前候选的普通投影查询配对，弱收益和慢样本均保留。'),
- ('current-writes','writes.json','current','实际六轮配对写入及文件字节、重启检查，记录约 1%—2% 回退，不以此宣称全面更快。'),
+ ('current-resources','resources.json','current','与 6d8c16 对照的新堆调整资源测量；不是正式 E。'),
+ ('current-queries-id','queries-id.json','current','与 6d8c16 对照的新堆调整六轮查询配对，保留全部轮次和独立真值检查。'),
+ ('current-queries-projection','queries-projection.json','current','与 6d8c16 对照的普通投影查询配对，不拼接不同轮次的最优值。'),
+ ('current-writes','writes.json','current','与 6d8c16 对照的实际逐批持久化写入及文件字节、重启检查，按实测保留全部取舍。'),
+ ('current-certificate','certificate.json','current','候选堆调整后的完整数值证书与独立精确结果核对。'),
+ ('gcc13-6d-resources','gcc13-6d8c16/resources-for-material.json','6d8c16ca3a8bd8e3bef7442c6cf268756eb83a44','前一候选的 GCC 13 独立 CI 资源测量：内存及准备阶段受益，不换算正式 E。'),
+ ('gcc13-6d-id','gcc13-6d8c16/queries-id-for-material.json','6d8c16ca3a8bd8e3bef7442c6cf268756eb83a44','前一候选的 GCC 13 查询取舍：部分场景回退，完整保留。'),
+ ('gcc13-6d-projection','gcc13-6d8c16/queries-projection-for-material.json','6d8c16ca3a8bd8e3bef7442c6cf268756eb83a44','前一候选的 GCC 13 投影查询配对，属于该版本的结果。'),
+ ('gcc13-6d-writes','gcc13-6d8c16/writes-for-material.json','6d8c16ca3a8bd8e3bef7442c6cf268756eb83a44','前一候选的 GCC 13 写入约 2% 回退；不因内存改善而省略负收益。'),
  ('ordered-resources','final-ordered-resources.json','ca5228e04ad1f570157ea288b109ef7e3c81e9db','此前顺序插入的三轮实测，作为本轮性能基线。'),
  ('avx2-id','final-avx2-id.json','ca5228e04ad1f570157ea288b109ef7e3c81e9db','六轮完整编号/距离查询结果核对。'),
  ('avx2-projection','final-avx2-body.json','ca5228e04ad1f570157ea288b109ef7e3c81e9db','六轮包含未缓存普通投影的查询结果核对。'),
@@ -35,7 +40,7 @@ definitions=[
  ('rejected-lto-query','lto-queries.json','ba96b7b048d3c1ae8a910a0cf6f5e0e46bd87396','链接优化查询负收益，保留所有配对轮次，未采用。'),
  ('rejected-lto-write','lto-writes.json','ba96b7b048d3c1ae8a910a0cf6f5e0e46bd87396','链接优化写入负收益，正确性通过不代表性能更快。')]
 for ident,name,version,note in definitions:
-    path=(V/name) if version=='current' else (P/name)
+    path=V/name
     if not path.exists():path=P/name
     raw=path.read_bytes();report=json.loads(raw)
     assert report['passed'] is True

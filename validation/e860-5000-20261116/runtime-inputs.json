@@ -1,6 +1,6 @@
 {
   "base": "e86045306f5940613bfcf4aa84b0ee4bf74c20f1",
-  "production_core": "6d8c16ca3a8bd8e3bef7442c6cf268756eb83a44",
+  "production_core": "ffbd30b778642317b7b550fd2efea8e010e42157",
   "formal_submitted": false,
   "target_E": 5000,
   "sha256_lf": {
@@ -23,7 +23,7 @@
     "src/sql.hpp": "1dd7a158b46c5afb8b254a052a721bbe6671f8d11864ff95ff6cdc56b8bb9089",
     "src/storage.cpp": "0832294701400c2977296e7925ff87ef8bd0f429afdb596b13f01262249f09b7",
     "src/storage.hpp": "72304134dd212a064dd860f6a1348e96046ae797e3d47eff975ea9a40cfaeda5",
-    "src/vector_index.cpp": "9f7b32dfc746162da1f6d5e6b265f60339a07043789c5aca0d24611388c7daf5",
+    "src/vector_index.cpp": "b318321fd43b7e4869f38d26fc9d3cbfd72794c3a70e794cd4b0fdf165f50203",
     "src/vector_index.hpp": "10235efc93c63e462c513a39bc0d324c596c0d69b58515b8627400a589d5992b",
     "src/vector_literal.cpp": "f2ee612c5a701c7c6ac5372de394aae3d21da463d1c9b107580ce5605d9801c4",
     "src/vector_literal.hpp": "ed7166c2b40fae917d2d5879228ea1b575e5ded55ea98d26449c6a0e37e3937f",
@@ -31,21 +31,23 @@
     "Dockerfile": "1f20987cdf45add1804b14cc032628a36f1617ef86d23a864e68e0ca5f9a42c4",
     "third_party/DEPENDENCIES.json": "397bb6d1da34f5fdca46ddb7448258629ee4509f7fba06c90e510424ae7c4a0d"
   },
-  "source_match_sha256": "cc8797a384b999118a663781f519bdafa2da172af3b49f6115199471af3878eb",
+  "source_match_sha256": "90fe854b8e5dc61fd9aa4185a5eabbe851abedb1d43e536de642043b5477004a",
   "evidence_reports": {
-    "public.json": "b8bd926375623915b411fc729a60f15335c3cd4b14b518aa8f56224e648a4992",
-    "regression.json": "095f4f06707dfb945249b4ec5f4f955b903c26242e6a87e6834bb0304d263b81",
-    "baseline-parity.json": "7996c2348c027455cc6bc0f7476ef720a480c852035e07d86c2a953b081b7db4",
-    "reclaim-lifecycle.json": "52cf916de8c83432ff625873cc0c4dc8a5c43b8b0a7c24b63b4f05e64ef7b115",
-    "capacity.json": "cd39d25795f424c8b08c59b88cd247034e9809a079d48c632053e80fa218d20c",
-    "sanitizer.json": "0e684f238dfe14c816cad1d43932d5e5d9900d21a7621e2bc7e8d3acffa6c022",
+    "public.json": "b76f624c2b519855b4ff229ae46081e82455ab0e52d8cf3eb34cb8d691d0e2a1",
+    "regression.json": "8b5ec6f1e6e1cc8019d7aebcc526fce07e0853e6099a7271854657a6879970e0",
+    "baseline-parity.json": "6847ccba1547ee325125b77f42dce648c54eb4ecb944723060171f1e2b2c0ae4",
+    "reclaim-lifecycle.json": "1a876e84eb4d69cdd863fd00744fd1de2830e7e8cb7b127956a81ed7b1a1e4b1",
+    "capacity.json": "b07f1b0fe99a2eada567334b07b24fc2bcff9af64b5c44ed90eb7a26de2fb836",
+    "sanitizer.json": "96c4ffa6929beb9e52b7299b0bc693c405c005d42b0921dc27f81f65a1d35df3",
     "scalar-cache.json": "bfeb7ac31e1101779d59c61b87656596d638402f796cc129f7b3528535a2d69b",
-    "rounding.json": "d3df2778aab436be6e4f1d12e337f2b2e587b947d2fc86f036cf53273c574c0d"
+    "certificate.json": "a03206b6e8d1a1162020030b3171d667dea23294051dd174fc0c6d3b7453769d",
+    "rounding.json": "1c0426e03f4e9c0efb9822c7084486a7175dde161775d177231ebfcd950bf63a"
   },
-  "source_archive_sha256": "83a33cc3f11589a56c5732d692cddec298b7f3267342efa1bdd0f8840b5b1795",
+  "source_archive_sha256": "956b7fe4a3a45ecb1efc305a5bec84a0f27b88f6ef08348a7ced891afaf622c0",
   "compiler": "A6000 GCC 11.4; final native CI recompiles with runner toolchain",
-  "metadata_correction": "Current baseline parity passes an explicit e860 source identity. The earlier hardcoded-reference metadata issue is preserved only in historical raw reports.",
+  "metadata_correction": "The current parity report explicitly identifies 6d8c16 as its compared production core; the binary hashes are always included.",
   "scope": "Actual native evidence for matching production source bytes. No Docker cold pull/build or formal score claimed. Earlier 54-report evidence remains bound to its historical core.",
   "optimization_baseline": "3d6fcd00182cacb6fe1a70b72a9c5759850e9f24",
-  "material_kind": "technical-guidance-and-validation-v1"
+  "material_kind": "technical-guidance-and-validation-v1",
+  "native_evidence_archive_sha256": "56600169dc666f9d9805f6ef5fdb6d3cd2c86fb61d6a1d3d2e4537981f3c069b"
 }

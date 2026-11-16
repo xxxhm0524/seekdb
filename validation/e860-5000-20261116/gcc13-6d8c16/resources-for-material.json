@@ -1,0 +1,75 @@
+{
+  "passed": true,
+  "versions": {
+    "baseline": "2bcb8af7652224af7068557e3a5a7770ae8887e2af1bf152437bbe68e204f890",
+    "candidate": "930e35fddc248b31a7cb2b37341d128760100d5452efa3bbe4e0650d086686d3"
+  },
+  "fixture_sha256": "074f46cd83d2b7b38c59cb627ad4ae1337a918d36b92889e48d54ee4efa4c139",
+  "rounds": 3,
+  "queries": 200,
+  "ordered_keys": true,
+  "verified_queries": 4800,
+  "summary": {
+    "bigint-idx0": {
+      "baseline": {
+        "write_ms": 125.281717,
+        "prepare_ms": 66.356047,
+        "query_ms": 17.922781,
+        "sampled_cgroup_max_bytes": 13139968
+      },
+      "candidate": {
+        "write_ms": 125.489731,
+        "prepare_ms": 35.859875,
+        "query_ms": 16.989934,
+        "sampled_cgroup_max_bytes": 12308480
+      }
+    },
+    "bigint-idx1": {
+      "baseline": {
+        "write_ms": 124.388039,
+        "prepare_ms": 66.944237,
+        "query_ms": 18.387435,
+        "sampled_cgroup_max_bytes": 13127680
+      },
+      "candidate": {
+        "write_ms": 127.410165,
+        "prepare_ms": 37.089993,
+        "query_ms": 17.118332,
+        "sampled_cgroup_max_bytes": 12304384
+      }
+    },
+    "text-idx0": {
+      "baseline": {
+        "write_ms": 123.360572,
+        "prepare_ms": 65.483059,
+        "query_ms": 17.987019,
+        "sampled_cgroup_max_bytes": 13402112
+      },
+      "candidate": {
+        "write_ms": 125.905992,
+        "prepare_ms": 36.185662,
+        "query_ms": 17.479663,
+        "sampled_cgroup_max_bytes": 12308480
+      }
+    },
+    "text-idx1": {
+      "baseline": {
+        "write_ms": 125.394192,
+        "prepare_ms": 67.237049,
+        "query_ms": 18.039147,
+        "sampled_cgroup_max_bytes": 13389824
+      },
+      "candidate": {
+        "write_ms": 127.376586,
+        "prepare_ms": 38.172937,
+        "query_ms": 17.377854,
+        "sampled_cgroup_max_bytes": 12296192
+      }
+    }
+  },
+  "identical_file_bytes_required": true,
+  "scope": "Fresh per-sample cgroups with 2 CPU/2 GiB/no swap. Native constrained default entrypoint. Sampled memory.current includes page cache but is a lower bound on the true peak. Raw device IO is retained without asserting the platform device attribution. No formal E is inferred.",
+  "derived_from": "resources.json",
+  "derived_from_sha256": "6021ceebd3bd02caf915c1d2b2d7689819e2109c24e3c72b3e2964064e48f351",
+  "selection": "保留全部配对轮次的加速比、汇总指标、正确性结论和版本；逐请求记录保存在原报告中。"
+}

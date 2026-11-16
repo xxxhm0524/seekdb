@@ -7,24 +7,24 @@
   "driver_cpu": 3,
   "server_cpu": 2,
   "versions": {
-    "baseline": "c36fafed171d63f7669631c281136a83e1826971143e796b28be9c035e9d4a9c",
-    "candidate": "8795394a7c75c49d669226ecd53aa16602f10946b7640289a915a9ae83760e35"
+    "baseline": "8795394a7c75c49d669226ecd53aa16602f10946b7640289a915a9ae83760e35",
+    "candidate": "1df55ac6910cf56cbf6c99f33ec9a07c49c6588fb00c042947a705a19fd7a418"
   },
   "fixture_sha256": "986b182f46b5be05a95315b6b4057dfb8672e4c7f7a2102c92c515bcce6e2a86",
   "summary": {
     "bigint-idx0": {
       "paired_speedups": [
-        1.007883866356569,
-        1.012488152290897,
-        1.0065239236196881,
-        1.003907562607051,
-        1.0050348114342205,
-        0.9959458130587051
+        1.0355941128565613,
+        1.022355738160801,
+        1.0228339046927055,
+        1.0231405585091526,
+        1.0245818749150077,
+        1.020254962517649
       ],
-      "median_paired_speedup": 1.0057793675269542,
+      "median_paired_speedup": 1.0229872316009292,
       "median_ms": {
-        "baseline": 136.01268800000003,
-        "candidate": 134.7409975
+        "baseline": 193.540634,
+        "candidate": 189.415954
       },
       "median_read_calls": {
         "baseline": 1000.0,
@@ -33,17 +33,17 @@
     },
     "bigint-idx1": {
       "paired_speedups": [
-        1.0071782991328253,
-        0.9973618930694942,
-        1.0072940445456153,
-        0.999592012416582,
-        1.003707767611963,
-        0.9992924702795262
+        1.0105095600521559,
+        1.0165391244797226,
+        1.019526704202671,
+        1.012055890756898,
+        1.0148758342126127,
+        1.0172907144171888
       ],
-      "median_paired_speedup": 1.0016498900142725,
+      "median_paired_speedup": 1.0157074793461676,
       "median_ms": {
-        "baseline": 135.78636849999998,
-        "candidate": 135.709743
+        "baseline": 134.7161565,
+        "candidate": 132.36361699999998
       },
       "median_read_calls": {
         "baseline": 1000.0,
@@ -52,17 +52,17 @@
     },
     "text-idx0": {
       "paired_speedups": [
-        1.0142689913122567,
-        1.008928997800585,
-        1.0043249416361493,
-        1.0071951535963448,
-        1.0101800255895605,
-        1.0062959703366394
+        1.0229400476418447,
+        1.021603859900121,
+        1.0103909338270847,
+        1.0170433827869172,
+        1.0161284272944797,
+        1.0145617211592357
       ],
-      "median_paired_speedup": 1.008062075698465,
+      "median_paired_speedup": 1.0165859050406985,
       "median_ms": {
-        "baseline": 136.64083950000003,
-        "candidate": 135.5183745
+        "baseline": 134.535933,
+        "candidate": 132.357127
       },
       "median_read_calls": {
         "baseline": 1000.0,
@@ -71,17 +71,17 @@
     },
     "text-idx1": {
       "paired_speedups": [
-        1.0129164559926285,
-        1.0118863899699422,
-        1.0101834380397967,
-        1.0042212678507836,
-        1.0142253934111207,
-        1.0079593421148505
+        1.0198639094008297,
+        1.0159026460399707,
+        1.0129583609475057,
+        1.016684359429571,
+        1.016818765554788,
+        1.0082553522802158
       ],
-      "median_paired_speedup": 1.0110349140048696,
+      "median_paired_speedup": 1.0162935027347708,
       "median_ms": {
-        "baseline": 136.685477,
-        "candidate": 135.384153
+        "baseline": 134.66900099999998,
+        "candidate": 132.450244
       },
       "median_read_calls": {
         "baseline": 1000.0,
@@ -91,6 +91,7 @@
   },
   "verified_queries": 48000,
   "scope": "Real JSONL request times, blocks of 50 alternate versions on the same fixed server CPU (not reserved); driver on a distinct CPU. No official score is inferred.",
-  "raw_report_sha256": "4327507d15632fb15029f0a4e915577b664afe3ca99baea6fa3e5083eeb41867",
-  "selection": "All paired rounds retained in summary; raw records in verified native evidence archive."
+  "derived_from": "native-records/queries-id.json",
+  "derived_from_sha256": "8e39b9d580c589e689623c17535f8cb9f53acfba974715abf49faf260d5d0bd0",
+  "selection": "保留全部配对轮次的加速比、汇总指标、正确性结论和版本；逐请求记录保存在原报告中。"
 }

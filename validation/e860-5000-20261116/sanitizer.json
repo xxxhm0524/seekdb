@@ -1,44 +1,16 @@
 {
   "passed": true,
-  "results": [
-    {
-      "name": "invariants",
-      "returncode": 0
-    },
-    {
-      "name": "column_layouts",
-      "returncode": 0
-    },
-    {
-      "name": "cache_column_sets",
-      "returncode": 0
-    },
-    {
-      "name": "cache_ranges",
-      "returncode": 0
-    },
-    {
-      "name": "sql_literals",
-      "returncode": 0
-    },
-    {
-      "name": "protocol_complete_input",
-      "returncode": 0
-    },
-    {
-      "name": "protocol_ids",
-      "returncode": 0
-    },
-    {
-      "name": "protocol_nested_ids",
-      "returncode": 0
-    },
-    {
-      "name": "scalar_snapshot_probe",
-      "returncode": 0
-    }
+  "cases": [
+    "invariants",
+    "column_layouts",
+    "cache_column_sets",
+    "cache_ranges",
+    "sql_literals",
+    "protocol_complete_input",
+    "protocol_ids",
+    "protocol_nested_ids"
   ],
-  "binary_sha256": "ec4198eebc0a431d77ef5685658a4590b1279c5695655f15f7b1e1e068d5da64",
+  "binary_sha256": "8e10170235ff2799d5de5bd54eb3a22fda43c00a0af3f09486b8da0447010cf8",
   "ASAN_OPTIONS": "detect_leaks=1:abort_on_error=1",
   "UBSAN_OPTIONS": "halt_on_error=1:print_stacktrace=1"
 }
