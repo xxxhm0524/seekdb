@@ -6,7 +6,8 @@ from verify import extract
 REPO = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
 VERSIONS = {'old': '999f3a9dac509d63aed62aea2f0a5027cbf93f67',
-            'current': '6a69bf19d1a33c641be6a567fed90bf729ef5873'}
+            'current': '6a69bf19d1a33c641be6a567fed90bf729ef5873',
+            'candidate': '6a69bf19d1a33c641be6a567fed90bf729ef5873'}
 
 def main():
     assert sys.platform.startswith('linux') and os.geteuid() == 0
@@ -33,7 +34,7 @@ def main():
     try:
         for name in ('native_test_support.py','native_launcher_hardened.py'):
             shutil.copyfile(HERE/name,w/name)
-        for name in ('native_ab_e860.py','native_query_pairs.py','query_focus.py','benchmark-oracle.cpp'):
+        for name in ('native_ab_e860.py','native_query_pairs.py','native_write_pairs.py','query_focus.py','benchmark-oracle.cpp'):
             shutil.copyfile(REPO/'bench/e5000'/name,w/name)
         (w/'official-kit').mkdir()
         for name in ('protocol_check','mysqltest'):
@@ -53,28 +54,44 @@ def main():
             raw = subprocess.check_output(['git','-c','core.autocrlf=false','archive',commit,'src','third_party','Makefile'],cwd=REPO)
             source = w/(name+'-source')
             extract(raw,source)
+            if name == 'candidate':
+                prototype = REPO/'bench/prototypes/single_pass_vector_literal.cpp'
+                shutil.copyfile(prototype, source/'src/vector_literal.cpp')
+                report['prototype_sha256'] = hashlib.sha256(prototype.read_bytes()).hexdigest()
             run('build-'+name,['make','-B','CXX=g++','LDFLAGS=-static'],source)
             shutil.copyfile(source/'minivectordb',w/'build'/name)
             (w/'build'/name).chmod(0o755)
             shutil.copyfile(REPO/'bench/e5000/parse_cost_probe.cpp',source/'parse_cost_probe.cpp')
             run('parse-build-'+name,['g++','-Isrc','-Ithird_party','-std=c++20','-O3','-DNDEBUG','-ffp-contract=off','parse_cost_probe.cpp','src/model.cpp','src/vector_literal.cpp','-static','-o',str(w/'build'/('parse-'+name))],source)
+            if name == 'candidate':
+                (source/'tests/fixtures').mkdir(parents=True)
+                shutil.copyfile(REPO/'bench/prototypes/single_pass_decimal_probe.cpp',source/'tests/decimal_conversion_probe.cpp')
+                shutil.copyfile(REPO/'tests/fixtures/legacy_vector_literal.cpp',source/'tests/fixtures/legacy_vector_literal.cpp')
+                run('candidate-conformance-build',['g++','-Isrc','-Ithird_party','-std=c++20','-O3','-DNDEBUG','-ffp-contract=off','tests/decimal_conversion_probe.cpp','tests/fixtures/legacy_vector_literal.cpp','src/model.cpp','src/vector_literal.cpp','-o',str(w/'build/candidate-conformance')],source)
         run('oracle-build',['g++','-O2','-ffp-contract=off','benchmark-oracle.cpp','-o','build/benchmark-oracle'])
         cpus = sorted(os.sched_getaffinity(0))
         assert len(cpus)>=2
         driver,server=cpus[:2]
         cpu_args=['--driver-cpu',str(driver),'--server-cpu',str(server)]
+        run('candidate-conformance',[str(w/'build/candidate-conformance')])
         for name,baseline,candidate,extra in [('aa','current','current',[]),('repro','old','current',[]),
                                              ('reverse','current','old',[]),('whole','old','current',['--whole']),
                                              ('projection','old','current',['--with-body','--kind','text','--indexed','yes'])]:
             run(name,[sys.executable,'query_focus.py','--output',str(out/name),'--baseline','build/'+baseline,
                       '--candidate','build/'+candidate,'--rounds','12','--queries','1000','--gate']+cpu_args+extra,allowed=(0,2))
+        for shape,extra in [('id',[]),('projection',['--with-body'])]:
+            run('candidate-'+shape,[sys.executable,'native_query_pairs.py','--output',str(out/('candidate-'+shape)),
+                '--baseline','build/current','--candidate','build/candidate','--rounds','6']+cpu_args+extra)
+        run('candidate-writes',[sys.executable,'native_write_pairs.py','--output',str(out/'candidate-writes'),
+            '--baseline','build/current','--candidate','build/candidate','--rounds','6']+cpu_args)
         for name in VERSIONS:
             run('parse-'+name,['taskset','-c',str(server),str(w/'build'/('parse-'+name))])
         old=[json.loads(x) for x in (out/'parse-old.log').read_text().splitlines()]
-        current=[json.loads(x) for x in (out/'parse-current.log').read_text().splitlines()]
-        assert [x['checksum'] for x in old]==[x['checksum'] for x in current]
+        for name in ('current','candidate'):
+            current=[json.loads(x) for x in (out/('parse-'+name+'.log')).read_text().splitlines()]
+            assert [x['checksum'] for x in old]==[x['checksum'] for x in current]
         report.update(passed=True,driver_cpu=driver,server_cpu=server,
-                      binaries={name:hashlib.sha256((w/'build'/name).read_bytes()).hexdigest() for name in ('old','current','parse-old','parse-current')},
+                      binaries={name:hashlib.sha256((w/'build'/name).read_bytes()).hexdigest() for name in ('old','current','candidate','parse-old','parse-current','parse-candidate')},
                       results={name:json.loads((out/name/'performance-gate.json').read_text()) for name in ('aa','repro','reverse','whole','projection')})
     finally:
         (out/'ci.json').write_text(json.dumps(report,indent=2)+'\n')
@@ -85,7 +102,7 @@ def main():
                 shutil.copyfile(source,target)
         (w/'artifact/binaries').mkdir()
         for source in (w/'build').iterdir():
-            if source.name in ('old','current','parse-old','parse-current'):
+            if source.name in ('old','current','candidate','parse-old','parse-current','parse-candidate'):
                 shutil.copyfile(source,w/'artifact/binaries'/source.name)
         print(json.dumps(dict(passed=report['passed'],artifact=str(w/'artifact'))),flush=True)
 

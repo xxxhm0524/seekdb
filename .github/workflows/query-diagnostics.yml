@@ -8,6 +8,8 @@ name: Query regression diagnostic controls
       - 'tools/native/query_diagnostics.py'
       - 'bench/e5000/query_focus.py'
       - 'bench/e5000/parse_cost_probe.cpp'
+      - 'bench/prototypes/single_pass_vector_literal.cpp'
+      - 'bench/prototypes/single_pass_decimal_probe.cpp'
 permissions:
   contents: read
 jobs:
