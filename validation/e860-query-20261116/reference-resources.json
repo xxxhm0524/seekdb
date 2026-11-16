@@ -1,0 +1,100 @@
+{
+  "passed": true,
+  "versions": {
+    "reference": "45fa03f8119dabeaa2dee5aafc4393a094646d3e7ab0ee1cda570ac94610ea9d",
+    "current": "6bcb0473446e604221fb5b7c40e94e0cdd9eabee1bb7bc81e955bc54955f23d6",
+    "candidate": "8df349c24fa1513530137bde56c8c0a0b2e08e26870b22234ce012ccb6698718"
+  },
+  "fixture_sha256": "074f46cd83d2b7b38c59cb627ad4ae1337a918d36b92889e48d54ee4efa4c139",
+  "rounds": 3,
+  "queries": 200,
+  "ordered_keys": true,
+  "verified_queries": 7200,
+  "summary": {
+    "bigint-idx0": {
+      "reference": {
+        "write_ms": 218.183218,
+        "prepare_ms": 8.852344,
+        "query_ms": 22.987518,
+        "sampled_cgroup_max_bytes": 11612160
+      },
+      "current": {
+        "write_ms": 250.69244,
+        "prepare_ms": 50.936038,
+        "query_ms": 21.795877,
+        "sampled_cgroup_max_bytes": 12443648
+      },
+      "candidate": {
+        "write_ms": 245.857188,
+        "prepare_ms": 50.905838,
+        "query_ms": 21.806338,
+        "sampled_cgroup_max_bytes": 12464128
+      }
+    },
+    "bigint-idx1": {
+      "reference": {
+        "write_ms": 213.945036,
+        "prepare_ms": 10.550694,
+        "query_ms": 22.992229,
+        "sampled_cgroup_max_bytes": 11874304
+      },
+      "current": {
+        "write_ms": 252.647751,
+        "prepare_ms": 52.979989,
+        "query_ms": 21.937098,
+        "sampled_cgroup_max_bytes": 12390400
+      },
+      "candidate": {
+        "write_ms": 247.731888,
+        "prepare_ms": 52.916538,
+        "query_ms": 21.814238,
+        "sampled_cgroup_max_bytes": 12443648
+      }
+    },
+    "text-idx0": {
+      "reference": {
+        "write_ms": 211.672746,
+        "prepare_ms": 8.889253,
+        "query_ms": 23.260037,
+        "sampled_cgroup_max_bytes": 11608064
+      },
+      "current": {
+        "write_ms": 251.60402,
+        "prepare_ms": 52.595929,
+        "query_ms": 22.047788,
+        "sampled_cgroup_max_bytes": 12333056
+      },
+      "candidate": {
+        "write_ms": 246.867698,
+        "prepare_ms": 52.751748,
+        "query_ms": 22.084758,
+        "sampled_cgroup_max_bytes": 12324864
+      }
+    },
+    "text-idx1": {
+      "reference": {
+        "write_ms": 215.325588,
+        "prepare_ms": 10.662293,
+        "query_ms": 24.314968,
+        "sampled_cgroup_max_bytes": 11870208
+      },
+      "current": {
+        "write_ms": 249.130349,
+        "prepare_ms": 54.716059,
+        "query_ms": 22.359897,
+        "sampled_cgroup_max_bytes": 12308480
+      },
+      "candidate": {
+        "write_ms": 253.93324,
+        "prepare_ms": 54.69944,
+        "query_ms": 21.774018,
+        "sampled_cgroup_max_bytes": 12312576
+      }
+    }
+  },
+  "identical_file_bytes_required": false,
+  "scope": "Fresh per-sample cgroups with 2 CPU/2 GiB/no swap. Native constrained default entrypoint. Sampled memory.current includes page cache but is a lower bound on the true peak. Raw device IO is retained without asserting the platform device attribution. No formal E is inferred.",
+  "derived_from": "native-records/reference-resources.json",
+  "derived_from_sha256": "07d96dd1a005df44b2434d2bc653e8c7cd4bc000cec217a4c8e16e9fd4179e1b",
+  "selection": "保留全部配对轮次加速比、汇总指标、正确性结论和二进制版本；逐请求记录保存在原报告中。"
+}

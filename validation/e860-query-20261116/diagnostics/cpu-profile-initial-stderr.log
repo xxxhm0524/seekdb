@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/tmp/mvd-e860-opt-20261115-nqiedj7i/native_launcher_hardened.py", line 19, in <module>
+    assert program.parent==(workspace/'build').resolve(strict=True)
+AssertionError

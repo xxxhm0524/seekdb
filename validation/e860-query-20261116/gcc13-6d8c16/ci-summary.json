@@ -1,0 +1,245 @@
+{
+  "passed": true,
+  "commit": "4d0a694eb286391890ed95d688e53d1232f34806",
+  "compiler": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+  "stages": 39,
+  "reports": [
+    {
+      "file": "ci.json",
+      "passed": true,
+      "sha256": "665995f2e8e58537735e9fdd02b9e41d666fa496ba34d62a0ff2d82cedbca8fe"
+    },
+    {
+      "file": "baseline-parity\\report.json",
+      "passed": true,
+      "sha256": "6eebcf2f70ae031a050dee583f4a88d925eca24435d82bff9ecae7eeb4d666f3"
+    },
+    {
+      "file": "capacity\\report.json",
+      "passed": true,
+      "sha256": "972918cd06e972428b1465662ac60c2d81f736aff102d52f7c56282228028b9c"
+    },
+    {
+      "file": "default-contract\\report.json",
+      "passed": true,
+      "sha256": "bdaaf60077d86fb51d5a97eb919edf33dec28b65fb7d963ea068150f757ca73f"
+    },
+    {
+      "file": "performance\\report.json",
+      "passed": true,
+      "sha256": "d3581cf395152abc44d991aeb3e6bd3a4059c92b732b5b0822e52ef0179d4d7e"
+    },
+    {
+      "file": "public\\result.json",
+      "passed": true,
+      "sha256": "17dc8b68cd87060a3b3df3537ef5b6907bb7ba9f4f2b90bb4e4536291e573ea6"
+    },
+    {
+      "file": "reclaim-lifecycle\\report.json",
+      "passed": true,
+      "sha256": "821dbffa77c35b869f9b01f5f71b50dfbdb2b780793c2fcd38b51516622e3a07"
+    },
+    {
+      "file": "regression\\report.json",
+      "passed": true,
+      "sha256": "6643b300b1fb054a8fcb5bca38f1f672931a37ec73f0f21d6ff519c4bac1e51f"
+    },
+    {
+      "file": "sanitizer-cache_column_sets\\report.json",
+      "passed": true,
+      "sha256": "7b6b810c2ffb1eaf9faef7dcf3314c700a3886f4f2f511c8f2509e3e3beaff4b"
+    },
+    {
+      "file": "sanitizer-cache_ranges\\report.json",
+      "passed": true,
+      "sha256": "5226387bd54d32dedd64ec6bee9e909bfb346e272bba907c65c6a2bf43d10c10"
+    },
+    {
+      "file": "sanitizer-column_layouts\\report.json",
+      "passed": true,
+      "sha256": "3037fa65ce409178aaafdd7e62f72af2924793770cacf17917de1d6f694960dd"
+    },
+    {
+      "file": "sanitizer-invariants\\report.json",
+      "passed": true,
+      "sha256": "127b0eb076ac786c6736e5f6173ead1f35d0b9321ff7fa6046033c32a04650de"
+    },
+    {
+      "file": "sanitizer-protocol_complete_input\\report.json",
+      "passed": true,
+      "sha256": "fabd5acb9b75cdbfae90f8f976545550f4279510b74d6832ee4cce3954d3b7e1"
+    },
+    {
+      "file": "sanitizer-protocol_ids\\report.json",
+      "passed": true,
+      "sha256": "82ee83eef15513b27fa1712e9639bcd08a96ce209b5dcae6e9bfa13c1e352ff5"
+    },
+    {
+      "file": "sanitizer-protocol_nested_ids\\report.json",
+      "passed": true,
+      "sha256": "e583561635749f58ae0eadb6b8a948d33fc407107818ed91d1f8442988859994"
+    },
+    {
+      "file": "sanitizer-sql_literals\\report.json",
+      "passed": true,
+      "sha256": "65a5aa177aba9758aa9fbab19c59d37adb5be43210d7e3a8c3f9e1944cb1fa0d"
+    },
+    {
+      "file": "wire\\report.json",
+      "passed": true,
+      "sha256": "380f41e86df5b19f70c278325a79980d91ceb44b82702ae1f39de2967db119a9"
+    },
+    {
+      "file": "regression\\cache_column_sets\\report.json",
+      "passed": true,
+      "sha256": "7b6b810c2ffb1eaf9faef7dcf3314c700a3886f4f2f511c8f2509e3e3beaff4b"
+    },
+    {
+      "file": "regression\\cache_ranges\\report.json",
+      "passed": true,
+      "sha256": "5226387bd54d32dedd64ec6bee9e909bfb346e272bba907c65c6a2bf43d10c10"
+    },
+    {
+      "file": "regression\\cache_unrelated_text\\report.json",
+      "passed": true,
+      "sha256": "d2782125788185174f5b01323ecfa82ba385b37a0f8f672ce57ef199d81d5c0e"
+    },
+    {
+      "file": "regression\\column_layouts\\report.json",
+      "passed": true,
+      "sha256": "3037fa65ce409178aaafdd7e62f72af2924793770cacf17917de1d6f694960dd"
+    },
+    {
+      "file": "regression\\commit_publish\\report.json",
+      "passed": true,
+      "sha256": "1f40697314754c687fdffbb6c67d01ca55f50d4afd9e98b3d630f32bce0c6463"
+    },
+    {
+      "file": "regression\\compaction_crash\\report.json",
+      "passed": true,
+      "sha256": "4d05ef4c72480db4d006a36b3e900ce349d7bf98493356777a259b5f29a62b68"
+    },
+    {
+      "file": "regression\\crash_commit\\report.json",
+      "passed": true,
+      "sha256": "0d7dc26faf990b87018ff0916738d206a071dca6566f70d474a55457555e894e"
+    },
+    {
+      "file": "regression\\insert_batches\\report.json",
+      "passed": true,
+      "sha256": "fbaec5feb55c6d7a8c3f8b714efe802d7d9355f7197b5c80da4a2162217d6a7e"
+    },
+    {
+      "file": "regression\\invariants\\report.json",
+      "passed": true,
+      "sha256": "be8736dd3c47e24d47fa3e95d6c443bdf0b30d71666a6434883459f3d3f02893"
+    },
+    {
+      "file": "regression\\open_safety\\report.json",
+      "passed": true,
+      "sha256": "f627d87f66f2b597006c41997f8841ee195cdc9ec1ac0bf8ec706d20fd2e49b9"
+    },
+    {
+      "file": "regression\\order_alias_boundaries\\report.json",
+      "passed": true,
+      "sha256": "2f557d2c1176d2ae84dd7a71f021e24bac6881e20b2ca0d00f492d6bf8e97997"
+    },
+    {
+      "file": "regression\\projection_io\\report.json",
+      "passed": true,
+      "sha256": "bc3f715f691352a5197f7294ba2186728f42203a75cc77b52c2eb47e86116a5e"
+    },
+    {
+      "file": "regression\\protocol_complete_input\\report.json",
+      "passed": true,
+      "sha256": "fabd5acb9b75cdbfae90f8f976545550f4279510b74d6832ee4cce3954d3b7e1"
+    },
+    {
+      "file": "regression\\protocol_contract\\report.json",
+      "passed": true,
+      "sha256": "a43f3d152974b259459cbc5b427e451acef02c70c7f26b1f784468837b8dd647"
+    },
+    {
+      "file": "regression\\protocol_ids\\report.json",
+      "passed": true,
+      "sha256": "82ee83eef15513b27fa1712e9639bcd08a96ce209b5dcae6e9bfa13c1e352ff5"
+    },
+    {
+      "file": "regression\\protocol_nested_ids\\report.json",
+      "passed": true,
+      "sha256": "e583561635749f58ae0eadb6b8a948d33fc407107818ed91d1f8442988859994"
+    },
+    {
+      "file": "regression\\published_requirements\\report.json",
+      "passed": true,
+      "sha256": "12abf63e5ad7525b63e5f1193f780c3ac4b02c4ece6144905e3974fadf74c2df"
+    },
+    {
+      "file": "regression\\recovery_allocation\\report.json",
+      "passed": true,
+      "sha256": "ec7aaaac1338dca5f170582fee47ab4672fa078004c3a023e0dcf4f2b34c7f60"
+    },
+    {
+      "file": "regression\\recovery_boundaries\\report.json",
+      "passed": true,
+      "sha256": "8b94c6b9e7320f65eec49185b140a22d45e5edc86dfd686c6a59ac943c450be3"
+    },
+    {
+      "file": "regression\\reference_boundaries\\report.json",
+      "passed": true,
+      "sha256": "2f070442fee4e3ad1eb6b55272a02b4deb80b13fa6682ec432b7dea5a23972fb"
+    },
+    {
+      "file": "regression\\reference_response_budget\\report.json",
+      "passed": true,
+      "sha256": "6fec3bd77cfbb7c3079b88986cc97d401bb9c9c7418877a9e0b9442cfb758ee5"
+    },
+    {
+      "file": "regression\\response_failure\\report.json",
+      "passed": true,
+      "sha256": "318d88975c37cef2f3879d62e61d27aa5064be4c20f02c43f8d18c5e32e45dd0"
+    },
+    {
+      "file": "regression\\space_reuse\\report.json",
+      "passed": true,
+      "sha256": "4031fe841c509c55b6cd1c232bcb1695f6d98ee562c2dc9edf2724ee67c7abd0"
+    },
+    {
+      "file": "regression\\sql_literals\\report.json",
+      "passed": true,
+      "sha256": "65a5aa177aba9758aa9fbab19c59d37adb5be43210d7e3a8c3f9e1944cb1fa0d"
+    },
+    {
+      "file": "regression\\sql_numeric_forms\\report.json",
+      "passed": true,
+      "sha256": "467167cbfd34ef65b161e9b7c8f56152e90bee04db1bf1c46d20664563f98cf7"
+    },
+    {
+      "file": "regression\\sql_token_kinds\\report.json",
+      "passed": true,
+      "sha256": "b845b29cd2e641263bd28e3f640111a968b443eb98b75f704dfdbb78136f5a39"
+    },
+    {
+      "file": "performance\\queries-id\\report.json",
+      "passed": true,
+      "sha256": "1870b0e1f3ff99af381e96606de540d4c676ac88cc8488f7ded2f5d4926cc5ef"
+    },
+    {
+      "file": "performance\\queries-projection\\report.json",
+      "passed": true,
+      "sha256": "41988d52432fe7b1284b888f22a7aaf8ead10c0a91c862aee71e12bb63b0ac9d"
+    },
+    {
+      "file": "performance\\resources\\report.json",
+      "passed": true,
+      "sha256": "6021ceebd3bd02caf915c1d2b2d7689819e2109c24e3c72b3e2964064e48f351"
+    },
+    {
+      "file": "performance\\writes\\report.json",
+      "passed": true,
+      "sha256": "376c8d6b19a60eff8efdc7ba6822fa2ff2a10b35e1fb343fdd7399b48647b1b4"
+    }
+  ],
+  "url": "https://github.com/xxxhm0524/seekdb/actions/runs/43803897790",
+  "formal_submitted": false
+}

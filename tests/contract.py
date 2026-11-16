@@ -77,7 +77,7 @@ def main():
         assert strict(raw.decode("utf-8"))["passed"] is True, name
     hashes = strict((evidence/"runtime-source-sha256.json").read_text(encoding="utf-8"))
     assert len(hashes) == 26
-    current_evidence = ROOT/("validation/e860-write-20261116" if vendor_headers else "validation/e860-5000-20261116" if technical_guidance else "validation/e860-opt-20261116")
+    current_evidence = ROOT/("validation/e860-query-20261116" if (ROOT/"validation/e860-query-20261116").exists() else "validation/e860-write-20261116" if vendor_headers else "validation/e860-5000-20261116" if technical_guidance else "validation/e860-opt-20261116")
     current_lock = current_evidence/"runtime-inputs.json"
     current = strict(current_lock.read_text(encoding="utf-8")) if current_lock.exists() else None
     if current is not None:

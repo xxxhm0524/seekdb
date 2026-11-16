@@ -61,7 +61,7 @@ def run(a):
                 median_read_calls={n:statistics.median(r['query_io_delta']['syscr'] for r in v) for n,v in groups.items()})
     report=dict(passed=True,rows=a.rows,queries=a.queries,rounds=a.rounds,with_body=a.with_body,driver_cpu=a.driver_cpu,server_cpu=a.server_cpu,
         versions={n:hashlib.sha256(p.read_bytes()).hexdigest() for n,p in programs.items()},fixture_sha256=fixture_hash,summary=summary,records=records,
-        verified_queries=len(summary)*a.rounds*a.queries*2,scope='Real JSONL request times, blocks of 50 alternate versions on the same fixed server CPU (not reserved); driver on a distinct CPU. No official score is inferred.')
+        verified_queries=len(summary)*a.rounds*a.queries*2,scope=('Real JSONL request times, whole-version rounds.' if a.whole else 'Real JSONL request times, alternating blocks of 50.')+' Fixed server CPU is not reserved; driver on a distinct CPU. No official score inferred.')
     save(out/'report.json',report);print(json.dumps({k:v for k,v in report.items() if k!='records'}),flush=True)
 
 

@@ -2,7 +2,7 @@ name: Scored e860 native optimization verification
 "on":
   workflow_dispatch:
   push:
-    branches: ['native/e860-opt-*', 'native/e860-write-*']
+    branches: ['native/e860-opt-*', 'native/e860-write-*', 'native/e860-query-*']
 permissions:
   contents: read
 jobs:

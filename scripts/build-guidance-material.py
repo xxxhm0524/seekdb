@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[1]
-V=ROOT/'validation/e860-write-20261116'
+V=ROOT/'validation/e860-query-20261116'
 P=ROOT/'validation/e860-opt-20261116'
 guidance=json.loads((ROOT/'material/technical-guidance.json').read_text(encoding='utf-8'))
 lock=json.loads((V/'runtime-inputs.json').read_text(encoding='utf-8'))
@@ -24,14 +24,16 @@ definitions=[
  ('capacity','capacity.json','current','实际持久化用户数据超过 2 GiB，在 2 GiB、无 swap 预算内验证。'),
  ('scalar-cache','scalar-cache.json','current','独立逻辑数据对照：3 种列布局、2 种映射方式、重复/唯一/长文本，核对值、比较、范围与检索。'),
  ('rounding','rounding.json','current','非负有限 binary64 后继值与 nextafter 数值逐位一致，查询误差与下界逐位相同；不声称异常标记一致。'),
+ ('query-regression-check','query-regression-check.json','current','相同 GCC13 二进制、同版本噪声控制、整轮对照及新路径逐组检验；不把单次波动写成固定缺陷。'),
+ ('reference-resources','reference-resources.json','current','固定已公开记录得分的参考源码，统一 GCC13；不同引擎允许磁盘格式差异，本引擎前后文件仍逐字节核对。'),
  ('decimal-conversion','decimal-conversion.json','current','新旧解析器逐位比较 binary64、float32 及错误，包含两级舍入、非默认舍入与 FTZ/DAZ。'),
- ('write-regression-check','write-regression-check.json','current','对照噪声、真实回退、修复后测量及整轮运行控制；诊断结果不推算 E。'),
+ ('write-regression-check','write-regression-check.json','51d38870273ed55087b61130de7ecf135e15e608','对照噪声、真实回退、修复后测量及整轮运行控制；诊断结果不推算 E。'),
  ('cpu-profile','cpu-profile.json','999f3a9dac509d63aed62aea2f0a5027cbf93f67','调试构建的采样定位，不是正式耗时；原始程序路径拒绝记录保留后重跑。'),
  ('json-string-output','json-string-output.json','current','对照原编码器逐字节检查所有单字节、边界位置、Unicode 与非法字节，并核对拒绝行为。'),
- ('current-resources','resources.json','current','与 999f3a9 对照的精确十进制解析优化资源测量，同时保留 3d6 底线；不是正式 E。'),
- ('current-queries-id','queries-id.json','current','与 999f3a9 对照的六轮仅编号查询，保留全部轮次和独立真值检查。'),
- ('current-queries-projection','queries-projection.json','current','与 999f3a9 对照的六轮普通投影查询，逐条核对独立真值。'),
- ('current-writes','writes.json','current','与 999f3a9 对照的六轮逐批持久化写入；数据库文件字节和重启后的 float32 位均核对。'),
+ ('current-resources','resources.json','current','与 6a69bf1 对照的精确十进制解析优化资源测量，同时保留 3d6 底线；不是正式 E。'),
+ ('current-queries-id','queries-id.json','current','与 6a69bf1 对照的六轮仅编号查询，保留全部轮次和独立真值检查。'),
+ ('current-queries-projection','queries-projection.json','current','与 6a69bf1 对照的六轮普通投影查询，逐条核对独立真值。'),
+ ('current-writes','writes.json','current','与 6a69bf1 对照的六轮逐批持久化写入；数据库文件字节和重启后的 float32 位均核对。'),
  ('current-certificate','certificate.json','current','候选堆调整后的完整数值证书与独立精确结果核对。'),
  ('heap-stage-resources','heap-ffbd30/resources-for-material.json','ffbd30b778642317b7b550fd2efea8e010e42157','前一阶段的堆调整资源测量，不与其他轮次拼接指标。'),
  ('heap-stage-id','heap-ffbd30/queries-id-for-material.json','ffbd30b778642317b7b550fd2efea8e010e42157','前一阶段的堆调整六轮编号查询配对。'),

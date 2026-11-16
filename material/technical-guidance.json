@@ -90,7 +90,9 @@
         "heap-stage-projection",
         "heap-stage-writes",
         "write-regression-check",
-        "cpu-profile"
+        "cpu-profile",
+        "query-regression-check",
+        "reference-resources"
       ]
     }
   ]

@@ -1,0 +1,97 @@
+{
+  "passed": true,
+  "meaning": "Regression was reproduced with valid controls and the candidate removes it in both batch-interleaved and whole-process measurements.",
+  "diagnostic_gate_percent": 1.0,
+  "rejected_measurements": [
+    "write-focus-min-100",
+    "write-focus-min-aa"
+  ],
+  "rejection_reason": "Single-batch cold-process noise caused an A/A false regression. Retain records but do not use them to qualify the fix.",
+  "diagnostic_inputs": [
+    {
+      "name": "write-focus-aa-1",
+      "file": "diagnostics/write-focus-aa-1.json",
+      "sha256": "98191deb1aaf5f5ff466ef96b85a20c05fdd427bc342e02cbcd2ffe0f3fe530a",
+      "raw_gate": "{\n  \"performance_gate_passed\": true,\n  \"median_regression_pct\": 0.05182229906957048,\n  \"allowed_regression_pct\": 0.4,\n  \"paired_speedups\": [\n    1.0182576653494384,\n    0.995290911003258,\n    0.9972100948267558,\n    0.9957503217686348,\n    1.0017539960237902,\n    1.002719665851297\n  ]\n}\n"
+    },
+    {
+      "name": "write-focus-regression-1",
+      "file": "diagnostics/write-focus-regression-1.json",
+      "sha256": "78e2a5892a65fd5c0233cae5a5ccffacf06edd184146e179fb3cceb8f9c44a04",
+      "raw_gate": "{\n  \"performance_gate_passed\": false,\n  \"median_regression_pct\": 3.457943177172762,\n  \"allowed_regression_pct\": 0.4,\n  \"paired_speedups\": [\n    0.971010252774298,\n    0.9644170517665501,\n    0.9687356270712457,\n    0.9691488990749328,\n    0.9492583441851709,\n    0.9575649762403609\n  ]\n}\n"
+    },
+    {
+      "name": "write-focus-regression-2",
+      "file": "diagnostics/write-focus-regression-2.json",
+      "sha256": "0eefc8f5a084939e4621ec1d18294c4e66e174927a3acc58a7399bf1bf8b448b",
+      "raw_gate": "{\n  \"performance_gate_passed\": false,\n  \"median_regression_pct\": 3.2211013466086458,\n  \"allowed_regression_pct\": 0.4,\n  \"paired_speedups\": [\n    0.9717720416987222,\n    0.9574953567948173,\n    0.9572310646379345,\n    0.9687381583112763,\n    0.9689892959278934,\n    0.9688501583296705\n  ]\n}\n"
+    },
+    {
+      "name": "write-focus-min-1000",
+      "file": "diagnostics/write-focus-min-1000.json",
+      "sha256": "405d481a612a1e80614116cf7cc6abe4868d8c0efd891a5843a6dac09ce1f200",
+      "raw_gate": "{\n  \"performance_gate_passed\": false,\n  \"median_regression_pct\": 4.270540073167961,\n  \"allowed_regression_pct\": 0.4,\n  \"paired_speedups\": [\n    1.010895163099606,\n    0.9561388110650798,\n    0.9733407895487315,\n    0.9374903523412913,\n    0.9538412038090305,\n    0.9619485016088304\n  ]\n}\n"
+    },
+    {
+      "name": "write-focus-min-100",
+      "file": "diagnostics/write-focus-min-100.json",
+      "sha256": "affee027824597fedd2b0e855e6cd947d9f51ce35f37289d62a077ab6d039482",
+      "raw_gate": "{\n  \"performance_gate_passed\": false,\n  \"median_regression_pct\": 4.929077978869367,\n  \"allowed_regression_pct\": 0.4,\n  \"paired_speedups\": [\n    0.9483355000777679,\n    0.8115700496424235,\n    0.9515753265945174,\n    0.9375662937485644,\n    0.9779903542483893,\n    0.9637937393903043,\n    0.9624184989329888,\n    0.9733586892417235,\n    0.9544740150405632,\n    0.9254170913994713,\n    0.9805966616395835,\n    0.9452955248803817\n  ]\n}\n"
+    },
+    {
+      "name": "write-focus-min-aa",
+      "file": "diagnostics/write-focus-min-aa.json",
+      "sha256": "f29a446eedf8a0d18e2eff77953ed7a10901a5ed4d2b90323544c81d26a0416a",
+      "raw_gate": "{\n  \"performance_gate_passed\": false,\n  \"median_regression_pct\": 3.0771400185153786,\n  \"allowed_regression_pct\": 0.4,\n  \"paired_speedups\": [\n    0.9730650621090555,\n    0.8223891809109976,\n    1.0225821926112868,\n    0.9862240823440508,\n    0.9591409993386554,\n    1.059473548203756,\n    0.9343085810268673,\n    0.958844290712483,\n    1.0042912959190897,\n    0.9630793052252561,\n    1.0227295872253004,\n    0.9672293616989268\n  ]\n}\n"
+    },
+    {
+      "name": "write-focus-aa-1000",
+      "file": "diagnostics/write-focus-aa-1000.json",
+      "sha256": "da292f6e65fb99ad1ed050db5eda97936ccf4c9576080e4ea5fb1d4e687f7cf5",
+      "raw_gate": "{\n  \"performance_gate_passed\": true,\n  \"median_regression_pct\": 0.2783731673244416,\n  \"allowed_regression_pct\": 1.0,\n  \"paired_speedups\": [\n    1.0120340192656052,\n    1.0082034057273237,\n    0.9915341083069854,\n    1.000332174330691,\n    0.9914678691787416,\n    0.9941158176234673\n  ]\n}\n"
+    },
+    {
+      "name": "write-focus-aa-3000",
+      "file": "diagnostics/write-focus-aa-3000.json",
+      "sha256": "f261a7275c0109654f259b1b472a77676c20098da2e17a1013e83fbef7a8dc2a",
+      "raw_gate": "{\n  \"performance_gate_passed\": true,\n  \"median_regression_pct\": -0.6612376739688952,\n  \"allowed_regression_pct\": 1.0,\n  \"paired_speedups\": [\n    1.00857330599215,\n    0.9935692177431251,\n    1.004739476621322,\n    0.9951545146861703,\n    1.0202420603680404,\n    1.018121275427522\n  ]\n}\n"
+    },
+    {
+      "name": "write-focus-reverse-3000",
+      "file": "diagnostics/write-focus-reverse-3000.json",
+      "sha256": "e84dbae79b01db8c58ffbd8fe95f921b5a80c6458d15a73033172aaa053a32bb",
+      "raw_gate": "{\n  \"performance_gate_passed\": true,\n  \"median_regression_pct\": -3.459200325978784,\n  \"allowed_regression_pct\": 1.0,\n  \"paired_speedups\": [\n    1.036955202568793,\n    1.047966373150043,\n    1.0224428233827436,\n    1.0256272298721134,\n    1.0365391795200616,\n    1.035123792770599\n  ]\n}\n"
+    },
+    {
+      "name": "write-fast-decimal-focus-current",
+      "file": "diagnostics/write-fast-decimal-focus-current.json",
+      "sha256": "4e775f025d0c8b22751b3d1b369eb38c78d8006bcee4040ab9fb057e2c01503c",
+      "raw_gate": "{\n  \"performance_gate_passed\": true,\n  \"median_regression_pct\": -47.04307862701347,\n  \"allowed_regression_pct\": 1.0,\n  \"paired_speedups\": [\n    1.9203911595911325,\n    1.87596982804108,\n    1.8876899469628206,\n    1.888964639722057,\n    1.869218720510393,\n    1.9003993730941995\n  ]\n}\n"
+    },
+    {
+      "name": "write-fast-decimal-focus-older",
+      "file": "diagnostics/write-fast-decimal-focus-older.json",
+      "sha256": "da6bff313db8c72d6635f2a90ad561259174b84ecdbfb018e17631f24ef5f2b4",
+      "raw_gate": "{\n  \"performance_gate_passed\": true,\n  \"median_regression_pct\": -44.98851350201976,\n  \"allowed_regression_pct\": 1.0,\n  \"paired_speedups\": [\n    1.8601461769975396,\n    1.8300379911406297,\n    1.8148393574820672,\n    1.7941033424439374,\n    1.8207649995705828,\n    1.810304189852974\n  ]\n}\n"
+    },
+    {
+      "name": "write-control-aa-whole",
+      "file": "diagnostics/write-control-aa-whole.json",
+      "sha256": "b9bd0e9067865dbc5d990a1b505ff052f8c019796235b28c033b2e7ba554856d",
+      "raw_gate": "{\n  \"performance_gate_passed\": true,\n  \"median_regression_pct\": -0.127311711374678,\n  \"allowed_regression_pct\": 1.0,\n  \"paired_speedups\": [\n    1.0500751664187427,\n    0.9782255038018706,\n    1.0078679178026864,\n    0.9946815622114445,\n    0.9745100394453576,\n    1.0143530761031365\n  ]\n}\n"
+    },
+    {
+      "name": "write-control-old-whole",
+      "file": "diagnostics/write-control-old-whole.json",
+      "sha256": "8ae1853020b696e0d219eab69ea4a71eab589a4fcfec7b3eca0e7be001dd60cf",
+      "raw_gate": "{\n  \"performance_gate_passed\": false,\n  \"median_regression_pct\": 2.740794901954513,\n  \"allowed_regression_pct\": 1.0,\n  \"paired_speedups\": [\n    0.973678476593703,\n    0.9831783359790678,\n    0.9582706508871486,\n    0.9639188904041415,\n    0.9742389378651556,\n    0.9729679377236078\n  ]\n}\n"
+    },
+    {
+      "name": "write-control-fixed-whole",
+      "file": "diagnostics/write-control-fixed-whole.json",
+      "sha256": "d79607f0d1cb3cd3ad657f96e9a6bb6f6b73a0486ed42a06cd1a3cd4ac3558ff",
+      "raw_gate": "{\n  \"performance_gate_passed\": true,\n  \"median_regression_pct\": -46.99207397749353,\n  \"allowed_regression_pct\": 1.0,\n  \"paired_speedups\": [\n    1.940351024318723,\n    1.8276040144843597,\n    1.8514855246614184,\n    1.9005984461346066,\n    1.8724222133622885,\n    1.9160315182998031\n  ]\n}\n"
+    }
+  ],
+  "scope": "Fixed CPU, native GCC11.4; raw local diagnostic measurements, not formal E."
+}

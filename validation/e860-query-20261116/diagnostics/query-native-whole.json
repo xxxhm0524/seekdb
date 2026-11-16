@@ -1,0 +1,8 @@
+{
+  "performance_gate_passed": true,
+  "regression_percent": {
+    "bigint-idx0": 0.32190412054573514
+  },
+  "allowed_regression_percent": 1.0,
+  "whole": true
+}

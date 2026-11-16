@@ -112,7 +112,13 @@ def main():
                     '--baseline','build/scored-reference','--candidate','build/'+version,'--rounds','6']+cpu_args+extra)
         run('reference-resources',[sys.executable,'native_resource_pairs.py','--output',str(out/'reference-resources'),
             '--rounds','3','--program','reference=build/scored-reference','--program','current=build/current',
-            '--program','candidate=build/candidate','--ordered-keys']+cpu_args)
+            '--program','candidate=build/candidate','--ordered-keys','--allow-format-difference']+cpu_args)
+        resource_data = json.loads((out/'reference-resources/report.json').read_text())
+        for kind in ('bigint','text'):
+            for indexed in (False,True):
+                for round_number in (1,2,3):
+                    records = [x for x in resource_data['records'] if x['kind']==kind and x['indexed']==indexed and x['round']==round_number and x['version'] in ('current','candidate')]
+                    assert len(records)==2 and records[0]['database_sha256']==records[1]['database_sha256']
         for name in VERSIONS:
             run('parse-'+name,['taskset','-c',str(server),str(w/'build'/('parse-'+name))])
         old=[json.loads(x) for x in (out/'parse-old.log').read_text().splitlines()]

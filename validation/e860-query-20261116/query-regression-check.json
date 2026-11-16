@@ -1,0 +1,86 @@
+{
+  "passed": true,
+  "meaning": "All eight query and four write medians improve in the matched GCC13 prototype comparison. The original ~2% observation was not stable in unchanged-binary replays.",
+  "original_observation_ci": 43839541773,
+  "unchanged_binary_replay_ci": 43850653116,
+  "identical_current_binary_sha256": "6bcb0473446e604221fb5b7c40e94e0cdd9eabee1bb7bc81e955bc54955f23d6",
+  "prototype_ci": 43854080151,
+  "prototype_source_sha256": "2e548528669dfb2b8dba4e3a789a3c0b87c352e0fb0b696700c02933d8e04b79",
+  "median_speedups": {
+    "candidate-id": {
+      "bigint-idx0": 1.0036018333977086,
+      "bigint-idx1": 1.0052644636116645,
+      "text-idx0": 1.0051910696101185,
+      "text-idx1": 1.0060934676660613
+    },
+    "candidate-projection": {
+      "bigint-idx0": 1.002375688107794,
+      "bigint-idx1": 1.0047673372511043,
+      "text-idx0": 1.0074096117155293,
+      "text-idx1": 1.0015415923150865
+    },
+    "candidate-writes": {
+      "d128-body1024": 1.0295961902372222,
+      "d128-body16": 1.0335725605788786,
+      "d768-body1024": 1.0553266529471221,
+      "d768-body16": 1.0623820496320908
+    }
+  },
+  "diagnostic_inputs": [
+    {
+      "name": "gcc13-ci-aa",
+      "file": "diagnostics/query-ci-aa.json",
+      "sha256": "ca074f2e23dacfa416f94447e6e3862dc605b171dd4297e4fa93711ed19e1e92",
+      "raw_gate": "{\n  \"performance_gate_passed\": true,\n  \"regression_percent\": {\n    \"bigint-idx0\": -0.18078484388580618\n  },\n  \"allowed_regression_percent\": 1.0,\n  \"whole\": false\n}\n"
+    },
+    {
+      "name": "gcc13-ci-repro",
+      "file": "diagnostics/query-ci-repro.json",
+      "sha256": "579cb24279f4b91b991d1404ba41fce2cf15ed93894de8a004d78848e62aaa9a",
+      "raw_gate": "{\n  \"performance_gate_passed\": true,\n  \"regression_percent\": {\n    \"bigint-idx0\": -1.4469287807574949\n  },\n  \"allowed_regression_percent\": 1.0,\n  \"whole\": false\n}\n"
+    },
+    {
+      "name": "gcc13-ci-reverse",
+      "file": "diagnostics/query-ci-reverse.json",
+      "sha256": "b46869d55e444bdd788cba41d69665349068f9ffaf245a88fb9dd2215ff0b994",
+      "raw_gate": "{\n  \"performance_gate_passed\": true,\n  \"regression_percent\": {\n    \"bigint-idx0\": 0.9463107860436581\n  },\n  \"allowed_regression_percent\": 1.0,\n  \"whole\": false\n}\n"
+    },
+    {
+      "name": "gcc13-ci-whole",
+      "file": "diagnostics/query-ci-whole.json",
+      "sha256": "df1ea4bc985a4dfd393b514a2f59098614a59daee4176ab8045cb7bcf85dca44",
+      "raw_gate": "{\n  \"performance_gate_passed\": true,\n  \"regression_percent\": {\n    \"bigint-idx0\": -0.9718204064032676\n  },\n  \"allowed_regression_percent\": 1.0,\n  \"whole\": true\n}\n"
+    },
+    {
+      "name": "gcc13-ci-projection",
+      "file": "diagnostics/query-ci-projection.json",
+      "sha256": "a3b38e92d7f6d973afa8f54002591c42073813b992d0eeed4651cf2d3998438f",
+      "raw_gate": "{\n  \"performance_gate_passed\": true,\n  \"regression_percent\": {\n    \"text-idx1\": -0.37864589469454035\n  },\n  \"allowed_regression_percent\": 1.0,\n  \"whole\": false\n}\n"
+    },
+    {
+      "name": "gcc13-native-aa",
+      "file": "diagnostics/query-native-aa.json",
+      "sha256": "57185d362a90dff930dc978703c5be944a9facb8fd578ab5402253ad96753698",
+      "raw_gate": "{\n  \"performance_gate_passed\": true,\n  \"regression_percent\": {\n    \"bigint-idx0\": -0.2574169934902004\n  },\n  \"allowed_regression_percent\": 1.0,\n  \"whole\": false\n}\n"
+    },
+    {
+      "name": "gcc13-native-repro",
+      "file": "diagnostics/query-native-repro.json",
+      "sha256": "2b28f65d0282ecb58de68032db821b3e2bd4ed103c038f23ea78ab11a064045d",
+      "raw_gate": "{\n  \"performance_gate_passed\": true,\n  \"regression_percent\": {\n    \"bigint-idx0\": 0.14653234758739142\n  },\n  \"allowed_regression_percent\": 1.0,\n  \"whole\": false\n}\n"
+    },
+    {
+      "name": "gcc13-native-whole",
+      "file": "diagnostics/query-native-whole.json",
+      "sha256": "2074f5fa176ea0ee8d7e370cd5d7f0b769c71e278e4dcc03b8cdeb609996663a",
+      "raw_gate": "{\n  \"performance_gate_passed\": true,\n  \"regression_percent\": {\n    \"bigint-idx0\": 0.32190412054573514\n  },\n  \"allowed_regression_percent\": 1.0,\n  \"whole\": true\n}\n"
+    },
+    {
+      "name": "gcc13-native-projection",
+      "file": "diagnostics/query-native-projection.json",
+      "sha256": "8a74e4b3113926de4041a171a874a2d2a578f5fb9ab60774e7fdffac7877b765",
+      "raw_gate": "{\n  \"performance_gate_passed\": true,\n  \"regression_percent\": {\n    \"text-idx1\": -0.21024224745530562\n  },\n  \"allowed_regression_percent\": 1.0,\n  \"whole\": false\n}\n"
+    }
+  ],
+  "scope": "Separate controls, replays and candidate trials; no formal E or fixed 2% defect claim."
+}
