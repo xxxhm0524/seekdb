@@ -129,6 +129,21 @@ Row decode_row(const Table& t, const std::string& s) {
     return row;
 }
 namespace {
+bool plain_ascii_json(std::string_view text) {
+    constexpr uint64_t ones = UINT64_C(0x0101010101010101), high = UINT64_C(0x8080808080808080);
+    const auto zero = [](uint64_t x) { return (x - ones) & ~x & high; };
+    size_t at = 0;
+    while (text.size() - at >= sizeof(uint64_t)) {
+        uint64_t word; std::memcpy(&word, text.data() + at, sizeof(word));
+        if ((word & high) || zero(word ^ (ones * 34)) || zero(word ^ (ones * 92)) || ((word - ones * 32) & ~word & high)) return false;
+        at += sizeof(word);
+    }
+    for (; at < text.size(); ++at) {
+        const auto c = static_cast<unsigned char>(text[at]);
+        if (c < 32 || c >= 128 || c == 34 || c == 92) return false;
+    }
+    return true;
+}
 template<class Number> void append_number(std::string& output, Number value) {
     std::array<char, 64> buffer{};
     auto [end, error] = std::to_chars(buffer.data(), buffer.data() + buffer.size(), value);
@@ -142,7 +157,11 @@ void append_distance_json(std::string& output, double value) {
 }
 void append_value_json(std::string& output, const Value& value) {
     if (const auto* integer = std::get_if<int64_t>(&value)) append_number(output, *integer);
-    else if (const auto* text = std::get_if<std::string>(&value)) output += Json(*text).dump();
+    else if (const auto* text = std::get_if<std::string>(&value)) {
+        if (plain_ascii_json(*text)) {
+            output.push_back(char(34)); output += *text; output.push_back(char(34));
+        } else output += Json(*text).dump();
+    }
     else {
         output.push_back('['); bool first = true;
         for (float component : std::get<std::vector<float>>(value)) {
