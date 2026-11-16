@@ -1,0 +1,33 @@
+name: Query regression diagnostic controls
+"on":
+  workflow_dispatch:
+  push:
+    branches: ['native/e860-query-*']
+    paths:
+      - '.github/workflows/query-diagnostics.yml'
+      - 'tools/native/query_diagnostics.py'
+      - 'bench/e5000/query_focus.py'
+      - 'bench/e5000/parse_cost_probe.cpp'
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Check frozen submission sources
+        run: python3 tests/contract.py
+      - name: Prepare private mount target
+        run: sudo mkdir -p /data
+      - name: Build fixed controls and reproduce query timing
+        run: sudo -E python3 tools/native/query_diagnostics.py
+      - name: Preserve diagnostic reports and executables
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: query-diagnostic-evidence
+          path: /tmp/mvd-e860-query-*/artifact/
+          retention-days: 14
