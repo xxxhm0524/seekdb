@@ -1,5 +1,10 @@
 #include "vector_literal.hpp"
 #include "model.hpp"
+#include "fast_float/fast_float.h"
+#include <cfenv>
+#if defined(__x86_64__) || defined(_M_X64)
+#include <xmmintrin.h>
+#endif
 #include <charconv>
 #include <cstdlib>
 
@@ -22,7 +27,14 @@ void whitespace(std::string_view text, size_t& position, bool sql) {
         break;
     }
 }
-float component(std::string_view text, size_t& position, bool sql) {
+std::from_chars_result decimal_number(const char* first, const char* last, double& value, bool fast) {
+    if (fast) {
+        const auto result = fast_float::from_chars(first, last, value);
+        return {result.ptr, result.ec};
+    }
+    return std::from_chars(first, last, value);
+}
+float component(std::string_view text, size_t& position, bool sql, bool fast) {
     size_t begin = position;
     if (position < text.size() && (text[position] == '-' || (sql && text[position] == '+'))) ++position;
     if (position == text.size()) fail("invalid_vector", "incomplete vector number");
@@ -54,7 +66,7 @@ float component(std::string_view text, size_t& position, bool sql) {
     }
     double value = 0;
     const size_t numeric_begin = begin + (sql && text[begin] == '+');
-    auto parsed = std::from_chars(text.data() + numeric_begin, text.data() + position, value);
+    auto parsed = decimal_number(text.data() + numeric_begin, text.data() + position, value, fast);
     if (parsed.ec == std::errc::result_out_of_range) {
         // A double underflow still rounds to finite float32 zero. Rare extreme
         // exponents use the C conversion; ordinary values allocate nothing.
@@ -71,6 +83,10 @@ float component(std::string_view text, size_t& position, bool sql) {
 }
 }
 std::vector<float> parse_vector_literal(std::string_view text, uint32_t dimensions, bool sql_literals) {
+    bool fast = std::fegetround() == FE_TONEAREST;
+#if defined(__x86_64__) || defined(_M_X64)
+    fast = fast && (_mm_getcsr() & 0xffc0U) == 0x1f80U;
+#endif
     size_t at = 0;
     if (text.size() >= 3 && static_cast<unsigned char>(text[0]) == 0xef &&
         static_cast<unsigned char>(text[1]) == 0xbb && static_cast<unsigned char>(text[2]) == 0xbf) at = 3;
@@ -80,7 +96,7 @@ std::vector<float> parse_vector_literal(std::string_view text, uint32_t dimensio
     size_t count = 0; whitespace(text, at, sql_literals);
     if (at < text.size() && text[at] == ']') ++at;
     else for (;;) {
-        float value = component(text, at, sql_literals); ++count;
+        float value = component(text, at, sql_literals, fast); ++count;
         if (values.size() < dimensions) values.push_back(value);
         whitespace(text, at, sql_literals);
         if (at < text.size() && text[at] == ']') { ++at; break; }

@@ -10,5 +10,29 @@
     "version": "3.1",
     "source": "https://github.com/gcc-mirror/gcc/blob/releases/gcc-13.5.0/COPYING.RUNTIME",
     "GCC-RUNTIME-EXCEPTION-3.1.txt.sha256": "9d6b43ce4d8de0c878bf16b54d8e7a10d9bd42b75178153e3af6a815bdc90f74"
+  },
+  "fast_float": {
+    "version": "v8.3.3",
+    "commit": "dbeabeeb3e6791cb96994c2a7a084c36e62ccfb2",
+    "source": "https://github.com/fastfloat/fast_float/tree/dbeabeeb3e6791cb96994c2a7a084c36e62ccfb2",
+    "licenses": [
+      "MIT",
+      "Apache-2.0",
+      "BSL-1.0"
+    ],
+    "files_sha256": {
+      "LICENSE-APACHE": "097a889aa954d04e088b790b10a4014d6189561d0a6013935a73ce3d4ddaaf06",
+      "LICENSE-BOOST": "8d8291caf1cee26d23acf3eb67c9f9a2d58f1c681b16a4fbe8cbfb9e3c0b5a9b",
+      "LICENSE-MIT": "e562f3f974ced7e69dd1db77b820b36bcf8f30377f1aa105723fba449c53c4e6",
+      "ascii_number.h": "53e8fdafbdc6e461bb2fbb9c98192955b6760c61cf761adf574d1b0aa1063724",
+      "bigint.h": "ba39c5d8d8c8fe9ca8d7300aea8392a4367fd60689a9b8e3268aadceca729e53",
+      "constexpr_feature_detect.h": "2dd2dc5f98a8f1a78813e62d47e82a19ebe42af726356723d60f6eb387c6dd38",
+      "decimal_to_binary.h": "d9fdec8e0be092aab9f9dd0d3837ea131b4a4e9ea30facc3841fcb0ca1285ee3",
+      "digit_comparison.h": "69fb10f59005eabf0d44a5caf4733fd97a3838a8ac7090c4dc6e3e9e61a31ac3",
+      "fast_float.h": "fec4c0dc177fb3986a9007824c81fb93338ef83a6dba23325d430174a8686ce1",
+      "fast_table.h": "c18e0a0a2513215730557cc1dd53541cacd72855ddc0287934e78b364f989edb",
+      "float_common.h": "1e6bdad315871aea2790cc5a73113f3734404f64cc0ded748f3d2314f943b7de",
+      "parse_number.h": "6893635732bd5ba23d39aba8d65d3a6d7cf163f24f4730429fbd53e53b569c61"
+    }
   }
 }

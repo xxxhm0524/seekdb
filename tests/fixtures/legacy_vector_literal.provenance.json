@@ -1,0 +1,7 @@
+{
+  "source_commit": "999f3a9dac509d63aed62aea2f0a5027cbf93f67",
+  "source_file": "src/vector_literal.cpp",
+  "original_sha256": "f2ee612c5a701c7c6ac5372de394aae3d21da463d1c9b107580ce5605d9801c4",
+  "fixture_sha256": "e74ff59744a12cab8650157b728c51099db93eb14d1e7264b0655d2368767d64",
+  "transform": "namespace mvd -> mvd::legacy_literal only"
+}
