@@ -2,374 +2,374 @@
   "passed": true,
   "completed": 26,
   "expected": 26,
-  "binary_sha256": "2a64d196902ac2f1e6d1c97959e03553bcdd008cc0231fd9d09dc267f77bfde5",
+  "binary_sha256": "42af552b7d07d67a7073f80c30fd99ebb31ed58b42729c7fafaeac846b0e970d",
   "results": [
     {
       "name": "protocol_complete_input",
       "returncode": 0,
       "passed": true,
-      "seconds": 0.0641249530017376,
+      "seconds": 0.06422338297124952,
       "command": [
         "/usr/bin/python3",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/protocol_complete_input.py",
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/e5000-opaque-source/tests/protocol_complete_input.py",
         "--output",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/protocol_complete_input"
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/protocol_complete_input"
       ],
-      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/protocol_complete_input/report.json",
+      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/protocol_complete_input/report.json",
       "assertion_sha256": "4f8f19457cdf1f003d101baf340347aba6c46fe1385e1f13db781d13659fdf3d"
     },
     {
       "name": "protocol_ids",
       "returncode": 0,
       "passed": true,
-      "seconds": 0.11423112102784216,
+      "seconds": 0.11449699103832245,
       "command": [
         "/usr/bin/python3",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/protocol_ids.py",
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/e5000-opaque-source/tests/protocol_ids.py",
         "--output",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/protocol_ids"
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/protocol_ids"
       ],
-      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/protocol_ids/report.json",
+      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/protocol_ids/report.json",
       "assertion_sha256": "ba424a1fe68d0159ee4dbf1ea6de505813b6e754bb1b50ab03c4bd71b6d7743b"
     },
     {
       "name": "protocol_contract",
       "returncode": 0,
       "passed": true,
-      "seconds": 0.31488474301295355,
+      "seconds": 0.3149886329774745,
       "command": [
         "/usr/bin/python3",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/protocol_contract.py",
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/e5000-opaque-source/tests/protocol_contract.py",
         "--output",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/protocol_contract"
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/protocol_contract"
       ],
-      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/protocol_contract/report.json",
+      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/protocol_contract/report.json",
       "assertion_sha256": "b7736221c09ca5e81b92815872d0519696e660a981b49cb53e29902891b83a22"
     },
     {
       "name": "protocol_nested_ids",
       "returncode": 0,
       "passed": true,
-      "seconds": 0.11465947102988139,
+      "seconds": 0.1147755510173738,
       "command": [
         "/usr/bin/python3",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/protocol_nested_ids.py",
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/e5000-opaque-source/tests/protocol_nested_ids.py",
         "--output",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/protocol_nested_ids"
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/protocol_nested_ids"
       ],
-      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/protocol_nested_ids/report.json",
+      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/protocol_nested_ids/report.json",
       "assertion_sha256": "d55d8d23723daf7d1a5697cd106e4dcb1371f99d98904a71e4cd90b81f223736"
     },
     {
       "name": "sql_token_kinds",
       "returncode": 0,
       "passed": true,
-      "seconds": 0.11463573097717017,
+      "seconds": 0.11475295101990923,
       "command": [
         "/usr/bin/python3",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/sql_token_kinds.py",
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/e5000-opaque-source/tests/sql_token_kinds.py",
         "--output",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/sql_token_kinds"
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/sql_token_kinds"
       ],
-      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/sql_token_kinds/report.json",
+      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/sql_token_kinds/report.json",
       "assertion_sha256": "d4bf3efed56f2f4a0e7bb906ac3cbcfe3af8c206c95a481f9b2e72303306fb54"
     },
     {
       "name": "published_requirements",
       "returncode": 0,
       "passed": true,
-      "seconds": 0.1647960189729929,
+      "seconds": 0.16485383897088468,
       "command": [
         "/usr/bin/python3",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/published_requirements.py",
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/e5000-opaque-source/tests/published_requirements.py",
         "--output",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/published_requirements"
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/published_requirements"
       ],
-      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/published_requirements/report.json",
+      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/published_requirements/report.json",
       "assertion_sha256": "252bd5f672926ade847444740ccaad1c276e34b37fb418010de2526002b6de80"
     },
     {
       "name": "sql_numeric_forms",
       "returncode": 0,
       "passed": true,
-      "seconds": 0.16472496901405975,
+      "seconds": 0.16476074903039262,
       "command": [
         "/usr/bin/python3",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/sql_numeric_forms.py",
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/e5000-opaque-source/tests/sql_numeric_forms.py",
         "--output",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/sql_numeric_forms"
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/sql_numeric_forms"
       ],
-      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/sql_numeric_forms/report.json",
+      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/sql_numeric_forms/report.json",
       "assertion_sha256": "753bd52afdc56e40844ce4eabda6c4552895981b16adb4ee5cc988755b7e6f5b"
     },
     {
       "name": "order_alias_boundaries",
       "returncode": 0,
       "passed": true,
-      "seconds": 0.06460178300039843,
+      "seconds": 0.06465168297290802,
       "command": [
         "/usr/bin/python3",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/order_alias_boundaries.py",
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/e5000-opaque-source/tests/order_alias_boundaries.py",
         "--output",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/order_alias_boundaries"
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/order_alias_boundaries"
       ],
-      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/order_alias_boundaries/report.json",
+      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/order_alias_boundaries/report.json",
       "assertion_sha256": "281b499b52b10b3e0300d32ee2a90fc2841e828abdba58015c94ae4d207bb936"
     },
     {
       "name": "invariants",
       "returncode": 0,
       "passed": true,
-      "seconds": 4.825651716033462,
+      "seconds": 4.624944513954688,
       "command": [
         "/usr/bin/python3",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/invariants.py",
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/e5000-opaque-source/tests/invariants.py",
         "--output",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/invariants"
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/invariants"
       ],
-      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/invariants/report.json",
+      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/invariants/report.json",
       "assertion_sha256": "48fc5a9e7dcf5c3d94e2565acd03c08689ff233dca4b453370f2138ec15101fa"
     },
     {
       "name": "space_reuse",
       "returncode": 0,
       "passed": true,
-      "seconds": 1.3678128590108827,
+      "seconds": 1.367415478976909,
       "command": [
         "/usr/bin/python3",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/space_reuse.py",
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/e5000-opaque-source/tests/space_reuse.py",
         "--output",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/space_reuse"
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/space_reuse"
       ],
-      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/space_reuse/report.json",
+      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/space_reuse/report.json",
       "assertion_sha256": "1265a150fd24d28e505e068cf484eb9f79b00f2bbadd47f0ec917d25843cdb95"
     },
     {
       "name": "column_layouts",
       "returncode": 0,
       "passed": true,
-      "seconds": 0.61602044996107,
+      "seconds": 0.6157688000239432,
       "command": [
         "/usr/bin/python3",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/column_layouts.py",
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/e5000-opaque-source/tests/column_layouts.py",
         "--output",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/column_layouts"
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/column_layouts"
       ],
-      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/column_layouts/report.json",
+      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/column_layouts/report.json",
       "assertion_sha256": "c631222aeaeda6e1ff9ec7d45ecc2fb77d3e129ff3091f313f22132b04194c56"
     },
     {
       "name": "cache_column_sets",
       "returncode": 0,
       "passed": true,
-      "seconds": 0.46562973695108667,
+      "seconds": 0.3151659030118026,
       "command": [
         "/usr/bin/python3",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/cache_column_sets.py",
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/e5000-opaque-source/tests/cache_column_sets.py",
         "--output",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/cache_column_sets"
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/cache_column_sets"
       ],
-      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/cache_column_sets/report.json",
+      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/cache_column_sets/report.json",
       "assertion_sha256": "85f9fb067fa10c952dec0acaa7248f2aa2465a99aa2a11cb42ced3ca8d0bf7ec"
     },
     {
       "name": "cache_ranges",
       "returncode": 0,
       "passed": true,
-      "seconds": 0.6160868509905413,
+      "seconds": 0.6158535699942149,
       "command": [
         "/usr/bin/python3",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/cache_ranges.py",
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/e5000-opaque-source/tests/cache_ranges.py",
         "--output",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/cache_ranges"
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/cache_ranges"
       ],
-      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/cache_ranges/report.json",
+      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/cache_ranges/report.json",
       "assertion_sha256": "61ae38ad91be36d4d6a85d036e775df9b5755c072ec3670e598b3ebaf408c0e8"
     },
     {
       "name": "insert_batches",
       "returncode": 0,
       "passed": true,
-      "seconds": 0.9168735680286773,
+      "seconds": 0.9667495749890804,
       "command": [
         "/usr/bin/python3",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/insert_batches.py",
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/e5000-opaque-source/tests/insert_batches.py",
         "--output",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/insert_batches"
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/insert_batches"
       ],
-      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/insert_batches/report.json",
+      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/insert_batches/report.json",
       "assertion_sha256": "3c4246c5410847a653a2ada6bc943053961bdc6d92983fd93bb8e711b22470dc"
     },
     {
       "name": "sql_literals",
       "returncode": 0,
       "passed": true,
-      "seconds": 0.1147462009685114,
+      "seconds": 0.16487385897198692,
       "command": [
         "/usr/bin/python3",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/sql_literals.py",
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/e5000-opaque-source/tests/sql_literals.py",
         "--output",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/sql_literals"
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/sql_literals"
       ],
-      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/sql_literals/report.json",
+      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/sql_literals/report.json",
       "assertion_sha256": "ce66d3360ba8f9344019fbbf48a59351b38e54ab9bd6da660de33abdf1211ea2"
     },
     {
       "name": "cache_unrelated_text",
       "returncode": 0,
       "passed": true,
-      "seconds": 1.567876551009249,
+      "seconds": 1.166946436977014,
       "command": [
         "/usr/bin/python3",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/cache_unrelated_text.py",
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/e5000-opaque-source/tests/cache_unrelated_text.py",
         "--output",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/cache_unrelated_text"
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/cache_unrelated_text"
       ],
-      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/cache_unrelated_text/report.json",
+      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/cache_unrelated_text/report.json",
       "assertion_sha256": "f3ce1dafd3f5e7b5041da1f98ab2df8661ffba2749568d14a8722ddd4b7bcdc6"
     },
     {
       "name": "crash_commit",
       "returncode": 0,
       "passed": true,
-      "seconds": 0.41539603896671906,
+      "seconds": 0.4655327660148032,
       "command": [
         "/usr/bin/python3",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/crash_commit.py",
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/e5000-opaque-source/tests/crash_commit.py",
         "--output",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/crash_commit"
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/crash_commit"
       ],
-      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/crash_commit/report.json",
+      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/crash_commit/report.json",
       "assertion_sha256": "fcb3fecdabe954c4c91a7486a5d99a1ccdd33881b5baad01143d6750cd2e0072"
     },
     {
       "name": "commit_publish",
       "returncode": 0,
       "passed": true,
-      "seconds": 0.3152897729887627,
+      "seconds": 0.3150756729883142,
       "command": [
         "/usr/bin/python3",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/commit_publish.py",
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/e5000-opaque-source/tests/commit_publish.py",
         "--output",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/commit_publish"
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/commit_publish"
       ],
-      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/commit_publish/report.json",
+      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/commit_publish/report.json",
       "assertion_sha256": "84cbcadabda4dce9c9b9e13e41532ee0ae16f1ac2c2459ae0eef6a47838346f6"
     },
     {
       "name": "open_safety",
       "returncode": 0,
       "passed": true,
-      "seconds": 0.21550485701300204,
+      "seconds": 0.2148135969764553,
       "command": [
         "/usr/bin/python3",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/open_safety.py",
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/e5000-opaque-source/tests/open_safety.py",
         "--output",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/open_safety"
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/open_safety"
       ],
-      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/open_safety/report.json",
+      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/open_safety/report.json",
       "assertion_sha256": "debc1f5b89d1ac4f187fa58929e2a6e6613c96b3693057f069599c029d1dae08"
     },
     {
       "name": "compaction_crash",
       "returncode": 0,
       "passed": true,
-      "seconds": 2.0690768900094554,
+      "seconds": 2.1186504469951615,
       "command": [
         "/usr/bin/python3",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/compaction_crash.py",
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/e5000-opaque-source/tests/compaction_crash.py",
         "--output",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/compaction_crash"
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/compaction_crash"
       ],
-      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/compaction_crash/report.json",
+      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/compaction_crash/report.json",
       "assertion_sha256": "b7d47d9e5f1681adeca3c532926c281d0e20f197172f9aa3de8cf09a500dd73e"
     },
     {
       "name": "recovery_boundaries",
       "returncode": 0,
       "passed": true,
-      "seconds": 0.265057634038385,
+      "seconds": 0.26485437498195097,
       "command": [
         "/usr/bin/python3",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/recovery_boundaries.py",
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/e5000-opaque-source/tests/recovery_boundaries.py",
         "--output",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/recovery_boundaries"
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/recovery_boundaries"
       ],
-      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/recovery_boundaries/report.json",
+      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/recovery_boundaries/report.json",
       "assertion_sha256": "f5a6c3c8b970cc2f720c4bbd4f8a8631f1c73810b256f66d25e4b928c3689a6e"
     },
     {
       "name": "recovery_allocation",
       "returncode": 0,
       "passed": true,
-      "seconds": 0.21519451698986813,
+      "seconds": 0.2649890150059946,
       "command": [
         "/usr/bin/python3",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/recovery_allocation.py",
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/e5000-opaque-source/tests/recovery_allocation.py",
         "--output",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/recovery_allocation"
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/recovery_allocation"
       ],
-      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/recovery_allocation/report.json",
+      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/recovery_allocation/report.json",
       "assertion_sha256": "5a89fb253b8c3f7e935ffdba7fa25f252f737ed786141c589feaca73bbcf3b90"
     },
     {
       "name": "projection_io",
       "returncode": 0,
       "passed": true,
-      "seconds": 2.720399753015954,
+      "seconds": 3.071044387994334,
       "command": [
         "/usr/bin/python3",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/projection_io.py",
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/e5000-opaque-source/tests/projection_io.py",
         "--output",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/projection_io"
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/projection_io"
       ],
-      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/projection_io/report.json",
+      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/projection_io/report.json",
       "assertion_sha256": "6735b51c51cbb74cfca329bdcf4aa0c4aaa1b2ef8b9e4fa39dfa4755d5365031"
     },
     {
       "name": "response_failure",
       "returncode": 0,
       "passed": true,
-      "seconds": 0.21475151600316167,
+      "seconds": 0.21514409699011594,
       "command": [
         "/usr/bin/python3",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/response_failure.py",
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/e5000-opaque-source/tests/response_failure.py",
         "--output",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/response_failure"
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/response_failure"
       ],
-      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/response_failure/report.json",
+      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/response_failure/report.json",
       "assertion_sha256": "6fff580fcf6f80298f4dae97aad107f24153bdba72e0658870c927742cdf09a5"
     },
     {
       "name": "reference_boundaries",
       "returncode": 0,
       "passed": true,
-      "seconds": 0.46528348594438285,
+      "seconds": 0.4155352679663338,
       "command": [
         "/usr/bin/python3",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/reference_boundaries.py",
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/e5000-opaque-source/tests/reference_boundaries.py",
         "--output",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/reference_boundaries",
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/reference_boundaries",
         "--reference-bin",
         "/tmp/mvd-e860-opt-20261115-nqiedj7i/build/reference-candidate"
       ],
-      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/reference_boundaries/report.json",
+      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/reference_boundaries/report.json",
       "assertion_sha256": "7ca1c7c0bd7b4345abaa1584db41c9b7dc9e011546558b2f2ba3f13f14a66fa4"
     },
     {
       "name": "reference_response_budget",
       "returncode": 0,
       "passed": true,
-      "seconds": 5.025697176984977,
+      "seconds": 4.92570760200033,
       "command": [
         "/usr/bin/python3",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/reference_response_budget.py",
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/e5000-opaque-source/tests/reference_response_budget.py",
         "--output",
-        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/reference_response_budget",
+        "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/reference_response_budget",
         "--reference-bin",
         "/tmp/mvd-e860-opt-20261115-nqiedj7i/build/reference-candidate"
       ],
-      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/reference_response_budget/report.json",
+      "report": "/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/e5000-opaque-regression/reference_response_budget/report.json",
       "assertion_sha256": "09124a4e8598c5932ce1ca9ca8a0f99fd22f5b7464bf14535bc5a0c8248ea0ff"
     }
   ],

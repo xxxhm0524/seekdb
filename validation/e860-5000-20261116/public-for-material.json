@@ -1,6 +1,6 @@
 {
   "derived_from": "public.json",
-  "derived_from_sha256": "5083258b47619c7b8bc5927632955237df77ded7237c63b9c8286626bf474111",
+  "derived_from_sha256": "b8bd926375623915b411fc729a60f15335c3cd4b14b518aa8f56224e648a4992",
   "selection": "保留官方驱动结论和全部用例记录；诊断注释另存原始报告。",
   "passed": true,
   "scope": "public-protocol-check",
@@ -9,13 +9,13 @@
       "id": "sql_crud",
       "status": "PASS",
       "message": "",
-      "duration_ms": 48
+      "duration_ms": 45
     },
     {
       "id": "sql_comparisons",
       "status": "PASS",
       "message": "",
-      "duration_ms": 44
+      "duration_ms": 43
     },
     {
       "id": "sql_ordering",
@@ -27,7 +27,7 @@
       "id": "sql_empty",
       "status": "PASS",
       "message": "",
-      "duration_ms": 43
+      "duration_ms": 41
     },
     {
       "id": "sql_primary_key",
@@ -39,55 +39,55 @@
       "id": "sql_unicode",
       "status": "PASS",
       "message": "",
-      "duration_ms": 45
+      "duration_ms": 41
     },
     {
       "id": "sql_bigint",
       "status": "PASS",
       "message": "",
-      "duration_ms": 38
+      "duration_ms": 42
     },
     {
       "id": "sql_unsupported",
       "status": "PASS",
       "message": "",
-      "duration_ms": 44
+      "duration_ms": 39
     },
     {
       "id": "storage_restart",
       "status": "PASS",
       "message": "",
-      "duration_ms": 83
+      "duration_ms": 79
     },
     {
       "id": "vector_euclidean",
       "status": "PASS",
       "message": "",
-      "duration_ms": 43
+      "duration_ms": 42
     },
     {
       "id": "transaction_commit",
       "status": "PASS",
       "message": "",
-      "duration_ms": 44
+      "duration_ms": 37
     },
     {
       "id": "transaction_rollback",
       "status": "PASS",
       "message": "",
-      "duration_ms": 44
+      "duration_ms": 45
     },
     {
       "id": "storage_mutations",
       "status": "PASS",
       "message": "",
-      "duration_ms": 84
+      "duration_ms": 72
     },
     {
       "id": "storage_multiple_tables",
       "status": "PASS",
       "message": "",
-      "duration_ms": 72
+      "duration_ms": 79
     },
     {
       "id": "vector_ties_and_filter",
@@ -99,13 +99,13 @@
       "id": "vector_float32",
       "status": "PASS",
       "message": "",
-      "duration_ms": 42
+      "duration_ms": 40
     },
     {
       "id": "vector_index_maintenance",
       "status": "PASS",
       "message": "",
-      "duration_ms": 78
+      "duration_ms": 79
     },
     {
       "id": "transaction_failed_insert",
@@ -117,13 +117,13 @@
       "id": "transaction_autocommit_atomic",
       "status": "PASS",
       "message": "",
-      "duration_ms": 87
+      "duration_ms": 78
     },
     {
       "id": "transaction_shutdown_rollback",
       "status": "PASS",
       "message": "",
-      "duration_ms": 85
+      "duration_ms": 79
     }
   ]
 }

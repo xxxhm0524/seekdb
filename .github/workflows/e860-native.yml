@@ -20,7 +20,7 @@ jobs:
           if [ ! -e /data ]; then sudo mkdir --mode=0755 /data; fi
           test -d /data
       - name: Verify native code and resource boundaries
-        run: sudo -E python3 tools/native/verify.py
+        run: sudo -E python3 tools/native/verify.py --benchmark
       - name: Preserve reports and logs
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

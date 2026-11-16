@@ -5,6 +5,7 @@ from pathlib import Path
 import sys
 
 workspace=Path(__file__).resolve().parent
+if os.environ.get('MVD_NATIVE_CPU'):os.sched_setaffinity(0,{int(os.environ['MVD_NATIVE_CPU'])})
 assert len(sys.argv)==2
 data=Path(sys.argv[1]).resolve(strict=True)
 assert data.parent==(workspace/'case-tmp').resolve(strict=True) and data.name.startswith('vectordb-')

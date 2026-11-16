@@ -1,0 +1,59 @@
+{
+  "passed": true,
+  "rounds": 6,
+  "versions": {
+    "baseline": "c36fafed171d63f7669631c281136a83e1826971143e796b28be9c035e9d4a9c",
+    "candidate": "8795394a7c75c49d669226ecd53aa16602f10946b7640289a915a9ae83760e35"
+  },
+  "driver_cpu": 3,
+  "server_cpu": 2,
+  "summary": {
+    "d128-body1024": {
+      "paired_speedups": [
+        1.0003426631218268,
+        0.992597178107068,
+        0.9838521583968495,
+        0.9883968700752123,
+        0.9866607228343365,
+        0.9899128352979013
+      ],
+      "median_paired_speedup": 0.9891548526865568
+    },
+    "d128-body16": {
+      "paired_speedups": [
+        0.9720514580588764,
+        0.9899725896333086,
+        0.9854093639940946,
+        0.9887862908903301,
+        0.9817725982514701,
+        0.9750629185827062
+      ],
+      "median_paired_speedup": 0.9835909811227823
+    },
+    "d768-body1024": {
+      "paired_speedups": [
+        0.9775835374864137,
+        0.9764444576463114,
+        0.9814103313904659,
+        0.9776314336007244,
+        0.9817262260617228,
+        0.9769604856941269
+      ],
+      "median_paired_speedup": 0.977607485543569
+    },
+    "d768-body16": {
+      "paired_speedups": [
+        0.9720178695582816,
+        0.9921896054699302,
+        1.0066753440318004,
+        1.014130924253387,
+        0.9761744956895629,
+        0.9778247886983471
+      ],
+      "median_paired_speedup": 0.9850071970841386
+    }
+  },
+  "scope": "Actual JSONL durable write request times, versions interleaved per batch. Fixed CPUs are not reserved. No formal E is inferred.",
+  "raw_report_sha256": "567a7d71cd2f577cecc1c182d08cdabcbc0b02e57924c6e2a71b73101206ec0f",
+  "selection": "All paired rounds retained in summary; raw records in verified native evidence archive."
+}
