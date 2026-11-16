@@ -1,0 +1,598 @@
+{
+  "passed": true,
+  "requests": 178,
+  "checkpoints": [
+    {
+      "tag": "insert-0",
+      "roots": 2,
+      "pages": 3,
+      "records": 54,
+      "manifest_sha256": "fa3f37978e7bc4e1c38c2a95b54a9bf3fd2d7a6605e21df8ea85ec16a0dc8d59",
+      "physical_bytes": {
+        "e860": 36864,
+        "candidate": 36864
+      }
+    },
+    {
+      "tag": "insert-250",
+      "roots": 2,
+      "pages": 8,
+      "records": 554,
+      "manifest_sha256": "71e45ae2658ecf5a6f1e5a5b315a3fa3f64734034d37807186fc57c5d5816956",
+      "physical_bytes": {
+        "e860": 147456,
+        "candidate": 122880
+      }
+    },
+    {
+      "tag": "insert-500",
+      "roots": 2,
+      "pages": 12,
+      "records": 1054,
+      "manifest_sha256": "56a5e3c843abdeb895a5f3048fff11cc7af80ab491abc013beb65a936d9ce5a1",
+      "physical_bytes": {
+        "e860": 311296,
+        "candidate": 200704
+      }
+    },
+    {
+      "tag": "insert-750",
+      "roots": 2,
+      "pages": 19,
+      "records": 1554,
+      "manifest_sha256": "e2a68595a021aaabd9cee6328e4abcc8aef5e10f4c36f594ae8ad90b63097d6b",
+      "physical_bytes": {
+        "e860": 524288,
+        "candidate": 290816
+      }
+    },
+    {
+      "tag": "indexed",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "2dab547f6c1d9a8ab7cb1ec27ac1c09ddddd3bcd4fc39f1f057b27d8c2ca05a7",
+      "physical_bytes": {
+        "e860": 720896,
+        "candidate": 307200
+      }
+    },
+    {
+      "tag": "step-0",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "2dab547f6c1d9a8ab7cb1ec27ac1c09ddddd3bcd4fc39f1f057b27d8c2ca05a7",
+      "physical_bytes": {
+        "e860": 720896,
+        "candidate": 307200
+      }
+    },
+    {
+      "tag": "step-1",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "2470380e89bd3f41003592a40a9bc49008e22ae2dfb86bacfce5dd219e284500",
+      "physical_bytes": {
+        "e860": 782336,
+        "candidate": 368640
+      }
+    },
+    {
+      "tag": "step-2",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "5887aa3c111f0e352ab79f0e195aaa96446aba8563ed781f1a4984c05402b60f",
+      "physical_bytes": {
+        "e860": 831488,
+        "candidate": 397312
+      }
+    },
+    {
+      "tag": "step-3",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "5887aa3c111f0e352ab79f0e195aaa96446aba8563ed781f1a4984c05402b60f",
+      "physical_bytes": {
+        "e860": 831488,
+        "candidate": 397312
+      }
+    },
+    {
+      "tag": "step-4",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "5887aa3c111f0e352ab79f0e195aaa96446aba8563ed781f1a4984c05402b60f",
+      "physical_bytes": {
+        "e860": 831488,
+        "candidate": 397312
+      }
+    },
+    {
+      "tag": "step-5",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "5887aa3c111f0e352ab79f0e195aaa96446aba8563ed781f1a4984c05402b60f",
+      "physical_bytes": {
+        "e860": 831488,
+        "candidate": 397312
+      }
+    },
+    {
+      "tag": "step-6",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "5887aa3c111f0e352ab79f0e195aaa96446aba8563ed781f1a4984c05402b60f",
+      "physical_bytes": {
+        "e860": 831488,
+        "candidate": 397312
+      }
+    },
+    {
+      "tag": "step-7",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "5cddab8a62da6f22eb2d7df102c39f4beb2a79696d5ceae7e19266cbe80af617",
+      "physical_bytes": {
+        "e860": 892928,
+        "candidate": 458752
+      }
+    },
+    {
+      "tag": "step-8",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "946cf9212075ca31b99af219334ef3944f385578e9ee97065dc3ca152e05f7eb",
+      "physical_bytes": {
+        "e860": 942080,
+        "candidate": 487424
+      }
+    },
+    {
+      "tag": "step-9",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "946cf9212075ca31b99af219334ef3944f385578e9ee97065dc3ca152e05f7eb",
+      "physical_bytes": {
+        "e860": 942080,
+        "candidate": 487424
+      }
+    },
+    {
+      "tag": "step-10",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "946cf9212075ca31b99af219334ef3944f385578e9ee97065dc3ca152e05f7eb",
+      "physical_bytes": {
+        "e860": 942080,
+        "candidate": 487424
+      }
+    },
+    {
+      "tag": "step-11",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "946cf9212075ca31b99af219334ef3944f385578e9ee97065dc3ca152e05f7eb",
+      "physical_bytes": {
+        "e860": 942080,
+        "candidate": 487424
+      }
+    },
+    {
+      "tag": "step-12",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "946cf9212075ca31b99af219334ef3944f385578e9ee97065dc3ca152e05f7eb",
+      "physical_bytes": {
+        "e860": 942080,
+        "candidate": 487424
+      }
+    },
+    {
+      "tag": "step-13",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "e07244fd57bb51edd43d30516efa346fd01e49bc3dfbd28df805ddfb9de7ee97",
+      "physical_bytes": {
+        "e860": 1003520,
+        "candidate": 548864
+      }
+    },
+    {
+      "tag": "step-14",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "38e2450769191e32d98576fe9fdc4da171c4145d0e49f42d8aebd324945c44b3",
+      "physical_bytes": {
+        "e860": 1052672,
+        "candidate": 577536
+      }
+    },
+    {
+      "tag": "step-15",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "38e2450769191e32d98576fe9fdc4da171c4145d0e49f42d8aebd324945c44b3",
+      "physical_bytes": {
+        "e860": 1052672,
+        "candidate": 577536
+      }
+    },
+    {
+      "tag": "step-16",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "38e2450769191e32d98576fe9fdc4da171c4145d0e49f42d8aebd324945c44b3",
+      "physical_bytes": {
+        "e860": 1052672,
+        "candidate": 577536
+      }
+    },
+    {
+      "tag": "step-17",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "38e2450769191e32d98576fe9fdc4da171c4145d0e49f42d8aebd324945c44b3",
+      "physical_bytes": {
+        "e860": 1052672,
+        "candidate": 577536
+      }
+    },
+    {
+      "tag": "step-18",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "38e2450769191e32d98576fe9fdc4da171c4145d0e49f42d8aebd324945c44b3",
+      "physical_bytes": {
+        "e860": 1052672,
+        "candidate": 577536
+      }
+    },
+    {
+      "tag": "step-19",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "34920139f1c977585211600e9a5f40aab3b1ff437f7453792088758f73136f6a",
+      "physical_bytes": {
+        "e860": 1114112,
+        "candidate": 638976
+      }
+    },
+    {
+      "tag": "step-20",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "6b848373a51848a3ddef56ccc3c3bdbe706bfaa5b1029f9d5fc865ff401616db",
+      "physical_bytes": {
+        "e860": 1163264,
+        "candidate": 667648
+      }
+    },
+    {
+      "tag": "step-21",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "6b848373a51848a3ddef56ccc3c3bdbe706bfaa5b1029f9d5fc865ff401616db",
+      "physical_bytes": {
+        "e860": 1163264,
+        "candidate": 667648
+      }
+    },
+    {
+      "tag": "step-22",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "6b848373a51848a3ddef56ccc3c3bdbe706bfaa5b1029f9d5fc865ff401616db",
+      "physical_bytes": {
+        "e860": 1163264,
+        "candidate": 667648
+      }
+    },
+    {
+      "tag": "step-23",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "6b848373a51848a3ddef56ccc3c3bdbe706bfaa5b1029f9d5fc865ff401616db",
+      "physical_bytes": {
+        "e860": 1163264,
+        "candidate": 667648
+      }
+    },
+    {
+      "tag": "step-24",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "6b848373a51848a3ddef56ccc3c3bdbe706bfaa5b1029f9d5fc865ff401616db",
+      "physical_bytes": {
+        "e860": 1163264,
+        "candidate": 667648
+      }
+    },
+    {
+      "tag": "step-25",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "fdd03008858289a0b0fe90da65f4767f57cd511720317486c379d071bbdd5720",
+      "physical_bytes": {
+        "e860": 1224704,
+        "candidate": 729088
+      }
+    },
+    {
+      "tag": "step-26",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "cb8801531966829f310613cf43577aff17c80b71345b6c7c3c6c394450d3b427",
+      "physical_bytes": {
+        "e860": 1273856,
+        "candidate": 757760
+      }
+    },
+    {
+      "tag": "step-27",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "cb8801531966829f310613cf43577aff17c80b71345b6c7c3c6c394450d3b427",
+      "physical_bytes": {
+        "e860": 1273856,
+        "candidate": 757760
+      }
+    },
+    {
+      "tag": "step-28",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "cb8801531966829f310613cf43577aff17c80b71345b6c7c3c6c394450d3b427",
+      "physical_bytes": {
+        "e860": 1273856,
+        "candidate": 757760
+      }
+    },
+    {
+      "tag": "step-29",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "cb8801531966829f310613cf43577aff17c80b71345b6c7c3c6c394450d3b427",
+      "physical_bytes": {
+        "e860": 1273856,
+        "candidate": 757760
+      }
+    },
+    {
+      "tag": "step-30",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "cb8801531966829f310613cf43577aff17c80b71345b6c7c3c6c394450d3b427",
+      "physical_bytes": {
+        "e860": 1273856,
+        "candidate": 757760
+      }
+    },
+    {
+      "tag": "step-31",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "8bf001a476bfb2e96fae808982ad4d6f7871cda773012611af80042ac41487eb",
+      "physical_bytes": {
+        "e860": 1335296,
+        "candidate": 819200
+      }
+    },
+    {
+      "tag": "step-32",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "6e9ef71a9d6cbc713f15514396e579400b32ff02911ba01d8da3848a725d9b6c",
+      "physical_bytes": {
+        "e860": 1384448,
+        "candidate": 847872
+      }
+    },
+    {
+      "tag": "step-33",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "6e9ef71a9d6cbc713f15514396e579400b32ff02911ba01d8da3848a725d9b6c",
+      "physical_bytes": {
+        "e860": 1384448,
+        "candidate": 847872
+      }
+    },
+    {
+      "tag": "step-34",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "6e9ef71a9d6cbc713f15514396e579400b32ff02911ba01d8da3848a725d9b6c",
+      "physical_bytes": {
+        "e860": 1384448,
+        "candidate": 847872
+      }
+    },
+    {
+      "tag": "step-35",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "6e9ef71a9d6cbc713f15514396e579400b32ff02911ba01d8da3848a725d9b6c",
+      "physical_bytes": {
+        "e860": 1384448,
+        "candidate": 847872
+      }
+    },
+    {
+      "tag": "step-36",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "6e9ef71a9d6cbc713f15514396e579400b32ff02911ba01d8da3848a725d9b6c",
+      "physical_bytes": {
+        "e860": 1384448,
+        "candidate": 847872
+      }
+    },
+    {
+      "tag": "step-37",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "8a5fd8f919b36a243e853ee3296bbff54e45c8e35e911a6af2a02911ee3b82db",
+      "physical_bytes": {
+        "e860": 1445888,
+        "candidate": 909312
+      }
+    },
+    {
+      "tag": "step-38",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "b0e05e8cc6836f25558fcd3d2c3bc5ec22810ef6ca00e6a4e2bf31ceb1796b29",
+      "physical_bytes": {
+        "e860": 1495040,
+        "candidate": 937984
+      }
+    },
+    {
+      "tag": "step-39",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "b0e05e8cc6836f25558fcd3d2c3bc5ec22810ef6ca00e6a4e2bf31ceb1796b29",
+      "physical_bytes": {
+        "e860": 1495040,
+        "candidate": 937984
+      }
+    },
+    {
+      "tag": "step-40",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "b0e05e8cc6836f25558fcd3d2c3bc5ec22810ef6ca00e6a4e2bf31ceb1796b29",
+      "physical_bytes": {
+        "e860": 1495040,
+        "candidate": 937984
+      }
+    },
+    {
+      "tag": "step-41",
+      "roots": 2,
+      "pages": 20,
+      "records": 2004,
+      "manifest_sha256": "b0e05e8cc6836f25558fcd3d2c3bc5ec22810ef6ca00e6a4e2bf31ceb1796b29",
+      "physical_bytes": {
+        "e860": 1495040,
+        "candidate": 937984
+      }
+    }
+  ],
+  "failed_statement_bytes": [
+    {
+      "step": 4,
+      "raw_file_unchanged": true,
+      "sha256": "0676aca381e9c02190a213d2946a6b9a99e1f53d584b16613878f05e79621601"
+    },
+    {
+      "step": 10,
+      "raw_file_unchanged": true,
+      "sha256": "dae209cf80035bc3f1337619b84625df10edcdcb80c4e4ea09f03ea27fccd968"
+    },
+    {
+      "step": 16,
+      "raw_file_unchanged": true,
+      "sha256": "e53f571580911da57c9fc200af12909cc5dfc7ce95b15f34771f59384db15843"
+    },
+    {
+      "step": 22,
+      "raw_file_unchanged": true,
+      "sha256": "84d639390c1693b6589f797fa6930c894fcc914bf87876926077d78a3cb95ad0"
+    },
+    {
+      "step": 28,
+      "raw_file_unchanged": true,
+      "sha256": "2c1b410dc80cafc42220c0c43a2b9f44d2b2451ed55e8adbb90218c23d6fffe1"
+    },
+    {
+      "step": 34,
+      "raw_file_unchanged": true,
+      "sha256": "7bf8ba973b64cc615eeefc01a439d939d6293bf163ce40184c3837f9a8854dc7"
+    },
+    {
+      "step": 40,
+      "raw_file_unchanged": true,
+      "sha256": "f2623829a7c38800d28b72b1f4acb2ee6a8daf94ae11d59d89d9f098bf4d3292"
+    }
+  ],
+  "both_recovery_roots_live_bytes_identical": true,
+  "persistent_format_unchanged": true,
+  "faults": [
+    {
+      "mode": "before",
+      "actual_injected_calls": 1,
+      "latest_root_recovered": true,
+      "previous_root_survived": true,
+      "old_binary_read": true,
+      "acknowledged": false
+    },
+    {
+      "mode": "after",
+      "actual_injected_calls": 1,
+      "latest_root_recovered": true,
+      "previous_root_survived": true,
+      "old_binary_read": true,
+      "acknowledged": false
+    },
+    {
+      "mode": "eio",
+      "actual_injected_calls": 1,
+      "latest_root_recovered": true,
+      "previous_root_survived": true,
+      "old_binary_read": true,
+      "acknowledged": true
+    },
+    {
+      "mode": "enosys",
+      "actual_injected_calls": 1,
+      "latest_root_recovered": true,
+      "previous_root_survived": true,
+      "old_binary_read": true,
+      "acknowledged": true
+    }
+  ],
+  "binary_sha256": "08b555a7483c9dd7553212f0963b79e0722eb7d002eed0e5965048bd1f39e527",
+  "scope": "Real native dynamic ELF syscall injection and byte manifests of live data; no formal submission or score."
+}

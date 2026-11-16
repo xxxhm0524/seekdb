@@ -1,0 +1,1536 @@
+{
+  "passed": true,
+  "rows": 10000,
+  "queries": 1000,
+  "rounds": 6,
+  "with_body": true,
+  "driver_cpu": 3,
+  "server_cpu": 2,
+  "versions": {
+    "baseline": "8795394a7c75c49d669226ecd53aa16602f10946b7640289a915a9ae83760e35",
+    "candidate": "1df55ac6910cf56cbf6c99f33ec9a07c49c6588fb00c042947a705a19fd7a418"
+  },
+  "fixture_sha256": "8c5f1e90a45d840735849349b800d013d53ccc3fbf38ee35d803594a294c2d95",
+  "summary": {
+    "bigint-idx0": {
+      "paired_speedups": [
+        1.032614743146334,
+        1.0124091160108761,
+        1.029602079494155,
+        1.0328550751902843,
+        1.027288049517052,
+        1.0343395189565197
+      ],
+      "median_paired_speedup": 1.0311084113202444,
+      "median_ms": {
+        "baseline": 224.8488175,
+        "candidate": 217.5401025
+      },
+      "median_read_calls": {
+        "baseline": 1000.0,
+        "candidate": 1000.0
+      }
+    },
+    "bigint-idx1": {
+      "paired_speedups": [
+        1.0315182022288218,
+        1.0287456098917482,
+        1.0271142343323816,
+        1.0243065772396984,
+        1.0282200498382816,
+        1.020422519323459
+      ],
+      "median_paired_speedup": 1.0276671420853316,
+      "median_ms": {
+        "baseline": 155.049301,
+        "candidate": 150.75536
+      },
+      "median_read_calls": {
+        "baseline": 1000.0,
+        "candidate": 1000.0
+      }
+    },
+    "text-idx0": {
+      "paired_speedups": [
+        1.0350761203378813,
+        1.0341859503108333,
+        1.0279968506837893,
+        1.0243896306002804,
+        1.0246774204962195,
+        1.0227564981371255
+      ],
+      "median_paired_speedup": 1.0263371355900044,
+      "median_ms": {
+        "baseline": 156.34958,
+        "candidate": 151.6408755
+      },
+      "median_read_calls": {
+        "baseline": 1000.0,
+        "candidate": 1000.0
+      }
+    },
+    "text-idx1": {
+      "paired_speedups": [
+        1.0387173338360802,
+        1.0250434808015656,
+        1.0295303169386927,
+        1.0275355455398951,
+        1.069990854686685,
+        1.0263666412436838
+      ],
+      "median_paired_speedup": 1.028532931239294,
+      "median_ms": {
+        "baseline": 165.092282,
+        "candidate": 159.8057475
+      },
+      "median_read_calls": {
+        "baseline": 1000.0,
+        "candidate": 1000.0
+      }
+    }
+  },
+  "records": [
+    {
+      "kind": "bigint",
+      "indexed": false,
+      "round": 1,
+      "version": "baseline",
+      "query_ms": 156.231456,
+      "query_io_delta": {
+        "rchar": 1401048,
+        "wchar": 3013860,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13872,
+        "process_io": {
+          "rchar": 17639698,
+          "wchar": 26343154,
+          "syscr": 3136,
+          "syscw": 6138,
+          "read_bytes": 0,
+          "write_bytes": 24100864,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "bigint",
+      "indexed": false,
+      "round": 1,
+      "version": "candidate",
+      "query_ms": 151.296945,
+      "query_io_delta": {
+        "rchar": 1401048,
+        "wchar": 3013860,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13828,
+        "process_io": {
+          "rchar": 17639698,
+          "wchar": 26343154,
+          "syscr": 3136,
+          "syscw": 6138,
+          "read_bytes": 4096,
+          "write_bytes": 24100864,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "bigint",
+      "indexed": false,
+      "round": 2,
+      "version": "baseline",
+      "query_ms": 197.158244,
+      "query_io_delta": {
+        "rchar": 1401936,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13872,
+        "process_io": {
+          "rchar": 19041634,
+          "wchar": 29357902,
+          "syscr": 4136,
+          "syscw": 8138,
+          "read_bytes": 0,
+          "write_bytes": 24100864,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "bigint",
+      "indexed": false,
+      "round": 2,
+      "version": "candidate",
+      "query_ms": 194.741672,
+      "query_io_delta": {
+        "rchar": 1401936,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13828,
+        "process_io": {
+          "rchar": 19041634,
+          "wchar": 29357902,
+          "syscr": 4136,
+          "syscw": 8138,
+          "read_bytes": 4096,
+          "write_bytes": 24100864,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "bigint",
+      "indexed": false,
+      "round": 3,
+      "version": "baseline",
+      "query_ms": 226.006684,
+      "query_io_delta": {
+        "rchar": 1401936,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13872,
+        "process_io": {
+          "rchar": 20443570,
+          "wchar": 32372650,
+          "syscr": 5136,
+          "syscw": 10138,
+          "read_bytes": 0,
+          "write_bytes": 24100864,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "bigint",
+      "indexed": false,
+      "round": 3,
+      "version": "candidate",
+      "query_ms": 219.508768,
+      "query_io_delta": {
+        "rchar": 1401936,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13828,
+        "process_io": {
+          "rchar": 20443570,
+          "wchar": 32372650,
+          "syscr": 5136,
+          "syscw": 10138,
+          "read_bytes": 4096,
+          "write_bytes": 24100864,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "bigint",
+      "indexed": false,
+      "round": 4,
+      "version": "baseline",
+      "query_ms": 224.749253,
+      "query_io_delta": {
+        "rchar": 1401936,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13872,
+        "process_io": {
+          "rchar": 21845506,
+          "wchar": 35387398,
+          "syscr": 6136,
+          "syscw": 12138,
+          "read_bytes": 0,
+          "write_bytes": 24100864,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "bigint",
+      "indexed": false,
+      "round": 4,
+      "version": "candidate",
+      "query_ms": 217.599989,
+      "query_io_delta": {
+        "rchar": 1401936,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13828,
+        "process_io": {
+          "rchar": 21845506,
+          "wchar": 35387398,
+          "syscr": 6136,
+          "syscw": 12138,
+          "read_bytes": 4096,
+          "write_bytes": 24100864,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "bigint",
+      "indexed": false,
+      "round": 5,
+      "version": "baseline",
+      "query_ms": 225.459502,
+      "query_io_delta": {
+        "rchar": 1401936,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13872,
+        "process_io": {
+          "rchar": 23247442,
+          "wchar": 38402146,
+          "syscr": 7136,
+          "syscw": 14138,
+          "read_bytes": 0,
+          "write_bytes": 24100864,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "bigint",
+      "indexed": false,
+      "round": 5,
+      "version": "candidate",
+      "query_ms": 219.470578,
+      "query_io_delta": {
+        "rchar": 1401936,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13828,
+        "process_io": {
+          "rchar": 23247442,
+          "wchar": 38402146,
+          "syscr": 7136,
+          "syscw": 14138,
+          "read_bytes": 4096,
+          "write_bytes": 24100864,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "bigint",
+      "indexed": false,
+      "round": 6,
+      "version": "baseline",
+      "query_ms": 224.948382,
+      "query_io_delta": {
+        "rchar": 1401936,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13872,
+        "process_io": {
+          "rchar": 24649378,
+          "wchar": 41416894,
+          "syscr": 8136,
+          "syscw": 16138,
+          "read_bytes": 0,
+          "write_bytes": 24100864,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "bigint",
+      "indexed": false,
+      "round": 6,
+      "version": "candidate",
+      "query_ms": 217.480216,
+      "query_io_delta": {
+        "rchar": 1401936,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13828,
+        "process_io": {
+          "rchar": 24649378,
+          "wchar": 41416894,
+          "syscr": 8136,
+          "syscw": 16138,
+          "read_bytes": 4096,
+          "write_bytes": 24100864,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "bigint",
+      "indexed": true,
+      "round": 1,
+      "version": "baseline",
+      "query_ms": 155.467169,
+      "query_io_delta": {
+        "rchar": 1401049,
+        "wchar": 3013861,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13784,
+        "process_io": {
+          "rchar": 17639794,
+          "wchar": 26347553,
+          "syscr": 3137,
+          "syscw": 6141,
+          "read_bytes": 0,
+          "write_bytes": 24109056,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "bigint",
+      "indexed": true,
+      "round": 1,
+      "version": "candidate",
+      "query_ms": 150.716845,
+      "query_io_delta": {
+        "rchar": 1401049,
+        "wchar": 3013861,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13780,
+        "process_io": {
+          "rchar": 17639794,
+          "wchar": 26347553,
+          "syscr": 3137,
+          "syscw": 6141,
+          "read_bytes": 0,
+          "write_bytes": 24109056,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "bigint",
+      "indexed": true,
+      "round": 2,
+      "version": "baseline",
+      "query_ms": 155.095687,
+      "query_io_delta": {
+        "rchar": 1401936,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13784,
+        "process_io": {
+          "rchar": 19041730,
+          "wchar": 29362301,
+          "syscr": 4137,
+          "syscw": 8141,
+          "read_bytes": 0,
+          "write_bytes": 24109056,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "bigint",
+      "indexed": true,
+      "round": 2,
+      "version": "candidate",
+      "query_ms": 150.761943,
+      "query_io_delta": {
+        "rchar": 1401936,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13780,
+        "process_io": {
+          "rchar": 19041730,
+          "wchar": 29362301,
+          "syscr": 4137,
+          "syscw": 8141,
+          "read_bytes": 0,
+          "write_bytes": 24109056,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "bigint",
+      "indexed": true,
+      "round": 3,
+      "version": "baseline",
+      "query_ms": 154.754215,
+      "query_io_delta": {
+        "rchar": 1401936,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13784,
+        "process_io": {
+          "rchar": 20443666,
+          "wchar": 32377049,
+          "syscr": 5137,
+          "syscw": 10141,
+          "read_bytes": 0,
+          "write_bytes": 24109056,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "bigint",
+      "indexed": true,
+      "round": 3,
+      "version": "candidate",
+      "query_ms": 150.668942,
+      "query_io_delta": {
+        "rchar": 1401936,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13780,
+        "process_io": {
+          "rchar": 20443666,
+          "wchar": 32377049,
+          "syscr": 5137,
+          "syscw": 10141,
+          "read_bytes": 0,
+          "write_bytes": 24109056,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "bigint",
+      "indexed": true,
+      "round": 4,
+      "version": "baseline",
+      "query_ms": 154.795614,
+      "query_io_delta": {
+        "rchar": 1401936,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13784,
+        "process_io": {
+          "rchar": 21845602,
+          "wchar": 35391797,
+          "syscr": 6137,
+          "syscw": 12141,
+          "read_bytes": 0,
+          "write_bytes": 24109056,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "bigint",
+      "indexed": true,
+      "round": 4,
+      "version": "candidate",
+      "query_ms": 151.122347,
+      "query_io_delta": {
+        "rchar": 1401936,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13780,
+        "process_io": {
+          "rchar": 21845602,
+          "wchar": 35391797,
+          "syscr": 6137,
+          "syscw": 12141,
+          "read_bytes": 0,
+          "write_bytes": 24109056,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "bigint",
+      "indexed": true,
+      "round": 5,
+      "version": "baseline",
+      "query_ms": 155.002915,
+      "query_io_delta": {
+        "rchar": 1401936,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13784,
+        "process_io": {
+          "rchar": 23247538,
+          "wchar": 38406545,
+          "syscr": 7137,
+          "syscw": 14141,
+          "read_bytes": 0,
+          "write_bytes": 24109056,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "bigint",
+      "indexed": true,
+      "round": 5,
+      "version": "candidate",
+      "query_ms": 150.748777,
+      "query_io_delta": {
+        "rchar": 1401936,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13780,
+        "process_io": {
+          "rchar": 23247538,
+          "wchar": 38406545,
+          "syscr": 7137,
+          "syscw": 14141,
+          "read_bytes": 0,
+          "write_bytes": 24109056,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "bigint",
+      "indexed": true,
+      "round": 6,
+      "version": "baseline",
+      "query_ms": 155.365446,
+      "query_io_delta": {
+        "rchar": 1401936,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13784,
+        "process_io": {
+          "rchar": 24649474,
+          "wchar": 41421293,
+          "syscr": 8137,
+          "syscw": 16141,
+          "read_bytes": 0,
+          "write_bytes": 24109056,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "bigint",
+      "indexed": true,
+      "round": 6,
+      "version": "candidate",
+      "query_ms": 152.255995,
+      "query_io_delta": {
+        "rchar": 1401936,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13780,
+        "process_io": {
+          "rchar": 24649474,
+          "wchar": 41421293,
+          "syscr": 8137,
+          "syscw": 16141,
+          "read_bytes": 0,
+          "write_bytes": 24109056,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "text",
+      "indexed": false,
+      "round": 1,
+      "version": "baseline",
+      "query_ms": 156.272616,
+      "query_io_delta": {
+        "rchar": 1406548,
+        "wchar": 3013860,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13716,
+        "process_io": {
+          "rchar": 17645253,
+          "wchar": 26343154,
+          "syscr": 3136,
+          "syscw": 6138,
+          "read_bytes": 0,
+          "write_bytes": 24100864,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "text",
+      "indexed": false,
+      "round": 1,
+      "version": "candidate",
+      "query_ms": 150.976931,
+      "query_io_delta": {
+        "rchar": 1406548,
+        "wchar": 3013860,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13624,
+        "process_io": {
+          "rchar": 17645253,
+          "wchar": 26343154,
+          "syscr": 3136,
+          "syscw": 6138,
+          "read_bytes": 0,
+          "write_bytes": 24100864,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "text",
+      "indexed": false,
+      "round": 2,
+      "version": "baseline",
+      "query_ms": 156.056636,
+      "query_io_delta": {
+        "rchar": 1407436,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13716,
+        "process_io": {
+          "rchar": 19052689,
+          "wchar": 29357902,
+          "syscr": 4136,
+          "syscw": 8138,
+          "read_bytes": 0,
+          "write_bytes": 24100864,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "text",
+      "indexed": false,
+      "round": 2,
+      "version": "candidate",
+      "query_ms": 150.898043,
+      "query_io_delta": {
+        "rchar": 1407436,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13624,
+        "process_io": {
+          "rchar": 19052689,
+          "wchar": 29357902,
+          "syscr": 4136,
+          "syscw": 8138,
+          "read_bytes": 0,
+          "write_bytes": 24100864,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "text",
+      "indexed": false,
+      "round": 3,
+      "version": "baseline",
+      "query_ms": 156.426544,
+      "query_io_delta": {
+        "rchar": 1407436,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13716,
+        "process_io": {
+          "rchar": 20460125,
+          "wchar": 32372650,
+          "syscr": 5136,
+          "syscw": 10138,
+          "read_bytes": 0,
+          "write_bytes": 24100864,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "text",
+      "indexed": false,
+      "round": 3,
+      "version": "candidate",
+      "query_ms": 152.166365,
+      "query_io_delta": {
+        "rchar": 1407436,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13624,
+        "process_io": {
+          "rchar": 20460125,
+          "wchar": 32372650,
+          "syscr": 5136,
+          "syscw": 10138,
+          "read_bytes": 0,
+          "write_bytes": 24100864,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "text",
+      "indexed": false,
+      "round": 4,
+      "version": "baseline",
+      "query_ms": 158.473418,
+      "query_io_delta": {
+        "rchar": 1407436,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13716,
+        "process_io": {
+          "rchar": 21867561,
+          "wchar": 35387398,
+          "syscr": 6136,
+          "syscw": 12138,
+          "read_bytes": 0,
+          "write_bytes": 24100864,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "text",
+      "indexed": false,
+      "round": 4,
+      "version": "candidate",
+      "query_ms": 154.700334,
+      "query_io_delta": {
+        "rchar": 1407436,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13624,
+        "process_io": {
+          "rchar": 21867561,
+          "wchar": 35387398,
+          "syscr": 6136,
+          "syscw": 12138,
+          "read_bytes": 0,
+          "write_bytes": 24100864,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "text",
+      "indexed": false,
+      "round": 5,
+      "version": "baseline",
+      "query_ms": 156.961903,
+      "query_io_delta": {
+        "rchar": 1407436,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13716,
+        "process_io": {
+          "rchar": 23274997,
+          "wchar": 38402146,
+          "syscr": 7136,
+          "syscw": 14138,
+          "read_bytes": 0,
+          "write_bytes": 24100864,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "text",
+      "indexed": false,
+      "round": 5,
+      "version": "candidate",
+      "query_ms": 153.181772,
+      "query_io_delta": {
+        "rchar": 1407436,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13624,
+        "process_io": {
+          "rchar": 23274997,
+          "wchar": 38402146,
+          "syscr": 7136,
+          "syscw": 14138,
+          "read_bytes": 0,
+          "write_bytes": 24100864,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "text",
+      "indexed": false,
+      "round": 6,
+      "version": "baseline",
+      "query_ms": 154.554243,
+      "query_io_delta": {
+        "rchar": 1407436,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13716,
+        "process_io": {
+          "rchar": 24682433,
+          "wchar": 41416894,
+          "syscr": 8136,
+          "syscw": 16138,
+          "read_bytes": 0,
+          "write_bytes": 24100864,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "text",
+      "indexed": false,
+      "round": 6,
+      "version": "candidate",
+      "query_ms": 151.115386,
+      "query_io_delta": {
+        "rchar": 1407436,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13624,
+        "process_io": {
+          "rchar": 24682433,
+          "wchar": 41416894,
+          "syscr": 8136,
+          "syscw": 16138,
+          "read_bytes": 0,
+          "write_bytes": 24100864,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "text",
+      "indexed": true,
+      "round": 1,
+      "version": "baseline",
+      "query_ms": 174.994581,
+      "query_io_delta": {
+        "rchar": 1406549,
+        "wchar": 3013861,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13684,
+        "process_io": {
+          "rchar": 17645349,
+          "wchar": 26347553,
+          "syscr": 3137,
+          "syscw": 6141,
+          "read_bytes": 0,
+          "write_bytes": 24109056,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "text",
+      "indexed": true,
+      "round": 1,
+      "version": "candidate",
+      "query_ms": 168.471802,
+      "query_io_delta": {
+        "rchar": 1406549,
+        "wchar": 3013861,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13708,
+        "process_io": {
+          "rchar": 17645349,
+          "wchar": 26347553,
+          "syscr": 3137,
+          "syscw": 6141,
+          "read_bytes": 0,
+          "write_bytes": 24109056,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "text",
+      "indexed": true,
+      "round": 2,
+      "version": "baseline",
+      "query_ms": 154.924757,
+      "query_io_delta": {
+        "rchar": 1407436,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13684,
+        "process_io": {
+          "rchar": 19052785,
+          "wchar": 29362301,
+          "syscr": 4137,
+          "syscw": 8141,
+          "read_bytes": 0,
+          "write_bytes": 24109056,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "text",
+      "indexed": true,
+      "round": 2,
+      "version": "candidate",
+      "query_ms": 151.139693,
+      "query_io_delta": {
+        "rchar": 1407436,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13708,
+        "process_io": {
+          "rchar": 19052785,
+          "wchar": 29362301,
+          "syscr": 4137,
+          "syscw": 8141,
+          "read_bytes": 0,
+          "write_bytes": 24109056,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "text",
+      "indexed": true,
+      "round": 3,
+      "version": "baseline",
+      "query_ms": 155.171947,
+      "query_io_delta": {
+        "rchar": 1407436,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13684,
+        "process_io": {
+          "rchar": 20460221,
+          "wchar": 32377049,
+          "syscr": 5137,
+          "syscw": 10141,
+          "read_bytes": 0,
+          "write_bytes": 24109056,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "text",
+      "indexed": true,
+      "round": 3,
+      "version": "candidate",
+      "query_ms": 150.721105,
+      "query_io_delta": {
+        "rchar": 1407436,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13708,
+        "process_io": {
+          "rchar": 20460221,
+          "wchar": 32377049,
+          "syscr": 5137,
+          "syscw": 10141,
+          "read_bytes": 0,
+          "write_bytes": 24109056,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "text",
+      "indexed": true,
+      "round": 4,
+      "version": "baseline",
+      "query_ms": 155.189983,
+      "query_io_delta": {
+        "rchar": 1407436,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13684,
+        "process_io": {
+          "rchar": 21867657,
+          "wchar": 35391797,
+          "syscr": 6137,
+          "syscw": 12141,
+          "read_bytes": 0,
+          "write_bytes": 24109056,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "text",
+      "indexed": true,
+      "round": 4,
+      "version": "candidate",
+      "query_ms": 151.031255,
+      "query_io_delta": {
+        "rchar": 1407436,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13708,
+        "process_io": {
+          "rchar": 21867657,
+          "wchar": 35391797,
+          "syscr": 6137,
+          "syscw": 12141,
+          "read_bytes": 0,
+          "write_bytes": 24109056,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "text",
+      "indexed": true,
+      "round": 5,
+      "version": "baseline",
+      "query_ms": 225.920039,
+      "query_io_delta": {
+        "rchar": 1407436,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13684,
+        "process_io": {
+          "rchar": 23275093,
+          "wchar": 38406545,
+          "syscr": 7137,
+          "syscw": 14141,
+          "read_bytes": 0,
+          "write_bytes": 24109056,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "text",
+      "indexed": true,
+      "round": 5,
+      "version": "candidate",
+      "query_ms": 211.142028,
+      "query_io_delta": {
+        "rchar": 1407436,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13708,
+        "process_io": {
+          "rchar": 23275093,
+          "wchar": 38406545,
+          "syscr": 7137,
+          "syscw": 14141,
+          "read_bytes": 0,
+          "write_bytes": 24109056,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "text",
+      "indexed": true,
+      "round": 6,
+      "version": "baseline",
+      "query_ms": 287.895303,
+      "query_io_delta": {
+        "rchar": 1407436,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13684,
+        "process_io": {
+          "rchar": 24682529,
+          "wchar": 41421293,
+          "syscr": 8137,
+          "syscw": 16141,
+          "read_bytes": 0,
+          "write_bytes": 24109056,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "text",
+      "indexed": true,
+      "round": 6,
+      "version": "candidate",
+      "query_ms": 280.499474,
+      "query_io_delta": {
+        "rchar": 1407436,
+        "wchar": 3014748,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13708,
+        "process_io": {
+          "rchar": 24682529,
+          "wchar": 41421293,
+          "syscr": 8137,
+          "syscw": 16141,
+          "read_bytes": 0,
+          "write_bytes": 24109056,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    }
+  ],
+  "verified_queries": 48000,
+  "scope": "Real JSONL request times, blocks of 50 alternate versions on the same fixed server CPU (not reserved); driver on a distinct CPU. No official score is inferred."
+}

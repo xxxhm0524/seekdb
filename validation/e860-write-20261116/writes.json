@@ -1,0 +1,60 @@
+{
+  "passed": true,
+  "rounds": 6,
+  "versions": {
+    "baseline": "81998e35b16df5a67a636b91d3798ae50baa9556fc45f3c745d04afca02b8986",
+    "candidate": "df27f64d91dfd4d0ee41d26cea2452a6e4b618bb8bcfa064289d92857ffd8f5b"
+  },
+  "driver_cpu": 3,
+  "server_cpu": 2,
+  "summary": {
+    "d128-body1024": {
+      "paired_speedups": [
+        1.3640496472012194,
+        1.3384695741818842,
+        1.3373378370996565,
+        1.320325946161356,
+        1.3331219678188542,
+        1.36869580517735
+      ],
+      "median_paired_speedup": 1.3379037056407703
+    },
+    "d128-body16": {
+      "paired_speedups": [
+        1.5419996168823673,
+        1.5969271460492733,
+        1.5574584404498468,
+        1.595272558345685,
+        1.5842126136352963,
+        1.5096525852300031
+      ],
+      "median_paired_speedup": 1.5708355270425716
+    },
+    "d768-body1024": {
+      "paired_speedups": [
+        1.614470950722849,
+        1.7831779353242743,
+        1.7514563048099026,
+        1.7635683984114554,
+        1.7438762232444858,
+        1.6996860915967194
+      ],
+      "median_paired_speedup": 1.747666264027194
+    },
+    "d768-body16": {
+      "paired_speedups": [
+        1.863896737033513,
+        1.8276241842677403,
+        1.8261205336494382,
+        1.8004354388521986,
+        1.8246127813857183,
+        1.720554836958873
+      ],
+      "median_paired_speedup": 1.8253666575175782
+    }
+  },
+  "scope": "Actual JSONL durable write request times, versions interleaved per batch. Fixed CPUs are not reserved. No formal E is inferred.",
+  "derived_from": "native-records/writes.json",
+  "derived_from_sha256": "9d33cab315cf8bcc4bd9e84fb953593aae844eb35767428d263081581942f9ae",
+  "selection": "保留全部配对轮次的加速比、汇总指标、正确性结论和二进制版本；逐请求记录保存在原报告中。"
+}

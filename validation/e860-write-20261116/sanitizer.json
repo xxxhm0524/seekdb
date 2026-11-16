@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "cases": [
+    "invariants",
+    "column_layouts",
+    "cache_column_sets",
+    "cache_ranges",
+    "sql_literals",
+    "protocol_complete_input",
+    "protocol_ids",
+    "protocol_nested_ids",
+    "json_string_output_probe",
+    "decimal_conversion_probe"
+  ],
+  "binary_sha256": "fc774e411e70087bb58902caa2399245c8a18371d9694ba21887fbdbf56b841a",
+  "ASAN_OPTIONS": "detect_leaks=1:abort_on_error=1",
+  "UBSAN_OPTIONS": "halt_on_error=1:print_stacktrace=1"
+}

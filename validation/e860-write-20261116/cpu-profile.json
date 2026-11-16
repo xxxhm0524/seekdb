@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "meaning": "Profiling collection completed after correcting the diagnostic executable location.",
+  "production_source_commit": "999f3a9dac509d63aed62aea2f0a5027cbf93f67",
+  "diagnostic_flags": "-O3 -DNDEBUG -ffp-contract=off -pg; -static -pg",
+  "rows": 9000,
+  "dimensions": 768,
+  "sample_period_seconds": 0.01,
+  "profile_file": "diagnostics/cpu-profile-flat.txt",
+  "profile_sha256": "12a1d727cc12cb3d367a097614aabb25dea3ba0936438ce885b37c5549f9825a",
+  "selection": "First 29 lines of the original flat profile.",
+  "raw_excerpt": "Flat profile:\n\nEach sample counts as 0.01 seconds.\n  %   cumulative   self              self     total           \n time   seconds   seconds    calls  ms/call  ms/call  name    \n 24.04      0.50     0.50                             ____strtod_l_internal\n 12.50      0.76     0.26     9000     0.03     0.03  mvd::parse_vector_literal(std::basic_string_view<char, std::char_traits<char> >, unsigned int, bool)\n  9.13      0.95     0.19                             str_to_mpn.constprop.0\n  5.77      1.07     0.12                             std::from_chars(char const*, char const*, double&, std::chars_format)\n  5.29      1.18     0.11                             std::__cxx11::basic_string<char, std::char_traits<char>, std::pmr::polymorphic_allocator<char> >::_M_mutate(unsigned long, unsigned long, char const*, unsigned long)\n  4.81      1.28     0.10                             __strlen_avx2\n  4.81      1.38     0.10                             uselocale\n  4.33      1.47     0.09                             pwrite64\n  3.85      1.55     0.08                             __strspn_sse42\n  2.88      1.61     0.06                             __memchr_avx2\n  2.40      1.66     0.05 13842000     0.00     0.00  mvd::(anonymous namespace)::whitespace(std::basic_string_view<char, std::char_traits<char> >, unsigned long&, bool)\n  2.40      1.71     0.05                             __mpn_lshift\n  2.40      1.76     0.05                             read\n  1.92      1.80     0.04                             fallocate\n  1.92      1.84     0.04                             round_and_return\n  1.44      1.87     0.03                             __memcpy_avx_unaligned_erms\n  0.96      1.89     0.02    18807     0.00     0.00  mvd::Storage::page(unsigned long)\n  0.96      1.91     0.02                             __mpn_construct_double\n  0.96      1.93     0.02                             __mpn_mul\n  0.96      1.95     0.02                             fdatasync\n  0.96      1.97     0.02                             fegetround\n  0.48      1.98     0.01     9660     0.00     0.00  mvd::utf8_length(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)\n  0.48      1.99     0.01      153     0.07     0.07  mvd::BTree::load(unsigned long)\n  0.48      2.00     0.01       93     0.11     0.11  mvd::Parser::parse()",
+  "initial_rejection_file": "diagnostics/cpu-profile-initial-stderr.log",
+  "initial_rejection_sha256": "34b21555c33ca2341f7504a00e4d67c1f020a8d23352faf0926fc3e5430e09be",
+  "scope": "Debug sampling identifies hot paths; production timings use uninstrumented executables."
+}

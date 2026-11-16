@@ -1,0 +1,1683 @@
+{
+  "passed": true,
+  "versions": {
+    "floor": "c36fafed171d63f7669631c281136a83e1826971143e796b28be9c035e9d4a9c",
+    "baseline": "81998e35b16df5a67a636b91d3798ae50baa9556fc45f3c745d04afca02b8986",
+    "candidate": "df27f64d91dfd4d0ee41d26cea2452a6e4b618bb8bcfa064289d92857ffd8f5b"
+  },
+  "fixture_sha256": "074f46cd83d2b7b38c59cb627ad4ae1337a918d36b92889e48d54ee4efa4c139",
+  "rounds": 3,
+  "queries": 200,
+  "ordered_keys": true,
+  "verified_queries": 7200,
+  "records": [
+    {
+      "round": 1,
+      "kind": "bigint",
+      "indexed": false,
+      "version": "floor",
+      "write_ms": 478.339271,
+      "prepare_ms": 99.293515,
+      "query_ms": 27.958841,
+      "sampled_cgroup_max_bytes": 13209600,
+      "sample_interval_target_ms": 2,
+      "samples": 301,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8814592\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 0\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 638976\nactive_file 8175616\nunevictable 0\nslab_reclaimable 385216\nslab_unreclaimable 186160\nslab 571376\nworkingset_refault_anon 0\nworkingset_refault_file 1\nworkingset_activate_anon 0\nworkingset_activate_file 1\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgfault 2118\npgmajfault 1\npgrefill 0\npgscan 3\npgsteal 3\npgactivate 1995\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=4096 wbytes=10399744 rios=1 wios=305 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 14624,
+        "process_io": {
+          "rchar": 16518024,
+          "wchar": 9863364,
+          "syscr": 2343,
+          "syscw": 1032,
+          "read_bytes": 4096,
+          "write_bytes": 10399744,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r1-bigint-idx0-floor\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "14624 kB",
+          "RssAnon": "3608 kB",
+          "RssFile": "11016 kB"
+        }
+      },
+      "database_sha256": "84410da5eeb3bff155f1cd8f46e1e89de6e698c6f9f0d656ed41d6b95724f258",
+      "database_bytes": 9575654,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575654,
+          "sha256": "3369db078a6f4e19c0c44be37bb1d92e4782555791a61d04930af57d931f4442"
+        }
+      },
+      "physical_storage_bytes": 8781824
+    },
+    {
+      "round": 1,
+      "kind": "bigint",
+      "indexed": false,
+      "version": "baseline",
+      "write_ms": 509.660182,
+      "prepare_ms": 52.864019,
+      "query_ms": 29.171081,
+      "sampled_cgroup_max_bytes": 12460032,
+      "sample_interval_target_ms": 2,
+      "samples": 297,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8777728\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 0\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 606208\nactive_file 8171520\nunevictable 0\nslab_reclaimable 385216\nslab_unreclaimable 186160\nslab 571376\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgfault 1801\npgmajfault 0\npgrefill 0\npgscan 0\npgsteal 0\npgactivate 1995\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=0 wbytes=10399744 rios=0 wios=305 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 13688,
+        "process_io": {
+          "rchar": 16518024,
+          "wchar": 9863364,
+          "syscr": 2340,
+          "syscw": 1032,
+          "read_bytes": 0,
+          "write_bytes": 10399744,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r1-bigint-idx0-baseline\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "13688 kB",
+          "RssAnon": "2844 kB",
+          "RssFile": "10844 kB"
+        }
+      },
+      "database_sha256": "84410da5eeb3bff155f1cd8f46e1e89de6e698c6f9f0d656ed41d6b95724f258",
+      "database_bytes": 9575654,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575654,
+          "sha256": "3369db078a6f4e19c0c44be37bb1d92e4782555791a61d04930af57d931f4442"
+        }
+      },
+      "physical_storage_bytes": 8781824
+    },
+    {
+      "round": 1,
+      "kind": "bigint",
+      "indexed": false,
+      "version": "candidate",
+      "write_ms": 262.563793,
+      "prepare_ms": 52.197869,
+      "query_ms": 22.628118,
+      "sampled_cgroup_max_bytes": 12369920,
+      "sample_interval_target_ms": 2,
+      "samples": 169,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8777728\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 0\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 606208\nactive_file 8171520\nunevictable 0\nslab_reclaimable 385216\nslab_unreclaimable 187952\nslab 573168\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgfault 1805\npgmajfault 0\npgrefill 0\npgscan 0\npgsteal 0\npgactivate 1995\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=0 wbytes=10399744 rios=0 wios=305 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 13856,
+        "process_io": {
+          "rchar": 16518024,
+          "wchar": 9863364,
+          "syscr": 2342,
+          "syscw": 1032,
+          "read_bytes": 0,
+          "write_bytes": 10399744,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r1-bigint-idx0-candidate\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "13856 kB",
+          "RssAnon": "2848 kB",
+          "RssFile": "11008 kB"
+        }
+      },
+      "database_sha256": "84410da5eeb3bff155f1cd8f46e1e89de6e698c6f9f0d656ed41d6b95724f258",
+      "database_bytes": 9575654,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575654,
+          "sha256": "3369db078a6f4e19c0c44be37bb1d92e4782555791a61d04930af57d931f4442"
+        }
+      },
+      "physical_storage_bytes": 8781824
+    },
+    {
+      "round": 1,
+      "kind": "bigint",
+      "indexed": true,
+      "version": "baseline",
+      "write_ms": 500.546889,
+      "prepare_ms": 54.795009,
+      "query_ms": 27.72759,
+      "sampled_cgroup_max_bytes": 12472320,
+      "sample_interval_target_ms": 2,
+      "samples": 291,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8769536\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 0\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 0\nactive_file 8769536\nunevictable 0\nslab_reclaimable 384992\nslab_unreclaimable 186160\nslab 571152\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgfault 1952\npgmajfault 0\npgrefill 0\npgscan 0\npgsteal 0\npgactivate 2141\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=0 wbytes=10407936 rios=0 wios=307 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 13632,
+        "process_io": {
+          "rchar": 16518119,
+          "wchar": 9867761,
+          "syscr": 2341,
+          "syscw": 1035,
+          "read_bytes": 0,
+          "write_bytes": 10407936,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r1-bigint-idx1-baseline\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "13632 kB",
+          "RssAnon": "2788 kB",
+          "RssFile": "10844 kB"
+        }
+      },
+      "database_sha256": "d9f43e70883c2f3f3aec31da58998ed62c69b41ac6526da19f606e55168236e9",
+      "database_bytes": 9575934,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575934,
+          "sha256": "3b3224c1520185f6abe68b4276c2a34875f29cb72d8bef91edb4004915db388a"
+        }
+      },
+      "physical_storage_bytes": 8773632
+    },
+    {
+      "round": 1,
+      "kind": "bigint",
+      "indexed": true,
+      "version": "candidate",
+      "write_ms": 250.80483,
+      "prepare_ms": 54.261759,
+      "query_ms": 22.585518,
+      "sampled_cgroup_max_bytes": 12439552,
+      "sample_interval_target_ms": 2,
+      "samples": 161,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8769536\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 0\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 0\nactive_file 8769536\nunevictable 0\nslab_reclaimable 384992\nslab_unreclaimable 187952\nslab 572944\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgfault 1951\npgmajfault 0\npgrefill 0\npgscan 0\npgsteal 0\npgactivate 2141\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=0 wbytes=10407936 rios=0 wios=307 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 13788,
+        "process_io": {
+          "rchar": 16518119,
+          "wchar": 9867761,
+          "syscr": 2345,
+          "syscw": 1035,
+          "read_bytes": 0,
+          "write_bytes": 10407936,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r1-bigint-idx1-candidate\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "13788 kB",
+          "RssAnon": "2788 kB",
+          "RssFile": "11000 kB"
+        }
+      },
+      "database_sha256": "d9f43e70883c2f3f3aec31da58998ed62c69b41ac6526da19f606e55168236e9",
+      "database_bytes": 9575934,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575934,
+          "sha256": "3b3224c1520185f6abe68b4276c2a34875f29cb72d8bef91edb4004915db388a"
+        }
+      },
+      "physical_storage_bytes": 8773632
+    },
+    {
+      "round": 1,
+      "kind": "bigint",
+      "indexed": true,
+      "version": "floor",
+      "write_ms": 463.497896,
+      "prepare_ms": 99.240515,
+      "query_ms": 27.65948,
+      "sampled_cgroup_max_bytes": 13262848,
+      "sample_interval_target_ms": 2,
+      "samples": 290,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8773632\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 4096\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 0\nactive_file 8773632\nunevictable 0\nslab_reclaimable 385104\nslab_unreclaimable 187952\nslab 573056\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgfault 2266\npgmajfault 0\npgrefill 0\npgscan 0\npgsteal 0\npgactivate 2141\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=0 wbytes=10407936 rios=0 wios=307 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 14520,
+        "process_io": {
+          "rchar": 16518119,
+          "wchar": 9867761,
+          "syscr": 2345,
+          "syscw": 1035,
+          "read_bytes": 0,
+          "write_bytes": 10407936,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r1-bigint-idx1-floor\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "14520 kB",
+          "RssAnon": "3548 kB",
+          "RssFile": "10972 kB"
+        }
+      },
+      "database_sha256": "d9f43e70883c2f3f3aec31da58998ed62c69b41ac6526da19f606e55168236e9",
+      "database_bytes": 9575934,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575934,
+          "sha256": "3b3224c1520185f6abe68b4276c2a34875f29cb72d8bef91edb4004915db388a"
+        }
+      },
+      "physical_storage_bytes": 8773632
+    },
+    {
+      "round": 1,
+      "kind": "text",
+      "indexed": false,
+      "version": "baseline",
+      "write_ms": 507.971892,
+      "prepare_ms": 54.009199,
+      "query_ms": 27.41917,
+      "sampled_cgroup_max_bytes": 12324864,
+      "sample_interval_target_ms": 2,
+      "samples": 294,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8777728\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 0\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 606208\nactive_file 8171520\nunevictable 0\nslab_reclaimable 385216\nslab_unreclaimable 187952\nslab 573168\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgfault 1788\npgmajfault 0\npgrefill 0\npgscan 0\npgsteal 0\npgactivate 1995\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=0 wbytes=10399744 rios=0 wios=305 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 13572,
+        "process_io": {
+          "rchar": 16519179,
+          "wchar": 9863364,
+          "syscr": 2341,
+          "syscw": 1032,
+          "read_bytes": 0,
+          "write_bytes": 10399744,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r1-text-idx0-baseline\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "13436 kB",
+          "RssAnon": "2584 kB",
+          "RssFile": "10852 kB"
+        }
+      },
+      "database_sha256": "84410da5eeb3bff155f1cd8f46e1e89de6e698c6f9f0d656ed41d6b95724f258",
+      "database_bytes": 9575654,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575654,
+          "sha256": "3369db078a6f4e19c0c44be37bb1d92e4782555791a61d04930af57d931f4442"
+        }
+      },
+      "physical_storage_bytes": 8781824
+    },
+    {
+      "round": 1,
+      "kind": "text",
+      "indexed": false,
+      "version": "candidate",
+      "write_ms": 263.387574,
+      "prepare_ms": 53.132319,
+      "query_ms": 22.854299,
+      "sampled_cgroup_max_bytes": 12320768,
+      "sample_interval_target_ms": 2,
+      "samples": 166,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8777728\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 0\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 606208\nactive_file 8171520\nunevictable 0\nslab_reclaimable 385216\nslab_unreclaimable 187952\nslab 573168\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgfault 1785\npgmajfault 0\npgrefill 0\npgscan 0\npgsteal 0\npgactivate 1995\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=0 wbytes=10399744 rios=0 wios=305 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 13660,
+        "process_io": {
+          "rchar": 16519179,
+          "wchar": 9863364,
+          "syscr": 2346,
+          "syscw": 1032,
+          "read_bytes": 0,
+          "write_bytes": 10399744,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r1-text-idx0-candidate\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "13584 kB",
+          "RssAnon": "2584 kB",
+          "RssFile": "11000 kB"
+        }
+      },
+      "database_sha256": "84410da5eeb3bff155f1cd8f46e1e89de6e698c6f9f0d656ed41d6b95724f258",
+      "database_bytes": 9575654,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575654,
+          "sha256": "3369db078a6f4e19c0c44be37bb1d92e4782555791a61d04930af57d931f4442"
+        }
+      },
+      "physical_storage_bytes": 8781824
+    },
+    {
+      "round": 1,
+      "kind": "text",
+      "indexed": false,
+      "version": "floor",
+      "write_ms": 508.360312,
+      "prepare_ms": 98.484545,
+      "query_ms": 27.428339,
+      "sampled_cgroup_max_bytes": 13553664,
+      "sample_interval_target_ms": 2,
+      "samples": 303,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8777728\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 0\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 606208\nactive_file 8171520\nunevictable 0\nslab_reclaimable 385216\nslab_unreclaimable 187952\nslab 573168\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgfault 2192\npgmajfault 0\npgrefill 0\npgscan 0\npgsteal 0\npgactivate 1995\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=0 wbytes=10399744 rios=0 wios=305 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 14852,
+        "process_io": {
+          "rchar": 16519179,
+          "wchar": 9863364,
+          "syscr": 2342,
+          "syscw": 1032,
+          "read_bytes": 0,
+          "write_bytes": 10399744,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r1-text-idx0-floor\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "14852 kB",
+          "RssAnon": "3872 kB",
+          "RssFile": "10980 kB"
+        }
+      },
+      "database_sha256": "84410da5eeb3bff155f1cd8f46e1e89de6e698c6f9f0d656ed41d6b95724f258",
+      "database_bytes": 9575654,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575654,
+          "sha256": "3369db078a6f4e19c0c44be37bb1d92e4782555791a61d04930af57d931f4442"
+        }
+      },
+      "physical_storage_bytes": 8781824
+    },
+    {
+      "round": 1,
+      "kind": "text",
+      "indexed": true,
+      "version": "candidate",
+      "write_ms": 258.863463,
+      "prepare_ms": 55.23155,
+      "query_ms": 22.928737,
+      "sampled_cgroup_max_bytes": 12308480,
+      "sample_interval_target_ms": 2,
+      "samples": 162,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8769536\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 0\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 0\nactive_file 8769536\nunevictable 0\nslab_reclaimable 384992\nslab_unreclaimable 187952\nslab 572944\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgfault 1937\npgmajfault 0\npgrefill 0\npgscan 2\npgsteal 0\npgactivate 2141\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=0 wbytes=10407936 rios=0 wios=307 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 13680,
+        "process_io": {
+          "rchar": 16519274,
+          "wchar": 9867761,
+          "syscr": 2340,
+          "syscw": 1035,
+          "read_bytes": 0,
+          "write_bytes": 10407936,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r1-text-idx1-candidate\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "13524 kB",
+          "RssAnon": "2524 kB",
+          "RssFile": "11000 kB"
+        }
+      },
+      "database_sha256": "d9f43e70883c2f3f3aec31da58998ed62c69b41ac6526da19f606e55168236e9",
+      "database_bytes": 9575934,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575934,
+          "sha256": "3b3224c1520185f6abe68b4276c2a34875f29cb72d8bef91edb4004915db388a"
+        }
+      },
+      "physical_storage_bytes": 8773632
+    },
+    {
+      "round": 1,
+      "kind": "text",
+      "indexed": true,
+      "version": "floor",
+      "write_ms": 476.06025,
+      "prepare_ms": 101.217787,
+      "query_ms": 27.50276,
+      "sampled_cgroup_max_bytes": 13533184,
+      "sample_interval_target_ms": 2,
+      "samples": 290,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8769536\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 0\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 0\nactive_file 8769536\nunevictable 0\nslab_reclaimable 384992\nslab_unreclaimable 187952\nslab 572944\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgfault 2341\npgmajfault 0\npgrefill 0\npgscan 0\npgsteal 0\npgactivate 2141\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=0 wbytes=10407936 rios=0 wios=307 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 14784,
+        "process_io": {
+          "rchar": 16519274,
+          "wchar": 9867761,
+          "syscr": 2343,
+          "syscw": 1035,
+          "read_bytes": 0,
+          "write_bytes": 10407936,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r1-text-idx1-floor\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "14784 kB",
+          "RssAnon": "3812 kB",
+          "RssFile": "10972 kB"
+        }
+      },
+      "database_sha256": "d9f43e70883c2f3f3aec31da58998ed62c69b41ac6526da19f606e55168236e9",
+      "database_bytes": 9575934,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575934,
+          "sha256": "3b3224c1520185f6abe68b4276c2a34875f29cb72d8bef91edb4004915db388a"
+        }
+      },
+      "physical_storage_bytes": 8773632
+    },
+    {
+      "round": 1,
+      "kind": "text",
+      "indexed": true,
+      "version": "baseline",
+      "write_ms": 503.677741,
+      "prepare_ms": 55.79407,
+      "query_ms": 27.65871,
+      "sampled_cgroup_max_bytes": 12324864,
+      "sample_interval_target_ms": 2,
+      "samples": 295,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8806400\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 0\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 0\nactive_file 8806400\nunevictable 0\nslab_reclaimable 384992\nslab_unreclaimable 187952\nslab 572944\nworkingset_refault_anon 0\nworkingset_refault_file 1\nworkingset_activate_anon 0\nworkingset_activate_file 1\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgfault 1930\npgmajfault 1\npgrefill 0\npgscan 1\npgsteal 1\npgactivate 2149\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=4096 wbytes=10407936 rios=1 wios=307 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 13628,
+        "process_io": {
+          "rchar": 16519274,
+          "wchar": 9867761,
+          "syscr": 2343,
+          "syscw": 1035,
+          "read_bytes": 4096,
+          "write_bytes": 10407936,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r1-text-idx1-baseline\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "13404 kB",
+          "RssAnon": "2524 kB",
+          "RssFile": "10880 kB"
+        }
+      },
+      "database_sha256": "d9f43e70883c2f3f3aec31da58998ed62c69b41ac6526da19f606e55168236e9",
+      "database_bytes": 9575934,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575934,
+          "sha256": "3b3224c1520185f6abe68b4276c2a34875f29cb72d8bef91edb4004915db388a"
+        }
+      },
+      "physical_storage_bytes": 8773632
+    },
+    {
+      "round": 2,
+      "kind": "bigint",
+      "indexed": false,
+      "version": "baseline",
+      "write_ms": 509.339942,
+      "prepare_ms": 55.14708,
+      "query_ms": 29.954811,
+      "sampled_cgroup_max_bytes": 12464128,
+      "sample_interval_target_ms": 2,
+      "samples": 296,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8777728\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 0\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 606208\nactive_file 8171520\nunevictable 0\nslab_reclaimable 385216\nslab_unreclaimable 187952\nslab 573168\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgfault 1805\npgmajfault 0\npgrefill 0\npgscan 0\npgsteal 0\npgactivate 1995\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=0 wbytes=10399744 rios=0 wios=305 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 13700,
+        "process_io": {
+          "rchar": 16518024,
+          "wchar": 9863364,
+          "syscr": 2341,
+          "syscw": 1032,
+          "read_bytes": 0,
+          "write_bytes": 10399744,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r2-bigint-idx0-baseline\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "13700 kB",
+          "RssAnon": "2848 kB",
+          "RssFile": "10852 kB"
+        }
+      },
+      "database_sha256": "84410da5eeb3bff155f1cd8f46e1e89de6e698c6f9f0d656ed41d6b95724f258",
+      "database_bytes": 9575654,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575654,
+          "sha256": "3369db078a6f4e19c0c44be37bb1d92e4782555791a61d04930af57d931f4442"
+        }
+      },
+      "physical_storage_bytes": 8781824
+    },
+    {
+      "round": 2,
+      "kind": "bigint",
+      "indexed": false,
+      "version": "candidate",
+      "write_ms": 249.321609,
+      "prepare_ms": 52.206209,
+      "query_ms": 22.666467,
+      "sampled_cgroup_max_bytes": 12472320,
+      "sample_interval_target_ms": 2,
+      "samples": 158,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8777728\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 0\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 606208\nactive_file 8171520\nunevictable 0\nslab_reclaimable 385216\nslab_unreclaimable 187952\nslab 573168\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgfault 1801\npgmajfault 0\npgrefill 0\npgscan 0\npgsteal 0\npgactivate 1995\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=0 wbytes=10399744 rios=0 wios=305 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 13856,
+        "process_io": {
+          "rchar": 16518024,
+          "wchar": 9863364,
+          "syscr": 2343,
+          "syscw": 1032,
+          "read_bytes": 0,
+          "write_bytes": 10399744,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r2-bigint-idx0-candidate\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "13856 kB",
+          "RssAnon": "2848 kB",
+          "RssFile": "11008 kB"
+        }
+      },
+      "database_sha256": "84410da5eeb3bff155f1cd8f46e1e89de6e698c6f9f0d656ed41d6b95724f258",
+      "database_bytes": 9575654,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575654,
+          "sha256": "3369db078a6f4e19c0c44be37bb1d92e4782555791a61d04930af57d931f4442"
+        }
+      },
+      "physical_storage_bytes": 8781824
+    },
+    {
+      "round": 2,
+      "kind": "bigint",
+      "indexed": false,
+      "version": "floor",
+      "write_ms": 473.033469,
+      "prepare_ms": 97.294455,
+      "query_ms": 27.59185,
+      "sampled_cgroup_max_bytes": 13225984,
+      "sample_interval_target_ms": 2,
+      "samples": 290,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8777728\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 0\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 606208\nactive_file 8171520\nunevictable 0\nslab_reclaimable 385216\nslab_unreclaimable 186160\nslab 571376\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgfault 2116\npgmajfault 0\npgrefill 0\npgscan 0\npgsteal 0\npgactivate 1995\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=0 wbytes=10399744 rios=0 wios=305 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 14588,
+        "process_io": {
+          "rchar": 16518024,
+          "wchar": 9863364,
+          "syscr": 2344,
+          "syscw": 1032,
+          "read_bytes": 0,
+          "write_bytes": 10399744,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r2-bigint-idx0-floor\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "14588 kB",
+          "RssAnon": "3608 kB",
+          "RssFile": "10980 kB"
+        }
+      },
+      "database_sha256": "84410da5eeb3bff155f1cd8f46e1e89de6e698c6f9f0d656ed41d6b95724f258",
+      "database_bytes": 9575654,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575654,
+          "sha256": "3369db078a6f4e19c0c44be37bb1d92e4782555791a61d04930af57d931f4442"
+        }
+      },
+      "physical_storage_bytes": 8781824
+    },
+    {
+      "round": 2,
+      "kind": "bigint",
+      "indexed": true,
+      "version": "candidate",
+      "write_ms": 248.756229,
+      "prepare_ms": 53.617969,
+      "query_ms": 22.603559,
+      "sampled_cgroup_max_bytes": 12439552,
+      "sample_interval_target_ms": 2,
+      "samples": 157,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8769536\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 0\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 8192\nactive_file 8761344\nunevictable 0\nslab_reclaimable 384992\nslab_unreclaimable 187952\nslab 572944\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgfault 1951\npgmajfault 0\npgrefill 0\npgscan 0\npgsteal 0\npgactivate 2139\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=0 wbytes=10407936 rios=0 wios=307 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 13788,
+        "process_io": {
+          "rchar": 16518119,
+          "wchar": 9867761,
+          "syscr": 2345,
+          "syscw": 1035,
+          "read_bytes": 0,
+          "write_bytes": 10407936,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r2-bigint-idx1-candidate\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "13788 kB",
+          "RssAnon": "2788 kB",
+          "RssFile": "11000 kB"
+        }
+      },
+      "database_sha256": "d9f43e70883c2f3f3aec31da58998ed62c69b41ac6526da19f606e55168236e9",
+      "database_bytes": 9575934,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575934,
+          "sha256": "3b3224c1520185f6abe68b4276c2a34875f29cb72d8bef91edb4004915db388a"
+        }
+      },
+      "physical_storage_bytes": 8773632
+    },
+    {
+      "round": 2,
+      "kind": "bigint",
+      "indexed": true,
+      "version": "floor",
+      "write_ms": 467.712767,
+      "prepare_ms": 98.277715,
+      "query_ms": 27.56303,
+      "sampled_cgroup_max_bytes": 13246464,
+      "sample_interval_target_ms": 2,
+      "samples": 290,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8765440\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 0\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 0\nactive_file 8765440\nunevictable 0\nslab_reclaimable 384880\nslab_unreclaimable 187952\nslab 572832\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgfault 2258\npgmajfault 0\npgrefill 0\npgscan 3\npgsteal 1\npgactivate 2140\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=0 wbytes=10407936 rios=0 wios=307 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 14516,
+        "process_io": {
+          "rchar": 16518119,
+          "wchar": 9867761,
+          "syscr": 2340,
+          "syscw": 1035,
+          "read_bytes": 0,
+          "write_bytes": 10407936,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r2-bigint-idx1-floor\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "14516 kB",
+          "RssAnon": "3548 kB",
+          "RssFile": "10968 kB"
+        }
+      },
+      "database_sha256": "d9f43e70883c2f3f3aec31da58998ed62c69b41ac6526da19f606e55168236e9",
+      "database_bytes": 9575934,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575934,
+          "sha256": "3b3224c1520185f6abe68b4276c2a34875f29cb72d8bef91edb4004915db388a"
+        }
+      },
+      "physical_storage_bytes": 8773632
+    },
+    {
+      "round": 2,
+      "kind": "bigint",
+      "indexed": true,
+      "version": "baseline",
+      "write_ms": 504.15258,
+      "prepare_ms": 54.63104,
+      "query_ms": 27.46125,
+      "sampled_cgroup_max_bytes": 12443648,
+      "sample_interval_target_ms": 2,
+      "samples": 292,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8769536\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 0\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 0\nactive_file 8769536\nunevictable 0\nslab_reclaimable 384992\nslab_unreclaimable 187952\nslab 572944\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgfault 1953\npgmajfault 0\npgrefill 0\npgscan 0\npgsteal 0\npgactivate 2141\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=0 wbytes=10407936 rios=0 wios=307 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 13632,
+        "process_io": {
+          "rchar": 16518119,
+          "wchar": 9867761,
+          "syscr": 2341,
+          "syscw": 1035,
+          "read_bytes": 0,
+          "write_bytes": 10407936,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r2-bigint-idx1-baseline\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "13632 kB",
+          "RssAnon": "2788 kB",
+          "RssFile": "10844 kB"
+        }
+      },
+      "database_sha256": "d9f43e70883c2f3f3aec31da58998ed62c69b41ac6526da19f606e55168236e9",
+      "database_bytes": 9575934,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575934,
+          "sha256": "3b3224c1520185f6abe68b4276c2a34875f29cb72d8bef91edb4004915db388a"
+        }
+      },
+      "physical_storage_bytes": 8773632
+    },
+    {
+      "round": 2,
+      "kind": "text",
+      "indexed": false,
+      "version": "candidate",
+      "write_ms": 253.40514,
+      "prepare_ms": 53.328839,
+      "query_ms": 22.654999,
+      "sampled_cgroup_max_bytes": 12324864,
+      "sample_interval_target_ms": 2,
+      "samples": 166,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8773632\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 0\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 602112\nactive_file 8171520\nunevictable 0\nslab_reclaimable 385216\nslab_unreclaimable 187952\nslab 573168\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgfault 1787\npgmajfault 0\npgrefill 0\npgscan 1\npgsteal 1\npgactivate 1995\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=0 wbytes=10399744 rios=0 wios=305 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 13668,
+        "process_io": {
+          "rchar": 16519179,
+          "wchar": 9863364,
+          "syscr": 2339,
+          "syscw": 1032,
+          "read_bytes": 0,
+          "write_bytes": 10399744,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r2-text-idx0-candidate\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "13596 kB",
+          "RssAnon": "2588 kB",
+          "RssFile": "11008 kB"
+        }
+      },
+      "database_sha256": "84410da5eeb3bff155f1cd8f46e1e89de6e698c6f9f0d656ed41d6b95724f258",
+      "database_bytes": 9575654,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575654,
+          "sha256": "3369db078a6f4e19c0c44be37bb1d92e4782555791a61d04930af57d931f4442"
+        }
+      },
+      "physical_storage_bytes": 8781824
+    },
+    {
+      "round": 2,
+      "kind": "text",
+      "indexed": false,
+      "version": "floor",
+      "write_ms": 469.380138,
+      "prepare_ms": 98.502485,
+      "query_ms": 27.843821,
+      "sampled_cgroup_max_bytes": 13557760,
+      "sample_interval_target_ms": 2,
+      "samples": 289,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8777728\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 0\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 606208\nactive_file 8171520\nunevictable 0\nslab_reclaimable 385216\nslab_unreclaimable 187952\nslab 573168\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgfault 2204\npgmajfault 0\npgrefill 0\npgscan 0\npgsteal 0\npgactivate 1995\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=0 wbytes=10399744 rios=0 wios=305 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 14852,
+        "process_io": {
+          "rchar": 16519179,
+          "wchar": 9863364,
+          "syscr": 2345,
+          "syscw": 1032,
+          "read_bytes": 0,
+          "write_bytes": 10399744,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r2-text-idx0-floor\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "14852 kB",
+          "RssAnon": "3872 kB",
+          "RssFile": "10980 kB"
+        }
+      },
+      "database_sha256": "84410da5eeb3bff155f1cd8f46e1e89de6e698c6f9f0d656ed41d6b95724f258",
+      "database_bytes": 9575654,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575654,
+          "sha256": "3369db078a6f4e19c0c44be37bb1d92e4782555791a61d04930af57d931f4442"
+        }
+      },
+      "physical_storage_bytes": 8781824
+    },
+    {
+      "round": 2,
+      "kind": "text",
+      "indexed": false,
+      "version": "baseline",
+      "write_ms": 500.787839,
+      "prepare_ms": 53.684229,
+      "query_ms": 27.49162,
+      "sampled_cgroup_max_bytes": 12333056,
+      "sample_interval_target_ms": 2,
+      "samples": 292,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8777728\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 0\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 606208\nactive_file 8171520\nunevictable 0\nslab_reclaimable 385216\nslab_unreclaimable 187952\nslab 573168\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgfault 1787\npgmajfault 0\npgrefill 0\npgscan 0\npgsteal 0\npgactivate 1995\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=0 wbytes=10399744 rios=0 wios=305 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 13572,
+        "process_io": {
+          "rchar": 16519179,
+          "wchar": 9863364,
+          "syscr": 2340,
+          "syscw": 1032,
+          "read_bytes": 0,
+          "write_bytes": 10399744,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r2-text-idx0-baseline\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "13440 kB",
+          "RssAnon": "2588 kB",
+          "RssFile": "10852 kB"
+        }
+      },
+      "database_sha256": "84410da5eeb3bff155f1cd8f46e1e89de6e698c6f9f0d656ed41d6b95724f258",
+      "database_bytes": 9575654,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575654,
+          "sha256": "3369db078a6f4e19c0c44be37bb1d92e4782555791a61d04930af57d931f4442"
+        }
+      },
+      "physical_storage_bytes": 8781824
+    },
+    {
+      "round": 2,
+      "kind": "text",
+      "indexed": true,
+      "version": "floor",
+      "write_ms": 473.27235,
+      "prepare_ms": 102.757086,
+      "query_ms": 27.264391,
+      "sampled_cgroup_max_bytes": 13553664,
+      "sample_interval_target_ms": 2,
+      "samples": 294,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8810496\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 4096\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 8192\nactive_file 8802304\nunevictable 0\nslab_reclaimable 384768\nslab_unreclaimable 187952\nslab 572720\nworkingset_refault_anon 0\nworkingset_refault_file 3\nworkingset_activate_anon 0\nworkingset_activate_file 3\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgfault 2345\npgmajfault 1\npgrefill 2\npgscan 11\npgsteal 4\npgactivate 2147\npgdeactivate 2\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=12288 wbytes=10407936 rios=3 wios=307 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 14820,
+        "process_io": {
+          "rchar": 16519274,
+          "wchar": 9867761,
+          "syscr": 2341,
+          "syscw": 1035,
+          "read_bytes": 12288,
+          "write_bytes": 10407936,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r2-text-idx1-floor\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "14820 kB",
+          "RssAnon": "3812 kB",
+          "RssFile": "11008 kB"
+        }
+      },
+      "database_sha256": "d9f43e70883c2f3f3aec31da58998ed62c69b41ac6526da19f606e55168236e9",
+      "database_bytes": 9575934,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575934,
+          "sha256": "3b3224c1520185f6abe68b4276c2a34875f29cb72d8bef91edb4004915db388a"
+        }
+      },
+      "physical_storage_bytes": 8773632
+    },
+    {
+      "round": 2,
+      "kind": "text",
+      "indexed": true,
+      "version": "baseline",
+      "write_ms": 511.244262,
+      "prepare_ms": 55.59383,
+      "query_ms": 27.674321,
+      "sampled_cgroup_max_bytes": 12288000,
+      "sample_interval_target_ms": 2,
+      "samples": 296,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8769536\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 0\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 0\nactive_file 8769536\nunevictable 0\nslab_reclaimable 384992\nslab_unreclaimable 186160\nslab 571152\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgfault 1923\npgmajfault 0\npgrefill 0\npgscan 0\npgsteal 0\npgactivate 2141\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=0 wbytes=10407936 rios=0 wios=307 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 13588,
+        "process_io": {
+          "rchar": 16519274,
+          "wchar": 9867761,
+          "syscr": 2343,
+          "syscw": 1035,
+          "read_bytes": 0,
+          "write_bytes": 10407936,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r2-text-idx1-baseline\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "13368 kB",
+          "RssAnon": "2524 kB",
+          "RssFile": "10844 kB"
+        }
+      },
+      "database_sha256": "d9f43e70883c2f3f3aec31da58998ed62c69b41ac6526da19f606e55168236e9",
+      "database_bytes": 9575934,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575934,
+          "sha256": "3b3224c1520185f6abe68b4276c2a34875f29cb72d8bef91edb4004915db388a"
+        }
+      },
+      "physical_storage_bytes": 8773632
+    },
+    {
+      "round": 2,
+      "kind": "text",
+      "indexed": true,
+      "version": "candidate",
+      "write_ms": 257.137442,
+      "prepare_ms": 55.57767,
+      "query_ms": 22.690469,
+      "sampled_cgroup_max_bytes": 12382208,
+      "sample_interval_target_ms": 2,
+      "samples": 167,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8769536\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 0\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 8192\nactive_file 8761344\nunevictable 0\nslab_reclaimable 384992\nslab_unreclaimable 187952\nslab 572944\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgfault 1933\npgmajfault 0\npgrefill 0\npgscan 0\npgsteal 0\npgactivate 2139\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=0 wbytes=10407936 rios=0 wios=307 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 13672,
+        "process_io": {
+          "rchar": 16519274,
+          "wchar": 9867761,
+          "syscr": 2342,
+          "syscw": 1035,
+          "read_bytes": 0,
+          "write_bytes": 10407936,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r2-text-idx1-candidate\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "13524 kB",
+          "RssAnon": "2524 kB",
+          "RssFile": "11000 kB"
+        }
+      },
+      "database_sha256": "d9f43e70883c2f3f3aec31da58998ed62c69b41ac6526da19f606e55168236e9",
+      "database_bytes": 9575934,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575934,
+          "sha256": "3b3224c1520185f6abe68b4276c2a34875f29cb72d8bef91edb4004915db388a"
+        }
+      },
+      "physical_storage_bytes": 8773632
+    },
+    {
+      "round": 3,
+      "kind": "bigint",
+      "indexed": false,
+      "version": "candidate",
+      "write_ms": 256.975472,
+      "prepare_ms": 52.481268,
+      "query_ms": 22.877129,
+      "sampled_cgroup_max_bytes": 12460032,
+      "sample_interval_target_ms": 2,
+      "samples": 162,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8777728\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 0\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 606208\nactive_file 8171520\nunevictable 0\nslab_reclaimable 385216\nslab_unreclaimable 187952\nslab 573168\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgfault 1810\npgmajfault 0\npgrefill 0\npgscan 0\npgsteal 0\npgactivate 1995\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=0 wbytes=10399744 rios=0 wios=305 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 13856,
+        "process_io": {
+          "rchar": 16518024,
+          "wchar": 9863364,
+          "syscr": 2344,
+          "syscw": 1032,
+          "read_bytes": 0,
+          "write_bytes": 10399744,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r3-bigint-idx0-candidate\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "13856 kB",
+          "RssAnon": "2848 kB",
+          "RssFile": "11008 kB"
+        }
+      },
+      "database_sha256": "84410da5eeb3bff155f1cd8f46e1e89de6e698c6f9f0d656ed41d6b95724f258",
+      "database_bytes": 9575654,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575654,
+          "sha256": "3369db078a6f4e19c0c44be37bb1d92e4782555791a61d04930af57d931f4442"
+        }
+      },
+      "physical_storage_bytes": 8781824
+    },
+    {
+      "round": 3,
+      "kind": "bigint",
+      "indexed": false,
+      "version": "floor",
+      "write_ms": 484.092673,
+      "prepare_ms": 97.008505,
+      "query_ms": 27.99188,
+      "sampled_cgroup_max_bytes": 13291520,
+      "sample_interval_target_ms": 2,
+      "samples": 301,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8777728\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 0\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 606208\nactive_file 8171520\nunevictable 0\nslab_reclaimable 385216\nslab_unreclaimable 187952\nslab 573168\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgfault 2113\npgmajfault 0\npgrefill 0\npgscan 0\npgsteal 0\npgactivate 1995\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=0 wbytes=10399744 rios=0 wios=305 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 14592,
+        "process_io": {
+          "rchar": 16518024,
+          "wchar": 9863364,
+          "syscr": 2344,
+          "syscw": 1032,
+          "read_bytes": 0,
+          "write_bytes": 10399744,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r3-bigint-idx0-floor\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "14592 kB",
+          "RssAnon": "3612 kB",
+          "RssFile": "10980 kB"
+        }
+      },
+      "database_sha256": "84410da5eeb3bff155f1cd8f46e1e89de6e698c6f9f0d656ed41d6b95724f258",
+      "database_bytes": 9575654,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575654,
+          "sha256": "3369db078a6f4e19c0c44be37bb1d92e4782555791a61d04930af57d931f4442"
+        }
+      },
+      "physical_storage_bytes": 8781824
+    },
+    {
+      "round": 3,
+      "kind": "bigint",
+      "indexed": false,
+      "version": "baseline",
+      "write_ms": 509.690113,
+      "prepare_ms": 52.384808,
+      "query_ms": 27.673631,
+      "sampled_cgroup_max_bytes": 12468224,
+      "sample_interval_target_ms": 2,
+      "samples": 292,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8777728\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 0\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 606208\nactive_file 8171520\nunevictable 0\nslab_reclaimable 385216\nslab_unreclaimable 187952\nslab 573168\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgfault 1799\npgmajfault 0\npgrefill 0\npgscan 0\npgsteal 0\npgactivate 1995\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=0 wbytes=10399744 rios=0 wios=305 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 13700,
+        "process_io": {
+          "rchar": 16518024,
+          "wchar": 9863364,
+          "syscr": 2339,
+          "syscw": 1032,
+          "read_bytes": 0,
+          "write_bytes": 10399744,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r3-bigint-idx0-baseline\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "13700 kB",
+          "RssAnon": "2848 kB",
+          "RssFile": "10852 kB"
+        }
+      },
+      "database_sha256": "84410da5eeb3bff155f1cd8f46e1e89de6e698c6f9f0d656ed41d6b95724f258",
+      "database_bytes": 9575654,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575654,
+          "sha256": "3369db078a6f4e19c0c44be37bb1d92e4782555791a61d04930af57d931f4442"
+        }
+      },
+      "physical_storage_bytes": 8781824
+    },
+    {
+      "round": 3,
+      "kind": "bigint",
+      "indexed": true,
+      "version": "floor",
+      "write_ms": 479.240542,
+      "prepare_ms": 98.262035,
+      "query_ms": 27.45506,
+      "sampled_cgroup_max_bytes": 13193216,
+      "sample_interval_target_ms": 2,
+      "samples": 295,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8769536\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 0\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 0\nactive_file 8769536\nunevictable 0\nslab_reclaimable 384992\nslab_unreclaimable 187952\nslab 572944\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgfault 2261\npgmajfault 0\npgrefill 0\npgscan 0\npgsteal 0\npgactivate 2141\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=0 wbytes=10407936 rios=0 wios=307 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 14520,
+        "process_io": {
+          "rchar": 16518119,
+          "wchar": 9867761,
+          "syscr": 2347,
+          "syscw": 1035,
+          "read_bytes": 0,
+          "write_bytes": 10407936,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r3-bigint-idx1-floor\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "14520 kB",
+          "RssAnon": "3548 kB",
+          "RssFile": "10972 kB"
+        }
+      },
+      "database_sha256": "d9f43e70883c2f3f3aec31da58998ed62c69b41ac6526da19f606e55168236e9",
+      "database_bytes": 9575934,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575934,
+          "sha256": "3b3224c1520185f6abe68b4276c2a34875f29cb72d8bef91edb4004915db388a"
+        }
+      },
+      "physical_storage_bytes": 8773632
+    },
+    {
+      "round": 3,
+      "kind": "bigint",
+      "indexed": true,
+      "version": "baseline",
+      "write_ms": 511.094843,
+      "prepare_ms": 55.08809,
+      "query_ms": 27.26489,
+      "sampled_cgroup_max_bytes": 12435456,
+      "sample_interval_target_ms": 2,
+      "samples": 297,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8769536\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 0\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 0\nactive_file 8769536\nunevictable 0\nslab_reclaimable 384992\nslab_unreclaimable 187952\nslab 572944\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgfault 1944\npgmajfault 0\npgrefill 0\npgscan 0\npgsteal 0\npgactivate 2141\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=0 wbytes=10407936 rios=0 wios=307 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 13636,
+        "process_io": {
+          "rchar": 16518119,
+          "wchar": 9867761,
+          "syscr": 2343,
+          "syscw": 1035,
+          "read_bytes": 0,
+          "write_bytes": 10407936,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r3-bigint-idx1-baseline\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "13636 kB",
+          "RssAnon": "2792 kB",
+          "RssFile": "10844 kB"
+        }
+      },
+      "database_sha256": "d9f43e70883c2f3f3aec31da58998ed62c69b41ac6526da19f606e55168236e9",
+      "database_bytes": 9575934,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575934,
+          "sha256": "3b3224c1520185f6abe68b4276c2a34875f29cb72d8bef91edb4004915db388a"
+        }
+      },
+      "physical_storage_bytes": 8773632
+    },
+    {
+      "round": 3,
+      "kind": "bigint",
+      "indexed": true,
+      "version": "candidate",
+      "write_ms": 261.643834,
+      "prepare_ms": 54.420839,
+      "query_ms": 22.715209,
+      "sampled_cgroup_max_bytes": 12414976,
+      "sample_interval_target_ms": 2,
+      "samples": 165,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8769536\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 0\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 4096\nactive_file 8765440\nunevictable 0\nslab_reclaimable 384992\nslab_unreclaimable 187952\nslab 572944\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgfault 1954\npgmajfault 0\npgrefill 0\npgscan 0\npgsteal 0\npgactivate 2140\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=0 wbytes=10407936 rios=0 wios=307 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 13784,
+        "process_io": {
+          "rchar": 16518119,
+          "wchar": 9867761,
+          "syscr": 2344,
+          "syscw": 1035,
+          "read_bytes": 0,
+          "write_bytes": 10407936,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r3-bigint-idx1-candidate\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "13784 kB",
+          "RssAnon": "2784 kB",
+          "RssFile": "11000 kB"
+        }
+      },
+      "database_sha256": "d9f43e70883c2f3f3aec31da58998ed62c69b41ac6526da19f606e55168236e9",
+      "database_bytes": 9575934,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575934,
+          "sha256": "3b3224c1520185f6abe68b4276c2a34875f29cb72d8bef91edb4004915db388a"
+        }
+      },
+      "physical_storage_bytes": 8773632
+    },
+    {
+      "round": 3,
+      "kind": "text",
+      "indexed": false,
+      "version": "floor",
+      "write_ms": 473.47738,
+      "prepare_ms": 98.385245,
+      "query_ms": 28.46215,
+      "sampled_cgroup_max_bytes": 13565952,
+      "sample_interval_target_ms": 2,
+      "samples": 293,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8777728\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 0\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 606208\nactive_file 8171520\nunevictable 0\nslab_reclaimable 385216\nslab_unreclaimable 187952\nslab 573168\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgfault 2194\npgmajfault 0\npgrefill 0\npgscan 1\npgsteal 0\npgactivate 1995\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=0 wbytes=10399744 rios=0 wios=305 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 14852,
+        "process_io": {
+          "rchar": 16519179,
+          "wchar": 9863364,
+          "syscr": 2344,
+          "syscw": 1032,
+          "read_bytes": 0,
+          "write_bytes": 10399744,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r3-text-idx0-floor\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "14852 kB",
+          "RssAnon": "3872 kB",
+          "RssFile": "10980 kB"
+        }
+      },
+      "database_sha256": "84410da5eeb3bff155f1cd8f46e1e89de6e698c6f9f0d656ed41d6b95724f258",
+      "database_bytes": 9575654,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575654,
+          "sha256": "3369db078a6f4e19c0c44be37bb1d92e4782555791a61d04930af57d931f4442"
+        }
+      },
+      "physical_storage_bytes": 8781824
+    },
+    {
+      "round": 3,
+      "kind": "text",
+      "indexed": false,
+      "version": "baseline",
+      "write_ms": 511.881963,
+      "prepare_ms": 53.99884,
+      "query_ms": 27.848339,
+      "sampled_cgroup_max_bytes": 12357632,
+      "sample_interval_target_ms": 2,
+      "samples": 295,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8785920\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 0\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 606208\nactive_file 8179712\nunevictable 0\nslab_reclaimable 385216\nslab_unreclaimable 187952\nslab 573168\nworkingset_refault_anon 0\nworkingset_refault_file 2\nworkingset_activate_anon 0\nworkingset_activate_file 2\nworkingset_restore_anon 0\nworkingset_restore_file 2\nworkingset_nodereclaim 0\npgfault 1793\npgmajfault 1\npgrefill 0\npgscan 0\npgsteal 0\npgactivate 1995\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=8192 wbytes=10399744 rios=2 wios=305 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 13572,
+        "process_io": {
+          "rchar": 16519179,
+          "wchar": 9863364,
+          "syscr": 2341,
+          "syscw": 1032,
+          "read_bytes": 8192,
+          "write_bytes": 10399744,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r3-text-idx0-baseline\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "13436 kB",
+          "RssAnon": "2584 kB",
+          "RssFile": "10852 kB"
+        }
+      },
+      "database_sha256": "84410da5eeb3bff155f1cd8f46e1e89de6e698c6f9f0d656ed41d6b95724f258",
+      "database_bytes": 9575654,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575654,
+          "sha256": "3369db078a6f4e19c0c44be37bb1d92e4782555791a61d04930af57d931f4442"
+        }
+      },
+      "physical_storage_bytes": 8781824
+    },
+    {
+      "round": 3,
+      "kind": "text",
+      "indexed": false,
+      "version": "candidate",
+      "write_ms": 258.998512,
+      "prepare_ms": 54.49909,
+      "query_ms": 22.611768,
+      "sampled_cgroup_max_bytes": 12337152,
+      "sample_interval_target_ms": 2,
+      "samples": 170,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8814592\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 0\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 634880\nactive_file 8179712\nunevictable 0\nslab_reclaimable 385104\nslab_unreclaimable 187952\nslab 573056\nworkingset_refault_anon 0\nworkingset_refault_file 2\nworkingset_activate_anon 0\nworkingset_activate_file 2\nworkingset_restore_anon 0\nworkingset_restore_file 1\nworkingset_nodereclaim 0\npgfault 1791\npgmajfault 2\npgrefill 0\npgscan 2\npgsteal 2\npgactivate 1995\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=8192 wbytes=10399744 rios=2 wios=305 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 13696,
+        "process_io": {
+          "rchar": 16519179,
+          "wchar": 9863364,
+          "syscr": 2344,
+          "syscw": 1032,
+          "read_bytes": 8192,
+          "write_bytes": 10399744,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r3-text-idx0-candidate\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "13628 kB",
+          "RssAnon": "2584 kB",
+          "RssFile": "11044 kB"
+        }
+      },
+      "database_sha256": "84410da5eeb3bff155f1cd8f46e1e89de6e698c6f9f0d656ed41d6b95724f258",
+      "database_bytes": 9575654,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575654,
+          "sha256": "3369db078a6f4e19c0c44be37bb1d92e4782555791a61d04930af57d931f4442"
+        }
+      },
+      "physical_storage_bytes": 8781824
+    },
+    {
+      "round": 3,
+      "kind": "text",
+      "indexed": true,
+      "version": "baseline",
+      "write_ms": 508.938662,
+      "prepare_ms": 56.08824,
+      "query_ms": 27.68067,
+      "sampled_cgroup_max_bytes": 12320768,
+      "sample_interval_target_ms": 2,
+      "samples": 295,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8777728\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 0\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 0\nactive_file 8777728\nunevictable 0\nslab_reclaimable 384992\nslab_unreclaimable 187952\nslab 572944\nworkingset_refault_anon 0\nworkingset_refault_file 2\nworkingset_activate_anon 0\nworkingset_activate_file 2\nworkingset_restore_anon 0\nworkingset_restore_file 2\nworkingset_nodereclaim 0\npgfault 1932\npgmajfault 1\npgrefill 0\npgscan 0\npgsteal 0\npgactivate 2141\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=8192 wbytes=10407936 rios=2 wios=307 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 13592,
+        "process_io": {
+          "rchar": 16519274,
+          "wchar": 9867761,
+          "syscr": 2341,
+          "syscw": 1035,
+          "read_bytes": 8192,
+          "write_bytes": 10407936,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r3-text-idx1-baseline\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "13368 kB",
+          "RssAnon": "2524 kB",
+          "RssFile": "10844 kB"
+        }
+      },
+      "database_sha256": "d9f43e70883c2f3f3aec31da58998ed62c69b41ac6526da19f606e55168236e9",
+      "database_bytes": 9575934,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575934,
+          "sha256": "3b3224c1520185f6abe68b4276c2a34875f29cb72d8bef91edb4004915db388a"
+        }
+      },
+      "physical_storage_bytes": 8773632
+    },
+    {
+      "round": 3,
+      "kind": "text",
+      "indexed": true,
+      "version": "candidate",
+      "write_ms": 260.807183,
+      "prepare_ms": 56.00458,
+      "query_ms": 22.879448,
+      "sampled_cgroup_max_bytes": 12312576,
+      "sample_interval_target_ms": 2,
+      "samples": 167,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8773632\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 0\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 0\nactive_file 8773632\nunevictable 0\nslab_reclaimable 384992\nslab_unreclaimable 187952\nslab 572944\nworkingset_refault_anon 0\nworkingset_refault_file 1\nworkingset_activate_anon 0\nworkingset_activate_file 1\nworkingset_restore_anon 0\nworkingset_restore_file 1\nworkingset_nodereclaim 0\npgfault 1944\npgmajfault 1\npgrefill 0\npgscan 0\npgsteal 0\npgactivate 2141\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=4096 wbytes=10407936 rios=1 wios=307 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 13688,
+        "process_io": {
+          "rchar": 16519274,
+          "wchar": 9867761,
+          "syscr": 2348,
+          "syscw": 1035,
+          "read_bytes": 4096,
+          "write_bytes": 10407936,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r3-text-idx1-candidate\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "13528 kB",
+          "RssAnon": "2528 kB",
+          "RssFile": "11000 kB"
+        }
+      },
+      "database_sha256": "d9f43e70883c2f3f3aec31da58998ed62c69b41ac6526da19f606e55168236e9",
+      "database_bytes": 9575934,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575934,
+          "sha256": "3b3224c1520185f6abe68b4276c2a34875f29cb72d8bef91edb4004915db388a"
+        }
+      },
+      "physical_storage_bytes": 8773632
+    },
+    {
+      "round": 3,
+      "kind": "text",
+      "indexed": true,
+      "version": "floor",
+      "write_ms": 477.670881,
+      "prepare_ms": 100.570606,
+      "query_ms": 27.46761,
+      "sampled_cgroup_max_bytes": 13529088,
+      "sample_interval_target_ms": 2,
+      "samples": 295,
+      "actual_memory_peak_bytes": null,
+      "cgroup_memory_stat": "anon 0\nfile 8769536\nkernel_stack 0\npagetables 0\npercpu 0\nsock 0\nshmem 0\nfile_mapped 0\nfile_dirty 0\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 0\ninactive_file 0\nactive_file 8769536\nunevictable 0\nslab_reclaimable 384992\nslab_unreclaimable 187952\nslab 572944\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgfault 2338\npgmajfault 0\npgrefill 0\npgscan 0\npgsteal 0\npgactivate 2141\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\n",
+      "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
+      "raw_cgroup_io_stat": "8:0 rbytes=0 wbytes=10407936 rios=0 wios=307 dbytes=0 dios=0\n",
+      "resources": {
+        "process_vmhwm_kib": 14784,
+        "process_io": {
+          "rchar": 16519274,
+          "wchar": 9867761,
+          "syscr": 2344,
+          "syscw": 1035,
+          "read_bytes": 0,
+          "write_bytes": 10407936,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/resource-r3-text-idx1-floor\n",
+        "uid": "65534\t65534\t65534\t65534",
+        "process_status": {
+          "VmRSS": "14784 kB",
+          "RssAnon": "3812 kB",
+          "RssFile": "10972 kB"
+        }
+      },
+      "database_sha256": "d9f43e70883c2f3f3aec31da58998ed62c69b41ac6526da19f606e55168236e9",
+      "database_bytes": 9575934,
+      "database_files": {
+        "database.mvd": {
+          "bytes": 9575934,
+          "sha256": "3b3224c1520185f6abe68b4276c2a34875f29cb72d8bef91edb4004915db388a"
+        }
+      },
+      "physical_storage_bytes": 8773632
+    }
+  ],
+  "summary": {
+    "bigint-idx0": {
+      "floor": {
+        "write_ms": 478.339271,
+        "prepare_ms": 97.294455,
+        "query_ms": 27.958841,
+        "sampled_cgroup_max_bytes": 13225984
+      },
+      "baseline": {
+        "write_ms": 509.660182,
+        "prepare_ms": 52.864019,
+        "query_ms": 29.171081,
+        "sampled_cgroup_max_bytes": 12464128
+      },
+      "candidate": {
+        "write_ms": 256.975472,
+        "prepare_ms": 52.206209,
+        "query_ms": 22.666467,
+        "sampled_cgroup_max_bytes": 12460032
+      }
+    },
+    "bigint-idx1": {
+      "floor": {
+        "write_ms": 467.712767,
+        "prepare_ms": 98.277715,
+        "query_ms": 27.56303,
+        "sampled_cgroup_max_bytes": 13246464
+      },
+      "baseline": {
+        "write_ms": 504.15258,
+        "prepare_ms": 54.795009,
+        "query_ms": 27.46125,
+        "sampled_cgroup_max_bytes": 12443648
+      },
+      "candidate": {
+        "write_ms": 250.80483,
+        "prepare_ms": 54.261759,
+        "query_ms": 22.603559,
+        "sampled_cgroup_max_bytes": 12439552
+      }
+    },
+    "text-idx0": {
+      "floor": {
+        "write_ms": 473.47738,
+        "prepare_ms": 98.484545,
+        "query_ms": 27.843821,
+        "sampled_cgroup_max_bytes": 13557760
+      },
+      "baseline": {
+        "write_ms": 507.971892,
+        "prepare_ms": 53.99884,
+        "query_ms": 27.49162,
+        "sampled_cgroup_max_bytes": 12333056
+      },
+      "candidate": {
+        "write_ms": 258.998512,
+        "prepare_ms": 53.328839,
+        "query_ms": 22.654999,
+        "sampled_cgroup_max_bytes": 12324864
+      }
+    },
+    "text-idx1": {
+      "floor": {
+        "write_ms": 476.06025,
+        "prepare_ms": 101.217787,
+        "query_ms": 27.46761,
+        "sampled_cgroup_max_bytes": 13533184
+      },
+      "baseline": {
+        "write_ms": 508.938662,
+        "prepare_ms": 55.79407,
+        "query_ms": 27.674321,
+        "sampled_cgroup_max_bytes": 12320768
+      },
+      "candidate": {
+        "write_ms": 258.863463,
+        "prepare_ms": 55.57767,
+        "query_ms": 22.879448,
+        "sampled_cgroup_max_bytes": 12312576
+      }
+    }
+  },
+  "identical_file_bytes_required": true,
+  "scope": "Fresh per-sample cgroups with 2 CPU/2 GiB/no swap. Native constrained default entrypoint. Sampled memory.current includes page cache but is a lower bound on the true peak. Raw device IO is retained without asserting the platform device attribution. No formal E is inferred."
+}

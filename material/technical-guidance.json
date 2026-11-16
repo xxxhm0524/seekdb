@@ -40,7 +40,8 @@
         "rounding",
         "integer-certificate",
         "avx2-id",
-        "avx2-projection"
+        "avx2-projection",
+        "decimal-conversion"
       ]
     },
     {
@@ -87,7 +88,9 @@
         "heap-stage-resources",
         "heap-stage-id",
         "heap-stage-projection",
-        "heap-stage-writes"
+        "heap-stage-writes",
+        "write-regression-check",
+        "cpu-profile"
       ]
     }
   ]

@@ -45,6 +45,20 @@ def main():
     for name in ["json.hpp", "json.LICENSE.MIT"]:
         assert hashlib.sha256((ROOT/"third_party"/name).read_bytes()).hexdigest() == dependencies["nlohmann/json"][name+".sha256"]
     assert hashlib.sha256((ROOT/"third_party/GCC-RUNTIME-EXCEPTION-3.1.txt").read_bytes()).hexdigest() == dependencies["gcc-runtime-exception"]["GCC-RUNTIME-EXCEPTION-3.1.txt.sha256"]
+    vendor_headers = set()
+    if "fast_float" in dependencies:
+        fast_float = dependencies["fast_float"]
+        assert fast_float["commit"] == "dbeabeeb3e6791cb96994c2a7a084c36e62ccfb2"
+        assert len(fast_float["files_sha256"]) == 12
+        for name, expected in fast_float["files_sha256"].items():
+            relative = "third_party/fast_float/" + name
+            assert hashlib.sha256((ROOT/relative).read_bytes()).hexdigest() == expected
+            if name.endswith(".h"): vendor_headers.add(relative)
+        oracle = strict((ROOT/"tests/fixtures/legacy_vector_literal.provenance.json").read_text(encoding="utf-8"))
+        fixture = (ROOT/"tests/fixtures/legacy_vector_literal.cpp").read_bytes()
+        assert hashlib.sha256(fixture).hexdigest() == oracle["fixture_sha256"]
+        original = fixture.replace(b"namespace mvd::legacy_literal {", b"namespace mvd {", 1)
+        assert hashlib.sha256(original).hexdigest() == oracle["original_sha256"]
     # Official files must match the frozen upstream commit, including assertions.
     manifest = strict((ROOT/"validation/official-kit-sha256.json").read_text(encoding="utf-8"))
     assert manifest["upstream_commit"] == "f4d4e26653af823a7601668802f80e374ad6643c"
@@ -63,7 +77,7 @@ def main():
         assert strict(raw.decode("utf-8"))["passed"] is True, name
     hashes = strict((evidence/"runtime-source-sha256.json").read_text(encoding="utf-8"))
     assert len(hashes) == 26
-    current_evidence = ROOT/("validation/e860-5000-20261116" if technical_guidance else "validation/e860-opt-20261116")
+    current_evidence = ROOT/("validation/e860-write-20261116" if vendor_headers else "validation/e860-5000-20261116" if technical_guidance else "validation/e860-opt-20261116")
     current_lock = current_evidence/"runtime-inputs.json"
     current = strict(current_lock.read_text(encoding="utf-8")) if current_lock.exists() else None
     if current is not None:
@@ -81,6 +95,21 @@ def main():
             assert hashlib.sha256(raw).hexdigest() == experiment["source_sha256"], experiment["id"]
             assert raw.decode("utf-8") == experiment["raw_report"], experiment["id"]
             report = strict(raw.decode("utf-8"))
+            for diagnostic in report.get("diagnostic_inputs", []):
+                diagnostic_path = (path.parent/diagnostic["file"]).resolve()
+                diagnostic_path.relative_to(ROOT.resolve())
+                diagnostic_bytes = diagnostic_path.read_bytes()
+                assert hashlib.sha256(diagnostic_bytes).hexdigest() == diagnostic["sha256"]
+                assert diagnostic_bytes.decode("utf-8") == diagnostic["raw_gate"]
+            if "profile_file" in report:
+                profile = (path.parent/report["profile_file"]).resolve()
+                profile.relative_to(ROOT.resolve())
+                profile_bytes = profile.read_bytes()
+                assert hashlib.sha256(profile_bytes).hexdigest() == report["profile_sha256"]
+                assert profile_bytes.decode("utf-8").startswith(report["raw_excerpt"])
+                rejected = (path.parent/report["initial_rejection_file"]).resolve()
+                rejected.relative_to(ROOT.resolve())
+                assert hashlib.sha256(rejected.read_bytes()).hexdigest() == report["initial_rejection_sha256"]
             if "derived_from" in report:
                 original = (path.parent/report["derived_from"]).resolve()
                 original.relative_to(ROOT.resolve())
@@ -94,7 +123,7 @@ def main():
             history = strict((ROOT/"evidence/e860-history-20261116/approved-owner-history.json").read_text(encoding="utf-8"))["messages"]
             latest = strict((ROOT/"evidence/e860-history-20261116/latest-owner-history.json").read_text(encoding="utf-8"))["messages"]
             assert [m["content"] for m in material_document["conversations"]] == [m["content"] for m in history+latest], "actual source messages were rewritten"
-        assert set(current["sha256_lf"]) == set(hashes)
+        assert set(current["sha256_lf"]) == set(hashes) | vendor_headers
         for name, expected in current["sha256_lf"].items():
             assert hashlib.sha256((ROOT/name).read_bytes().replace(b"\r\n", b"\n")).hexdigest() == expected, name
         source = current_evidence/"production-source-match.json"
@@ -130,6 +159,8 @@ def main():
                           material_sha256=hashlib.sha256(material).hexdigest(),
                           dependency_integrity=True, official_kit_unchanged=True,
                           retained_evidence_reports=len(provenance), runtime_source_files=len(hashes),
+                          current_runtime_source_files=len(current["sha256_lf"]) if current else len(hashes),
+                          vendored_parser_headers=len(vendor_headers),
                           historical_reports_are_current_runtime=current is None,
                           technical_guidance=technical_guidance,
                           guidance_count=len(material_document["guidance"]) if technical_guidance else 0,

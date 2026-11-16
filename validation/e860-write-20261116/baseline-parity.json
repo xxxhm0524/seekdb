@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "observations": 7862,
+  "qualifying_failure_count": 0,
+  "failures": [],
+  "reference_rejections_accepted_by_candidate": [],
+  "seed": 120055,
+  "phase": "all",
+  "candidate_sha256": "df27f64d91dfd4d0ee41d26cea2452a6e4b618bb8bcfa064289d92857ffd8f5b",
+  "reference_sha256": "81998e35b16df5a67a636b91d3798ae50baa9556fc45f3c745d04afca02b8986",
+  "reference_commit": "999f3a9dac509d63aed62aea2f0a5027cbf93f67",
+  "scope": "Actual hardened native processes; finite differential checks, no formal score."
+}
