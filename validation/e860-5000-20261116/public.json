@@ -6,121 +6,121 @@
       "id": "sql_crud",
       "status": "PASS",
       "message": "",
-      "duration_ms": 57
+      "duration_ms": 45
     },
     {
       "id": "sql_comparisons",
       "status": "PASS",
       "message": "",
-      "duration_ms": 42
+      "duration_ms": 43
     },
     {
       "id": "sql_ordering",
       "status": "PASS",
       "message": "",
-      "duration_ms": 37
+      "duration_ms": 43
     },
     {
       "id": "sql_empty",
       "status": "PASS",
       "message": "",
-      "duration_ms": 40
+      "duration_ms": 41
     },
     {
       "id": "sql_primary_key",
       "status": "PASS",
       "message": "",
-      "duration_ms": 36
+      "duration_ms": 39
     },
     {
       "id": "sql_unicode",
       "status": "PASS",
       "message": "",
-      "duration_ms": 45
+      "duration_ms": 35
     },
     {
       "id": "sql_bigint",
       "status": "PASS",
       "message": "",
-      "duration_ms": 36
+      "duration_ms": 37
     },
     {
       "id": "sql_unsupported",
       "status": "PASS",
       "message": "",
-      "duration_ms": 42
+      "duration_ms": 38
     },
     {
       "id": "storage_restart",
       "status": "PASS",
       "message": "",
-      "duration_ms": 76
+      "duration_ms": 75
     },
     {
       "id": "vector_euclidean",
       "status": "PASS",
       "message": "",
-      "duration_ms": 35
+      "duration_ms": 40
     },
     {
       "id": "transaction_commit",
       "status": "PASS",
       "message": "",
-      "duration_ms": 39
+      "duration_ms": 37
     },
     {
       "id": "transaction_rollback",
       "status": "PASS",
       "message": "",
-      "duration_ms": 37
+      "duration_ms": 40
     },
     {
       "id": "storage_mutations",
       "status": "PASS",
       "message": "",
-      "duration_ms": 74
+      "duration_ms": 67
     },
     {
       "id": "storage_multiple_tables",
       "status": "PASS",
       "message": "",
-      "duration_ms": 76
+      "duration_ms": 79
     },
     {
       "id": "vector_ties_and_filter",
       "status": "PASS",
       "message": "",
-      "duration_ms": 43
+      "duration_ms": 39
     },
     {
       "id": "vector_float32",
       "status": "PASS",
       "message": "",
-      "duration_ms": 36
+      "duration_ms": 43
     },
     {
       "id": "vector_index_maintenance",
       "status": "PASS",
       "message": "",
-      "duration_ms": 75
+      "duration_ms": 78
     },
     {
       "id": "transaction_failed_insert",
       "status": "PASS",
       "message": "",
-      "duration_ms": 74
+      "duration_ms": 82
     },
     {
       "id": "transaction_autocommit_atomic",
       "status": "PASS",
       "message": "",
-      "duration_ms": 82
+      "duration_ms": 74
     },
     {
       "id": "transaction_shutdown_rollback",
       "status": "PASS",
       "message": "",
-      "duration_ms": 81
+      "duration_ms": 70
     }
   ],
   "note": "Local diagnostic only; no performance/Agent scores or platform callbacks."

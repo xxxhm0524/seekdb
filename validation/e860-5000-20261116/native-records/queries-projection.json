@@ -7,24 +7,24 @@
   "driver_cpu": 3,
   "server_cpu": 2,
   "versions": {
-    "baseline": "8795394a7c75c49d669226ecd53aa16602f10946b7640289a915a9ae83760e35",
-    "candidate": "1df55ac6910cf56cbf6c99f33ec9a07c49c6588fb00c042947a705a19fd7a418"
+    "baseline": "1df55ac6910cf56cbf6c99f33ec9a07c49c6588fb00c042947a705a19fd7a418",
+    "candidate": "81998e35b16df5a67a636b91d3798ae50baa9556fc45f3c745d04afca02b8986"
   },
   "fixture_sha256": "8c5f1e90a45d840735849349b800d013d53ccc3fbf38ee35d803594a294c2d95",
   "summary": {
     "bigint-idx0": {
       "paired_speedups": [
-        1.032614743146334,
-        1.0124091160108761,
-        1.029602079494155,
-        1.0328550751902843,
-        1.027288049517052,
-        1.0343395189565197
+        1.0610620286339425,
+        1.070119322317724,
+        1.0791920831310005,
+        1.0713190203667808,
+        1.074093358340139,
+        1.0721545680385611
       ],
-      "median_paired_speedup": 1.0311084113202444,
+      "median_paired_speedup": 1.071736794202671,
       "median_ms": {
-        "baseline": 224.8488175,
-        "candidate": 217.5401025
+        "baseline": 216.98648350000002,
+        "candidate": 202.2797695
       },
       "median_read_calls": {
         "baseline": 1000.0,
@@ -33,17 +33,17 @@
     },
     "bigint-idx1": {
       "paired_speedups": [
-        1.0315182022288218,
-        1.0287456098917482,
-        1.0271142343323816,
-        1.0243065772396984,
-        1.0282200498382816,
-        1.020422519323459
+        1.0658647492025033,
+        1.0571702168081596,
+        1.0562362325996155,
+        1.0550180146087496,
+        1.0605430558494897,
+        1.0601387175707004
       ],
-      "median_paired_speedup": 1.0276671420853316,
+      "median_paired_speedup": 1.05865446718943,
       "median_ms": {
-        "baseline": 155.049301,
-        "candidate": 150.75536
+        "baseline": 151.09481,
+        "candidate": 142.64389
       },
       "median_read_calls": {
         "baseline": 1000.0,
@@ -52,17 +52,17 @@
     },
     "text-idx0": {
       "paired_speedups": [
-        1.0350761203378813,
-        1.0341859503108333,
-        1.0279968506837893,
-        1.0243896306002804,
-        1.0246774204962195,
-        1.0227564981371255
+        1.0607966063690357,
+        1.0568528565402913,
+        1.0593326949851307,
+        1.061781689361299,
+        1.0603864525126547,
+        1.059274103568385
       ],
-      "median_paired_speedup": 1.0263371355900044,
+      "median_paired_speedup": 1.0598595737488927,
       "median_ms": {
-        "baseline": 156.34958,
-        "candidate": 151.6408755
+        "baseline": 150.8614875,
+        "candidate": 142.5425865
       },
       "median_read_calls": {
         "baseline": 1000.0,
@@ -71,17 +71,17 @@
     },
     "text-idx1": {
       "paired_speedups": [
-        1.0387173338360802,
-        1.0250434808015656,
-        1.0295303169386927,
-        1.0275355455398951,
-        1.069990854686685,
-        1.0263666412436838
+        1.0631343948180303,
+        1.0615714766605244,
+        1.057185129658366,
+        1.0591024858592843,
+        1.0621935616935807,
+        1.0608909085483087
       ],
-      "median_paired_speedup": 1.028532931239294,
+      "median_paired_speedup": 1.0612311926044167,
       "median_ms": {
-        "baseline": 165.092282,
-        "candidate": 159.8057475
+        "baseline": 150.96101449999998,
+        "candidate": 142.25016649999998
       },
       "median_read_calls": {
         "baseline": 1000.0,
@@ -95,7 +95,7 @@
       "indexed": false,
       "round": 1,
       "version": "baseline",
-      "query_ms": 156.231456,
+      "query_ms": 151.560012,
       "query_io_delta": {
         "rchar": 1401048,
         "wchar": 3013860,
@@ -106,7 +106,7 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13872,
+        "process_vmhwm_kib": 13788,
         "process_io": {
           "rchar": 17639698,
           "wchar": 26343154,
@@ -125,7 +125,7 @@
       "indexed": false,
       "round": 1,
       "version": "candidate",
-      "query_ms": 151.296945,
+      "query_ms": 142.838032,
       "query_io_delta": {
         "rchar": 1401048,
         "wchar": 3013860,
@@ -136,13 +136,13 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13828,
+        "process_vmhwm_kib": 13876,
         "process_io": {
           "rchar": 17639698,
           "wchar": 26343154,
           "syscr": 3136,
           "syscw": 6138,
-          "read_bytes": 4096,
+          "read_bytes": 0,
           "write_bytes": 24100864,
           "cancelled_write_bytes": 0
         },
@@ -155,7 +155,7 @@
       "indexed": false,
       "round": 2,
       "version": "baseline",
-      "query_ms": 197.158244,
+      "query_ms": 196.947277,
       "query_io_delta": {
         "rchar": 1401936,
         "wchar": 3014748,
@@ -166,7 +166,7 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13872,
+        "process_vmhwm_kib": 13788,
         "process_io": {
           "rchar": 19041634,
           "wchar": 29357902,
@@ -185,7 +185,7 @@
       "indexed": false,
       "round": 2,
       "version": "candidate",
-      "query_ms": 194.741672,
+      "query_ms": 184.042352,
       "query_io_delta": {
         "rchar": 1401936,
         "wchar": 3014748,
@@ -196,13 +196,13 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13828,
+        "process_vmhwm_kib": 13876,
         "process_io": {
           "rchar": 19041634,
           "wchar": 29357902,
           "syscr": 4136,
           "syscw": 8138,
-          "read_bytes": 4096,
+          "read_bytes": 0,
           "write_bytes": 24100864,
           "cancelled_write_bytes": 0
         },
@@ -215,7 +215,7 @@
       "indexed": false,
       "round": 3,
       "version": "baseline",
-      "query_ms": 226.006684,
+      "query_ms": 218.623588,
       "query_io_delta": {
         "rchar": 1401936,
         "wchar": 3014748,
@@ -226,7 +226,7 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13872,
+        "process_vmhwm_kib": 13788,
         "process_io": {
           "rchar": 20443570,
           "wchar": 32372650,
@@ -245,7 +245,7 @@
       "indexed": false,
       "round": 3,
       "version": "candidate",
-      "query_ms": 219.508768,
+      "query_ms": 202.580793,
       "query_io_delta": {
         "rchar": 1401936,
         "wchar": 3014748,
@@ -256,13 +256,13 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13828,
+        "process_vmhwm_kib": 13876,
         "process_io": {
           "rchar": 20443570,
           "wchar": 32372650,
           "syscr": 5136,
           "syscw": 10138,
-          "read_bytes": 4096,
+          "read_bytes": 0,
           "write_bytes": 24100864,
           "cancelled_write_bytes": 0
         },
@@ -275,7 +275,7 @@
       "indexed": false,
       "round": 4,
       "version": "baseline",
-      "query_ms": 224.749253,
+      "query_ms": 216.920266,
       "query_io_delta": {
         "rchar": 1401936,
         "wchar": 3014748,
@@ -286,7 +286,7 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13872,
+        "process_vmhwm_kib": 13788,
         "process_io": {
           "rchar": 21845506,
           "wchar": 35387398,
@@ -305,7 +305,7 @@
       "indexed": false,
       "round": 4,
       "version": "candidate",
-      "query_ms": 217.599989,
+      "query_ms": 202.479618,
       "query_io_delta": {
         "rchar": 1401936,
         "wchar": 3014748,
@@ -316,13 +316,13 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13828,
+        "process_vmhwm_kib": 13876,
         "process_io": {
           "rchar": 21845506,
           "wchar": 35387398,
           "syscr": 6136,
           "syscw": 12138,
-          "read_bytes": 4096,
+          "read_bytes": 0,
           "write_bytes": 24100864,
           "cancelled_write_bytes": 0
         },
@@ -335,7 +335,7 @@
       "indexed": false,
       "round": 5,
       "version": "baseline",
-      "query_ms": 225.459502,
+      "query_ms": 217.052701,
       "query_io_delta": {
         "rchar": 1401936,
         "wchar": 3014748,
@@ -346,7 +346,7 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13872,
+        "process_vmhwm_kib": 13788,
         "process_io": {
           "rchar": 23247442,
           "wchar": 38402146,
@@ -365,7 +365,7 @@
       "indexed": false,
       "round": 5,
       "version": "candidate",
-      "query_ms": 219.470578,
+      "query_ms": 202.079921,
       "query_io_delta": {
         "rchar": 1401936,
         "wchar": 3014748,
@@ -376,13 +376,13 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13828,
+        "process_vmhwm_kib": 13876,
         "process_io": {
           "rchar": 23247442,
           "wchar": 38402146,
           "syscr": 7136,
           "syscw": 14138,
-          "read_bytes": 4096,
+          "read_bytes": 0,
           "write_bytes": 24100864,
           "cancelled_write_bytes": 0
         },
@@ -395,7 +395,7 @@
       "indexed": false,
       "round": 6,
       "version": "baseline",
-      "query_ms": 224.948382,
+      "query_ms": 217.491114,
       "query_io_delta": {
         "rchar": 1401936,
         "wchar": 3014748,
@@ -406,7 +406,7 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13872,
+        "process_vmhwm_kib": 13788,
         "process_io": {
           "rchar": 24649378,
           "wchar": 41416894,
@@ -425,7 +425,7 @@
       "indexed": false,
       "round": 6,
       "version": "candidate",
-      "query_ms": 217.480216,
+      "query_ms": 202.854253,
       "query_io_delta": {
         "rchar": 1401936,
         "wchar": 3014748,
@@ -436,13 +436,13 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13828,
+        "process_vmhwm_kib": 13876,
         "process_io": {
           "rchar": 24649378,
           "wchar": 41416894,
           "syscr": 8136,
           "syscw": 16138,
-          "read_bytes": 4096,
+          "read_bytes": 0,
           "write_bytes": 24100864,
           "cancelled_write_bytes": 0
         },
@@ -455,7 +455,7 @@
       "indexed": true,
       "round": 1,
       "version": "baseline",
-      "query_ms": 155.467169,
+      "query_ms": 151.924132,
       "query_io_delta": {
         "rchar": 1401049,
         "wchar": 3013861,
@@ -466,7 +466,7 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13784,
+        "process_vmhwm_kib": 13688,
         "process_io": {
           "rchar": 17639794,
           "wchar": 26347553,
@@ -485,7 +485,7 @@
       "indexed": true,
       "round": 1,
       "version": "candidate",
-      "query_ms": 150.716845,
+      "query_ms": 142.536032,
       "query_io_delta": {
         "rchar": 1401049,
         "wchar": 3013861,
@@ -496,7 +496,7 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13780,
+        "process_vmhwm_kib": 13800,
         "process_io": {
           "rchar": 17639794,
           "wchar": 26347553,
@@ -515,7 +515,7 @@
       "indexed": true,
       "round": 2,
       "version": "baseline",
-      "query_ms": 155.095687,
+      "query_ms": 150.910245,
       "query_io_delta": {
         "rchar": 1401936,
         "wchar": 3014748,
@@ -526,7 +526,7 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13784,
+        "process_vmhwm_kib": 13688,
         "process_io": {
           "rchar": 19041730,
           "wchar": 29362301,
@@ -545,7 +545,7 @@
       "indexed": true,
       "round": 2,
       "version": "candidate",
-      "query_ms": 150.761943,
+      "query_ms": 142.74924,
       "query_io_delta": {
         "rchar": 1401936,
         "wchar": 3014748,
@@ -556,7 +556,7 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13780,
+        "process_vmhwm_kib": 13800,
         "process_io": {
           "rchar": 19041730,
           "wchar": 29362301,
@@ -575,7 +575,7 @@
       "indexed": true,
       "round": 3,
       "version": "baseline",
-      "query_ms": 154.754215,
+      "query_ms": 151.176463,
       "query_io_delta": {
         "rchar": 1401936,
         "wchar": 3014748,
@@ -586,7 +586,7 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13784,
+        "process_vmhwm_kib": 13688,
         "process_io": {
           "rchar": 20443666,
           "wchar": 32377049,
@@ -605,7 +605,7 @@
       "indexed": true,
       "round": 3,
       "version": "candidate",
-      "query_ms": 150.668942,
+      "query_ms": 143.127511,
       "query_io_delta": {
         "rchar": 1401936,
         "wchar": 3014748,
@@ -616,7 +616,7 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13780,
+        "process_vmhwm_kib": 13800,
         "process_io": {
           "rchar": 20443666,
           "wchar": 32377049,
@@ -635,7 +635,7 @@
       "indexed": true,
       "round": 4,
       "version": "baseline",
-      "query_ms": 154.795614,
+      "query_ms": 150.900135,
       "query_io_delta": {
         "rchar": 1401936,
         "wchar": 3014748,
@@ -646,7 +646,7 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13784,
+        "process_vmhwm_kib": 13688,
         "process_io": {
           "rchar": 21845602,
           "wchar": 35391797,
@@ -665,7 +665,7 @@
       "indexed": true,
       "round": 4,
       "version": "candidate",
-      "query_ms": 151.122347,
+      "query_ms": 143.030861,
       "query_io_delta": {
         "rchar": 1401936,
         "wchar": 3014748,
@@ -676,7 +676,7 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13780,
+        "process_vmhwm_kib": 13800,
         "process_io": {
           "rchar": 21845602,
           "wchar": 35391797,
@@ -695,7 +695,7 @@
       "indexed": true,
       "round": 5,
       "version": "baseline",
-      "query_ms": 155.002915,
+      "query_ms": 151.078995,
       "query_io_delta": {
         "rchar": 1401936,
         "wchar": 3014748,
@@ -706,7 +706,7 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13784,
+        "process_vmhwm_kib": 13688,
         "process_io": {
           "rchar": 23247538,
           "wchar": 38406545,
@@ -725,7 +725,7 @@
       "indexed": true,
       "round": 5,
       "version": "candidate",
-      "query_ms": 150.748777,
+      "query_ms": 142.454372,
       "query_io_delta": {
         "rchar": 1401936,
         "wchar": 3014748,
@@ -736,7 +736,7 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13780,
+        "process_vmhwm_kib": 13800,
         "process_io": {
           "rchar": 23247538,
           "wchar": 38406545,
@@ -755,7 +755,7 @@
       "indexed": true,
       "round": 6,
       "version": "baseline",
-      "query_ms": 155.365446,
+      "query_ms": 151.110625,
       "query_io_delta": {
         "rchar": 1401936,
         "wchar": 3014748,
@@ -766,7 +766,7 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13784,
+        "process_vmhwm_kib": 13688,
         "process_io": {
           "rchar": 24649474,
           "wchar": 41421293,
@@ -785,7 +785,7 @@
       "indexed": true,
       "round": 6,
       "version": "candidate",
-      "query_ms": 152.255995,
+      "query_ms": 142.53854,
       "query_io_delta": {
         "rchar": 1401936,
         "wchar": 3014748,
@@ -796,7 +796,7 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13780,
+        "process_vmhwm_kib": 13800,
         "process_io": {
           "rchar": 24649474,
           "wchar": 41421293,
@@ -815,7 +815,37 @@
       "indexed": false,
       "round": 1,
       "version": "baseline",
-      "query_ms": 156.272616,
+      "query_ms": 151.583001,
+      "query_io_delta": {
+        "rchar": 1406548,
+        "wchar": 3013860,
+        "syscr": 1000,
+        "syscw": 2000,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "resources": {
+        "process_vmhwm_kib": 13752,
+        "process_io": {
+          "rchar": 17645253,
+          "wchar": 26343154,
+          "syscr": 3137,
+          "syscw": 6138,
+          "read_bytes": 0,
+          "write_bytes": 24100864,
+          "cancelled_write_bytes": 0
+        },
+        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
+        "uid": "65534\t65534\t65534\t65534"
+      }
+    },
+    {
+      "kind": "text",
+      "indexed": false,
+      "round": 1,
+      "version": "candidate",
+      "query_ms": 142.895443,
       "query_io_delta": {
         "rchar": 1406548,
         "wchar": 3013860,
@@ -843,12 +873,12 @@
     {
       "kind": "text",
       "indexed": false,
-      "round": 1,
-      "version": "candidate",
-      "query_ms": 150.976931,
+      "round": 2,
+      "version": "baseline",
+      "query_ms": 150.864755,
       "query_io_delta": {
-        "rchar": 1406548,
-        "wchar": 3013860,
+        "rchar": 1407436,
+        "wchar": 3014748,
         "syscr": 1000,
         "syscw": 2000,
         "read_bytes": 0,
@@ -856,12 +886,12 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13624,
+        "process_vmhwm_kib": 13752,
         "process_io": {
-          "rchar": 17645253,
-          "wchar": 26343154,
-          "syscr": 3136,
-          "syscw": 6138,
+          "rchar": 19052689,
+          "wchar": 29357902,
+          "syscr": 4137,
+          "syscw": 8138,
           "read_bytes": 0,
           "write_bytes": 24100864,
           "cancelled_write_bytes": 0
@@ -874,8 +904,8 @@
       "kind": "text",
       "indexed": false,
       "round": 2,
-      "version": "baseline",
-      "query_ms": 156.056636,
+      "version": "candidate",
+      "query_ms": 142.749063,
       "query_io_delta": {
         "rchar": 1407436,
         "wchar": 3014748,
@@ -903,9 +933,9 @@
     {
       "kind": "text",
       "indexed": false,
-      "round": 2,
-      "version": "candidate",
-      "query_ms": 150.898043,
+      "round": 3,
+      "version": "baseline",
+      "query_ms": 150.781295,
       "query_io_delta": {
         "rchar": 1407436,
         "wchar": 3014748,
@@ -916,12 +946,12 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13624,
+        "process_vmhwm_kib": 13752,
         "process_io": {
-          "rchar": 19052689,
-          "wchar": 29357902,
-          "syscr": 4136,
-          "syscw": 8138,
+          "rchar": 20460125,
+          "wchar": 32372650,
+          "syscr": 5137,
+          "syscw": 10138,
           "read_bytes": 0,
           "write_bytes": 24100864,
           "cancelled_write_bytes": 0
@@ -934,8 +964,8 @@
       "kind": "text",
       "indexed": false,
       "round": 3,
-      "version": "baseline",
-      "query_ms": 156.426544,
+      "version": "candidate",
+      "query_ms": 142.33611,
       "query_io_delta": {
         "rchar": 1407436,
         "wchar": 3014748,
@@ -963,9 +993,9 @@
     {
       "kind": "text",
       "indexed": false,
-      "round": 3,
-      "version": "candidate",
-      "query_ms": 152.166365,
+      "round": 4,
+      "version": "baseline",
+      "query_ms": 151.782423,
       "query_io_delta": {
         "rchar": 1407436,
         "wchar": 3014748,
@@ -976,12 +1006,12 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13624,
+        "process_vmhwm_kib": 13752,
         "process_io": {
-          "rchar": 20460125,
-          "wchar": 32372650,
-          "syscr": 5136,
-          "syscw": 10138,
+          "rchar": 21867561,
+          "wchar": 35387398,
+          "syscr": 6137,
+          "syscw": 12138,
           "read_bytes": 0,
           "write_bytes": 24100864,
           "cancelled_write_bytes": 0
@@ -994,8 +1024,8 @@
       "kind": "text",
       "indexed": false,
       "round": 4,
-      "version": "baseline",
-      "query_ms": 158.473418,
+      "version": "candidate",
+      "query_ms": 142.950688,
       "query_io_delta": {
         "rchar": 1407436,
         "wchar": 3014748,
@@ -1023,9 +1053,9 @@
     {
       "kind": "text",
       "indexed": false,
-      "round": 4,
-      "version": "candidate",
-      "query_ms": 154.700334,
+      "round": 5,
+      "version": "baseline",
+      "query_ms": 150.85822,
       "query_io_delta": {
         "rchar": 1407436,
         "wchar": 3014748,
@@ -1036,12 +1066,12 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13624,
+        "process_vmhwm_kib": 13752,
         "process_io": {
-          "rchar": 21867561,
-          "wchar": 35387398,
-          "syscr": 6136,
-          "syscw": 12138,
+          "rchar": 23274997,
+          "wchar": 38402146,
+          "syscr": 7137,
+          "syscw": 14138,
           "read_bytes": 0,
           "write_bytes": 24100864,
           "cancelled_write_bytes": 0
@@ -1054,8 +1084,8 @@
       "kind": "text",
       "indexed": false,
       "round": 5,
-      "version": "baseline",
-      "query_ms": 156.961903,
+      "version": "candidate",
+      "query_ms": 142.267208,
       "query_io_delta": {
         "rchar": 1407436,
         "wchar": 3014748,
@@ -1083,9 +1113,9 @@
     {
       "kind": "text",
       "indexed": false,
-      "round": 5,
-      "version": "candidate",
-      "query_ms": 153.181772,
+      "round": 6,
+      "version": "baseline",
+      "query_ms": 150.462695,
       "query_io_delta": {
         "rchar": 1407436,
         "wchar": 3014748,
@@ -1096,12 +1126,12 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13624,
+        "process_vmhwm_kib": 13752,
         "process_io": {
-          "rchar": 23274997,
-          "wchar": 38402146,
-          "syscr": 7136,
-          "syscw": 14138,
+          "rchar": 24682433,
+          "wchar": 41416894,
+          "syscr": 8137,
+          "syscw": 16138,
           "read_bytes": 0,
           "write_bytes": 24100864,
           "cancelled_write_bytes": 0
@@ -1114,8 +1144,8 @@
       "kind": "text",
       "indexed": false,
       "round": 6,
-      "version": "baseline",
-      "query_ms": 154.554243,
+      "version": "candidate",
+      "query_ms": 142.043211,
       "query_io_delta": {
         "rchar": 1407436,
         "wchar": 3014748,
@@ -1142,40 +1172,10 @@
     },
     {
       "kind": "text",
-      "indexed": false,
-      "round": 6,
-      "version": "candidate",
-      "query_ms": 151.115386,
-      "query_io_delta": {
-        "rchar": 1407436,
-        "wchar": 3014748,
-        "syscr": 1000,
-        "syscw": 2000,
-        "read_bytes": 0,
-        "write_bytes": 0,
-        "cancelled_write_bytes": 0
-      },
-      "resources": {
-        "process_vmhwm_kib": 13624,
-        "process_io": {
-          "rchar": 24682433,
-          "wchar": 41416894,
-          "syscr": 8136,
-          "syscw": 16138,
-          "read_bytes": 0,
-          "write_bytes": 24100864,
-          "cancelled_write_bytes": 0
-        },
-        "cgroup": "0::/mvd-e860-opt-20261115-nqiedj7i/shared\n",
-        "uid": "65534\t65534\t65534\t65534"
-      }
-    },
-    {
-      "kind": "text",
       "indexed": true,
       "round": 1,
       "version": "baseline",
-      "query_ms": 174.994581,
+      "query_ms": 151.220854,
       "query_io_delta": {
         "rchar": 1406549,
         "wchar": 3013861,
@@ -1186,7 +1186,7 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13684,
+        "process_vmhwm_kib": 13724,
         "process_io": {
           "rchar": 17645349,
           "wchar": 26347553,
@@ -1205,7 +1205,7 @@
       "indexed": true,
       "round": 1,
       "version": "candidate",
-      "query_ms": 168.471802,
+      "query_ms": 142.240581,
       "query_io_delta": {
         "rchar": 1406549,
         "wchar": 3013861,
@@ -1216,7 +1216,7 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13708,
+        "process_vmhwm_kib": 13720,
         "process_io": {
           "rchar": 17645349,
           "wchar": 26347553,
@@ -1235,7 +1235,7 @@
       "indexed": true,
       "round": 2,
       "version": "baseline",
-      "query_ms": 154.924757,
+      "query_ms": 151.018895,
       "query_io_delta": {
         "rchar": 1407436,
         "wchar": 3014748,
@@ -1246,7 +1246,7 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13684,
+        "process_vmhwm_kib": 13724,
         "process_io": {
           "rchar": 19052785,
           "wchar": 29362301,
@@ -1265,7 +1265,7 @@
       "indexed": true,
       "round": 2,
       "version": "candidate",
-      "query_ms": 151.139693,
+      "query_ms": 142.259752,
       "query_io_delta": {
         "rchar": 1407436,
         "wchar": 3014748,
@@ -1276,7 +1276,7 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13708,
+        "process_vmhwm_kib": 13720,
         "process_io": {
           "rchar": 19052785,
           "wchar": 29362301,
@@ -1295,7 +1295,7 @@
       "indexed": true,
       "round": 3,
       "version": "baseline",
-      "query_ms": 155.171947,
+      "query_ms": 150.903134,
       "query_io_delta": {
         "rchar": 1407436,
         "wchar": 3014748,
@@ -1306,7 +1306,7 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13684,
+        "process_vmhwm_kib": 13724,
         "process_io": {
           "rchar": 20460221,
           "wchar": 32377049,
@@ -1325,7 +1325,7 @@
       "indexed": true,
       "round": 3,
       "version": "candidate",
-      "query_ms": 150.721105,
+      "query_ms": 142.7405,
       "query_io_delta": {
         "rchar": 1407436,
         "wchar": 3014748,
@@ -1336,7 +1336,7 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13708,
+        "process_vmhwm_kib": 13720,
         "process_io": {
           "rchar": 20460221,
           "wchar": 32377049,
@@ -1355,7 +1355,7 @@
       "indexed": true,
       "round": 4,
       "version": "baseline",
-      "query_ms": 155.189983,
+      "query_ms": 150.701006,
       "query_io_delta": {
         "rchar": 1407436,
         "wchar": 3014748,
@@ -1366,7 +1366,7 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13684,
+        "process_vmhwm_kib": 13724,
         "process_io": {
           "rchar": 21867657,
           "wchar": 35391797,
@@ -1385,7 +1385,7 @@
       "indexed": true,
       "round": 4,
       "version": "candidate",
-      "query_ms": 151.031255,
+      "query_ms": 142.29124,
       "query_io_delta": {
         "rchar": 1407436,
         "wchar": 3014748,
@@ -1396,7 +1396,7 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13708,
+        "process_vmhwm_kib": 13720,
         "process_io": {
           "rchar": 21867657,
           "wchar": 35391797,
@@ -1415,7 +1415,7 @@
       "indexed": true,
       "round": 5,
       "version": "baseline",
-      "query_ms": 225.920039,
+      "query_ms": 151.060295,
       "query_io_delta": {
         "rchar": 1407436,
         "wchar": 3014748,
@@ -1426,7 +1426,7 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13684,
+        "process_vmhwm_kib": 13724,
         "process_io": {
           "rchar": 23275093,
           "wchar": 38406545,
@@ -1445,7 +1445,7 @@
       "indexed": true,
       "round": 5,
       "version": "candidate",
-      "query_ms": 211.142028,
+      "query_ms": 142.215412,
       "query_io_delta": {
         "rchar": 1407436,
         "wchar": 3014748,
@@ -1456,7 +1456,7 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13708,
+        "process_vmhwm_kib": 13720,
         "process_io": {
           "rchar": 23275093,
           "wchar": 38406545,
@@ -1475,7 +1475,7 @@
       "indexed": true,
       "round": 6,
       "version": "baseline",
-      "query_ms": 287.895303,
+      "query_ms": 150.727943,
       "query_io_delta": {
         "rchar": 1407436,
         "wchar": 3014748,
@@ -1486,7 +1486,7 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13684,
+        "process_vmhwm_kib": 13724,
         "process_io": {
           "rchar": 24682529,
           "wchar": 41421293,
@@ -1505,7 +1505,7 @@
       "indexed": true,
       "round": 6,
       "version": "candidate",
-      "query_ms": 280.499474,
+      "query_ms": 142.07676,
       "query_io_delta": {
         "rchar": 1407436,
         "wchar": 3014748,
@@ -1516,7 +1516,7 @@
         "cancelled_write_bytes": 0
       },
       "resources": {
-        "process_vmhwm_kib": 13708,
+        "process_vmhwm_kib": 13720,
         "process_io": {
           "rchar": 24682529,
           "wchar": 41421293,

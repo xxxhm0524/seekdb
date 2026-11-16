@@ -1,8 +1,8 @@
 {
   "passed": true,
   "versions": {
-    "baseline": "8795394a7c75c49d669226ecd53aa16602f10946b7640289a915a9ae83760e35",
-    "candidate": "1df55ac6910cf56cbf6c99f33ec9a07c49c6588fb00c042947a705a19fd7a418"
+    "baseline": "1df55ac6910cf56cbf6c99f33ec9a07c49c6588fb00c042947a705a19fd7a418",
+    "candidate": "81998e35b16df5a67a636b91d3798ae50baa9556fc45f3c745d04afca02b8986"
   },
   "fixture_sha256": "074f46cd83d2b7b38c59cb627ad4ae1337a918d36b92889e48d54ee4efa4c139",
   "rounds": 3,
@@ -12,64 +12,64 @@
   "summary": {
     "bigint-idx0": {
       "baseline": {
-        "write_ms": 471.243588,
-        "prepare_ms": 52.429069,
-        "query_ms": 27.452989,
-        "sampled_cgroup_max_bytes": 12455936
+        "write_ms": 474.37614,
+        "prepare_ms": 52.347019,
+        "query_ms": 26.476299,
+        "sampled_cgroup_max_bytes": 12410880
       },
       "candidate": {
-        "write_ms": 474.59415,
-        "prepare_ms": 52.460639,
-        "query_ms": 27.09068,
-        "sampled_cgroup_max_bytes": 12464128
+        "write_ms": 468.671667,
+        "prepare_ms": 52.531289,
+        "query_ms": 26.99054,
+        "sampled_cgroup_max_bytes": 12455936
       }
     },
     "bigint-idx1": {
       "baseline": {
-        "write_ms": 471.897899,
-        "prepare_ms": 54.282729,
-        "query_ms": 27.40029,
-        "sampled_cgroup_max_bytes": 12443648
+        "write_ms": 474.591299,
+        "prepare_ms": 54.283089,
+        "query_ms": 26.61925,
+        "sampled_cgroup_max_bytes": 12435456
       },
       "candidate": {
-        "write_ms": 473.057969,
-        "prepare_ms": 54.337049,
-        "query_ms": 26.87994,
-        "sampled_cgroup_max_bytes": 12439552
+        "write_ms": 468.408067,
+        "prepare_ms": 54.42175,
+        "query_ms": 27.32281,
+        "sampled_cgroup_max_bytes": 12435456
       }
     },
     "text-idx0": {
       "baseline": {
-        "write_ms": 476.69462,
-        "prepare_ms": 53.849129,
-        "query_ms": 27.332771,
-        "sampled_cgroup_max_bytes": 12337152
+        "write_ms": 477.919701,
+        "prepare_ms": 53.590409,
+        "query_ms": 26.806659,
+        "sampled_cgroup_max_bytes": 12341248
       },
       "candidate": {
-        "write_ms": 476.33154,
-        "prepare_ms": 53.74136,
-        "query_ms": 27.08246,
-        "sampled_cgroup_max_bytes": 12337152
+        "write_ms": 468.357638,
+        "prepare_ms": 53.758479,
+        "query_ms": 27.126629,
+        "sampled_cgroup_max_bytes": 12333056
       }
     },
     "text-idx1": {
       "baseline": {
-        "write_ms": 473.004799,
-        "prepare_ms": 55.74302,
-        "query_ms": 27.24286,
+        "write_ms": 474.70246,
+        "prepare_ms": 55.78876,
+        "query_ms": 26.892499,
         "sampled_cgroup_max_bytes": 12312576
       },
       "candidate": {
-        "write_ms": 473.671399,
-        "prepare_ms": 55.73992,
-        "query_ms": 27.12684,
-        "sampled_cgroup_max_bytes": 12312576
+        "write_ms": 463.854686,
+        "prepare_ms": 55.69656,
+        "query_ms": 27.173189,
+        "sampled_cgroup_max_bytes": 12308480
       }
     }
   },
   "identical_file_bytes_required": true,
   "scope": "Fresh per-sample cgroups with 2 CPU/2 GiB/no swap. Native constrained default entrypoint. Sampled memory.current includes page cache but is a lower bound on the true peak. Raw device IO is retained without asserting the platform device attribution. No formal E is inferred.",
   "derived_from": "native-records/resources.json",
-  "derived_from_sha256": "5192edbae2c87c5411e82fc83ded35afc275b49dd1f1003d07829ec1c16651bf",
+  "derived_from_sha256": "c294c20a84c01dd9f704d2218171ea333c6a78d249cc38cf6be7636984b08abf",
   "selection": "保留全部配对轮次的加速比、汇总指标、正确性结论和版本；逐请求记录保存在原报告中。"
 }

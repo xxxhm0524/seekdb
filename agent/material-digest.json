@@ -1,9 +1,9 @@
 {
-  "bytes": 91939,
-  "sha256": "7369bef29b44994e70ad2dac22c244d45bb485848e2437925e289559ff840a61",
+  "bytes": 104783,
+  "sha256": "44f8279b67db12cb21b99085bce3777919e3d3f01ba85f7efb17f5c8c1be498e",
   "document_kind": "technical-guidance-and-validation-v1",
   "guidance_count": 6,
-  "production_core": "ffbd30b778642317b7b550fd2efea8e010e42157",
+  "production_core": "92959f789c868fad36b9a47d399f0e96679f6149",
   "target_E": 5000,
   "scope": "材料字节、格式和来源完整性；不是评测得分。"
 }

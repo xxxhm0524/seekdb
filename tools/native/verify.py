@@ -90,7 +90,7 @@ def main():
         runtime = ['vector_index','storage','record_reader','model','btree','compaction','vector_literal']
         probes = [('read_mapping_probe', ['storage','record_reader','model','btree','compaction','vector_literal'], True),
             ('mapped_source_probe',runtime,True),('scalar_snapshot_probe',runtime,True),('certified_screen_probe',runtime,True),('error_successor_probe',[],False),
-            ('json_request_probe',['request','model','vector_literal'],False),('vector_literal_probe',['model','vector_literal'],False),('exact_batch_probe',[],False)]
+            ('json_request_probe',['request','model','vector_literal'],False),('json_string_output_probe',['model','vector_literal'],False),('vector_literal_probe',['model','vector_literal'],False),('exact_batch_probe',[],False)]
         for name, dependencies, data_argument in probes:
             options = [x for x in flags if x != '-DNDEBUG'] + ['-UNDEBUG'] if name == 'read_mapping_probe' else flags
             extra = ['-Wl,--wrap=mmap,--wrap=munmap'] if name == 'read_mapping_probe' else []
@@ -104,6 +104,8 @@ def main():
         run('sanitizer-build', sanitized+cpp+['-o',str(w/'build/candidate-asan')])
         for name in ('invariants','column_layouts','cache_column_sets','cache_ranges','sql_literals','protocol_complete_input','protocol_ids','protocol_nested_ids'):
             run('sanitizer-'+name, [sys.executable,str(REPO/'tests'/(name+'.py')),'--output',str(out/('sanitizer-'+name))], extra=dict(MVD_BIN=str(w/'build/candidate-asan'),ASAN_OPTIONS='detect_leaks=1:abort_on_error=1',UBSAN_OPTIONS='halt_on_error=1:print_stacktrace=1'))
+        run('sanitizer-json-string-build', sanitized+['tests/json_string_output_probe.cpp','src/model.cpp','src/vector_literal.cpp','-o',str(w/'build/json-string-asan')])
+        run('sanitizer-json-string', [str(w/'build/json-string-asan')], extra=dict(ASAN_OPTIONS='detect_leaks=1:abort_on_error=1',UBSAN_OPTIONS='halt_on_error=1:print_stacktrace=1'))
         if args.benchmark:
             run('performance',[sys.executable,str(w/'benchmark.py'),str(REPO)],cwd=w)
         report.update(passed=True, commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=REPO,text=True).strip(),

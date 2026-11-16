@@ -6,8 +6,8 @@
   "reference_rejections_accepted_by_candidate": [],
   "seed": 120055,
   "phase": "all",
-  "candidate_sha256": "1df55ac6910cf56cbf6c99f33ec9a07c49c6588fb00c042947a705a19fd7a418",
-  "reference_sha256": "8795394a7c75c49d669226ecd53aa16602f10946b7640289a915a9ae83760e35",
-  "reference_commit": "6d8c16ca3a8bd8e3bef7442c6cf268756eb83a44",
+  "candidate_sha256": "81998e35b16df5a67a636b91d3798ae50baa9556fc45f3c745d04afca02b8986",
+  "reference_sha256": "1df55ac6910cf56cbf6c99f33ec9a07c49c6588fb00c042947a705a19fd7a418",
+  "reference_commit": "ffbd30b778642317b7b550fd2efea8e010e42157",
   "scope": "Actual hardened native processes; finite differential checks, no formal score."
 }

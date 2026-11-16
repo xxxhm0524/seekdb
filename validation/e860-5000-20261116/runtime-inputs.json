@@ -1,6 +1,6 @@
 {
   "base": "e86045306f5940613bfcf4aa84b0ee4bf74c20f1",
-  "production_core": "ffbd30b778642317b7b550fd2efea8e010e42157",
+  "production_core": "92959f789c868fad36b9a47d399f0e96679f6149",
   "formal_submitted": false,
   "target_E": 5000,
   "sha256_lf": {
@@ -10,7 +10,7 @@
     "src/engine.hpp": "90a73296164bdfcdb7ad13a3e5a37ade96f3afc8d5bcc8a69926b1dc305e593e",
     "src/exact_batch.hpp": "0fbdc3429bb48120e764a839b274705ba0fa55a2e1d495c8c5e8e7759ecb40cb",
     "src/main.cpp": "83af68555e74295a053f2116cc305b83c4779be9df9c17229753fd08abb0f475",
-    "src/model.cpp": "b890b730a7e9c56546779e570a4b85dfa984867f876b7e347d1b9bd31da1797e",
+    "src/model.cpp": "f9d7c349022db128bc38faac5e1c870c3182c5c75eac318fb7565cf87d962c40",
     "src/model.hpp": "c735faa5ef8de815b53a52aa3b5de8a313acf07f1564974174bb1f4b8595c3c8",
     "src/quantized_screen.hpp": "7f23c2a9bd4f6edbcc8672e536c5882c4ea4c2b2eff74d182e873979fa1ab45c",
     "src/query.cpp": "e7ecd6b156fce1ec2748fcef19f818693534947d22f1cde7aa0c0437f292f928",
@@ -31,23 +31,24 @@
     "Dockerfile": "1f20987cdf45add1804b14cc032628a36f1617ef86d23a864e68e0ca5f9a42c4",
     "third_party/DEPENDENCIES.json": "397bb6d1da34f5fdca46ddb7448258629ee4509f7fba06c90e510424ae7c4a0d"
   },
-  "source_match_sha256": "90fe854b8e5dc61fd9aa4185a5eabbe851abedb1d43e536de642043b5477004a",
+  "source_match_sha256": "21f864e9c0e4081febe014598389a97ce230274cd7122669104eae0ba330ae1b",
   "evidence_reports": {
-    "public.json": "b76f624c2b519855b4ff229ae46081e82455ab0e52d8cf3eb34cb8d691d0e2a1",
-    "regression.json": "8b5ec6f1e6e1cc8019d7aebcc526fce07e0853e6099a7271854657a6879970e0",
-    "baseline-parity.json": "6847ccba1547ee325125b77f42dce648c54eb4ecb944723060171f1e2b2c0ae4",
-    "reclaim-lifecycle.json": "1a876e84eb4d69cdd863fd00744fd1de2830e7e8cb7b127956a81ed7b1a1e4b1",
-    "capacity.json": "b07f1b0fe99a2eada567334b07b24fc2bcff9af64b5c44ed90eb7a26de2fb836",
-    "sanitizer.json": "96c4ffa6929beb9e52b7299b0bc693c405c005d42b0921dc27f81f65a1d35df3",
+    "public.json": "f7b5b7860589aa36d9f9dd83186565a9cb39fb3abf27e452881028918184f206",
+    "regression.json": "d9035319ae992484e2621f7fe5e10613ac6beecbc048ee8edfbde22a0a565e8c",
+    "baseline-parity.json": "07841469bfcfc558d08f4fb67114b0160285b8d8580b963e2113b220d8e9d23a",
+    "reclaim-lifecycle.json": "52ca69dfb041da72cef1ebff8a61a4dd2a00e28e03783277a50291d4a40b07ff",
+    "capacity.json": "be97246e34fb48a7f79b0f981baf6f67687676bd6812e8a8f356d8dd8fcbfebc",
+    "sanitizer.json": "103cd031b894d90c98930cfa6d7b1d656d30d002b0ce92184aeae26d0280c159",
+    "json-string-output.json": "8b4478d862e14537bbdf6567e685a36f632492dfc56dc5b8c6ed15d015a48b8c",
     "scalar-cache.json": "bfeb7ac31e1101779d59c61b87656596d638402f796cc129f7b3528535a2d69b",
-    "certificate.json": "a03206b6e8d1a1162020030b3171d667dea23294051dd174fc0c6d3b7453769d",
-    "rounding.json": "1c0426e03f4e9c0efb9822c7084486a7175dde161775d177231ebfcd950bf63a"
+    "certificate.json": "9ae0163a2592467cf2825da4774e6537d5a9c305fb35840a20b7108740a0397e",
+    "rounding.json": "3926d3c8139b53398da2dc59f21684cbd2f0c83a8bff8409fb48c426f80a1ff0"
   },
-  "source_archive_sha256": "956b7fe4a3a45ecb1efc305a5bec84a0f27b88f6ef08348a7ced891afaf622c0",
+  "source_archive_sha256": "012c6714a8e156646df0bb2d72e3076c4df401787d842ceec5494551477f7093",
   "compiler": "A6000 GCC 11.4; final native CI recompiles with runner toolchain",
-  "metadata_correction": "The current parity report explicitly identifies 6d8c16 as its compared production core; the binary hashes are always included.",
+  "metadata_correction": "The current parity report explicitly identifies ffbd30 as its compared production core; the binary hashes are always included.",
   "scope": "Actual native evidence for matching production source bytes. No Docker cold pull/build or formal score claimed. Earlier 54-report evidence remains bound to its historical core.",
   "optimization_baseline": "3d6fcd00182cacb6fe1a70b72a9c5759850e9f24",
   "material_kind": "technical-guidance-and-validation-v1",
-  "native_evidence_archive_sha256": "56600169dc666f9d9805f6ef5fdb6d3cd2c86fb61d6a1d3d2e4537981f3c069b"
+  "native_evidence_archive_sha256": "575d90a6de30aaa22640eeda4646412e309174c258f8ff7262edce2245efaa64"
 }

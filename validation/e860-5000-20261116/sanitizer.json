@@ -8,9 +8,10 @@
     "sql_literals",
     "protocol_complete_input",
     "protocol_ids",
-    "protocol_nested_ids"
+    "protocol_nested_ids",
+    "json_string_output_probe"
   ],
-  "binary_sha256": "8e10170235ff2799d5de5bd54eb3a22fda43c00a0af3f09486b8da0447010cf8",
+  "binary_sha256": "6088c2bc9fdd190741a035ada30df98a4851c82323d19175bdf89bcfe9c8b606",
   "ASAN_OPTIONS": "detect_leaks=1:abort_on_error=1",
   "UBSAN_OPTIONS": "halt_on_error=1:print_stacktrace=1"
 }
