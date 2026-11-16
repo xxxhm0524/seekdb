@@ -418,8 +418,15 @@ std::optional<std::vector<VectorIndex::Hit>> VectorIndex::screen_search(const st
             if (count < capacity) {
                 candidates[count++] = candidate; std::push_heap(candidates.begin(), candidates.begin() + count, less);
             } else if (less(candidate, candidates[0])) {
-                std::pop_heap(candidates.begin(), candidates.end(), less); candidates.back() = candidate;
-                std::push_heap(candidates.begin(), candidates.end(), less);
+                // Replace the maximum with one downward sift. Scores and the
+                // strict rejection certificate remain unchanged.
+                size_t hole = 0;
+                for (size_t child = 1; child < capacity; child = hole * 2 + 1) {
+                    if (child + 1 < capacity && less(candidates[child], candidates[child + 1])) ++child;
+                    if (!less(candidate, candidates[child])) break;
+                    candidates[hole] = candidates[child]; hole = child;
+                }
+                candidates[hole] = candidate;
             }
         }
     }
