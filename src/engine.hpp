@@ -7,6 +7,7 @@ namespace mvd {
 struct Predicate { size_t column; std::string op; Value value; };
 std::vector<Predicate> bind_predicates(const Table& table, const std::vector<Condition>& conditions);
 bool matches(const Row& row, const std::vector<Predicate>& predicates);
+bool matches_comparison(int comparison, const std::string& op);
 class Engine {
     std::filesystem::path directory_;
     Storage storage_;

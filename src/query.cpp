@@ -255,8 +255,11 @@ Result Engine::select(const Statement& s) {
                 else if (p.op == ">=") begin = std::max(begin, lo);
                 else complete = false;
             }
-            std::function<bool(const Row&)> filter;
-            if (!complete) filter = [&](const Row& row) { return matches(row, predicates); };
+            std::function<bool(size_t)> filter;
+            if (!complete) filter = [&](size_t entry) {
+                for (const auto& p : predicates) if (!matches_comparison(vector_index_->compare(entry, p.column, p.value), p.op)) return false;
+                return true;
+            };
             auto hits = vector_index_->search(ordering[0].query, static_cast<size_t>(limit), filter, begin, end);
             // Winners already have exact ordering distances and a validated
             // immutable working-column snapshot. Fetch only missing projected
@@ -281,7 +284,7 @@ Result Engine::select(const Statement& s) {
                         if (!row) row = vector_index_->materialize(hit.entry);
                         if (p.distance) append_distance_json(values, distance(std::get<std::vector<float>>((*row)[p.column]), p.query));
                         else append_value_json(values, (*row)[p.column]);
-                    } else if (vector_index_->columns()[p.column]) append_value_json(values, entry.row[p.column]);
+                    } else if (vector_index_->columns()[p.column]) vector_index_->append_scalar_json(values, hit.entry, p.column);
                     else append_value_json(values, (*disk)[p.column]);
                 }
                 values.push_back(']');

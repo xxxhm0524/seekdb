@@ -79,8 +79,9 @@ int main(int argc, char** argv) try {
             }
             auto bounds = mapped->equal_bounds(group, Value(int64_t(trial % 9))); need(bool(bounds), "cluster range missing");
             same(mapped->search(query, 10, {}, bounds->first, bounds->second), control->search(query, 10, {}, bounds->first, bounds->second, nullptr, false)); ++checked;
-            auto predicate = [group](const Row& row) { return std::get<int64_t>(row[group]) >= 4; };
-            same(mapped->search(query, 10, predicate), control->search(query, 10, predicate, 0, count, nullptr, false)); ++checked;
+            auto predicate = [&](size_t row) { return mapped->compare(row, group, Value(int64_t(4))) >= 0; };
+            auto control_predicate = [&](size_t row) { return control->compare(row, group, Value(int64_t(4))) >= 0; };
+            same(mapped->search(query, 10, predicate), control->search(query, 10, control_predicate, 0, count, nullptr, false)); ++checked;
         }
         if (!tight) {
             std::vector<float> query(dimensions, 0.125f); VectorIndex::SearchStats stats;

@@ -78,14 +78,15 @@ int main(int argc, char** argv) try {
         require(bool(index), "probe cache refused");
         for (size_t i = 1; i < index->entries().size(); ++i) {
             const auto& a = index->entries()[i - 1]; const auto& b = index->entries()[i];
-            require(a.row[0] < b.row[0] || (a.row[0] == b.row[0] && a.key < b.key), "physical cluster order");
+            const Row ar = index->materialize(i-1), br = index->materialize(i);
+            require(ar[0] < br[0] || (ar[0] == br[0] && a.key < b.key), "physical cluster order");
         }
         for (unsigned trial = 0; trial < 12; ++trial) {
             std::vector<float> query(dimensions); for (float& x : query) x = trial % 4 ? random(rng) : 0;
             for (size_t k : {1u, 10u, 16u, 17u, 32u, 300u}) for (unsigned filter = 0; filter < 3; ++filter) {
-                size_t begin = 0, end = count; std::function<bool(const Row&)> predicate;
+                size_t begin = 0, end = count; std::function<bool(size_t)> predicate;
                 if (filter == 1) { auto bounds = index->equal_bounds(0, groups[trial % groups.size()]); require(bool(bounds), "cluster bounds unavailable"); begin = bounds->first; end = bounds->second; }
-                if (filter == 2) predicate = [](const Row& row) { return std::get<int64_t>(row[2]) >= 0; };
+                if (filter == 2) predicate = [&](size_t row) { return index->compare(row, 2, Value(int64_t(0))) >= 0; };
                 VectorIndex::SearchStats stats;
                 auto actual = index->search(query, k, predicate, begin, end, &stats);
                 VectorIndex::SearchStats control;

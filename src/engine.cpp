@@ -19,12 +19,12 @@ std::vector<Predicate> bind_predicates(const Table& t, const std::vector<Conditi
     }
     return out;
 }
+bool matches_comparison(int c, const std::string& op) {
+    return !((op == "=" && c != 0) || (op == "<" && c >= 0) || (op == "<=" && c > 0) ||
+        (op == ">" && c <= 0) || (op == ">=" && c < 0) || ((op == "!=" || op == "<>") && c == 0));
+}
 bool matches(const Row& row, const std::vector<Predicate>& predicates) {
-    for (const auto& p : predicates) {
-        int c = compare_value(row[p.column], p.value);
-        if ((p.op == "=" && c != 0) || (p.op == "<" && c >= 0) || (p.op == "<=" && c > 0) ||
-            (p.op == ">" && c <= 0) || (p.op == ">=" && c < 0) || ((p.op == "!=" || p.op == "<>") && c == 0)) return false;
-    }
+    for (const auto& p : predicates) if (!matches_comparison(compare_value(row[p.column], p.value), p.op)) return false;
     return true;
 }
 Engine::Engine(const std::filesystem::path& dir) : directory_(dir), storage_(dir), active_(storage_.committed) {

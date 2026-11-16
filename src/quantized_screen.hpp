@@ -2,6 +2,8 @@
 #include "exact_batch.hpp"
 #include <algorithm>
 #include <array>
+#include <bit>
+#include <cassert>
 #include <cfenv>
 #include <cstdint>
 #include <cstring>
@@ -11,6 +13,18 @@
 #include <vector>
 
 namespace mvd {
+namespace rounding {
+// add_error supplies finite values with a nonnegative sign (including +0).
+// Positive IEEE binary64 bit patterns increase in the same order as values.
+// This is numerically identical to nextafter(x,+infinity); FP status flags
+// are not used by the certificate or exposed by the SQL/protocol interface.
+inline double positive_successor(double value) noexcept {
+    assert(std::isfinite(value) && !std::signbit(value));
+    if constexpr (sizeof(double) == sizeof(uint64_t) && std::numeric_limits<double>::is_iec559 && std::numeric_limits<double>::digits == 53)
+        return std::bit_cast<double>(std::bit_cast<uint64_t>(value) + uint64_t(1));
+    else return std::nextafter(value, std::numeric_limits<double>::infinity());
+}
+}
 // An auxiliary rejection certificate. Original float32 coordinates remain the
 // authority, and every returned distance still uses the full binary64 loop.
 class QuantizedScreen {
@@ -28,8 +42,8 @@ private:
     double add_error(double sum, double value, int code) const {
         const double represented = double(code) * scale_;
         const double allowance = (std::abs(value) + std::abs(represented)) * 0x1p-48 + std::numeric_limits<double>::min();
-        const double error = up(std::abs(value - represented) + allowance);
-        return up(sum + up(error * error));
+        const double error = rounding::positive_successor(std::abs(value - represented) + allowance);
+        return rounding::positive_successor(sum + rounding::positive_successor(error * error));
     }
     enum class Backend : uint8_t { Scalar, Avx2, Vnni };
     Backend backend_ = Backend::Scalar;
