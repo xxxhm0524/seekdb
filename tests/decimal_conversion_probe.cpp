@@ -109,6 +109,21 @@ int main() {
         for (size_t i = 0; i < 1000; ++i) check(decimal(double(int(rng() % 100000) - 50000) / 123), false);
     }
     std::fesetround(FE_TONEAREST);
+    const std::string alphabet = "019+-.eE ";
+    for (size_t length = 1, combinations = 1; length <= 5; ++length) {
+        combinations *= alphabet.size();
+        for (size_t code = 0; code < combinations; ++code) {
+            size_t value = code; std::string token(length, '0');
+            for (char& c : token) { c = alphabet[value % alphabet.size()]; value /= alphabet.size(); }
+            check(token, false); check(token, true);
+        }
+    }
+    for (size_t i = 0; i < 30000; ++i) {
+        const std::string alphabet = "019+-.eE ,[]/astnf\t\n";
+        std::string token(rng() % 50, '0');
+        for (char& c : token) c = alphabet[rng() % alphabet.size()];
+        check(token, false); check(token, true);
+    }
 #if defined(__x86_64__) || defined(_M_X64)
     const unsigned saved = _mm_getcsr();
     _mm_setcsr(saved | 0x8040U);

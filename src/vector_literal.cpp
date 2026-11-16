@@ -34,7 +34,15 @@ std::from_chars_result decimal_number(const char* first, const char* last, doubl
     }
     return std::from_chars(first, last, value);
 }
-float component(std::string_view text, size_t& position, bool sql, bool fast) {
+float checked_float(double value) {
+    const double overflow = std::ldexp(2.0 - std::ldexp(1.0, -24), 127);
+    const double maximum = std::numeric_limits<float>::max();
+    if (!std::isfinite(value) || std::abs(value) >= overflow) fail("invalid_vector", "vector value overflows finite float32");
+    if (value > maximum) return std::numeric_limits<float>::max();
+    if (value < -maximum) return -std::numeric_limits<float>::max();
+    return static_cast<float>(value);
+}
+float component_checked(std::string_view text, size_t& position, bool sql, bool fast) {
     size_t begin = position;
     if (position < text.size() && (text[position] == '-' || (sql && text[position] == '+'))) ++position;
     if (position == text.size()) fail("invalid_vector", "incomplete vector number");
@@ -74,12 +82,38 @@ float component(std::string_view text, size_t& position, bool sql, bool fast) {
         char* end = nullptr; value = std::strtod(number.c_str(), &end);
         if (end != number.c_str() + number.size()) fail("invalid_vector", "invalid vector number");
     } else if (parsed.ec != std::errc{} || parsed.ptr != text.data() + position) fail("invalid_vector", "invalid vector number");
-    const double overflow = std::ldexp(2.0 - std::ldexp(1.0, -24), 127);
-    const double maximum = std::numeric_limits<float>::max();
-    if (!std::isfinite(value) || std::abs(value) >= overflow) fail("invalid_vector", "vector value overflows finite float32");
-    if (value > maximum) return std::numeric_limits<float>::max();
-    if (value < -maximum) return -std::numeric_limits<float>::max();
-    return static_cast<float>(value);
+    return checked_float(value);
+}
+float component(std::string_view text, size_t& position, bool sql, bool fast) {
+    if (fast && position < text.size()) {
+        const char initial = text[position];
+        const bool valid_start = digit(initial) || initial == '-' || (sql && (initial == '+' || initial == '.'));
+        const char* first = text.data() + position;
+        const char* last = text.data() + text.size();
+        bool prefix_ok = valid_start;
+        if (sql && initial == '+') {
+            ++first;
+            prefix_ok = first < last && (digit(*first) || *first == '.');
+        }
+        if (prefix_ok) {
+            double value = 0;
+            const auto format = sql ? fast_float::chars_format::general : fast_float::chars_format::json;
+            const auto parsed = fast_float::from_chars(first, last, value, format);
+            if (parsed.ec == std::errc{} && parsed.ptr > first && std::isfinite(value)) {
+                const size_t end = static_cast<size_t>(parsed.ptr - text.data());
+                const char next = end < text.size() ? text[end] : char(0);
+                const bool whitespace_end = next == ' ' || next == '\t' || next == '\r' || next == '\n' || (sql && next == '\f');
+                const bool comment_end = sql && end + 1 < text.size() &&
+                    ((next == '/' && text[end + 1] == '*') || (next == '-' && text[end + 1] == '-'));
+                if (end == text.size() || next == ',' || next == ']' || whitespace_end || comment_end) {
+                    const float result = checked_float(value);
+                    position = end;
+                    return result;
+                }
+            }
+        }
+    }
+    return component_checked(text, position, sql, fast);
 }
 }
 std::vector<float> parse_vector_literal(std::string_view text, uint32_t dimensions, bool sql_literals) {
