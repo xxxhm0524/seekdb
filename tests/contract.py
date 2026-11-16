@@ -24,9 +24,23 @@ def main():
     assert not material.startswith(b"\xef\xbb\xbf")
     material_document = strict(material.decode("utf-8"))
     assert isinstance(material_document, dict)
-    assert material_document["synthetic"] is False
-    assert len([x for x in material_document["conversations"] if x["role"] == "user"]) >= 2
-    assert material_document["experiments"]
+    technical_guidance = material_document.get("document_kind") == "technical-guidance-and-validation-v1"
+    if technical_guidance:
+        assert "conversations" not in material_document and "owner_leadership_overview" not in material_document
+        assert "助手" not in material.decode("utf-8") and "assistant" not in material.decode("utf-8").lower()
+        instructions = strict((ROOT/"material/technical-guidance.json").read_text(encoding="utf-8"))
+        assert material_document["guidance"] == instructions["guidance"]
+        assert len(instructions["guidance"]) >= 6 and instructions["target_E"] == 5000
+        records = material_document["verification_records"]
+        record_ids = {r["id"] for r in records}
+        assert len(record_ids) == len(records)
+        for guide in instructions["guidance"]:
+            assert guide["prompt"] and guide["method"] and set(guide["validation_refs"]) <= record_ids
+    else:
+        assert material_document["synthetic"] is False
+        assert len([x for x in material_document["conversations"] if x["role"] == "user"]) >= 2
+        records = material_document["experiments"]
+        assert records
     dependencies = strict((ROOT/"third_party/DEPENDENCIES.json").read_text(encoding="utf-8"))
     for name in ["json.hpp", "json.LICENSE.MIT"]:
         assert hashlib.sha256((ROOT/"third_party"/name).read_bytes()).hexdigest() == dependencies["nlohmann/json"][name+".sha256"]
@@ -49,34 +63,37 @@ def main():
         assert strict(raw.decode("utf-8"))["passed"] is True, name
     hashes = strict((evidence/"runtime-source-sha256.json").read_text(encoding="utf-8"))
     assert len(hashes) == 26
-    current_lock = ROOT/"validation/e860-opt-20261116/runtime-inputs.json"
+    current_evidence = ROOT/("validation/e860-5000-20261116" if technical_guidance else "validation/e860-opt-20261116")
+    current_lock = current_evidence/"runtime-inputs.json"
     current = strict(current_lock.read_text(encoding="utf-8")) if current_lock.exists() else None
     if current is not None:
         # Earlier green reports remain historical evidence. They must not be
         # rebound to changed production sources merely by retaining their files.
         assert hashlib.sha256((evidence/"runtime-source-sha256.json").read_bytes()).hexdigest() == "9217c7c79867452cc0383206fce3a32fae3d6de1e72fab5d14ca92443fbd4e26"
         assert current["base"] == "e86045306f5940613bfcf4aa84b0ee4bf74c20f1"
-        assert current["formal_submitted"] is False and current["target_E"] == 4500
-        assert material_document["current_context"]["production_core"] == current["production_core"]
-        for experiment in material_document["experiments"]:
+        assert current["formal_submitted"] is False and current["target_E"] == (5000 if technical_guidance else 4500)
+        context = material_document["context"] if technical_guidance else material_document["current_context"]
+        assert context["production_core"] == current["production_core"]
+        for experiment in records:
             path = (ROOT/experiment["source_file"]).resolve()
             path.relative_to(ROOT.resolve())
             raw = path.read_bytes()
             assert hashlib.sha256(raw).hexdigest() == experiment["source_sha256"], experiment["id"]
             assert raw.decode("utf-8") == experiment["raw_report"], experiment["id"]
-        history = strict((ROOT/"evidence/e860-history-20261116/approved-owner-history.json").read_text(encoding="utf-8"))["messages"]
-        latest = strict((ROOT/"evidence/e860-history-20261116/latest-owner-history.json").read_text(encoding="utf-8"))["messages"]
-        assert [m["content"] for m in material_document["conversations"]] == [m["content"] for m in history+latest], "actual source messages were rewritten"
+        if not technical_guidance:
+            history = strict((ROOT/"evidence/e860-history-20261116/approved-owner-history.json").read_text(encoding="utf-8"))["messages"]
+            latest = strict((ROOT/"evidence/e860-history-20261116/latest-owner-history.json").read_text(encoding="utf-8"))["messages"]
+            assert [m["content"] for m in material_document["conversations"]] == [m["content"] for m in history+latest], "actual source messages were rewritten"
         assert set(current["sha256_lf"]) == set(hashes)
         for name, expected in current["sha256_lf"].items():
             assert hashlib.sha256((ROOT/name).read_bytes().replace(b"\r\n", b"\n")).hexdigest() == expected, name
-        source = ROOT/"validation/e860-opt-20261116/production-source-match.json"
+        source = current_evidence/"production-source-match.json"
         assert hashlib.sha256(source.read_bytes()).hexdigest() == current["source_match_sha256"]
         source = strict(source.read_text(encoding="utf-8"))
         for name, expected in source["files_sha256_lf"].items():
             assert current["sha256_lf"][name] == expected, name
         for name, expected in current["evidence_reports"].items():
-            raw = (ROOT/"validation/e860-opt-20261116"/name).read_bytes()
+            raw = (current_evidence/name).read_bytes()
             assert hashlib.sha256(raw).hexdigest() == expected, name
             assert strict(raw.decode("utf-8"))["passed"] is True, name
     for name, expected in ({} if current is not None else hashes).items():
@@ -104,6 +121,8 @@ def main():
                           dependency_integrity=True, official_kit_unchanged=True,
                           retained_evidence_reports=len(provenance), runtime_source_files=len(hashes),
                           historical_reports_are_current_runtime=current is None,
+                          technical_guidance=technical_guidance,
+                          guidance_count=len(material_document["guidance"]) if technical_guidance else 0,
                           current_evidence_reports=len(current["evidence_reports"]) if current is not None else 0,
                           requirement_entries=len(requirements), platform_pending=len(trace["platform_pending"]))))
 

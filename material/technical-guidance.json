@@ -1,0 +1,50 @@
+{
+  "document_kind": "technical-guidance-and-validation-v1",
+  "confirmed_on": "2026-11-16",
+  "guidance_status": "本轮确认的专项技术指导",
+  "target_E": 5000,
+  "guidance": [
+    {
+      "id": "request-id",
+      "topic": "请求编号的无损往返",
+      "prompt": "请专项检查 JSON 请求中 id 字段的精度和类型保真。在官方输入与响应字节预算内，覆盖超过 2^53、int64 和 uint64 范围的整数，并测试字符串、空值、布尔值、数组和对象编号。明确区分请求编号与 SQL BIGINT 主键的取值限制。验证成功、可恢复 SQL 错误、事务控制和关闭响应均回传相同 JSON 值与类型，避免通过浮点数中转。",
+      "method": "使用未修改的官方协议驱动和独立编号用例，逐项核对响应值、类型、响应数量与执行副作用。",
+      "validation_refs": ["public", "regression", "baseline-parity"]
+    },
+    {
+      "id": "protocol-validation",
+      "topic": "协议解析与错误隔离",
+      "prompt": "请按协议逐项检查完整 JSON、重复键、UTF-8、转义、嵌套结构及尾随非法内容。无效请求不得触发 SQL 执行；可恢复错误之后应能继续处理正常请求。区分非法原始 NUL 与合法转义的 NUL，检查空字段、错误字段类型及未知操作，并确保标准输出只包含完整协议响应。",
+      "method": "先验证非法输入的拒绝和数据库状态，再发送正常请求确认可继续使用；真实 I/O 故障按协议单独验证。",
+      "validation_refs": ["public", "regression", "sanitizer"]
+    },
+    {
+      "id": "exact-vector-search",
+      "topic": "精确向量检索与边界数值",
+      "prompt": "请以独立标量计算为对照，验证有限 float32 存储、按原维度顺序进行 double 累加并开平方的欧氏距离。覆盖近等距、极值、次正规数、正负零、空集合和不足 K 条记录。确认先过滤再 TopK，并列距离按主键升序处理；精确模式下，有无索引、缓存拒绝及重启后的完整 ID 顺序和距离应一致。",
+      "method": "比较所有返回 ID、数量、距离和可往返的 float32 位；对整数筛选逐项验证 32 个分数、块最小值和证书回退。",
+      "validation_refs": ["baseline-parity", "regression", "integer-certificate", "avx2-id", "avx2-projection"]
+    },
+    {
+      "id": "transaction-recovery",
+      "topic": "事务原子性与提交中断",
+      "prompt": "请围绕数据写入、提交根发布和同步边界执行真实强杀。收到成功提交响应的事务必须完整恢复；COMMIT 已发出但响应前中断时，只允许完整旧状态或完整新状态，不能部分可见。验证显式回滚、两表事务及多行语句晚期失败，确认失败语句不会破坏同一事务此前已成功执行的语句。",
+      "method": "在实际系统调用边界中断进程，分别核对最新根、上一恢复根及所有表的逻辑状态。",
+      "validation_refs": ["public", "regression", "reclaim-recovery", "capacity"]
+    },
+    {
+      "id": "reclamation-mapping",
+      "topic": "旧页回收与映射寿命",
+      "prompt": "请证明待回收树页已不再被两个有效恢复根引用，只回收已退休的完整树页，保留有效记录与 catalog。检查回滚和压缩替换后的退休队列。验证映射引用在描述符关闭和文件替换后的寿命，以及映射分配失败、地址空间受限和不支持打洞时的安全回退。",
+      "method": "比较两个恢复根的所有有效页和记录字节；在回收前后强杀，实际注入 EIO 与 ENOSYS，并用旧版本程序读取恢复文件。",
+      "validation_refs": ["reclaim-recovery", "regression", "sanitizer"]
+    },
+    {
+      "id": "performance-resources",
+      "topic": "第二问性能优化与资源取舍",
+      "prompt": "请以已得分 e860 及当前通过完整 CI 的候选为基线，向正式原始性能指标 E≥5000 优化。分别测量批量写入和向量查询的耗时、磁盘 I/O，以及包含页缓存的整个运行进程组内存。使用相同输入、固定预算和多轮交替顺序，逐条核对查询正确性并保留负收益样本。验证数据量超过内存限制的情况，只有收益稳定且不影响准入、持久性与协议的改动才纳入候选。",
+      "method": "分开记录官方结果、原生测量和采样值。采样内存明确为实际峰值的下界，本地加速比不换算成正式 E；正式提测继续暂缓。",
+      "validation_refs": ["capacity", "ordered-resources", "avx2-id", "avx2-projection", "rejected-lto-query", "rejected-lto-write"]
+    }
+  ]
+}

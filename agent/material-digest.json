@@ -1,9 +1,9 @@
 {
-  "bytes": 106388,
-  "sha256": "ea3b52c25dfb21c248c0a32e1f5b74764d6cf759137bfa74877128b19e484d14",
-  "synthetic": false,
-  "owner_messages": 24,
-  "source_quotes_unchanged": true,
+  "bytes": 64978,
+  "sha256": "7c5fc47a18374ad997f601e138307e4841f83d6d367b11411e965ff9af7b003e",
+  "document_kind": "technical-guidance-and-validation-v1",
+  "guidance_count": 6,
   "production_core": "ca5228e04ad1f570157ea288b109ef7e3c81e9db",
-  "scope": "Local integrity only; no platform Prompt score claimed"
+  "target_E": 5000,
+  "scope": "材料字节、格式和来源完整性；不是评测得分。"
 }

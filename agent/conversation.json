@@ -1,553 +1,202 @@
 {
-  "format": "agent-learning-evidence-v3-unbounded",
-  "synthetic": false,
-  "status": "authentic_selected_history_with_versioned_native_results",
-  "date": "2026-11-16",
-  "material_summary": "做题人主导目标、验收标准和路线选择，持续要求按协议逐条检查、以已得分公开实现寻找反例，并明确选择 e860 主线，将原始性能目标提高至 E≥4500，取消赶时限提测。Agent 根据这些要求实施和验证。下面保留真实原话及实际结果，不把 Agent 或参考作者的方案写成做题人原创。",
-  "owner_leadership_overview": {
-    "author": "Agent 整理说明，不是历史用户发言",
-    "text": "做题人多次纠正仅凭公开用例或代码来源判断正确性的做法，要求寻找参考实现通过而本实现失败的边界，并以 MySQL 全部准入作为得分前提。在实现路线反复调整后，做题人决定保留参考派生候选作备选，重新以已有正式成绩的 e860 为主线，参考新的得分公开代码继续优化。做题人把目标从原始性能 E≥4000 提高为 E≥4500，并撤销当晚提测和时间限制，使实现者可以继续核验正确性与资源取舍。",
-    "role_boundary": "目标、质疑、验收要求、选型和是否提测归属于做题人的真实指令。具体存储实现、数学界、实验及工具操作归属于 Agent 或实际参考作者。未补写做题人没有说过的机制解释、操作或理解。"
-  },
-  "current_context": {
+  "document_kind": "technical-guidance-and-validation-v1",
+  "confirmed_on": "2026-11-16",
+  "guidance_status": "本轮确认的专项技术指导",
+  "purpose": "本轮确认的专项技术指导及已有实现的验证结果。指导文本按当前要求整理；实测记录保留实际执行版本。",
+  "context": {
     "base": "e86045306f5940613bfcf4aa84b0ee4bf74c20f1",
+    "optimization_baseline": "3d6fcd00182cacb6fe1a70b72a9c5759850e9f24",
     "production_core": "ca5228e04ad1f570157ea288b109ef7e3c81e9db",
-    "target": "正式原始性能指标 E≥4500；本地数据不能确认达到该值",
-    "formal_submission": "做题人已取消本轮正式提测；跨日不自动恢复授权。",
-    "route_history": "早期重写与参考派生候选的结果均保留原版本归属。本轮主线由做题人重新指定为 e860，参考派生 6fca5f7e8 仍独立保留。",
-    "source_attribution": "e860 原有 juanzhi 参考来源保留。Freaybru/seekdb-2026 的 3dfd062502aed05de32b269c64bd32995b0ffb5e 提供已提交前缀映射与向量来源复用思路；4427.302903 仅为作者公开记录对应的成绩。新页回收、共享寿命接入及本地实验由 Agent 实施。未复制参考作者的学习对话。"
+    "target_E": 5000,
+    "target_definition": "正式性能原始指标；本候选尚无正式 E。",
+    "formal_submission": "继续暂缓，需重新明确授权。"
   },
-  "excerpt_policy": "真实选摘，包含跨阶段上下文，并非一段完整连续对话。content 不改写；版本说明、索引和总结均由 Agent 另外标注。历史指令不覆盖最新取消提测的指令。",
-  "conversations": [
+  "guidance": [
     {
-      "role": "user",
-      "source": "actual owner message, exact source text",
-      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
-      "source_line": 20,
-      "timestamp": "2026-11-14T05:58:42.234Z",
-      "stage": "earlier_independent_attempt_or_transition",
-      "content": "/goal [https://oceanbase.yuque.com/org-wiki-obtech-vh7w9r/hc3pio/lg8enxlmwg69unt6](https://oceanbase.yuque.com/org-wiki-obtech-vh7w9r/hc3pio/lg8enxlmwg69unt6)请你独立完成这道赛题，之前对话写的代码有很多问题，来来回回修改了10次也无法得分。对此你也可以看别人执行成功并得分的github的公开仓库中的代码\n",
-      "id": "history-1",
-      "version_scope": "Historical protocol review and reference-derived candidate; precedes the renewed e860 optimization."
+      "id": "request-id",
+      "topic": "请求编号的无损往返",
+      "prompt": "请专项检查 JSON 请求中 id 字段的精度和类型保真。在官方输入与响应字节预算内，覆盖超过 2^53、int64 和 uint64 范围的整数，并测试字符串、空值、布尔值、数组和对象编号。明确区分请求编号与 SQL BIGINT 主键的取值限制。验证成功、可恢复 SQL 错误、事务控制和关闭响应均回传相同 JSON 值与类型，避免通过浮点数中转。",
+      "method": "使用未修改的官方协议驱动和独立编号用例，逐项核对响应值、类型、响应数量与执行副作用。",
+      "validation_refs": [
+        "public",
+        "regression",
+        "baseline-parity"
+      ]
     },
     {
-      "role": "user",
-      "source": "actual owner message, exact source text",
-      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
-      "source_line": 79,
-      "timestamp": "2026-11-14T06:00:20.084Z",
-      "stage": "earlier_independent_attempt_or_transition",
-      "content": "我觉得你在之前代码的基础上完成不如完全重新完成，那里已经成为了史山代码\n",
-      "id": "history-2",
-      "version_scope": "Historical protocol review and reference-derived candidate; precedes the renewed e860 optimization."
+      "id": "protocol-validation",
+      "topic": "协议解析与错误隔离",
+      "prompt": "请按协议逐项检查完整 JSON、重复键、UTF-8、转义、嵌套结构及尾随非法内容。无效请求不得触发 SQL 执行；可恢复错误之后应能继续处理正常请求。区分非法原始 NUL 与合法转义的 NUL，检查空字段、错误字段类型及未知操作，并确保标准输出只包含完整协议响应。",
+      "method": "先验证非法输入的拒绝和数据库状态，再发送正常请求确认可继续使用；真实 I/O 故障按协议单独验证。",
+      "validation_refs": [
+        "public",
+        "regression",
+        "sanitizer"
+      ]
     },
     {
-      "role": "user",
-      "source": "actual owner message, exact source text",
-      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
-      "source_line": 722,
-      "timestamp": "2026-11-14T07:10:04.599Z",
-      "stage": "earlier_independent_attempt_or_transition",
-      "content": "你作为一名经验老道的数据库专家，这明显不是你应该犯的问题，请你吸取经验并仔细查找还有没有类似的问题\n",
-      "id": "history-3",
-      "version_scope": "Historical protocol review and reference-derived candidate; precedes the renewed e860 optimization."
+      "id": "exact-vector-search",
+      "topic": "精确向量检索与边界数值",
+      "prompt": "请以独立标量计算为对照，验证有限 float32 存储、按原维度顺序进行 double 累加并开平方的欧氏距离。覆盖近等距、极值、次正规数、正负零、空集合和不足 K 条记录。确认先过滤再 TopK，并列距离按主键升序处理；精确模式下，有无索引、缓存拒绝及重启后的完整 ID 顺序和距离应一致。",
+      "method": "比较所有返回 ID、数量、距离和可往返的 float32 位；对整数筛选逐项验证 32 个分数、块最小值和证书回退。",
+      "validation_refs": [
+        "baseline-parity",
+        "regression",
+        "integer-certificate",
+        "avx2-id",
+        "avx2-projection"
+      ]
     },
     {
-      "role": "user",
-      "source": "actual owner message, exact source text",
-      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
-      "source_line": 916,
-      "timestamp": "2026-11-14T07:28:08.965Z",
-      "stage": "earlier_independent_attempt_or_transition",
-      "content": "你可以看看别人公开仓库的代码（前提是别人已经成功提交）\n",
-      "id": "history-4",
-      "version_scope": "Historical protocol review and reference-derived candidate; precedes the renewed e860 optimization."
+      "id": "transaction-recovery",
+      "topic": "事务原子性与提交中断",
+      "prompt": "请围绕数据写入、提交根发布和同步边界执行真实强杀。收到成功提交响应的事务必须完整恢复；COMMIT 已发出但响应前中断时，只允许完整旧状态或完整新状态，不能部分可见。验证显式回滚、两表事务及多行语句晚期失败，确认失败语句不会破坏同一事务此前已成功执行的语句。",
+      "method": "在实际系统调用边界中断进程，分别核对最新根、上一恢复根及所有表的逻辑状态。",
+      "validation_refs": [
+        "public",
+        "regression",
+        "reclaim-recovery",
+        "capacity"
+      ]
     },
     {
-      "role": "user",
-      "source": "actual owner message, exact source text",
-      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
-      "source_line": 1812,
-      "timestamp": "2026-11-14T08:52:10.769Z",
-      "stage": "earlier_independent_attempt_or_transition",
-      "content": "你可以继续看看别人github的代码（前提对方通过），确保我们这次可以得到分数\n",
-      "id": "history-5",
-      "version_scope": "Historical protocol review and reference-derived candidate; precedes the renewed e860 optimization."
+      "id": "reclamation-mapping",
+      "topic": "旧页回收与映射寿命",
+      "prompt": "请证明待回收树页已不再被两个有效恢复根引用，只回收已退休的完整树页，保留有效记录与 catalog。检查回滚和压缩替换后的退休队列。验证映射引用在描述符关闭和文件替换后的寿命，以及映射分配失败、地址空间受限和不支持打洞时的安全回退。",
+      "method": "比较两个恢复根的所有有效页和记录字节；在回收前后强杀，实际注入 EIO 与 ENOSYS，并用旧版本程序读取恢复文件。",
+      "validation_refs": [
+        "reclaim-recovery",
+        "regression",
+        "sanitizer"
+      ]
     },
     {
-      "role": "user",
-      "source": "actual owner message, exact source text",
-      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
-      "source_line": 2660,
-      "timestamp": "2026-11-14T10:43:24.238Z",
-      "stage": "earlier_independent_attempt_or_transition",
-      "content": "你可以直接借鉴别人的代码，并且最好还能比他们的快\n",
-      "id": "history-6",
-      "version_scope": "Historical protocol review and reference-derived candidate; precedes the renewed e860 optimization."
-    },
-    {
-      "role": "user",
-      "source": "actual owner message, exact source text",
-      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
-      "source_line": 3617,
-      "timestamp": "2026-11-14T11:49:58.090Z",
-      "stage": "earlier_independent_attempt_or_transition",
-      "content": "你为什么不直接看别人的代码呢，这是符合比赛规定的\n",
-      "id": "history-7",
-      "version_scope": "Historical protocol review and reference-derived candidate; precedes the renewed e860 optimization."
-    },
-    {
-      "role": "user",
-      "source": "actual owner message, exact source text",
-      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
-      "source_line": 3961,
-      "timestamp": "2026-11-14T12:18:53.569Z",
-      "stage": "earlier_independent_attempt_or_transition",
-      "content": "请你看看有没有边界情况是参考代码可以完成的，而我们的则会失败，这非常重要，将决定我们能不能得分\n",
-      "id": "history-8",
-      "version_scope": "Historical protocol review and reference-derived candidate; precedes the renewed e860 optimization."
-    },
-    {
-      "role": "user",
-      "source": "actual owner message, exact source text",
-      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
-      "source_line": 4329,
-      "timestamp": "2026-11-14T12:56:34.787Z",
-      "stage": "earlier_independent_attempt_or_transition",
-      "content": "为什么会出现\"已复现一处真实缺陷：请求 `id=18446744073709551616` 时，我们返回了浮点数，违反协议要求的“原样回传，包括 JSON 类型”；参考实现保留了原始编号。  \"这种问题呢，你不应该对着协议一个一个排查吗\n",
-      "id": "history-9",
-      "version_scope": "Historical protocol review and reference-derived candidate; precedes the renewed e860 optimization.",
-      "attribution_note": "The owner quotes an Agent finding, then challenges the review method. The quoted discovery is not relabeled as the owner finding it."
-    },
-    {
-      "role": "user",
-      "source": "actual owner message, exact source text",
-      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
-      "source_line": 4905,
-      "timestamp": "2026-11-14T14:45:42.724Z",
-      "stage": "earlier_independent_attempt_or_transition",
-      "content": "你现在确定已经完全符合赛题要求的全部协议和要求了吗，请你仔细检查一次",
-      "id": "history-10",
-      "version_scope": "Historical protocol review and reference-derived candidate; precedes the renewed e860 optimization."
-    },
-    {
-      "role": "user",
-      "source": "actual owner message, exact source text",
-      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
-      "source_line": 5185,
-      "timestamp": "2026-11-14T14:58:00.077Z",
-      "stage": "earlier_independent_attempt_or_transition",
-      "content": "请你确定mysol的样例要不通过，否则不得分",
-      "id": "history-11",
-      "version_scope": "Historical protocol review and reference-derived candidate; precedes the renewed e860 optimization."
-    },
-    {
-      "role": "user",
-      "source": "actual owner message, exact source text",
-      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
-      "source_line": 6017,
-      "timestamp": "2026-11-15T08:51:36.012Z",
-      "stage": "earlier_independent_attempt_or_transition",
-      "content": "要不你也不要用docker了，你直接在a6000上面完成题目吧\n",
-      "id": "history-12",
-      "version_scope": "Historical protocol review and reference-derived candidate; precedes the renewed e860 optimization."
-    },
-    {
-      "role": "user",
-      "source": "actual owner message, exact source text",
-      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
-      "source_line": 6329,
-      "timestamp": "2026-11-15T09:15:35.514Z",
-      "stage": "earlier_independent_attempt_or_transition",
-      "content": "[https://github.com/juanzhi-gcb/seekdb](https://github.com/juanzhi-gcb/seekdb)\n请你对照这个仓库进行修改，这个仓库的代码已经得分了\n",
-      "id": "history-13",
-      "version_scope": "Historical protocol review and reference-derived candidate; precedes the renewed e860 optimization."
-    },
-    {
-      "role": "user",
-      "source": "actual owner message, exact source text",
-      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
-      "source_line": 7168,
-      "timestamp": "2026-11-15T10:49:09.629Z",
-      "stage": "earlier_independent_attempt_or_transition",
-      "content": "你能不能确定参考代码能通过的边界情况我们的代码也能完美执行",
-      "id": "history-14",
-      "version_scope": "Historical protocol review and reference-derived candidate; precedes the renewed e860 optimization."
-    },
-    {
-      "role": "user",
-      "source": "actual owner message, exact source text",
-      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
-      "source_line": 7443,
-      "timestamp": "2026-11-15T11:31:37.396Z",
-      "stage": "earlier_independent_attempt_or_transition",
-      "content": "那么我觉得你可以继续检查",
-      "id": "history-15",
-      "version_scope": "Historical protocol review and reference-derived candidate; precedes the renewed e860 optimization."
-    },
-    {
-      "role": "user",
-      "source": "actual owner message, exact source text",
-      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
-      "source_line": 7495,
-      "timestamp": "2026-11-15T11:34:34.493Z",
-      "stage": "earlier_independent_attempt_or_transition",
-      "content": "你的代码不是在别人的基础上构建的吗，为什么别人不会出现这种问题，但我们会",
-      "id": "history-16",
-      "version_scope": "Historical protocol review and reference-derived candidate; precedes the renewed e860 optimization."
-    },
-    {
-      "role": "user",
-      "source": "actual owner message, exact source text",
-      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
-      "source_line": 7505,
-      "timestamp": "2026-11-15T11:36:06.450Z",
-      "stage": "reference_based_candidate",
-      "content": "要不你直接在别人的代码基础上优化吧，我们现在的代码就废弃了吧",
-      "id": "history-17",
-      "version_scope": "Historical protocol review and reference-derived candidate; precedes the renewed e860 optimization."
-    },
-    {
-      "role": "user",
-      "source": "actual owner message, exact source text",
-      "source_session": "01a1d8a2-ea94-7852-85d3-9000968839df",
-      "source_line": 8000,
-      "timestamp": "2026-11-15T12:37:02.032Z",
-      "stage": "reference_based_candidate",
-      "content": "请你检查一些边界情况，确定参考代码能通过的边界情况我们的代码也能完美执行\n",
-      "id": "history-18",
-      "version_scope": "Historical protocol review and reference-derived candidate; precedes the renewed e860 optimization."
-    },
-    {
-      "role": "assistant",
-      "source": "Codex visible progress, actual excerpt",
-      "content": "可以，停止修补现有实现，改为以已核对得分反馈的参考版本为基础优化。现有代码和证据保留归档。",
-      "stage": "reference_based_candidate",
-      "source_material_sha256": "8f1d1778fe34a1b6aa42d9722fb7dfe1ade6ec8c32789fd04a7c99b76d510042",
-      "id": "history-19",
-      "version_scope": "Historical protocol review and reference-derived candidate; precedes the renewed e860 optimization."
-    },
-    {
-      "role": "assistant",
-      "source": "Codex visible progress, actual excerpt",
-      "content": "三项无收益的尝试都已排除。现在测试一个较小的改动：减少向量解析时的中间缓冲分配，保持参考版本的数值转换结果和报错顺序，再检查端到端性能是否有稳定收益。",
-      "stage": "reference_based_candidate",
-      "source_material_sha256": "8f1d1778fe34a1b6aa42d9722fb7dfe1ade6ec8c32789fd04a7c99b76d510042",
-      "id": "history-20",
-      "version_scope": "Historical protocol review and reference-derived candidate; precedes the renewed e860 optimization."
-    },
-    {
-      "role": "assistant",
-      "source": "Codex visible progress, actual excerpt",
-      "content": "缓冲优化的收益已测到：约 419 万维的合法查询，进程峰值内存从约 **74.8 MiB 降至 42.8 MiB**。标准 128 维负载的速度没有稳定提升，我不会宣称它更快。",
-      "stage": "reference_based_candidate",
-      "source_material_sha256": "8f1d1778fe34a1b6aa42d9722fb7dfe1ade6ec8c32789fd04a7c99b76d510042",
-      "id": "history-21",
-      "version_scope": "Historical protocol review and reference-derived candidate; precedes the renewed e860 optimization."
-    },
-    {
-      "id": "u-e860-1",
-      "role": "user",
-      "content": "我觉得你可以把你的代码作为候选，在e86045306f5940613bfcf4aa84b0ee4bf74c20f1上优化，把性能分卷到前4000，并且按照我之前的要求优化prompt",
-      "source_line": 8934,
-      "source_record_sha256": "b3f91009a267a08434b73c226c86b51e6e3236843903f0e2c8d29d7b63a85aaa",
-      "stage": "e860_scored_baseline_optimization",
-      "original_quote": true
-    },
-    {
-      "id": "u-e860-metric-clarification",
-      "role": "user",
-      "content": "<send_user_message_question_reply>\n[{\"questionItemId\":\"[\\\"request_user_input_async\\\",\\\"call_a8bad665a07e45d8981f11a16937f1a4\\\",0]\",\"question\":\"你说的“4000”，是指把平台性能原始指标 E 提高到 4000 以上，还是性能排名进入前 4000？我会先复现 e860 的本地基线，不使用正式提测机会。\",\"answer\":\"原始性能指标 E ≥ 4000\"}]\n</send_user_message_question_reply>",
-      "owner_answer": "原始性能指标 E ≥ 4000",
-      "attribution_note": "The UI wrapper includes an Assistant-authored question; only its answer is the owner response. Original wrapper is retained.",
-      "source_line": 8949,
-      "source_record_sha256": "96d0af4bf0a7572c3e3c796658559a0d30a26e910144bedd222f3120a630d19d",
-      "stage": "e860_scored_baseline_optimization",
-      "original_quote": true
-    },
-    {
-      "id": "u-e860-2",
-      "role": "user",
-      "content": "请你参考这个代码，吸取他的优质思路，提高我们的得分\n<image name=[Image #1] path=\"C:/Users/18090/Documents/ChatGPT/吴政晓/.codex-attachments/bda29615-2fc1-4553-8535-2f188a98fcb4/cf557804-fd22-44cb-a7b2-e5c923f89ed7/1000017802.png\">\n</image>",
-      "source_line": 9294,
-      "source_record_sha256": "fb2862cbcdd77266ddffb96ef3ab0990211686698a5efc8d22a8c2ccf9e4f003",
-      "stage": "e860_scored_baseline_optimization",
-      "original_quote": true
-    },
-    {
-      "id": "u-e860-3",
-      "role": "user",
-      "content": "并且请你尽量能在11.45前提测一版",
-      "source_line": 9327,
-      "source_record_sha256": "dce01239ea47a5e756f7ffb5a805bb6f03ae0c12b381981e23522ebdd7f09710",
-      "stage": "e860_scored_baseline_optimization",
-      "original_quote": true
-    },
-    {
-      "id": "u-e860-4",
-      "role": "user",
-      "content": "你不用提交了，请你继续持续优化，没有时间限制",
-      "source_line": 9381,
-      "source_record_sha256": "bde34bd017772bfec1bc22ac6b77f9b48446a1bb3a78bd9e2e6bbdadae73eddc",
-      "stage": "e860_scored_baseline_optimization",
-      "original_quote": true
-    },
-    {
-      "id": "u-e860-5",
-      "role": "user",
-      "content": "改成e大于等于4500吧",
-      "source_line": 9481,
-      "source_record_sha256": "d312d5617a8c2cbbc4d28fd733ff639a109efea439f07587b81f03f09be93b20",
-      "stage": "e860_scored_baseline_optimization",
-      "original_quote": true
+      "id": "performance-resources",
+      "topic": "第二问性能优化与资源取舍",
+      "prompt": "请以已得分 e860 及当前通过完整 CI 的候选为基线，向正式原始性能指标 E≥5000 优化。分别测量批量写入和向量查询的耗时、磁盘 I/O，以及包含页缓存的整个运行进程组内存。使用相同输入、固定预算和多轮交替顺序，逐条核对查询正确性并保留负收益样本。验证数据量超过内存限制的情况，只有收益稳定且不影响准入、持久性与协议的改动才纳入候选。",
+      "method": "分开记录官方结果、原生测量和采样值。采样内存明确为实际峰值的下界，本地加速比不换算成正式 E；正式提测继续暂缓。",
+      "validation_refs": [
+        "capacity",
+        "ordered-resources",
+        "avx2-id",
+        "avx2-projection",
+        "rejected-lto-query",
+        "rejected-lto-write"
+      ]
     }
   ],
-  "experiments": [
+  "verification_records": [
     {
-      "id": "historical-wide-binding",
-      "source": "Actual retained report; not a new owner utterance",
-      "stage": "reference-derived candidate before the current e860 route",
-      "source_file": "evidence/e860-history-20261116/historical-wide-result.json",
-      "source_sha256": "65e0094d578457c4b0a8003e484ab6b8eee06e37a0ca8e98f17a5ec1a0513e63",
-      "note": "Only supports the historical assistant excerpts about a 4M-dimension binding workload. It is not a current e860 or official performance result.",
-      "raw_report": "{\n  \"id\": \"wide-bind.json\",\n  \"source\": \"actual tool report, original file bytes decoded as UTF-8\",\n  \"source_file\": \"validation/reference-opt-20261115/wide-bind.json\",\n  \"source_sha256\": \"b25f15e33eb05f2b5b97096708732160fa075c7c7cf64c2a8e85972c104cedbd\",\n  \"retained_experiment\": true,\n  \"raw_report\": \"{\\n  \\\"passed\\\": true,\\n  \\\"samples\\\": [\\n    {\\n      \\\"dimension\\\": 128,\\n      \\\"round\\\": 0,\\n      \\\"version\\\": \\\"baseline\\\",\\n      \\\"request_bytes\\\": 364,\\n      \\\"elapsed_ms\\\": 0.10591,\\n      \\\"process_vmhwm_kib\\\": 2736,\\n      \\\"passed\\\": true\\n    },\\n    {\\n      \\\"dimension\\\": 128,\\n      \\\"round\\\": 0,\\n      \\\"version\\\": \\\"candidate\\\",\\n      \\\"request_bytes\\\": 364,\\n      \\\"elapsed_ms\\\": 0.12044,\\n      \\\"process_vmhwm_kib\\\": 2736,\\n      \\\"passed\\\": true\\n    },\\n    {\\n      \\\"dimension\\\": 128,\\n      \\\"round\\\": 1,\\n      \\\"version\\\": \\\"candidate\\\",\\n      \\\"request_bytes\\\": 364,\\n      \\\"elapsed_ms\\\": 0.11285,\\n      \\\"process_vmhwm_kib\\\": 2736,\\n      \\\"passed\\\": true\\n    },\\n    {\\n      \\\"dimension\\\": 128,\\n      \\\"round\\\": 1,\\n      \\\"version\\\": \\\"baseline\\\",\\n      \\\"request_bytes\\\": 364,\\n      \\\"elapsed_ms\\\": 0.10769,\\n      \\\"process_vmhwm_kib\\\": 2732,\\n      \\\"passed\\\": true\\n    },\\n    {\\n      \\\"dimension\\\": 128,\\n      \\\"round\\\": 2,\\n      \\\"version\\\": \\\"baseline\\\",\\n      \\\"request_bytes\\\": 364,\\n      \\\"elapsed_ms\\\": 0.1053,\\n      \\\"process_vmhwm_kib\\\": 2736,\\n      \\\"passed\\\": true\\n    },\\n    {\\n      \\\"dimension\\\": 128,\\n      \\\"round\\\": 2,\\n      \\\"version\\\": \\\"candidate\\\",\\n      \\\"request_bytes\\\": 364,\\n      \\\"elapsed_ms\\\": 0.11005,\\n      \\\"process_vmhwm_kib\\\": 2732,\\n      \\\"passed\\\": true\\n    },\\n    {\\n      \\\"dimension\\\": 128,\\n      \\\"round\\\": 3,\\n      \\\"version\\\": \\\"candidate\\\",\\n      \\\"request_bytes\\\": 364,\\n      \\\"elapsed_ms\\\": 0.11422,\\n      \\\"process_vmhwm_kib\\\": 2732,\\n      \\\"passed\\\": true\\n    },\\n    {\\n      \\\"dimension\\\": 128,\\n      \\\"round\\\": 3,\\n      \\\"version\\\": \\\"baseline\\\",\\n      \\\"request_bytes\\\": 364,\\n      \\\"elapsed_ms\\\": 0.10977,\\n      \\\"process_vmhwm_kib\\\": 2736,\\n      \\\"passed\\\": true\\n    },\\n    {\\n      \\\"dimension\\\": 131072,\\n      \\\"round\\\": 0,\\n      \\\"version\\\": \\\"baseline\\\",\\n      \\\"request_bytes\\\": 262252,\\n      \\\"elapsed_ms\\\": 15.219966,\\n      \\\"process_vmhwm_kib\\\": 5264,\\n      \\\"passed\\\": true\\n    },\\n    {\\n      \\\"dimension\\\": 131072,\\n      \\\"round\\\": 0,\\n      \\\"version\\\": \\\"candidate\\\",\\n      \\\"request_bytes\\\": 262252,\\n      \\\"elapsed_ms\\\": 14.655225,\\n      \\\"process_vmhwm_kib\\\": 4212,\\n      \\\"passed\\\": true\\n    },\\n    {\\n      \\\"dimension\\\": 131072,\\n      \\\"round\\\": 1,\\n      \\\"version\\\": \\\"candidate\\\",\\n      \\\"request_bytes\\\": 262252,\\n      \\\"elapsed_ms\\\": 14.652235,\\n      \\\"process_vmhwm_kib\\\": 4212,\\n      \\\"passed\\\": true\\n    },\\n    {\\n      \\\"dimension\\\": 131072,\\n      \\\"round\\\": 1,\\n      \\\"version\\\": \\\"baseline\\\",\\n      \\\"request_bytes\\\": 262252,\\n      \\\"elapsed_ms\\\": 15.223166,\\n      \\\"process_vmhwm_kib\\\": 5272,\\n      \\\"passed\\\": true\\n    },\\n    {\\n      \\\"dimension\\\": 131072,\\n      \\\"round\\\": 2,\\n      \\\"version\\\": \\\"baseline\\\",\\n      \\\"request_bytes\\\": 262252,\\n      \\\"elapsed_ms\\\": 15.225706,\\n      \\\"process_vmhwm_kib\\\": 5268,\\n      \\\"passed\\\": true\\n    },\\n    {\\n      \\\"dimension\\\": 131072,\\n      \\\"round\\\": 2,\\n      \\\"version\\\": \\\"candidate\\\",\\n      \\\"request_bytes\\\": 262252,\\n      \\\"elapsed_ms\\\": 14.757485,\\n      \\\"process_vmhwm_kib\\\": 4212,\\n      \\\"passed\\\": true\\n    },\\n    {\\n      \\\"dimension\\\": 131072,\\n      \\\"round\\\": 3,\\n      \\\"version\\\": \\\"candidate\\\",\\n      \\\"request_bytes\\\": 262252,\\n      \\\"elapsed_ms\\\": 14.855395,\\n      \\\"process_vmhwm_kib\\\": 4212,\\n      \\\"passed\\\": true\\n    },\\n    {\\n      \\\"dimension\\\": 131072,\\n      \\\"round\\\": 3,\\n      \\\"version\\\": \\\"baseline\\\",\\n      \\\"request_bytes\\\": 262252,\\n      \\\"elapsed_ms\\\": 15.176295,\\n      \\\"process_vmhwm_kib\\\": 5268,\\n      \\\"passed\\\": true\\n    },\\n    {\\n      \\\"dimension\\\": 1048576,\\n      \\\"round\\\": 0,\\n      \\\"version\\\": \\\"baseline\\\",\\n      \\\"request_bytes\\\": 2097260,\\n      \\\"elapsed_ms\\\": 121.940504,\\n      \\\"process_vmhwm_kib\\\": 21312,\\n      \\\"passed\\\": true\\n    },\\n    {\\n      \\\"dimension\\\": 1048576,\\n      \\\"round\\\": 0,\\n      \\\"version\\\": \\\"candidate\\\",\\n      \\\"request_bytes\\\": 2097260,\\n      \\\"elapsed_ms\\\": 124.101544,\\n      \\\"process_vmhwm_kib\\\": 13128,\\n      \\\"passed\\\": true\\n    },\\n    {\\n      \\\"dimension\\\": 1048576,\\n      \\\"round\\\": 1,\\n      \\\"version\\\": \\\"candidate\\\",\\n      \\\"request_bytes\\\": 2097260,\\n      \\\"elapsed_ms\\\": 123.850424,\\n      \\\"process_vmhwm_kib\\\": 13128,\\n      \\\"passed\\\": true\\n    },\\n    {\\n      \\\"dimension\\\": 1048576,\\n      \\\"round\\\": 1,\\n      \\\"version\\\": \\\"baseline\\\",\\n      \\\"request_bytes\\\": 2097260,\\n      \\\"elapsed_ms\\\": 122.431714,\\n      \\\"process_vmhwm_kib\\\": 21312,\\n      \\\"passed\\\": true\\n    },\\n    {\\n      \\\"dimension\\\": 1048576,\\n      \\\"round\\\": 2,\\n      \\\"version\\\": \\\"baseline\\\",\\n      \\\"request_bytes\\\": 2097260,\\n      \\\"elapsed_ms\\\": 122.235534,\\n      \\\"process_vmhwm_kib\\\": 21316,\\n      \\\"passed\\\": true\\n    },\\n    {\\n      \\\"dimension\\\": 1048576,\\n      \\\"round\\\": 2,\\n      \\\"version\\\": \\\"candidate\\\",\\n      \\\"request_bytes\\\": 2097260,\\n      \\\"elapsed_ms\\\": 123.794684,\\n      \\\"process_vmhwm_kib\\\": 13132,\\n      \\\"passed\\\": true\\n    },\\n    {\\n      \\\"dimension\\\": 1048576,\\n      \\\"round\\\": 3,\\n      \\\"version\\\": \\\"candidate\\\",\\n      \\\"request_bytes\\\": 2097260,\\n      \\\"elapsed_ms\\\": 123.773944,\\n      \\\"process_vmhwm_kib\\\": 13132,\\n      \\\"passed\\\": true\\n    },\\n    {\\n      \\\"dimension\\\": 1048576,\\n      \\\"round\\\": 3,\\n      \\\"version\\\": \\\"baseline\\\",\\n      \\\"request_bytes\\\": 2097260,\\n      \\\"elapsed_ms\\\": 127.327236,\\n      \\\"process_vmhwm_kib\\\": 21316,\\n      \\\"passed\\\": true\\n    },\\n    {\\n      \\\"dimension\\\": 4194304,\\n      \\\"round\\\": 0,\\n      \\\"version\\\": \\\"baseline\\\",\\n      \\\"request_bytes\\\": 8388716,\\n      \\\"elapsed_ms\\\": 486.294173,\\n      \\\"process_vmhwm_kib\\\": 76564,\\n      \\\"passed\\\": true\\n    },\\n    {\\n      \\\"dimension\\\": 4194304,\\n      \\\"round\\\": 0,\\n      \\\"version\\\": \\\"candidate\\\",\\n      \\\"request_bytes\\\": 8388716,\\n      \\\"elapsed_ms\\\": 496.953788,\\n      \\\"process_vmhwm_kib\\\": 43832,\\n      \\\"passed\\\": true\\n    },\\n    {\\n      \\\"dimension\\\": 4194304,\\n      \\\"round\\\": 1,\\n      \\\"version\\\": \\\"candidate\\\",\\n      \\\"request_bytes\\\": 8388716,\\n      \\\"elapsed_ms\\\": 493.158866,\\n      \\\"process_vmhwm_kib\\\": 43828,\\n      \\\"passed\\\": true\\n    },\\n    {\\n      \\\"dimension\\\": 4194304,\\n      \\\"round\\\": 1,\\n      \\\"version\\\": \\\"baseline\\\",\\n      \\\"request_bytes\\\": 8388716,\\n      \\\"elapsed_ms\\\": 511.569193,\\n      \\\"process_vmhwm_kib\\\": 76564,\\n      \\\"passed\\\": true\\n    },\\n    {\\n      \\\"dimension\\\": 4194304,\\n      \\\"round\\\": 2,\\n      \\\"version\\\": \\\"baseline\\\",\\n      \\\"request_bytes\\\": 8388716,\\n      \\\"elapsed_ms\\\": 508.852152,\\n      \\\"process_vmhwm_kib\\\": 76564,\\n      \\\"passed\\\": true\\n    },\\n    {\\n      \\\"dimension\\\": 4194304,\\n      \\\"round\\\": 2,\\n      \\\"version\\\": \\\"candidate\\\",\\n      \\\"request_bytes\\\": 8388716,\\n      \\\"elapsed_ms\\\": 487.001384,\\n      \\\"process_vmhwm_kib\\\": 43824,\\n      \\\"passed\\\": true\\n    },\\n    {\\n      \\\"dimension\\\": 4194304,\\n      \\\"round\\\": 3,\\n      \\\"version\\\": \\\"candidate\\\",\\n      \\\"request_bytes\\\": 8388716,\\n      \\\"elapsed_ms\\\": 493.752077,\\n      \\\"process_vmhwm_kib\\\": 43828,\\n      \\\"passed\\\": true\\n    },\\n    {\\n      \\\"dimension\\\": 4194304,\\n      \\\"round\\\": 3,\\n      \\\"version\\\": \\\"baseline\\\",\\n      \\\"request_bytes\\\": 8388716,\\n      \\\"elapsed_ms\\\": 510.850173,\\n      \\\"process_vmhwm_kib\\\": 76564,\\n      \\\"passed\\\": true\\n    }\\n  ],\\n  \\\"summary\\\": {\\n    \\\"128\\\": {\\n      \\\"baseline\\\": {\\n        \\\"elapsed_ms\\\": 0.1068,\\n        \\\"process_vmhwm_kib\\\": 2736.0\\n      },\\n      \\\"candidate\\\": {\\n        \\\"elapsed_ms\\\": 0.113535,\\n        \\\"process_vmhwm_kib\\\": 2734.0\\n      }\\n    },\\n    \\\"131072\\\": {\\n      \\\"baseline\\\": {\\n        \\\"elapsed_ms\\\": 15.221566,\\n        \\\"process_vmhwm_kib\\\": 5268.0\\n      },\\n      \\\"candidate\\\": {\\n        \\\"elapsed_ms\\\": 14.706355,\\n        \\\"process_vmhwm_kib\\\": 4212.0\\n      }\\n    },\\n    \\\"1048576\\\": {\\n      \\\"baseline\\\": {\\n        \\\"elapsed_ms\\\": 122.333624,\\n        \\\"process_vmhwm_kib\\\": 21314.0\\n      },\\n      \\\"candidate\\\": {\\n        \\\"elapsed_ms\\\": 123.822554,\\n        \\\"process_vmhwm_kib\\\": 13130.0\\n      }\\n    },\\n    \\\"4194304\\\": {\\n      \\\"baseline\\\": {\\n        \\\"elapsed_ms\\\": 509.8511625,\\n        \\\"process_vmhwm_kib\\\": 76564.0\\n      },\\n      \\\"candidate\\\": {\\n        \\\"elapsed_ms\\\": 493.4554715,\\n        \\\"process_vmhwm_kib\\\": 43828.0\\n      }\\n    }\\n  },\\n  \\\"versions\\\": {\\n    \\\"baseline\\\": \\\"1aa3849aa6ecc4bd82ea1934a15a589d8e4388d397c9e3c1978407eb827f7c66\\\",\\n    \\\"candidate\\\": \\\"6fd307974aafc6cd51fb33469fdaa4a882cd6e8bacea6ad55a59feae6b9e8ade\\\"\\n  },\\n  \\\"cpu_affinity\\\": [\\n    2,\\n    3\\n  ],\\n  \\\"scope\\\": \\\"Actual default JSONL process; valid zero-result distance projection still binds and validates its full vector. Per-process VmHWM includes startup and parsing. This is a wide-vector micro workload, not formal memory or a 128D workload speed claim.\\\"\\n}\\n\"\n}\n"
+      "id": "public",
+      "source_file": "validation/e860-5000-20261116/public-for-material.json",
+      "source_sha256": "9ec78f9fe8ce87ffa06e6433dc5001c3333c3b4e1149ba484e2ec0bd24a71921",
+      "production_core": "ca5228e04ad1f570157ea288b109ef7e3c81e9db",
+      "note": "官方 f4d 原驱动及断言；默认原生入口和受限运行环境。",
+      "raw_report": "{\n  \"derived_from\": \"public.json\",\n  \"derived_from_sha256\": \"5083258b47619c7b8bc5927632955237df77ded7237c63b9c8286626bf474111\",\n  \"selection\": \"保留官方驱动结论和全部用例记录；诊断注释另存原始报告。\",\n  \"passed\": true,\n  \"scope\": \"public-protocol-check\",\n  \"cases\": [\n    {\n      \"id\": \"sql_crud\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 48\n    },\n    {\n      \"id\": \"sql_comparisons\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 44\n    },\n    {\n      \"id\": \"sql_ordering\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 42\n    },\n    {\n      \"id\": \"sql_empty\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 43\n    },\n    {\n      \"id\": \"sql_primary_key\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 44\n    },\n    {\n      \"id\": \"sql_unicode\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 45\n    },\n    {\n      \"id\": \"sql_bigint\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 38\n    },\n    {\n      \"id\": \"sql_unsupported\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 44\n    },\n    {\n      \"id\": \"storage_restart\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 83\n    },\n    {\n      \"id\": \"vector_euclidean\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 43\n    },\n    {\n      \"id\": \"transaction_commit\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 44\n    },\n    {\n      \"id\": \"transaction_rollback\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 44\n    },\n    {\n      \"id\": \"storage_mutations\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 84\n    },\n    {\n      \"id\": \"storage_multiple_tables\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 72\n    },\n    {\n      \"id\": \"vector_ties_and_filter\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 42\n    },\n    {\n      \"id\": \"vector_float32\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 42\n    },\n    {\n      \"id\": \"vector_index_maintenance\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 78\n    },\n    {\n      \"id\": \"transaction_failed_insert\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 86\n    },\n    {\n      \"id\": \"transaction_autocommit_atomic\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 87\n    },\n    {\n      \"id\": \"transaction_shutdown_rollback\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 85\n    }\n  ]\n}\n"
     },
     {
-      "id": "observed-formal-e860",
-      "source": "Actual retained report; not a new owner utterance",
-      "stage": "formal result observed 2026-11-15 21:56 Beijing",
-      "source_file": "evidence/e860-history-20261116/formal-result-at-20261115-2156.json",
-      "source_sha256": "3d68006c2d7af052df0283ad423644745dd5d66ce65afc58aae8612ec133d785",
-      "note": "Task 47254621 belongs to the original e860: MySQL passed, E=3115.658047. The combined Prompt message does not identify its exact cause. This snapshot is not a new formal request or a new candidate score.",
-      "raw_report": "{\n  \"read_at_beijing\": \"2026-11-15T21:56:20.017757+08:00\",\n  \"questionId\": 600081,\n  \"formal_post_invocations_this_reader\": 0,\n  \"today_records\": [\n    {\n      \"history\": {\n        \"id\": 47254621,\n        \"gmtCreate\": \"2026-11-15T07:34:56.000+00:00\",\n        \"commitId\": \"e86045306f5940613bfcf4aa84b0ee4bf74c20f1\",\n        \"branch\": \"2026-competition-round2\",\n        \"taskStatus\": 2,\n        \"failMsg\": 0,\n        \"errorMessage\": null,\n        \"successCount\": 1,\n        \"failCount\": 0,\n        \"strMachineScore\": null,\n        \"currentRetry\": \"0\",\n        \"testStartTime\": \"2026-11-15T07:34:57.000+00:00\",\n        \"testEndTime\": \"2026-11-15T07:41:03.000+00:00\",\n        \"testCaseResult\": \"[{\\\"testCase\\\":\\\"MySQL \\\\u6B63\\\\u5F0F\\\\u7528\\\\u4F8B\\\",\\\"resultStatus\\\":1,\\\"score\\\":\\\"0\\\",\\\"questionScore\\\":\\\"0\\\",\\\"message\\\":\\\"\\\\u6B64\\\\u9879\\\\u4E3A\\\\u51C6\\\\u5165\\\\u6761\\\\u4EF6\\\\uFF0C\\\\u4E0D\\\\u8BA1\\\\u6392\\\\u540D\\\\u5206\\\",\\\"playoffFeedback\\\":{\\\"performance\\\":\\\"\\\\u6027\\\\u80FD\\\\u8BC4\\\\u6D4B\\\\u5B8C\\\\u6210\\\\uFF1B\\\\u539F\\\\u59CB\\\\u6307\\\\u6807 E = 3115.658047\\\",\\\"prompt\\\":\\\"Prompt\\\\u7ED3\\\\u679C\\\\u65E0\\\\u6548\\\\u3001\\\\u5F85\\\\u590D\\\\u6838\\\\u3001\\\\u8D85\\\\u51FA\\\\u5E73\\\\u53F00\\\\u2013100\\\\u8303\\\\u56F4\\\\u6216\\\\u7F3A\\\\u5C11\\\\u6750\\\\u6599\\\\u6458\\\\u8981\\\\uFF0C\\\\u672C\\\\u9879\\\\u4E0D\\\\u53C2\\\\u4E0E\\\\u6392\\\\u540D\\\\uFF1B\\\\u672A\\\\u622A\\\\u65AD\\\\u6216\\\\u6362\\\\u7B97\\\\u672C\\\\u5730\\\\u5206\\\\u6570\\\\u3002\\\"}}]\",\n        \"parsed_test_case_result\": [\n          {\n            \"testCase\": \"MySQL 正式用例\",\n            \"resultStatus\": 1,\n            \"score\": \"0\",\n            \"questionScore\": \"0\",\n            \"message\": \"此项为准入条件，不计排名分\",\n            \"playoffFeedback\": {\n              \"performance\": \"性能评测完成；原始指标 E = 3115.658047\",\n              \"prompt\": \"Prompt结果无效、待复核、超出平台0–100范围或缺少材料摘要，本项不参与排名；未截断或换算本地分数。\"\n            }\n          }\n        ]\n      },\n      \"detail\": [\n        {\n          \"score\": \"—\",\n          \"message\": \"通过；此项为准入条件，不计排名分\",\n          \"questionScore\": \"—\",\n          \"test_case\": \"MySQL 正式用例\",\n          \"result_status\": null\n        },\n        {\n          \"score\": \"3115.658047\",\n          \"message\": \"性能评测完成；原始指标 E = 3115.658047\",\n          \"questionScore\": \"—\",\n          \"test_case\": \"性能原始分\",\n          \"result_status\": null\n        },\n        {\n          \"score\": \"—\",\n          \"message\": \"Prompt结果无效、待复核、超出平台0–100范围或缺少材料摘要，本项不参与排名；未截断或换算本地分数。\",\n          \"questionScore\": \"—\",\n          \"test_case\": \"Agent Prompt 原始分\",\n          \"result_status\": null\n        }\n      ]\n    }\n  ]\n}\n"
-    },
-    {
-      "id": "public.json",
-      "source": "Actual retained report; not a new owner utterance",
-      "stage": "Current e860 optimization, production core ca5228e04ad1f570157ea288b109ef7e3c81e9db",
-      "source_file": "validation/e860-opt-20261116/public.json",
-      "source_sha256": "5083258b47619c7b8bc5927632955237df77ded7237c63b9c8286626bf474111",
-      "note": "Unchanged official f4d driver and assertions, default native constrained entrypoint; no Docker image build.",
-      "raw_report": "{\n  \"scope\": \"public-protocol-check\",\n  \"passed\": true,\n  \"cases\": [\n    {\n      \"id\": \"sql_crud\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 48\n    },\n    {\n      \"id\": \"sql_comparisons\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 44\n    },\n    {\n      \"id\": \"sql_ordering\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 42\n    },\n    {\n      \"id\": \"sql_empty\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 43\n    },\n    {\n      \"id\": \"sql_primary_key\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 44\n    },\n    {\n      \"id\": \"sql_unicode\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 45\n    },\n    {\n      \"id\": \"sql_bigint\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 38\n    },\n    {\n      \"id\": \"sql_unsupported\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 44\n    },\n    {\n      \"id\": \"storage_restart\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 83\n    },\n    {\n      \"id\": \"vector_euclidean\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 43\n    },\n    {\n      \"id\": \"transaction_commit\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 44\n    },\n    {\n      \"id\": \"transaction_rollback\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 44\n    },\n    {\n      \"id\": \"storage_mutations\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 84\n    },\n    {\n      \"id\": \"storage_multiple_tables\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 72\n    },\n    {\n      \"id\": \"vector_ties_and_filter\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 42\n    },\n    {\n      \"id\": \"vector_float32\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 42\n    },\n    {\n      \"id\": \"vector_index_maintenance\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 78\n    },\n    {\n      \"id\": \"transaction_failed_insert\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 86\n    },\n    {\n      \"id\": \"transaction_autocommit_atomic\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 87\n    },\n    {\n      \"id\": \"transaction_shutdown_rollback\",\n      \"status\": \"PASS\",\n      \"message\": \"\",\n      \"duration_ms\": 85\n    }\n  ],\n  \"note\": \"Local diagnostic only; no performance/Agent scores or platform callbacks.\"\n}\n"
-    },
-    {
-      "id": "regression.json",
-      "source": "Actual retained report; not a new owner utterance",
-      "stage": "Current e860 optimization, production core ca5228e04ad1f570157ea288b109ef7e3c81e9db",
-      "source_file": "validation/e860-opt-20261116/regression.json",
+      "id": "regression",
+      "source_file": "validation/e860-5000-20261116/regression.json",
       "source_sha256": "f81f8722e0ec40bba57fbb43f9d7f35e4cc1cf0af78a2debcc0858e925b52d22",
-      "note": "All 26 unchanged native assertion groups passed against the dynamic production build so fault injection can actually intercept calls.",
+      "production_core": "ca5228e04ad1f570157ea288b109ef7e3c81e9db",
+      "note": "26 组原生断言；动态构建保证故障注入实际生效。",
       "raw_report": "{\n  \"passed\": true,\n  \"completed\": 26,\n  \"expected\": 26,\n  \"binary_sha256\": \"2a64d196902ac2f1e6d1c97959e03553bcdd008cc0231fd9d09dc267f77bfde5\",\n  \"results\": [\n    {\n      \"name\": \"protocol_complete_input\",\n      \"returncode\": 0,\n      \"passed\": true,\n      \"seconds\": 0.0641249530017376,\n      \"command\": [\n        \"/usr/bin/python3\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/protocol_complete_input.py\",\n        \"--output\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/protocol_complete_input\"\n      ],\n      \"report\": \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/protocol_complete_input/report.json\",\n      \"assertion_sha256\": \"4f8f19457cdf1f003d101baf340347aba6c46fe1385e1f13db781d13659fdf3d\"\n    },\n    {\n      \"name\": \"protocol_ids\",\n      \"returncode\": 0,\n      \"passed\": true,\n      \"seconds\": 0.11423112102784216,\n      \"command\": [\n        \"/usr/bin/python3\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/protocol_ids.py\",\n        \"--output\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/protocol_ids\"\n      ],\n      \"report\": \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/protocol_ids/report.json\",\n      \"assertion_sha256\": \"ba424a1fe68d0159ee4dbf1ea6de505813b6e754bb1b50ab03c4bd71b6d7743b\"\n    },\n    {\n      \"name\": \"protocol_contract\",\n      \"returncode\": 0,\n      \"passed\": true,\n      \"seconds\": 0.31488474301295355,\n      \"command\": [\n        \"/usr/bin/python3\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/protocol_contract.py\",\n        \"--output\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/protocol_contract\"\n      ],\n      \"report\": \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/protocol_contract/report.json\",\n      \"assertion_sha256\": \"b7736221c09ca5e81b92815872d0519696e660a981b49cb53e29902891b83a22\"\n    },\n    {\n      \"name\": \"protocol_nested_ids\",\n      \"returncode\": 0,\n      \"passed\": true,\n      \"seconds\": 0.11465947102988139,\n      \"command\": [\n        \"/usr/bin/python3\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/protocol_nested_ids.py\",\n        \"--output\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/protocol_nested_ids\"\n      ],\n      \"report\": \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/protocol_nested_ids/report.json\",\n      \"assertion_sha256\": \"d55d8d23723daf7d1a5697cd106e4dcb1371f99d98904a71e4cd90b81f223736\"\n    },\n    {\n      \"name\": \"sql_token_kinds\",\n      \"returncode\": 0,\n      \"passed\": true,\n      \"seconds\": 0.11463573097717017,\n      \"command\": [\n        \"/usr/bin/python3\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/sql_token_kinds.py\",\n        \"--output\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/sql_token_kinds\"\n      ],\n      \"report\": \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/sql_token_kinds/report.json\",\n      \"assertion_sha256\": \"d4bf3efed56f2f4a0e7bb906ac3cbcfe3af8c206c95a481f9b2e72303306fb54\"\n    },\n    {\n      \"name\": \"published_requirements\",\n      \"returncode\": 0,\n      \"passed\": true,\n      \"seconds\": 0.1647960189729929,\n      \"command\": [\n        \"/usr/bin/python3\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/published_requirements.py\",\n        \"--output\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/published_requirements\"\n      ],\n      \"report\": \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/published_requirements/report.json\",\n      \"assertion_sha256\": \"252bd5f672926ade847444740ccaad1c276e34b37fb418010de2526002b6de80\"\n    },\n    {\n      \"name\": \"sql_numeric_forms\",\n      \"returncode\": 0,\n      \"passed\": true,\n      \"seconds\": 0.16472496901405975,\n      \"command\": [\n        \"/usr/bin/python3\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/sql_numeric_forms.py\",\n        \"--output\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/sql_numeric_forms\"\n      ],\n      \"report\": \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/sql_numeric_forms/report.json\",\n      \"assertion_sha256\": \"753bd52afdc56e40844ce4eabda6c4552895981b16adb4ee5cc988755b7e6f5b\"\n    },\n    {\n      \"name\": \"order_alias_boundaries\",\n      \"returncode\": 0,\n      \"passed\": true,\n      \"seconds\": 0.06460178300039843,\n      \"command\": [\n        \"/usr/bin/python3\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/order_alias_boundaries.py\",\n        \"--output\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/order_alias_boundaries\"\n      ],\n      \"report\": \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/order_alias_boundaries/report.json\",\n      \"assertion_sha256\": \"281b499b52b10b3e0300d32ee2a90fc2841e828abdba58015c94ae4d207bb936\"\n    },\n    {\n      \"name\": \"invariants\",\n      \"returncode\": 0,\n      \"passed\": true,\n      \"seconds\": 4.825651716033462,\n      \"command\": [\n        \"/usr/bin/python3\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/invariants.py\",\n        \"--output\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/invariants\"\n      ],\n      \"report\": \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/invariants/report.json\",\n      \"assertion_sha256\": \"48fc5a9e7dcf5c3d94e2565acd03c08689ff233dca4b453370f2138ec15101fa\"\n    },\n    {\n      \"name\": \"space_reuse\",\n      \"returncode\": 0,\n      \"passed\": true,\n      \"seconds\": 1.3678128590108827,\n      \"command\": [\n        \"/usr/bin/python3\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/space_reuse.py\",\n        \"--output\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/space_reuse\"\n      ],\n      \"report\": \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/space_reuse/report.json\",\n      \"assertion_sha256\": \"1265a150fd24d28e505e068cf484eb9f79b00f2bbadd47f0ec917d25843cdb95\"\n    },\n    {\n      \"name\": \"column_layouts\",\n      \"returncode\": 0,\n      \"passed\": true,\n      \"seconds\": 0.61602044996107,\n      \"command\": [\n        \"/usr/bin/python3\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/column_layouts.py\",\n        \"--output\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/column_layouts\"\n      ],\n      \"report\": \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/column_layouts/report.json\",\n      \"assertion_sha256\": \"c631222aeaeda6e1ff9ec7d45ecc2fb77d3e129ff3091f313f22132b04194c56\"\n    },\n    {\n      \"name\": \"cache_column_sets\",\n      \"returncode\": 0,\n      \"passed\": true,\n      \"seconds\": 0.46562973695108667,\n      \"command\": [\n        \"/usr/bin/python3\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/cache_column_sets.py\",\n        \"--output\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/cache_column_sets\"\n      ],\n      \"report\": \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/cache_column_sets/report.json\",\n      \"assertion_sha256\": \"85f9fb067fa10c952dec0acaa7248f2aa2465a99aa2a11cb42ced3ca8d0bf7ec\"\n    },\n    {\n      \"name\": \"cache_ranges\",\n      \"returncode\": 0,\n      \"passed\": true,\n      \"seconds\": 0.6160868509905413,\n      \"command\": [\n        \"/usr/bin/python3\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/cache_ranges.py\",\n        \"--output\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/cache_ranges\"\n      ],\n      \"report\": \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/cache_ranges/report.json\",\n      \"assertion_sha256\": \"61ae38ad91be36d4d6a85d036e775df9b5755c072ec3670e598b3ebaf408c0e8\"\n    },\n    {\n      \"name\": \"insert_batches\",\n      \"returncode\": 0,\n      \"passed\": true,\n      \"seconds\": 0.9168735680286773,\n      \"command\": [\n        \"/usr/bin/python3\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/insert_batches.py\",\n        \"--output\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/insert_batches\"\n      ],\n      \"report\": \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/insert_batches/report.json\",\n      \"assertion_sha256\": \"3c4246c5410847a653a2ada6bc943053961bdc6d92983fd93bb8e711b22470dc\"\n    },\n    {\n      \"name\": \"sql_literals\",\n      \"returncode\": 0,\n      \"passed\": true,\n      \"seconds\": 0.1147462009685114,\n      \"command\": [\n        \"/usr/bin/python3\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/sql_literals.py\",\n        \"--output\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/sql_literals\"\n      ],\n      \"report\": \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/sql_literals/report.json\",\n      \"assertion_sha256\": \"ce66d3360ba8f9344019fbbf48a59351b38e54ab9bd6da660de33abdf1211ea2\"\n    },\n    {\n      \"name\": \"cache_unrelated_text\",\n      \"returncode\": 0,\n      \"passed\": true,\n      \"seconds\": 1.567876551009249,\n      \"command\": [\n        \"/usr/bin/python3\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/cache_unrelated_text.py\",\n        \"--output\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/cache_unrelated_text\"\n      ],\n      \"report\": \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/cache_unrelated_text/report.json\",\n      \"assertion_sha256\": \"f3ce1dafd3f5e7b5041da1f98ab2df8661ffba2749568d14a8722ddd4b7bcdc6\"\n    },\n    {\n      \"name\": \"crash_commit\",\n      \"returncode\": 0,\n      \"passed\": true,\n      \"seconds\": 0.41539603896671906,\n      \"command\": [\n        \"/usr/bin/python3\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/crash_commit.py\",\n        \"--output\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/crash_commit\"\n      ],\n      \"report\": \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/crash_commit/report.json\",\n      \"assertion_sha256\": \"fcb3fecdabe954c4c91a7486a5d99a1ccdd33881b5baad01143d6750cd2e0072\"\n    },\n    {\n      \"name\": \"commit_publish\",\n      \"returncode\": 0,\n      \"passed\": true,\n      \"seconds\": 0.3152897729887627,\n      \"command\": [\n        \"/usr/bin/python3\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/commit_publish.py\",\n        \"--output\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/commit_publish\"\n      ],\n      \"report\": \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/commit_publish/report.json\",\n      \"assertion_sha256\": \"84cbcadabda4dce9c9b9e13e41532ee0ae16f1ac2c2459ae0eef6a47838346f6\"\n    },\n    {\n      \"name\": \"open_safety\",\n      \"returncode\": 0,\n      \"passed\": true,\n      \"seconds\": 0.21550485701300204,\n      \"command\": [\n        \"/usr/bin/python3\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/open_safety.py\",\n        \"--output\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/open_safety\"\n      ],\n      \"report\": \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/open_safety/report.json\",\n      \"assertion_sha256\": \"debc1f5b89d1ac4f187fa58929e2a6e6613c96b3693057f069599c029d1dae08\"\n    },\n    {\n      \"name\": \"compaction_crash\",\n      \"returncode\": 0,\n      \"passed\": true,\n      \"seconds\": 2.0690768900094554,\n      \"command\": [\n        \"/usr/bin/python3\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/compaction_crash.py\",\n        \"--output\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/compaction_crash\"\n      ],\n      \"report\": \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/compaction_crash/report.json\",\n      \"assertion_sha256\": \"b7d47d9e5f1681adeca3c532926c281d0e20f197172f9aa3de8cf09a500dd73e\"\n    },\n    {\n      \"name\": \"recovery_boundaries\",\n      \"returncode\": 0,\n      \"passed\": true,\n      \"seconds\": 0.265057634038385,\n      \"command\": [\n        \"/usr/bin/python3\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/recovery_boundaries.py\",\n        \"--output\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/recovery_boundaries\"\n      ],\n      \"report\": \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/recovery_boundaries/report.json\",\n      \"assertion_sha256\": \"f5a6c3c8b970cc2f720c4bbd4f8a8631f1c73810b256f66d25e4b928c3689a6e\"\n    },\n    {\n      \"name\": \"recovery_allocation\",\n      \"returncode\": 0,\n      \"passed\": true,\n      \"seconds\": 0.21519451698986813,\n      \"command\": [\n        \"/usr/bin/python3\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/recovery_allocation.py\",\n        \"--output\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/recovery_allocation\"\n      ],\n      \"report\": \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/recovery_allocation/report.json\",\n      \"assertion_sha256\": \"5a89fb253b8c3f7e935ffdba7fa25f252f737ed786141c589feaca73bbcf3b90\"\n    },\n    {\n      \"name\": \"projection_io\",\n      \"returncode\": 0,\n      \"passed\": true,\n      \"seconds\": 2.720399753015954,\n      \"command\": [\n        \"/usr/bin/python3\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/projection_io.py\",\n        \"--output\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/projection_io\"\n      ],\n      \"report\": \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/projection_io/report.json\",\n      \"assertion_sha256\": \"6735b51c51cbb74cfca329bdcf4aa0c4aaa1b2ef8b9e4fa39dfa4755d5365031\"\n    },\n    {\n      \"name\": \"response_failure\",\n      \"returncode\": 0,\n      \"passed\": true,\n      \"seconds\": 0.21475151600316167,\n      \"command\": [\n        \"/usr/bin/python3\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/response_failure.py\",\n        \"--output\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/response_failure\"\n      ],\n      \"report\": \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/response_failure/report.json\",\n      \"assertion_sha256\": \"6fff580fcf6f80298f4dae97aad107f24153bdba72e0658870c927742cdf09a5\"\n    },\n    {\n      \"name\": \"reference_boundaries\",\n      \"returncode\": 0,\n      \"passed\": true,\n      \"seconds\": 0.46528348594438285,\n      \"command\": [\n        \"/usr/bin/python3\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/reference_boundaries.py\",\n        \"--output\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/reference_boundaries\",\n        \"--reference-bin\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/build/reference-candidate\"\n      ],\n      \"report\": \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/reference_boundaries/report.json\",\n      \"assertion_sha256\": \"7ca1c7c0bd7b4345abaa1584db41c9b7dc9e011546558b2f2ba3f13f14a66fa4\"\n    },\n    {\n      \"name\": \"reference_response_budget\",\n      \"returncode\": 0,\n      \"passed\": true,\n      \"seconds\": 5.025697176984977,\n      \"command\": [\n        \"/usr/bin/python3\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/combined-i-source/tests/reference_response_budget.py\",\n        \"--output\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/reference_response_budget\",\n        \"--reference-bin\",\n        \"/tmp/mvd-e860-opt-20261115-nqiedj7i/build/reference-candidate\"\n      ],\n      \"report\": \"/tmp/mvd-e860-opt-20261115-nqiedj7i/native-evidence/combined-i-regression/reference_response_budget/report.json\",\n      \"assertion_sha256\": \"09124a4e8598c5932ce1ca9ca8a0f99fd22f5b7464bf14535bc5a0c8248ea0ff\"\n    }\n  ],\n  \"scope\": \"Unchanged test assertions; native dynamic ELF. Boundary constraints and production static ELF have separate evidence. No Docker or formal evaluation is claimed.\"\n}\n"
     },
     {
-      "id": "baseline-parity.json",
-      "source": "Actual retained report; not a new owner utterance",
-      "stage": "Current e860 optimization, production core ca5228e04ad1f570157ea288b109ef7e3c81e9db",
-      "source_file": "validation/e860-opt-20261116/baseline-parity.json",
+      "id": "baseline-parity",
+      "source_file": "validation/e860-5000-20261116/baseline-parity.json",
       "source_sha256": "5d839d134b6ae11d995e11cde739f6e31bff5b237750e963f33b127dea718b05",
-      "note": "7862 strict comparisons passed against the pinned e860 binary, with the source commit passed explicitly. Earlier incorrectly labeled raw reports remain historical; this report has the correct identity.",
+      "production_core": "ca5228e04ad1f570157ea288b109ef7e3c81e9db",
+      "note": "与固定 e860 的严格差分，明确记录源码和二进制身份。",
       "raw_report": "{\n  \"passed\": true,\n  \"observations\": 7862,\n  \"qualifying_failure_count\": 0,\n  \"failures\": [],\n  \"reference_rejections_accepted_by_candidate\": [],\n  \"seed\": 120055,\n  \"phase\": \"all\",\n  \"candidate_sha256\": \"c36fafed171d63f7669631c281136a83e1826971143e796b28be9c035e9d4a9c\",\n  \"reference_sha256\": \"6a89320da35ea2c74ca8cdee8795c098f39738ea3ba6921953ffd9b577643934\",\n  \"reference_commit\": \"e86045306f5940613bfcf4aa84b0ee4bf74c20f1\",\n  \"scope\": \"Actual hardened native processes; finite differential checks, no formal score.\"\n}\n"
     },
     {
-      "id": "reclaim-lifecycle.json",
-      "source": "Actual retained report; not a new owner utterance",
-      "stage": "Current e860 optimization, production core ca5228e04ad1f570157ea288b109ef7e3c81e9db",
-      "source_file": "validation/e860-opt-20261116/reclaim-lifecycle.json",
+      "id": "reclaim-recovery",
+      "source_file": "validation/e860-5000-20261116/reclaim-lifecycle.json",
       "source_sha256": "4213d5bbc3d9cfa71e01fd350a75e0859992fef2d9fbd68e5cfa7680065c7d15",
-      "note": "Actual before/after-fallocate SIGKILL, EIO/ENOSYS injection, both recovery-root live-byte manifests and reads by unmodified e860. Changed unreachable garbage is not compared as live data.",
+      "production_core": "ca5228e04ad1f570157ea288b109ef7e3c81e9db",
+      "note": "实际系统调用前后强杀、错误注入、两恢复根有效字节比较及旧程序读取。",
       "raw_report": "{\n  \"passed\": true,\n  \"requests\": 178,\n  \"checkpoints\": [\n    {\n      \"tag\": \"insert-0\",\n      \"roots\": 2,\n      \"pages\": 3,\n      \"records\": 54,\n      \"manifest_sha256\": \"fa3f37978e7bc4e1c38c2a95b54a9bf3fd2d7a6605e21df8ea85ec16a0dc8d59\",\n      \"physical_bytes\": {\n        \"e860\": 36864,\n        \"candidate\": 36864\n      }\n    },\n    {\n      \"tag\": \"insert-250\",\n      \"roots\": 2,\n      \"pages\": 8,\n      \"records\": 554,\n      \"manifest_sha256\": \"71e45ae2658ecf5a6f1e5a5b315a3fa3f64734034d37807186fc57c5d5816956\",\n      \"physical_bytes\": {\n        \"e860\": 147456,\n        \"candidate\": 122880\n      }\n    },\n    {\n      \"tag\": \"insert-500\",\n      \"roots\": 2,\n      \"pages\": 12,\n      \"records\": 1054,\n      \"manifest_sha256\": \"56a5e3c843abdeb895a5f3048fff11cc7af80ab491abc013beb65a936d9ce5a1\",\n      \"physical_bytes\": {\n        \"e860\": 311296,\n        \"candidate\": 200704\n      }\n    },\n    {\n      \"tag\": \"insert-750\",\n      \"roots\": 2,\n      \"pages\": 19,\n      \"records\": 1554,\n      \"manifest_sha256\": \"e2a68595a021aaabd9cee6328e4abcc8aef5e10f4c36f594ae8ad90b63097d6b\",\n      \"physical_bytes\": {\n        \"e860\": 524288,\n        \"candidate\": 290816\n      }\n    },\n    {\n      \"tag\": \"indexed\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"2dab547f6c1d9a8ab7cb1ec27ac1c09ddddd3bcd4fc39f1f057b27d8c2ca05a7\",\n      \"physical_bytes\": {\n        \"e860\": 720896,\n        \"candidate\": 307200\n      }\n    },\n    {\n      \"tag\": \"step-0\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"2dab547f6c1d9a8ab7cb1ec27ac1c09ddddd3bcd4fc39f1f057b27d8c2ca05a7\",\n      \"physical_bytes\": {\n        \"e860\": 720896,\n        \"candidate\": 307200\n      }\n    },\n    {\n      \"tag\": \"step-1\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"2470380e89bd3f41003592a40a9bc49008e22ae2dfb86bacfce5dd219e284500\",\n      \"physical_bytes\": {\n        \"e860\": 782336,\n        \"candidate\": 368640\n      }\n    },\n    {\n      \"tag\": \"step-2\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"5887aa3c111f0e352ab79f0e195aaa96446aba8563ed781f1a4984c05402b60f\",\n      \"physical_bytes\": {\n        \"e860\": 831488,\n        \"candidate\": 397312\n      }\n    },\n    {\n      \"tag\": \"step-3\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"5887aa3c111f0e352ab79f0e195aaa96446aba8563ed781f1a4984c05402b60f\",\n      \"physical_bytes\": {\n        \"e860\": 831488,\n        \"candidate\": 397312\n      }\n    },\n    {\n      \"tag\": \"step-4\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"5887aa3c111f0e352ab79f0e195aaa96446aba8563ed781f1a4984c05402b60f\",\n      \"physical_bytes\": {\n        \"e860\": 831488,\n        \"candidate\": 397312\n      }\n    },\n    {\n      \"tag\": \"step-5\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"5887aa3c111f0e352ab79f0e195aaa96446aba8563ed781f1a4984c05402b60f\",\n      \"physical_bytes\": {\n        \"e860\": 831488,\n        \"candidate\": 397312\n      }\n    },\n    {\n      \"tag\": \"step-6\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"5887aa3c111f0e352ab79f0e195aaa96446aba8563ed781f1a4984c05402b60f\",\n      \"physical_bytes\": {\n        \"e860\": 831488,\n        \"candidate\": 397312\n      }\n    },\n    {\n      \"tag\": \"step-7\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"5cddab8a62da6f22eb2d7df102c39f4beb2a79696d5ceae7e19266cbe80af617\",\n      \"physical_bytes\": {\n        \"e860\": 892928,\n        \"candidate\": 458752\n      }\n    },\n    {\n      \"tag\": \"step-8\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"946cf9212075ca31b99af219334ef3944f385578e9ee97065dc3ca152e05f7eb\",\n      \"physical_bytes\": {\n        \"e860\": 942080,\n        \"candidate\": 487424\n      }\n    },\n    {\n      \"tag\": \"step-9\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"946cf9212075ca31b99af219334ef3944f385578e9ee97065dc3ca152e05f7eb\",\n      \"physical_bytes\": {\n        \"e860\": 942080,\n        \"candidate\": 487424\n      }\n    },\n    {\n      \"tag\": \"step-10\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"946cf9212075ca31b99af219334ef3944f385578e9ee97065dc3ca152e05f7eb\",\n      \"physical_bytes\": {\n        \"e860\": 942080,\n        \"candidate\": 487424\n      }\n    },\n    {\n      \"tag\": \"step-11\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"946cf9212075ca31b99af219334ef3944f385578e9ee97065dc3ca152e05f7eb\",\n      \"physical_bytes\": {\n        \"e860\": 942080,\n        \"candidate\": 487424\n      }\n    },\n    {\n      \"tag\": \"step-12\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"946cf9212075ca31b99af219334ef3944f385578e9ee97065dc3ca152e05f7eb\",\n      \"physical_bytes\": {\n        \"e860\": 942080,\n        \"candidate\": 487424\n      }\n    },\n    {\n      \"tag\": \"step-13\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"e07244fd57bb51edd43d30516efa346fd01e49bc3dfbd28df805ddfb9de7ee97\",\n      \"physical_bytes\": {\n        \"e860\": 1003520,\n        \"candidate\": 548864\n      }\n    },\n    {\n      \"tag\": \"step-14\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"38e2450769191e32d98576fe9fdc4da171c4145d0e49f42d8aebd324945c44b3\",\n      \"physical_bytes\": {\n        \"e860\": 1052672,\n        \"candidate\": 577536\n      }\n    },\n    {\n      \"tag\": \"step-15\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"38e2450769191e32d98576fe9fdc4da171c4145d0e49f42d8aebd324945c44b3\",\n      \"physical_bytes\": {\n        \"e860\": 1052672,\n        \"candidate\": 577536\n      }\n    },\n    {\n      \"tag\": \"step-16\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"38e2450769191e32d98576fe9fdc4da171c4145d0e49f42d8aebd324945c44b3\",\n      \"physical_bytes\": {\n        \"e860\": 1052672,\n        \"candidate\": 577536\n      }\n    },\n    {\n      \"tag\": \"step-17\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"38e2450769191e32d98576fe9fdc4da171c4145d0e49f42d8aebd324945c44b3\",\n      \"physical_bytes\": {\n        \"e860\": 1052672,\n        \"candidate\": 577536\n      }\n    },\n    {\n      \"tag\": \"step-18\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"38e2450769191e32d98576fe9fdc4da171c4145d0e49f42d8aebd324945c44b3\",\n      \"physical_bytes\": {\n        \"e860\": 1052672,\n        \"candidate\": 577536\n      }\n    },\n    {\n      \"tag\": \"step-19\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"34920139f1c977585211600e9a5f40aab3b1ff437f7453792088758f73136f6a\",\n      \"physical_bytes\": {\n        \"e860\": 1114112,\n        \"candidate\": 638976\n      }\n    },\n    {\n      \"tag\": \"step-20\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"6b848373a51848a3ddef56ccc3c3bdbe706bfaa5b1029f9d5fc865ff401616db\",\n      \"physical_bytes\": {\n        \"e860\": 1163264,\n        \"candidate\": 667648\n      }\n    },\n    {\n      \"tag\": \"step-21\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"6b848373a51848a3ddef56ccc3c3bdbe706bfaa5b1029f9d5fc865ff401616db\",\n      \"physical_bytes\": {\n        \"e860\": 1163264,\n        \"candidate\": 667648\n      }\n    },\n    {\n      \"tag\": \"step-22\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"6b848373a51848a3ddef56ccc3c3bdbe706bfaa5b1029f9d5fc865ff401616db\",\n      \"physical_bytes\": {\n        \"e860\": 1163264,\n        \"candidate\": 667648\n      }\n    },\n    {\n      \"tag\": \"step-23\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"6b848373a51848a3ddef56ccc3c3bdbe706bfaa5b1029f9d5fc865ff401616db\",\n      \"physical_bytes\": {\n        \"e860\": 1163264,\n        \"candidate\": 667648\n      }\n    },\n    {\n      \"tag\": \"step-24\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"6b848373a51848a3ddef56ccc3c3bdbe706bfaa5b1029f9d5fc865ff401616db\",\n      \"physical_bytes\": {\n        \"e860\": 1163264,\n        \"candidate\": 667648\n      }\n    },\n    {\n      \"tag\": \"step-25\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"fdd03008858289a0b0fe90da65f4767f57cd511720317486c379d071bbdd5720\",\n      \"physical_bytes\": {\n        \"e860\": 1224704,\n        \"candidate\": 729088\n      }\n    },\n    {\n      \"tag\": \"step-26\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"cb8801531966829f310613cf43577aff17c80b71345b6c7c3c6c394450d3b427\",\n      \"physical_bytes\": {\n        \"e860\": 1273856,\n        \"candidate\": 757760\n      }\n    },\n    {\n      \"tag\": \"step-27\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"cb8801531966829f310613cf43577aff17c80b71345b6c7c3c6c394450d3b427\",\n      \"physical_bytes\": {\n        \"e860\": 1273856,\n        \"candidate\": 757760\n      }\n    },\n    {\n      \"tag\": \"step-28\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"cb8801531966829f310613cf43577aff17c80b71345b6c7c3c6c394450d3b427\",\n      \"physical_bytes\": {\n        \"e860\": 1273856,\n        \"candidate\": 757760\n      }\n    },\n    {\n      \"tag\": \"step-29\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"cb8801531966829f310613cf43577aff17c80b71345b6c7c3c6c394450d3b427\",\n      \"physical_bytes\": {\n        \"e860\": 1273856,\n        \"candidate\": 757760\n      }\n    },\n    {\n      \"tag\": \"step-30\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"cb8801531966829f310613cf43577aff17c80b71345b6c7c3c6c394450d3b427\",\n      \"physical_bytes\": {\n        \"e860\": 1273856,\n        \"candidate\": 757760\n      }\n    },\n    {\n      \"tag\": \"step-31\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"8bf001a476bfb2e96fae808982ad4d6f7871cda773012611af80042ac41487eb\",\n      \"physical_bytes\": {\n        \"e860\": 1335296,\n        \"candidate\": 819200\n      }\n    },\n    {\n      \"tag\": \"step-32\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"6e9ef71a9d6cbc713f15514396e579400b32ff02911ba01d8da3848a725d9b6c\",\n      \"physical_bytes\": {\n        \"e860\": 1384448,\n        \"candidate\": 847872\n      }\n    },\n    {\n      \"tag\": \"step-33\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"6e9ef71a9d6cbc713f15514396e579400b32ff02911ba01d8da3848a725d9b6c\",\n      \"physical_bytes\": {\n        \"e860\": 1384448,\n        \"candidate\": 847872\n      }\n    },\n    {\n      \"tag\": \"step-34\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"6e9ef71a9d6cbc713f15514396e579400b32ff02911ba01d8da3848a725d9b6c\",\n      \"physical_bytes\": {\n        \"e860\": 1384448,\n        \"candidate\": 847872\n      }\n    },\n    {\n      \"tag\": \"step-35\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"6e9ef71a9d6cbc713f15514396e579400b32ff02911ba01d8da3848a725d9b6c\",\n      \"physical_bytes\": {\n        \"e860\": 1384448,\n        \"candidate\": 847872\n      }\n    },\n    {\n      \"tag\": \"step-36\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"6e9ef71a9d6cbc713f15514396e579400b32ff02911ba01d8da3848a725d9b6c\",\n      \"physical_bytes\": {\n        \"e860\": 1384448,\n        \"candidate\": 847872\n      }\n    },\n    {\n      \"tag\": \"step-37\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"8a5fd8f919b36a243e853ee3296bbff54e45c8e35e911a6af2a02911ee3b82db\",\n      \"physical_bytes\": {\n        \"e860\": 1445888,\n        \"candidate\": 909312\n      }\n    },\n    {\n      \"tag\": \"step-38\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"b0e05e8cc6836f25558fcd3d2c3bc5ec22810ef6ca00e6a4e2bf31ceb1796b29\",\n      \"physical_bytes\": {\n        \"e860\": 1495040,\n        \"candidate\": 937984\n      }\n    },\n    {\n      \"tag\": \"step-39\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"b0e05e8cc6836f25558fcd3d2c3bc5ec22810ef6ca00e6a4e2bf31ceb1796b29\",\n      \"physical_bytes\": {\n        \"e860\": 1495040,\n        \"candidate\": 937984\n      }\n    },\n    {\n      \"tag\": \"step-40\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"b0e05e8cc6836f25558fcd3d2c3bc5ec22810ef6ca00e6a4e2bf31ceb1796b29\",\n      \"physical_bytes\": {\n        \"e860\": 1495040,\n        \"candidate\": 937984\n      }\n    },\n    {\n      \"tag\": \"step-41\",\n      \"roots\": 2,\n      \"pages\": 20,\n      \"records\": 2004,\n      \"manifest_sha256\": \"b0e05e8cc6836f25558fcd3d2c3bc5ec22810ef6ca00e6a4e2bf31ceb1796b29\",\n      \"physical_bytes\": {\n        \"e860\": 1495040,\n        \"candidate\": 937984\n      }\n    }\n  ],\n  \"failed_statement_bytes\": [\n    {\n      \"step\": 4,\n      \"raw_file_unchanged\": true,\n      \"sha256\": \"0676aca381e9c02190a213d2946a6b9a99e1f53d584b16613878f05e79621601\"\n    },\n    {\n      \"step\": 10,\n      \"raw_file_unchanged\": true,\n      \"sha256\": \"dae209cf80035bc3f1337619b84625df10edcdcb80c4e4ea09f03ea27fccd968\"\n    },\n    {\n      \"step\": 16,\n      \"raw_file_unchanged\": true,\n      \"sha256\": \"e53f571580911da57c9fc200af12909cc5dfc7ce95b15f34771f59384db15843\"\n    },\n    {\n      \"step\": 22,\n      \"raw_file_unchanged\": true,\n      \"sha256\": \"84d639390c1693b6589f797fa6930c894fcc914bf87876926077d78a3cb95ad0\"\n    },\n    {\n      \"step\": 28,\n      \"raw_file_unchanged\": true,\n      \"sha256\": \"2c1b410dc80cafc42220c0c43a2b9f44d2b2451ed55e8adbb90218c23d6fffe1\"\n    },\n    {\n      \"step\": 34,\n      \"raw_file_unchanged\": true,\n      \"sha256\": \"7bf8ba973b64cc615eeefc01a439d939d6293bf163ce40184c3837f9a8854dc7\"\n    },\n    {\n      \"step\": 40,\n      \"raw_file_unchanged\": true,\n      \"sha256\": \"f2623829a7c38800d28b72b1f4acb2ee6a8daf94ae11d59d89d9f098bf4d3292\"\n    }\n  ],\n  \"both_recovery_roots_live_bytes_identical\": true,\n  \"persistent_format_unchanged\": true,\n  \"faults\": [\n    {\n      \"mode\": \"before\",\n      \"actual_injected_calls\": 1,\n      \"latest_root_recovered\": true,\n      \"previous_root_survived\": true,\n      \"old_binary_read\": true,\n      \"acknowledged\": false\n    },\n    {\n      \"mode\": \"after\",\n      \"actual_injected_calls\": 1,\n      \"latest_root_recovered\": true,\n      \"previous_root_survived\": true,\n      \"old_binary_read\": true,\n      \"acknowledged\": false\n    },\n    {\n      \"mode\": \"eio\",\n      \"actual_injected_calls\": 1,\n      \"latest_root_recovered\": true,\n      \"previous_root_survived\": true,\n      \"old_binary_read\": true,\n      \"acknowledged\": true\n    },\n    {\n      \"mode\": \"enosys\",\n      \"actual_injected_calls\": 1,\n      \"latest_root_recovered\": true,\n      \"previous_root_survived\": true,\n      \"old_binary_read\": true,\n      \"acknowledged\": true\n    }\n  ],\n  \"binary_sha256\": \"2a64d196902ac2f1e6d1c97959e03553bcdd008cc0231fd9d09dc267f77bfde5\",\n  \"scope\": \"Real native dynamic ELF syscall injection and byte manifests of live data; no formal submission or score.\"\n}\n"
     },
     {
-      "id": "sanitizer.json",
-      "source": "Actual retained report; not a new owner utterance",
-      "stage": "Current e860 optimization, production core ca5228e04ad1f570157ea288b109ef7e3c81e9db",
-      "source_file": "validation/e860-opt-20261116/sanitizer.json",
+      "id": "sanitizer",
+      "source_file": "validation/e860-5000-20261116/sanitizer.json",
       "source_sha256": "bdf4e6cb92b114381ccb2872bc3b5d51420995bb5e1deef011b2df4d7041e8bc",
-      "note": "ASan, UBSan and leak detection; eight selected semantic groups, native same production sources.",
+      "production_core": "ca5228e04ad1f570157ea288b109ef7e3c81e9db",
+      "note": "地址、未定义行为及泄漏检测；实际覆盖范围见结果。",
       "raw_report": "{\n  \"passed\": true,\n  \"results\": [\n    {\n      \"name\": \"invariants\",\n      \"returncode\": 0\n    },\n    {\n      \"name\": \"column_layouts\",\n      \"returncode\": 0\n    },\n    {\n      \"name\": \"cache_column_sets\",\n      \"returncode\": 0\n    },\n    {\n      \"name\": \"cache_ranges\",\n      \"returncode\": 0\n    },\n    {\n      \"name\": \"sql_literals\",\n      \"returncode\": 0\n    },\n    {\n      \"name\": \"protocol_complete_input\",\n      \"returncode\": 0\n    },\n    {\n      \"name\": \"protocol_ids\",\n      \"returncode\": 0\n    },\n    {\n      \"name\": \"protocol_nested_ids\",\n      \"returncode\": 0\n    }\n  ],\n  \"binary_sha256\": \"1287ae83517c79bd5066cf5cc7f1b94d82750b1f59f6208af82eb087519f65f3\",\n  \"ASAN_OPTIONS\": \"detect_leaks=1:abort_on_error=1\",\n  \"UBSAN_OPTIONS\": \"halt_on_error=1:print_stacktrace=1\"\n}"
     },
     {
-      "id": "capacity.json",
-      "source": "Actual retained report; not a new owner utterance",
-      "stage": "Current e860 optimization, production core ca5228e04ad1f570157ea288b109ef7e3c81e9db",
-      "source_file": "validation/e860-opt-20261116/capacity.json",
+      "id": "capacity",
+      "source_file": "validation/e860-5000-20261116/capacity.json",
       "source_sha256": "6ce175262fe038092dab05805aca43fafdd9efe9962ef1d73b898fc30816ef8c",
-      "note": "Actual 2 GiB/no-swap cgroup with over 2 GiB physical persisted user data; exact/ann and committed/uncommitted SIGKILL. Sampled memory is not memory.peak.",
+      "production_core": "ca5228e04ad1f570157ea288b109ef7e3c81e9db",
+      "note": "实际持久化用户数据超过 2 GiB，在 2 GiB、无 swap 预算内验证。",
       "raw_report": "{\n  \"passed\": true,\n  \"rows\": 40000,\n  \"logical_text_bytes\": 2621440000,\n  \"database_logical_bytes\": 2681860599,\n  \"database_allocated_bytes\": 2641776640,\n  \"memory_limit_bytes\": 2147483648,\n  \"sampled_cgroup_max_bytes\": 2138976256,\n  \"actual_memory_peak_bytes\": null,\n  \"sample_target_interval_ms\": 5,\n  \"memory_events\": {\n    \"low\": 0,\n    \"high\": 0,\n    \"max\": 0,\n    \"oom\": 0,\n    \"oom_kill\": 0\n  },\n  \"seconds\": 50.48315584397642,\n  \"exact_and_ann\": true,\n  \"committed_and_uncommitted_sigkill\": true,\n  \"private_cgroup\": \"/sys/fs/cgroup/mvd-e860-opt-20261115-nqiedj7i/capacity-combined-i-capacity\",\n  \"scope\": \"Actual native constrained default entrypoint and >2 GiB physical user data. Sampled memory.current is a lower bound when memory.peak is unavailable. No Docker or formal score.\"\n}\n"
     },
     {
-      "id": "ordered-resources.json",
-      "source": "Actual retained report; not a new owner utterance",
-      "stage": "Prior e860 production core ba96b7b",
-      "source_file": "validation/e860-opt-20261116/ordered-resources.json",
-      "source_sha256": "d36d02ade378620d500f27e19e9501f8f67017beab5519c80df90899d6e52e14",
-      "note": "Three counterbalanced rounds with sequential insertion; include both baseline and scored public reference. Native measurements, not a score.",
-      "raw_report": "{\n  \"passed\": true,\n  \"versions\": {\n    \"e860\": \"6a89320da35ea2c74ca8cdee8795c098f39738ea3ba6921953ffd9b577643934\",\n    \"final\": \"738de307ee78c048d1bd8360f4650507b4d8a00c935d0499fabf05c6dd4033ae\",\n    \"freaybru\": \"82cb02da0791fc751504827ffdf41c3881ad0330ec094be958ae5c3e48efcdc7\"\n  },\n  \"fixture_sha256\": \"074f46cd83d2b7b38c59cb627ad4ae1337a918d36b92889e48d54ee4efa4c139\",\n  \"rounds\": 3,\n  \"queries\": 200,\n  \"ordered_keys\": true,\n  \"verified_queries\": 7200,\n  \"summary\": {\n    \"bigint-idx0\": {\n      \"e860\": {\n        \"write_ms\": 500.578019,\n        \"prepare_ms\": 182.268855,\n        \"query_ms\": 31.585311,\n        \"sampled_cgroup_max_bytes\": 21020672\n      },\n      \"final\": {\n        \"write_ms\": 471.070198,\n        \"prepare_ms\": 99.827286,\n        \"query_ms\": 28.994101,\n        \"sampled_cgroup_max_bytes\": 13164544\n      },\n      \"freaybru\": {\n        \"write_ms\": 481.657722,\n        \"prepare_ms\": 8.869773,\n        \"query_ms\": 28.27312,\n        \"sampled_cgroup_max_bytes\": 11554816\n      }\n    },\n    \"bigint-idx1\": {\n      \"e860\": {\n        \"write_ms\": 509.215072,\n        \"prepare_ms\": 183.612135,\n        \"query_ms\": 31.819931,\n        \"sampled_cgroup_max_bytes\": 21024768\n      },\n      \"final\": {\n        \"write_ms\": 467.759087,\n        \"prepare_ms\": 101.934697,\n        \"query_ms\": 28.945911,\n        \"sampled_cgroup_max_bytes\": 13254656\n      },\n      \"freaybru\": {\n        \"write_ms\": 482.887053,\n        \"prepare_ms\": 10.550174,\n        \"query_ms\": 28.03733,\n        \"sampled_cgroup_max_bytes\": 11870208\n      }\n    },\n    \"text-idx0\": {\n      \"e860\": {\n        \"write_ms\": 505.295791,\n        \"prepare_ms\": 183.908545,\n        \"query_ms\": 31.657502,\n        \"sampled_cgroup_max_bytes\": 21016576\n      },\n      \"final\": {\n        \"write_ms\": 467.431797,\n        \"prepare_ms\": 101.882637,\n        \"query_ms\": 29.05072,\n        \"sampled_cgroup_max_bytes\": 13557760\n      },\n      \"freaybru\": {\n        \"write_ms\": 478.987272,\n        \"prepare_ms\": 9.029763,\n        \"query_ms\": 28.20534,\n        \"sampled_cgroup_max_bytes\": 11608064\n      }\n    },\n    \"text-idx1\": {\n      \"e860\": {\n        \"write_ms\": 498.465408,\n        \"prepare_ms\": 184.275245,\n        \"query_ms\": 31.680332,\n        \"sampled_cgroup_max_bytes\": 21020672\n      },\n      \"final\": {\n        \"write_ms\": 467.351987,\n        \"prepare_ms\": 103.288057,\n        \"query_ms\": 28.971711,\n        \"sampled_cgroup_max_bytes\": 13529088\n      },\n      \"freaybru\": {\n        \"write_ms\": 484.087143,\n        \"prepare_ms\": 10.664164,\n        \"query_ms\": 28.157099,\n        \"sampled_cgroup_max_bytes\": 11857920\n      }\n    }\n  },\n  \"identical_file_bytes_required\": false,\n  \"scope\": \"Fresh per-sample cgroups with 2 CPU/2 GiB/no swap. Native constrained default entrypoint. Sampled memory.current includes page cache but is a lower bound on the true peak. Raw device IO is retained without asserting the platform device attribution. No formal E is inferred.\",\n  \"selection_note\": \"Derived summary: raw report records remain in the verified evidence archive; no best samples were selected.\",\n  \"raw_report_sha256\": \"510646ac0163d29b8419285a27eb170f27402430328bbb28d6aeacaf5c2aa996\"\n}\n"
-    },
-    {
-      "id": "reclaim-resources.json",
-      "source": "Actual retained report; not a new owner utterance",
-      "stage": "Prior e860 production core ba96b7b",
-      "source_file": "validation/e860-opt-20261116/reclaim-resources.json",
-      "source_sha256": "62763267ce8ddf1c24ea9fac74df7a81a1608304dcd9155afe84d266a8a4a8b6",
-      "note": "Random insertion: reclaim trades about 2% write time for a large page-cache-inclusive memory reduction. Slow samples remain.",
-      "raw_report": "{\n  \"passed\": true,\n  \"versions\": {\n    \"e\": \"61abb397e2a9ae079251b0d98b938be16f10897233a98650b44ed8e8e2bb2aee\",\n    \"f\": \"738de307ee78c048d1bd8360f4650507b4d8a00c935d0499fabf05c6dd4033ae\",\n    \"freaybru\": \"82cb02da0791fc751504827ffdf41c3881ad0330ec094be958ae5c3e48efcdc7\"\n  },\n  \"fixture_sha256\": \"d40013f48682261846992b3ffbd26a6acca030b77c7df8fa2ea8bf879f7b12e0\",\n  \"rounds\": 3,\n  \"queries\": 200,\n  \"verified_queries\": 7200,\n  \"summary\": {\n    \"bigint-idx0\": {\n      \"e\": {\n        \"write_ms\": 545.785206,\n        \"prepare_ms\": 103.380107,\n        \"query_ms\": 28.98645,\n        \"sampled_cgroup_max_bytes\": 32243712\n      },\n      \"f\": {\n        \"write_ms\": 556.867129,\n        \"prepare_ms\": 102.314257,\n        \"query_ms\": 28.911479,\n        \"sampled_cgroup_max_bytes\": 13729792\n      },\n      \"freaybru\": {\n        \"write_ms\": 487.188414,\n        \"prepare_ms\": 10.010604,\n        \"query_ms\": 28.13598,\n        \"sampled_cgroup_max_bytes\": 11702272\n      }\n    },\n    \"bigint-idx1\": {\n      \"e\": {\n        \"write_ms\": 544.099755,\n        \"prepare_ms\": 107.181368,\n        \"query_ms\": 29.04294,\n        \"sampled_cgroup_max_bytes\": 32206848\n      },\n      \"f\": {\n        \"write_ms\": 553.554348,\n        \"prepare_ms\": 104.480067,\n        \"query_ms\": 28.876531,\n        \"sampled_cgroup_max_bytes\": 13406208\n      },\n      \"freaybru\": {\n        \"write_ms\": 486.759654,\n        \"prepare_ms\": 11.469954,\n        \"query_ms\": 28.10263,\n        \"sampled_cgroup_max_bytes\": 11997184\n      }\n    },\n    \"text-idx0\": {\n      \"e\": {\n        \"write_ms\": 542.738374,\n        \"prepare_ms\": 104.895227,\n        \"query_ms\": 29.043631,\n        \"sampled_cgroup_max_bytes\": 32636928\n      },\n      \"f\": {\n        \"write_ms\": 553.978038,\n        \"prepare_ms\": 103.531287,\n        \"query_ms\": 29.144221,\n        \"sampled_cgroup_max_bytes\": 14123008\n      },\n      \"freaybru\": {\n        \"write_ms\": 492.602276,\n        \"prepare_ms\": 10.155313,\n        \"query_ms\": 28.35474,\n        \"sampled_cgroup_max_bytes\": 11735040\n      }\n    },\n    \"text-idx1\": {\n      \"e\": {\n        \"write_ms\": 543.594194,\n        \"prepare_ms\": 108.020199,\n        \"query_ms\": 29.09043,\n        \"sampled_cgroup_max_bytes\": 32600064\n      },\n      \"f\": {\n        \"write_ms\": 557.841369,\n        \"prepare_ms\": 107.073288,\n        \"query_ms\": 29.07197,\n        \"sampled_cgroup_max_bytes\": 13570048\n      },\n      \"freaybru\": {\n        \"write_ms\": 488.662285,\n        \"prepare_ms\": 11.703224,\n        \"query_ms\": 27.984291,\n        \"sampled_cgroup_max_bytes\": 11997184\n      }\n    }\n  },\n  \"identical_file_bytes_required\": false,\n  \"scope\": \"Fresh per-sample cgroups with 2 CPU/2 GiB/no swap. Native constrained default entrypoint. Sampled memory.current includes page cache but is a lower bound on the true peak. Raw device IO is retained without asserting the platform device attribution. No formal E is inferred.\",\n  \"selection_note\": \"Derived summary: raw report records remain in the verified evidence archive; no best samples were selected.\",\n  \"raw_report_sha256\": \"6c1440da4e280277c339b80758893b3102cad85636b34bda8263f662b919f4e2\"\n}\n"
-    },
-    {
-      "id": "lto-queries.json",
-      "source": "Actual retained report; not a new owner utterance",
-      "stage": "Prior e860 production core ba96b7b",
-      "source_file": "validation/e860-opt-20261116/lto-queries.json",
-      "source_sha256": "e265e014f81eeff487d26dce75d646a5f64a42df0ef2030e9a5b1642d4f2be55",
-      "note": "Rejected reference-inspired link-time optimization: six paired rounds, about 1% worse ID/distance queries. Default build unchanged.",
-      "raw_report": "{\n  \"passed\": true,\n  \"rows\": 10000,\n  \"queries\": 1000,\n  \"rounds\": 6,\n  \"with_body\": false,\n  \"driver_cpu\": 3,\n  \"server_cpu\": 2,\n  \"versions\": {\n    \"baseline\": \"738de307ee78c048d1bd8360f4650507b4d8a00c935d0499fabf05c6dd4033ae\",\n    \"candidate\": \"2f9932fbfff09bce4af53c713a1f5bbe6d0be03116bfe042f221a1f059a7ae54\"\n  },\n  \"fixture_sha256\": \"986b182f46b5be05a95315b6b4057dfb8672e4c7f7a2102c92c515bcce6e2a86\",\n  \"summary\": {\n    \"bigint-idx0\": {\n      \"paired_speedups\": [\n        0.9949792688103858,\n        0.9860974593539495,\n        0.9842402592261631,\n        0.9865534885241728,\n        0.9885255099915864,\n        0.9886731911354025\n      ],\n      \"median_paired_speedup\": 0.9875394992578796,\n      \"median_ms\": {\n        \"baseline\": 142.62323500000002,\n        \"candidate\": 144.1420605\n      },\n      \"median_read_calls\": {\n        \"baseline\": 1000.0,\n        \"candidate\": 1000.0\n      }\n    },\n    \"bigint-idx1\": {\n      \"paired_speedups\": [\n        0.9926051602412629,\n        0.988740516159491,\n        0.9925406890695535,\n        0.9864051287437792,\n        0.9807479971203104,\n        0.9846944309090301\n      ],\n      \"median_paired_speedup\": 0.9875728224516351,\n      \"median_ms\": {\n        \"baseline\": 141.89730550000002,\n        \"candidate\": 143.095236\n      },\n      \"median_read_calls\": {\n        \"baseline\": 1000.0,\n        \"candidate\": 1000.0\n      }\n    },\n    \"text-idx0\": {\n      \"paired_speedups\": [\n        0.989647257946919,\n        0.9905280984164843,\n        0.9901884156085858,\n        0.9848981997364912,\n        0.9891883317312555,\n        0.99441679703918\n      ],\n      \"median_paired_speedup\": 0.9899178367777524,\n      \"median_ms\": {\n        \"baseline\": 142.95694650000002,\n        \"candidate\": 144.7597215\n      },\n      \"median_read_calls\": {\n        \"baseline\": 1000.0,\n        \"candidate\": 1000.0\n      }\n    },\n    \"text-idx1\": {\n      \"paired_speedups\": [\n        0.988796641931328,\n        0.9859236934251334,\n        0.9878500354906398,\n        0.9805037421427065,\n        0.9822919974638478,\n        0.9847813136983731\n      ],\n      \"median_paired_speedup\": 0.9853525035617532,\n      \"median_ms\": {\n        \"baseline\": 142.040778,\n        \"candidate\": 144.27095200000002\n      },\n      \"median_read_calls\": {\n        \"baseline\": 1000.0,\n        \"candidate\": 1000.0\n      }\n    }\n  },\n  \"verified_queries\": 48000,\n  \"scope\": \"Real JSONL request times, blocks of 50 alternate versions on the same fixed server CPU (not reserved); driver on a distinct CPU. No official score is inferred.\",\n  \"selection_note\": \"Derived summary: raw report records remain in the verified evidence archive; no best samples were selected.\",\n  \"raw_report_sha256\": \"06d498a6f41f5313d3c77db850129ef5183cdaab91e10063722fce3e671eebff\"\n}\n"
-    },
-    {
-      "id": "lto-writes.json",
-      "source": "Actual retained report; not a new owner utterance",
-      "stage": "Prior e860 production core ba96b7b",
-      "source_file": "validation/e860-opt-20261116/lto-writes.json",
-      "source_sha256": "403a3d132478a1d94539134ae494c9d9a0fcac84190867314c6a69955e553160",
-      "note": "Rejected LTO: four shapes by four paired rounds, roughly 3-5% worse writes despite identical files. Negative evidence is retained.",
-      "raw_report": "{\n  \"passed\": true,\n  \"rounds\": 4,\n  \"versions\": {\n    \"baseline\": \"738de307ee78c048d1bd8360f4650507b4d8a00c935d0499fabf05c6dd4033ae\",\n    \"candidate\": \"2f9932fbfff09bce4af53c713a1f5bbe6d0be03116bfe042f221a1f059a7ae54\"\n  },\n  \"driver_cpu\": 3,\n  \"server_cpu\": 2,\n  \"summary\": {\n    \"d128-body1024\": {\n      \"paired_speedups\": [\n        0.9724741811690057,\n        0.9748846879045096,\n        0.9654165891003358,\n        0.9628830035967983\n      ],\n      \"median_paired_speedup\": 0.9689453851346708\n    },\n    \"d128-body16\": {\n      \"paired_speedups\": [\n        0.9598173983622579,\n        0.9621611784471129,\n        0.9599483357436568,\n        0.9629333160725079\n      ],\n      \"median_paired_speedup\": 0.9610547570953849\n    },\n    \"d768-body1024\": {\n      \"paired_speedups\": [\n        0.9603862323121027,\n        0.957540291678073,\n        0.9606788277345127,\n        0.9610472909620813\n      ],\n      \"median_paired_speedup\": 0.9605325300233077\n    },\n    \"d768-body16\": {\n      \"paired_speedups\": [\n        0.9534643698111405,\n        0.9552381758534055,\n        0.9538141655797938,\n        0.9556678242447195\n      ],\n      \"median_paired_speedup\": 0.9545261707165997\n    }\n  },\n  \"scope\": \"Actual JSONL durable write request times, versions interleaved per batch. Fixed CPUs are not reserved. No formal E is inferred.\",\n  \"selection_note\": \"Derived summary: raw report records remain in the verified evidence archive; no best samples were selected.\",\n  \"raw_report_sha256\": \"88030ee234c0fad925c3394482145ab939ef7e99507318df0d7c1ad38eb17191\"\n}\n"
-    },
-    {
-      "id": "final-ordered-resources.json",
-      "source": "Actual retained report; not a new owner utterance",
-      "stage": "Current e860 optimization, production core ca5228e04ad1f570157ea288b109ef7e3c81e9db",
+      "id": "ordered-resources",
       "source_file": "validation/e860-opt-20261116/final-ordered-resources.json",
       "source_sha256": "34744c19bbcc6af272ca262bb539e5e49baa5defc4bbf9e79c7feaa6d0d8bcf3",
-      "note": "Latest three-round sequential-insertion comparison against original e860 and the scored public reference. Page-cache-inclusive memory is sampled, not official memory.peak.",
+      "production_core": "ca5228e04ad1f570157ea288b109ef7e3c81e9db",
+      "note": "此前顺序插入的三轮实测，作为本轮性能基线。",
       "raw_report": "{\n  \"passed\": true,\n  \"versions\": {\n    \"e860\": \"6a89320da35ea2c74ca8cdee8795c098f39738ea3ba6921953ffd9b577643934\",\n    \"candidate\": \"c36fafed171d63f7669631c281136a83e1826971143e796b28be9c035e9d4a9c\",\n    \"freaybru\": \"82cb02da0791fc751504827ffdf41c3881ad0330ec094be958ae5c3e48efcdc7\"\n  },\n  \"fixture_sha256\": \"074f46cd83d2b7b38c59cb627ad4ae1337a918d36b92889e48d54ee4efa4c139\",\n  \"rounds\": 3,\n  \"queries\": 200,\n  \"ordered_keys\": true,\n  \"verified_queries\": 7200,\n  \"summary\": {\n    \"bigint-idx0\": {\n      \"e860\": {\n        \"write_ms\": 502.65777,\n        \"prepare_ms\": 183.541645,\n        \"query_ms\": 31.988882,\n        \"sampled_cgroup_max_bytes\": 21082112\n      },\n      \"candidate\": {\n        \"write_ms\": 466.745487,\n        \"prepare_ms\": 97.226645,\n        \"query_ms\": 27.33014,\n        \"sampled_cgroup_max_bytes\": 13164544\n      },\n      \"freaybru\": {\n        \"write_ms\": 487.229535,\n        \"prepare_ms\": 9.166493,\n        \"query_ms\": 28.860309,\n        \"sampled_cgroup_max_bytes\": 11608064\n      }\n    },\n    \"bigint-idx1\": {\n      \"e860\": {\n        \"write_ms\": 506.125571,\n        \"prepare_ms\": 185.616716,\n        \"query_ms\": 31.911052,\n        \"sampled_cgroup_max_bytes\": 21118976\n      },\n      \"candidate\": {\n        \"write_ms\": 471.227208,\n        \"prepare_ms\": 99.615786,\n        \"query_ms\": 27.35405,\n        \"sampled_cgroup_max_bytes\": 13230080\n      },\n      \"freaybru\": {\n        \"write_ms\": 482.322592,\n        \"prepare_ms\": 10.800684,\n        \"query_ms\": 27.78173,\n        \"sampled_cgroup_max_bytes\": 11870208\n      }\n    },\n    \"text-idx0\": {\n      \"e860\": {\n        \"write_ms\": 506.657241,\n        \"prepare_ms\": 183.976186,\n        \"query_ms\": 31.844862,\n        \"sampled_cgroup_max_bytes\": 21016576\n      },\n      \"candidate\": {\n        \"write_ms\": 473.069988,\n        \"prepare_ms\": 98.930005,\n        \"query_ms\": 27.29282,\n        \"sampled_cgroup_max_bytes\": 13557760\n      },\n      \"freaybru\": {\n        \"write_ms\": 483.699673,\n        \"prepare_ms\": 9.264963,\n        \"query_ms\": 28.115871,\n        \"sampled_cgroup_max_bytes\": 11608064\n      }\n    },\n    \"text-idx1\": {\n      \"e860\": {\n        \"write_ms\": 505.446971,\n        \"prepare_ms\": 185.055486,\n        \"query_ms\": 31.632701,\n        \"sampled_cgroup_max_bytes\": 21110784\n      },\n      \"candidate\": {\n        \"write_ms\": 461.779495,\n        \"prepare_ms\": 100.319776,\n        \"query_ms\": 27.355461,\n        \"sampled_cgroup_max_bytes\": 13533184\n      },\n      \"freaybru\": {\n        \"write_ms\": 481.187242,\n        \"prepare_ms\": 10.757843,\n        \"query_ms\": 28.01497,\n        \"sampled_cgroup_max_bytes\": 11866112\n      }\n    }\n  },\n  \"identical_file_bytes_required\": false,\n  \"scope\": \"Fresh per-sample cgroups with 2 CPU/2 GiB/no swap. Native constrained default entrypoint. Sampled memory.current includes page cache but is a lower bound on the true peak. Raw device IO is retained without asserting the platform device attribution. No formal E is inferred.\",\n  \"selection_note\": \"Derived summary retaining all rounds in the comparison; raw records remain in the verified archive.\",\n  \"raw_report_sha256\": \"c34cc650ecfb4213deef79623f1379056d2ab69d8a1ab4f8fd4709d60a0d6b6b\"\n}\n"
     },
     {
-      "id": "final-avx2-id.json",
-      "source": "Actual retained report; not a new owner utterance",
-      "stage": "Current e860 optimization, production core ca5228e04ad1f570157ea288b109ef7e3c81e9db",
+      "id": "avx2-id",
       "source_file": "validation/e860-opt-20261116/final-avx2-id.json",
       "source_sha256": "16b9ced8327f0dbdd8882959ca13fb9d9bd3852edd36c71b6ae0a2ffd8c757cb",
-      "note": "Six rounds of actual ID/distance JSONL requests compared to prior core ba96b7b; all 48000 query results checked against an independent oracle.",
+      "production_core": "ca5228e04ad1f570157ea288b109ef7e3c81e9db",
+      "note": "六轮完整编号/距离查询结果核对。",
       "raw_report": "{\n  \"passed\": true,\n  \"rows\": 10000,\n  \"queries\": 1000,\n  \"rounds\": 6,\n  \"with_body\": false,\n  \"driver_cpu\": 3,\n  \"server_cpu\": 2,\n  \"versions\": {\n    \"baseline\": \"738de307ee78c048d1bd8360f4650507b4d8a00c935d0499fabf05c6dd4033ae\",\n    \"candidate\": \"c36fafed171d63f7669631c281136a83e1826971143e796b28be9c035e9d4a9c\"\n  },\n  \"fixture_sha256\": \"986b182f46b5be05a95315b6b4057dfb8672e4c7f7a2102c92c515bcce6e2a86\",\n  \"summary\": {\n    \"bigint-idx0\": {\n      \"paired_speedups\": [\n        1.0113549727789977,\n        1.0302643397731042,\n        1.039085833646333,\n        1.0375076360638895,\n        1.0389065137595235,\n        1.0360808895237723\n      ],\n      \"median_paired_speedup\": 1.036794262793831,\n      \"median_ms\": {\n        \"baseline\": 302.9837025,\n        \"candidate\": 292.030684\n      },\n      \"median_read_calls\": {\n        \"baseline\": 1000.0,\n        \"candidate\": 1000.0\n      }\n    },\n    \"bigint-idx1\": {\n      \"paired_speedups\": [\n        1.0459374320160821,\n        1.0413089595693428,\n        1.0368464268063853,\n        1.0596745941938328,\n        1.0346882955741532,\n        1.0404438164606191\n      ],\n      \"median_paired_speedup\": 1.040876388014981,\n      \"median_ms\": {\n        \"baseline\": 142.82438100000002,\n        \"candidate\": 137.450344\n      },\n      \"median_read_calls\": {\n        \"baseline\": 1000.0,\n        \"candidate\": 1000.0\n      }\n    },\n    \"text-idx0\": {\n      \"paired_speedups\": [\n        1.039396125014022,\n        1.0385982507760307,\n        1.0266532716485224,\n        1.0363172696578977,\n        1.0354416723160615,\n        1.0387828164085882\n      ],\n      \"median_paired_speedup\": 1.0374577602169643,\n      \"median_ms\": {\n        \"baseline\": 142.71204,\n        \"candidate\": 137.7302985\n      },\n      \"median_read_calls\": {\n        \"baseline\": 1000.0,\n        \"candidate\": 1000.0\n      }\n    },\n    \"text-idx1\": {\n      \"paired_speedups\": [\n        1.0382242243761908,\n        1.0443027827072862,\n        1.0437772408576191,\n        1.0400443505918877,\n        1.042157361356862,\n        1.0444940705070063\n      ],\n      \"median_paired_speedup\": 1.0429673011072405,\n      \"median_ms\": {\n        \"baseline\": 144.0237955,\n        \"candidate\": 138.043144\n      },\n      \"median_read_calls\": {\n        \"baseline\": 1000.0,\n        \"candidate\": 1000.0\n      }\n    }\n  },\n  \"verified_queries\": 48000,\n  \"scope\": \"Real JSONL request times, blocks of 50 alternate versions on the same fixed server CPU (not reserved); driver on a distinct CPU. No official score is inferred.\",\n  \"selection_note\": \"Derived summary retaining all rounds in the comparison; raw records remain in the verified archive.\",\n  \"raw_report_sha256\": \"2711e0e8c7288608778a2d54027454f69def0697cbf35aaf8941c3f49adc8806\"\n}\n"
     },
     {
-      "id": "final-avx2-body.json",
-      "source": "Actual retained report; not a new owner utterance",
-      "stage": "Current e860 optimization, production core ca5228e04ad1f570157ea288b109ef7e3c81e9db",
+      "id": "avx2-projection",
       "source_file": "validation/e860-opt-20261116/final-avx2-body.json",
       "source_sha256": "74ff71a53f62bbe63a67e0cce370f4684ad897faa68c3fd2c6103e96b9c8f915",
-      "note": "Six rounds including uncached ordinary projection; 48000 checked results. Every measured round remains represented in the summary.",
+      "production_core": "ca5228e04ad1f570157ea288b109ef7e3c81e9db",
+      "note": "六轮包含未缓存普通投影的查询结果核对。",
       "raw_report": "{\n  \"passed\": true,\n  \"rows\": 10000,\n  \"queries\": 1000,\n  \"rounds\": 6,\n  \"with_body\": true,\n  \"driver_cpu\": 3,\n  \"server_cpu\": 2,\n  \"versions\": {\n    \"baseline\": \"738de307ee78c048d1bd8360f4650507b4d8a00c935d0499fabf05c6dd4033ae\",\n    \"candidate\": \"c36fafed171d63f7669631c281136a83e1826971143e796b28be9c035e9d4a9c\"\n  },\n  \"fixture_sha256\": \"8c5f1e90a45d840735849349b800d013d53ccc3fbf38ee35d803594a294c2d95\",\n  \"summary\": {\n    \"bigint-idx0\": {\n      \"paired_speedups\": [\n        1.0359924154214344,\n        1.039919174586527,\n        1.0342548817861257,\n        1.032916226079114,\n        1.0347109284567262,\n        1.0349816575358466\n      ],\n      \"median_paired_speedup\": 1.0348462929962863,\n      \"median_ms\": {\n        \"baseline\": 162.93244249999998,\n        \"candidate\": 157.4015915\n      },\n      \"median_read_calls\": {\n        \"baseline\": 1000.0,\n        \"candidate\": 1000.0\n      }\n    },\n    \"bigint-idx1\": {\n      \"paired_speedups\": [\n        1.0360853512123138,\n        1.0328138686279238,\n        1.0317319019616364,\n        1.0451827690850064,\n        1.034258540048673,\n        1.0307493852034932\n      ],\n      \"median_paired_speedup\": 1.0335362043382985,\n      \"median_ms\": {\n        \"baseline\": 164.8510785,\n        \"candidate\": 159.53654799999998\n      },\n      \"median_read_calls\": {\n        \"baseline\": 1000.0,\n        \"candidate\": 1000.0\n      }\n    },\n    \"text-idx0\": {\n      \"paired_speedups\": [\n        1.0398120192229368,\n        1.0291305212159096,\n        1.034233715933837,\n        1.0371458686548023,\n        1.0343854769989431,\n        1.0318746772534686\n      ],\n      \"median_paired_speedup\": 1.03430959646639,\n      \"median_ms\": {\n        \"baseline\": 162.462773,\n        \"candidate\": 157.10565100000002\n      },\n      \"median_read_calls\": {\n        \"baseline\": 1000.0,\n        \"candidate\": 1000.0\n      }\n    },\n    \"text-idx1\": {\n      \"paired_speedups\": [\n        1.040701383039999,\n        1.0338791043866347,\n        1.0315361666584884,\n        1.0371381306383205,\n        1.0362021343138934,\n        1.0383070507034895\n      ],\n      \"median_paired_speedup\": 1.036670132476107,\n      \"median_ms\": {\n        \"baseline\": 163.4731715,\n        \"candidate\": 157.6308305\n      },\n      \"median_read_calls\": {\n        \"baseline\": 1000.0,\n        \"candidate\": 1000.0\n      }\n    }\n  },\n  \"verified_queries\": 48000,\n  \"scope\": \"Real JSONL request times, blocks of 50 alternate versions on the same fixed server CPU (not reserved); driver on a distinct CPU. No official score is inferred.\",\n  \"selection_note\": \"Derived summary retaining all rounds in the comparison; raw records remain in the verified archive.\",\n  \"raw_report_sha256\": \"75724adceaccbd140a9188448aef7968781b39fd2d91f95d87f14b70dc7df178\"\n}\n"
     },
     {
-      "id": "verified-avx2-certified.json",
-      "source": "Actual retained report; not a new owner utterance",
-      "stage": "Current e860 optimization, production core ca5228e04ad1f570157ea288b109ef7e3c81e9db",
+      "id": "integer-certificate",
       "source_file": "validation/e860-opt-20261116/verified-avx2-certified.json",
       "source_sha256": "3bb7908c7f9999fd5e358863057ce89c36ea1a3230e78d14db18cc20fcf4ddee",
-      "note": "All available scalar/AVX2 integer scores and block minima matched, with conservative bounds and exact float64 survivor/tie checks. No VNNI hardware execution is claimed.",
+      "production_core": "ca5228e04ad1f570157ea288b109ef7e3c81e9db",
+      "note": "实际可用 scalar/AVX2 分数、最小值及精确检索检查；不声称已执行 VNNI 硬件测试。",
       "raw_report": "{\"passed\":true,\"bound_checks\":46260,\"searches_checked\":1085,\"certified\":293,\"fallbacks\":36,\"timed_full_seconds\":0.0486822,\"timed_screen_seconds\":0.0113294,\"timed_exact_rows\":2650,\"timed_screened_rows\":2000000,\"timed_rowwise_queries\":200,\"full_scan_reblocks\":4}\n"
     },
     {
-      "id": "verified-avx2-design.json",
-      "source": "Actual retained report; not a new owner utterance",
-      "stage": "Current e860 optimization, production core ca5228e04ad1f570157ea288b109ef7e3c81e9db",
-      "source_file": "validation/e860-opt-20261116/verified-avx2-design.json",
-      "source_sha256": "21b69c4f512cce5f85328c6180c09ce9c033902abd5d166eb7b6d5319e6c5759",
-      "note": "Source design identity: the original scalar/VNNI dot kernels are retained, while AVX2 normalization/minimum and query-magnitude work are fused. An unmeasured VNNI unroll was not adopted.",
-      "raw_report": "{\n  \"base\": \"ba96b7b048d3c1ae8a910a0cf6f5e0e46bd87396\",\n  \"header_sha256\": \"28f1121ad45f197a0d40a5046c078102246028d6a05192f20e1eab73867c18ee\",\n  \"vnni_dot_kernel_byte_identical_to_base\": true,\n  \"vnni_block_sha256\": \"047872f1cf3ff638ab2e52578ab93667e2e957ad9fc4cc9a15407fe4e6eca72a\",\n  \"scope\": \"AVX2 exact normalization/minimum fusion and hoisted query magnitude; original scalar/VNNI dot products retained.\"\n}\n"
+      "id": "rejected-lto-query",
+      "source_file": "validation/e860-opt-20261116/lto-queries.json",
+      "source_sha256": "e265e014f81eeff487d26dce75d646a5f64a42df0ef2030e9a5b1642d4f2be55",
+      "production_core": "ba96b7b048d3c1ae8a910a0cf6f5e0e46bd87396",
+      "note": "链接优化查询负收益，保留所有配对轮次，未采用。",
+      "raw_report": "{\n  \"passed\": true,\n  \"rows\": 10000,\n  \"queries\": 1000,\n  \"rounds\": 6,\n  \"with_body\": false,\n  \"driver_cpu\": 3,\n  \"server_cpu\": 2,\n  \"versions\": {\n    \"baseline\": \"738de307ee78c048d1bd8360f4650507b4d8a00c935d0499fabf05c6dd4033ae\",\n    \"candidate\": \"2f9932fbfff09bce4af53c713a1f5bbe6d0be03116bfe042f221a1f059a7ae54\"\n  },\n  \"fixture_sha256\": \"986b182f46b5be05a95315b6b4057dfb8672e4c7f7a2102c92c515bcce6e2a86\",\n  \"summary\": {\n    \"bigint-idx0\": {\n      \"paired_speedups\": [\n        0.9949792688103858,\n        0.9860974593539495,\n        0.9842402592261631,\n        0.9865534885241728,\n        0.9885255099915864,\n        0.9886731911354025\n      ],\n      \"median_paired_speedup\": 0.9875394992578796,\n      \"median_ms\": {\n        \"baseline\": 142.62323500000002,\n        \"candidate\": 144.1420605\n      },\n      \"median_read_calls\": {\n        \"baseline\": 1000.0,\n        \"candidate\": 1000.0\n      }\n    },\n    \"bigint-idx1\": {\n      \"paired_speedups\": [\n        0.9926051602412629,\n        0.988740516159491,\n        0.9925406890695535,\n        0.9864051287437792,\n        0.9807479971203104,\n        0.9846944309090301\n      ],\n      \"median_paired_speedup\": 0.9875728224516351,\n      \"median_ms\": {\n        \"baseline\": 141.89730550000002,\n        \"candidate\": 143.095236\n      },\n      \"median_read_calls\": {\n        \"baseline\": 1000.0,\n        \"candidate\": 1000.0\n      }\n    },\n    \"text-idx0\": {\n      \"paired_speedups\": [\n        0.989647257946919,\n        0.9905280984164843,\n        0.9901884156085858,\n        0.9848981997364912,\n        0.9891883317312555,\n        0.99441679703918\n      ],\n      \"median_paired_speedup\": 0.9899178367777524,\n      \"median_ms\": {\n        \"baseline\": 142.95694650000002,\n        \"candidate\": 144.7597215\n      },\n      \"median_read_calls\": {\n        \"baseline\": 1000.0,\n        \"candidate\": 1000.0\n      }\n    },\n    \"text-idx1\": {\n      \"paired_speedups\": [\n        0.988796641931328,\n        0.9859236934251334,\n        0.9878500354906398,\n        0.9805037421427065,\n        0.9822919974638478,\n        0.9847813136983731\n      ],\n      \"median_paired_speedup\": 0.9853525035617532,\n      \"median_ms\": {\n        \"baseline\": 142.040778,\n        \"candidate\": 144.27095200000002\n      },\n      \"median_read_calls\": {\n        \"baseline\": 1000.0,\n        \"candidate\": 1000.0\n      }\n    }\n  },\n  \"verified_queries\": 48000,\n  \"scope\": \"Real JSONL request times, blocks of 50 alternate versions on the same fixed server CPU (not reserved); driver on a distinct CPU. No official score is inferred.\",\n  \"selection_note\": \"Derived summary: raw report records remain in the verified evidence archive; no best samples were selected.\",\n  \"raw_report_sha256\": \"06d498a6f41f5313d3c77db850129ef5183cdaab91e10063722fce3e671eebff\"\n}\n"
+    },
+    {
+      "id": "rejected-lto-write",
+      "source_file": "validation/e860-opt-20261116/lto-writes.json",
+      "source_sha256": "403a3d132478a1d94539134ae494c9d9a0fcac84190867314c6a69955e553160",
+      "production_core": "ba96b7b048d3c1ae8a910a0cf6f5e0e46bd87396",
+      "note": "链接优化写入负收益，正确性通过不代表性能更快。",
+      "raw_report": "{\n  \"passed\": true,\n  \"rounds\": 4,\n  \"versions\": {\n    \"baseline\": \"738de307ee78c048d1bd8360f4650507b4d8a00c935d0499fabf05c6dd4033ae\",\n    \"candidate\": \"2f9932fbfff09bce4af53c713a1f5bbe6d0be03116bfe042f221a1f059a7ae54\"\n  },\n  \"driver_cpu\": 3,\n  \"server_cpu\": 2,\n  \"summary\": {\n    \"d128-body1024\": {\n      \"paired_speedups\": [\n        0.9724741811690057,\n        0.9748846879045096,\n        0.9654165891003358,\n        0.9628830035967983\n      ],\n      \"median_paired_speedup\": 0.9689453851346708\n    },\n    \"d128-body16\": {\n      \"paired_speedups\": [\n        0.9598173983622579,\n        0.9621611784471129,\n        0.9599483357436568,\n        0.9629333160725079\n      ],\n      \"median_paired_speedup\": 0.9610547570953849\n    },\n    \"d768-body1024\": {\n      \"paired_speedups\": [\n        0.9603862323121027,\n        0.957540291678073,\n        0.9606788277345127,\n        0.9610472909620813\n      ],\n      \"median_paired_speedup\": 0.9605325300233077\n    },\n    \"d768-body16\": {\n      \"paired_speedups\": [\n        0.9534643698111405,\n        0.9552381758534055,\n        0.9538141655797938,\n        0.9556678242447195\n      ],\n      \"median_paired_speedup\": 0.9545261707165997\n    }\n  },\n  \"scope\": \"Actual JSONL durable write request times, versions interleaved per batch. Fixed CPUs are not reserved. No formal E is inferred.\",\n  \"selection_note\": \"Derived summary: raw report records remain in the verified evidence archive; no best samples were selected.\",\n  \"raw_report_sha256\": \"88030ee234c0fad925c3394482145ab939ef7e99507318df0d7c1ad38eb17191\"\n}\n"
     }
   ],
-  "candidate_evidence_chains": [
+  "references": [
     {
-      "topic": "做题人要求逐条核对协议与参考边界",
-      "owner_evidence": [
-        {
-          "pointer": "/conversations/8/content",
-          "quote": "你不应该对着协议一个一个排查吗"
-        }
-      ],
-      "observed_result": [
-        {
-          "pointer": "/experiments/4/raw_report",
-          "quote": "\"observations\": 7862"
-        }
-      ],
-      "attribution": "原始编号缺陷是做题人在引号中引用 Agent 发现；做题人的贡献是质疑遗漏并要求完整排查。结果是有限对拍证据，不能写成所有输入的证明。"
+      "repository": "juanzhi-gcb/seekdb",
+      "scope": "e860 原有协议与整数筛选参考来源，保留原源码及文档归属。"
     },
     {
-      "topic": "由做题人指定重新以已得分 e860 优化",
-      "owner_evidence": [
-        {
-          "pointer": "/conversations/21/content",
-          "quote": "在e86045306f5940613bfcf4aa84b0ee4bf74c20f1上优化"
-        },
-        {
-          "pointer": "/conversations/22/owner_answer",
-          "quote": "原始性能指标 E ≥ 4000"
-        },
-        {
-          "pointer": "/conversations/26/content",
-          "quote": "改成e大于等于4500吧"
-        }
-      ],
-      "observed_result": [
-        {
-          "pointer": "/experiments/2/raw_report",
-          "quote": "\"passed\": true"
-        },
-        {
-          "pointer": "/experiments/3/raw_report",
-          "quote": "\"completed\": 26"
-        }
-      ],
-      "attribution": "路线与目标由做题人指定；实现和验证由 Agent 执行。目标尚未通过正式平台确认。"
-    },
-    {
-      "topic": "正确性和存储约束优先于提速",
-      "owner_evidence": [
-        {
-          "pointer": "/conversations/10/content",
-          "quote": "请你确定mysol的样例要不通过，否则不得分"
-        },
-        {
-          "pointer": "/conversations/17/content",
-          "quote": "请你检查一些边界情况"
-        }
-      ],
-      "observed_result": [
-        {
-          "pointer": "/experiments/5/raw_report",
-          "quote": "\"both_recovery_roots_live_bytes_identical\": true"
-        },
-        {
-          "pointer": "/experiments/7/raw_report",
-          "quote": "\"logical_text_bytes\": 2621440000"
-        }
-      ],
-      "attribution": "Agent 以不改变有效记录和两恢复根为边界设计回收，实际注入中断并验证旧程序可读；没有归为做题人亲自提出或执行该算法。"
-    },
-    {
-      "topic": "做题人取消赶时限提测，允许继续验证取舍",
-      "owner_evidence": [
-        {
-          "pointer": "/conversations/25/content",
-          "quote": "你不用提交了，请你继续持续优化，没有时间限制"
-        }
-      ],
-      "observed_result": [
-        {
-          "pointer": "/experiments/11/raw_report",
-          "quote": "\"passed\": true"
-        }
-      ],
-      "attribution": "该报告通过指正确性及测量完成，配对比值小于 1 表示性能回退。Agent 排除这项优化，没有消耗正式提测机会。"
+      "repository": "Freaybru/seekdb-2026",
+      "commit": "3dfd062502aed05de32b269c64bd32995b0ffb5e",
+      "scope": "已提交前缀映射与向量来源复用思路；4427.302903 是作者公开记录，不是本候选成绩。"
     }
   ],
-  "limitations": [
-    "没有当前候选的隐藏准入、正式性能 E、Prompt 分数或排名。最后一份正式成绩属于旧 e860，不能贴到新分支上。",
-    "参考作者成绩与本地同工具链实验是两件事。没有复现作者的正式容器及平台分数。",
-    "原生 GCC 11.4、内存采样和 raw io.stat 不等于平台 GCC 13.5 Docker 冷构建、专用设备 B 或 memory.peak。",
-    "历史参考候选的宽向量内存收益不能泛化到标准128维；新旧阶段和报告版本分别注明。",
-    "做题人的真实要求与质疑足以体现主导，但材料没有补造其未发表的算法解释或理解，也不自行评学习分。"
+  "interpretation": [
+    "本地正确性检查不是隐藏准入结果。",
+    "原生 GCC 11.4、采样内存及 raw io.stat 不等于平台 Docker 构建、memory.peak 或专用设备计量。",
+    "旧版结果按原生产核心保存；新改动必须更新验证。"
   ]
 }

@@ -4,7 +4,7 @@
 
 赛题：[完成一个轻量向量数据库](https://oceanbase.yuque.com/org-wiki-obtech-vh7w9r/hc3pio/lg8enxlmwg69unt6)。官方题包基点：`f4d4e26653af823a7601668802f80e374ad6643c`。`STDIO_PROTOCOL.md`、`mysqltest/` 和 `protocol_check/` 保持官方内容。
 
-本分支以已正式通过 MySQL、原始性能 E=3115.658047 的 `e86045306f5940613bfcf4aa84b0ee4bf74c20f1` 为基线，按做题人要求继续向 **E≥4500** 优化。本候选尚无正式成绩，做题人已取消本轮提测和时限。当前原生证据及参考来源见[本轮优化说明](docs/E860_OPTIMIZATION_20261116.md)：20 个官方公开用例、26 组原回归、7862 项基线对照、回收边界强杀及超过 2 GiB 的真实数据测试通过。
+本分支以已正式通过 MySQL、原始性能 E=3115.658047 的 `e86045306f5940613bfcf4aa84b0ee4bf74c20f1` 为基础，以已通过完整原生 CI 的 `3d6fcd00182cacb6fe1a70b72a9c5759850e9f24` 为优化对照，继续向 **E≥5000** 优化。正式提测保持暂缓。本轮采用已确认的专项技术指导与实测记录，见[本轮说明](docs/E5000_20261116.md)；上一轮代码和验证见[优化基线](docs/E860_OPTIMIZATION_20261116.md)。
 
 [此前全题复核](docs/ALL_REQUIREMENTS_20261114.md)中的 54 份报告继续归属于其历史源码，不作为修改后代码的自动通过证明。新旧证据在验收脚本中分别绑定；4 条平台专属要求仍须平台确认。
 
@@ -154,6 +154,6 @@ python3 tests/contract.py
 
 ## 提交材料
 
-正式提交使用已登记仓库的 `2026-competition-round2` 分支和完整 40 位 SHA。根目录 `conversation.json` 与 `agent/conversation.json` 内容相同，均为 UTF-8 JSON 对象，低于 128 KiB。材料保留本次重写的真实用户发言、明确归属 Agent 的实现说明和实际测试输出，不把 Agent 的工作伪装为学生自己的解释。
+正式提交使用已登记仓库的 `2026-competition-round2` 分支和完整 40 位 SHA。根目录 `conversation.json` 与 `agent/conversation.json` 内容相同，均为 UTF-8 JSON 对象，低于 128 KiB。当前材料采用本轮确认的 6 项专项技术指导与对应实测记录，包含具体 prompt、验证方法、结果和生产版本；文本性质及执行版本明确区分。材料生成与校验分别通过 `scripts/build-guidance-material.py` 和 `tests/contract.py` 完成。
 
 对照使用 [juanzhi-gcb/seekdb 的固定成功版本 dfee55b8](https://github.com/juanzhi-gcb/seekdb/tree/dfee55b84284f4c39d2df45951cdbcb1d1baf1a2)，39 个源码文件按哈希固定，其执行器、工作列缓存、整数筛选和证书实现是本轮直接源码对照与迁移的依据。作者公开记录称该版正式 MySQL 通过、Prompt 原始分 6.5 有效；来源及无法独立认证对方平台账户的边界均在审查记录中说明。双方反斜杠转义约定的差异单独保留，对拍覆盖题目明确的公共语义。未复制对方学习材料。
