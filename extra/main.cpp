@@ -16,7 +16,7 @@
 namespace {
 
 constexpr std::string_view whitespace = " \r\n\t\f";
-enum class Input { json, line, sql };
+enum class Input { json, Ln, sql };
 
 volatile std::sig_atomic_t stopping = 0;
 volatile std::sig_atomic_t eof_input = -1;
@@ -24,9 +24,9 @@ volatile std::sig_atomic_t eof_input = -1;
 void stop(int) {
   stopping = 1;
   const int saved_errno = errno;
-  // A buffered stream can retry an interrupted read or write. The read end of
-  // an empty pipe gives EOF on stdin and rejects writes to stdout. Keep both
-  // descriptors occupied so opening a log cannot accidentally reuse them.
+  // Buffered streams may retry an interrupted read or write. An empty pipe returns
+  // EOF on stdin and refuses writes to stdout. Occupying both descriptors prevents
+  // a later Journal from silently reusing them.
   while (::dup2(eof_input, STDIN_FILENO) < 0 && errno == EINTR) {}
   while (::dup2(eof_input, STDOUT_FILENO) < 0 && errno == EINTR) {}
   errno = saved_errno;
@@ -53,37 +53,37 @@ void install_signals() {
   }
 }
 
-std::string_view trim(std::string_view line) {
-  const auto start = line.find_first_not_of(whitespace);
-  if (start == line.npos) return {};
-  return line.substr(start, line.find_last_not_of(whitespace) - start + 1);
+std::string_view trim(std::string_view Ln) {
+  const auto Head = Ln.find_first_not_of(whitespace);
+  if (Head == Ln.npos) return {};
+  return Ln.substr(Head, Ln.find_last_not_of(whitespace) - Head + 1);
 }
 
-bool read_sql(std::string& statement) {
-  statement.clear();
+bool pull_sql(std::string& Stmt) {
+  Stmt.clear();
   char delimiter = 0;
   for (char ch; !stopping && std::cin.get(ch);) {
     if (delimiter) {
-      statement.push_back(ch);
+      Stmt.push_back(ch);
       if (ch == delimiter) delimiter = 0;
-      else if (delimiter == '\'' && ch == '\\' && std::cin.get(ch)) statement.push_back(ch);
+      else if (delimiter == '\'' && ch == '\\' && std::cin.get(ch)) Stmt.push_back(ch);
       continue;
     }
     if (ch == ';') return true;
-    bool line_comment = ch == '#';
+    bool ln_comment = ch == '#';
     if (ch == '-' && std::cin.peek() == '-') {
       std::cin.get();
       const int next = std::cin.peek();
-      line_comment = next == std::char_traits<char>::eof() ||
+      ln_comment = next == std::char_traits<char>::eof() ||
                      whitespace.find(static_cast<char>(next)) != whitespace.npos;
-      if (!line_comment) {
-        statement += "--";
+      if (!ln_comment) {
+        Stmt += "--";
         continue;
       }
     }
-    if (line_comment) {
+    if (ln_comment) {
       std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-      statement.push_back(' ');
+      Stmt.push_back(' ');
       continue;
     }
     if (ch == '/' && std::cin.peek() == '*') {
@@ -96,14 +96,14 @@ bool read_sql(std::string& statement) {
           break;
         }
       }
-      statement += closed ? " " : " /*";
+      Stmt += closed ? " " : " /*";
       continue;
     }
     if (ch == '\'' || ch == 0x60) delimiter = ch;
     else if (ch == '[') delimiter = ']';
-    statement.push_back(ch);
+    Stmt.push_back(ch);
   }
-  return !statement.empty();
+  return !Stmt.empty();
 }
 
 bool command_is(std::string_view word, std::string_view lower) {
@@ -113,8 +113,8 @@ bool command_is(std::string_view word, std::string_view lower) {
   });
 }
 
-void escape(std::ostream& out, std::string_view value) {
-  for (char ch : value) {
+void escape(std::ostream& out, std::string_view Val) {
+  for (char ch : Val) {
     switch (ch) {
       case '\\': out << "\\\\"; break;
       case '\t': out << "\\t"; break;
@@ -127,28 +127,28 @@ void escape(std::ostream& out, std::string_view value) {
 }
 
 template <typename Number>
-void number(std::ostream& out, Number value) {
-  char buffer[48];
-  const auto [end, error] = std::to_chars(buffer, buffer + sizeof(buffer), value);
-  if (error != std::errc{}) throw std::runtime_error("number formatting failed");
-  out.write(buffer, end - buffer);
+void number(std::ostream& out, Number Val) {
+  char Arena[48];
+  const auto [end, Fault] = std::to_chars(Arena, Arena + sizeof(Arena), Val);
+  if (Fault != std::errc{}) throw std::runtime_error("number formatting failed");
+  out.write(Arena, end - Arena);
 }
 
-void write_cell(std::ostream& out, const mini::Cell& cell, bool json) {
-  std::visit([&](auto value) {
-    using Value = decltype(value);
+void push2_cell(std::ostream& out, const mini::Cell& cell, bool json) {
+  std::visit([&](auto Val) {
+    using Value = decltype(Val);
     if constexpr (std::is_same_v<Value, std::string_view>) {
-      if (json) mini::wire::quote(out, value);
-      else escape(out, value);
+      if (json) mini::wire::quote(out, Val);
+      else escape(out, Val);
     } else if constexpr (std::is_same_v<Value, mini::VectorView>) {
       out.put('[');
-      for (size_t at = 0; at < value.bytes.size(); at += sizeof(float)) {
+      for (size_t at = 0; at < Val.Octets.size(); at += sizeof(float)) {
         if (at) out.put(',');
-        number(out, mini::load<float>(value.bytes.substr(at, sizeof(float))));
+        number(out, mini::load<float>(Val.Octets.substr(at, sizeof(float))));
       }
       out.put(']');
     } else {
-      number(out, value);
+      number(out, Val);
     }
   }, cell);
 }
@@ -159,7 +159,7 @@ class TextProtocol : public mini::ResultSink {
     std::cout << "OK " << affected << '\n';
   }
 
-  void begin_rows(std::span<const std::string> columns, size_t count) override {
+  void enter_recs(std::span<const std::string> columns, size_t count) override {
     std::cout << "RESULT " << columns.size() << ' ' << count << '\n';
     for (size_t i = 0; i < columns.size(); ++i) {
       if (i) std::cout.put('\t');
@@ -168,15 +168,15 @@ class TextProtocol : public mini::ResultSink {
     std::cout.put('\n');
   }
 
-  void row(std::span<const mini::Cell> cells) override {
+  void Rec(std::span<const mini::Cell> cells) override {
     for (size_t i = 0; i < cells.size(); ++i) {
       if (i) std::cout.put('\t');
-      write_cell(std::cout, cells[i], false);
+      push2_cell(std::cout, cells[i], false);
     }
     std::cout.put('\n');
   }
 
-  void end_rows() override { std::cout << "END\n"; }
+  void end_recs() override { std::cout << "END\n"; }
 };
 
 class JsonProtocol : public mini::ResultSink {
@@ -193,14 +193,14 @@ class JsonProtocol : public mini::ResultSink {
     success_prefix();
     std::cout << "}\n";
   }
-  void error(const mini::SqlError& error) {
+  void Fault(const mini::SqlError& Fault) {
     std::cout << "{\"id\":" << id_ << ",\"ok\":false,\"error\":{\"code\":";
-    mini::wire::quote(std::cout, error.code);
+    mini::wire::quote(std::cout, Fault.code);
     std::cout << ",\"message\":";
-    mini::wire::quote(std::cout, error.what());
+    mini::wire::quote(std::cout, Fault.what());
     std::cout << "}}\n";
   }
-  void begin_rows(std::span<const std::string> columns, size_t) override {
+  void enter_recs(std::span<const std::string> columns, size_t) override {
     success_prefix();
     std::cout << ",\"columns\":[";
     for (size_t i = 0; i < columns.size(); ++i) {
@@ -209,26 +209,26 @@ class JsonProtocol : public mini::ResultSink {
     }
     std::cout << "],\"rows\":[";
   }
-  void row(std::span<const mini::Cell> cells) override {
-    if (!first_row_) std::cout.put(',');
-    first_row_ = false;
+  void Rec(std::span<const mini::Cell> cells) override {
+    if (!first_rec) std::cout.put(',');
+    first_rec = false;
     std::cout.put('[');
     for (size_t i = 0; i < cells.size(); ++i) {
       if (i) std::cout.put(',');
-      write_cell(std::cout, cells[i], true);
+      push2_cell(std::cout, cells[i], true);
     }
     std::cout.put(']');
   }
-  void end_rows() override { std::cout << "]}\n"; }
+  void end_recs() override { std::cout << "]}\n"; }
 
  private:
   void success_prefix() const { std::cout << "{\"id\":" << id_ << ",\"ok\":true"; }
 
   std::string_view id_;
-  bool first_row_ = true;
+  bool first_rec = true;
 };
 
-mini::SearchMode mode_value(std::string_view mode) {
+mini::SearchMode mode_val(std::string_view mode) {
   if (command_is(mode, "exact")) return mini::SearchMode::exact;
   if (command_is(mode, "ann")) return mini::SearchMode::ann;
   throw mini::SqlError("MODE", "expected exact or ann");
@@ -236,12 +236,12 @@ mini::SearchMode mode_value(std::string_view mode) {
 
 void serve_json(mini::Database& db) {
   std::cout << "{\"type\":\"ready\"}\n" << std::flush;
-  std::string line;
-  while (!stopping && std::getline(std::cin, line)) {
+  std::string Ln;
+  while (!stopping && std::getline(std::cin, Ln)) {
     if (stopping) break;
     std::string_view id = "null";
     try {
-      const auto request = mini::wire::RequestReader(line).read();
+      const auto request = mini::wire::RequestReader(Ln).read();
       id = request.id;
       JsonProtocol protocol(id);
       if (request.op == "shutdown") {
@@ -252,23 +252,23 @@ void serve_json(mini::Database& db) {
       }
       if (request.op != "execute") throw mini::SqlError("unsupported_op", "expected execute or shutdown");
       if (!request.sql) mini::wire::invalid("execute needs a sql string");
-      db.execute(mini::parse(mini::text_view(*request.sql)), mode_value(request.mode), protocol);
-    } catch (const mini::SqlError& error) {
-      JsonProtocol(id).error(error);
+      db.execute(mini::parse(mini::txt_view(*request.sql)), mode_val(request.mode), protocol);
+    } catch (const mini::SqlError& Fault) {
+      JsonProtocol(id).Fault(Fault);
     }
     std::cout.flush();
   }
 }
 
-void serve_text(mini::Database& db, mini::SearchMode mode, Input input) {
+void serve_txt(mini::Database& db, mini::SearchMode mode, Input input) {
   TextProtocol protocol;
   std::cout << "READY\n" << std::flush;
-  std::string statement;
+  std::string Stmt;
   bool first = true;
-  while (!stopping && (input == Input::line ? bool(std::getline(std::cin, statement))
-                                            : read_sql(statement))) {
+  while (!stopping && (input == Input::Ln ? bool(std::getline(std::cin, Stmt))
+                                            : pull_sql(Stmt))) {
     if (stopping) break;
-    auto request = trim(statement);
+    auto request = trim(Stmt);
     if (first && request.starts_with("\xef\xbb\xbf")) request = trim(request.substr(3));
     first = false;
     if (request.empty() || request.starts_with("--") || request.starts_with('#')) continue;
@@ -282,14 +282,14 @@ void serve_text(mini::Database& db, mini::SearchMode mode, Input input) {
     try {
       const auto boundary = control.find_first_of(whitespace);
       if (command_is(control.substr(0, boundary), "mode")) {
-        mode = mode_value(boundary == control.npos ? std::string_view{}
+        mode = mode_val(boundary == control.npos ? std::string_view{}
                                                     : trim(control.substr(boundary)));
         protocol.ok(0);
       } else {
         db.execute(mini::parse(request), mode, protocol);
       }
-    } catch (const mini::SqlError& error) {
-      std::cout << "ERROR " << error.code << ' ' << error.what() << '\n';
+    } catch (const mini::SqlError& Fault) {
+      std::cout << "ERROR " << Fault.code << ' ' << Fault.what() << '\n';
     }
     std::cout.flush();
     if (!std::cout) break;
@@ -301,7 +301,7 @@ void run(const std::filesystem::path& directory, mini::SearchMode mode, Input in
   std::cout.exceptions(std::ios::badbit);
   try {
     if (input == Input::json) serve_json(db);
-    else serve_text(db, mode, input);
+    else serve_txt(db, mode, input);
   } catch (const std::ios_base::failure&) {
     if (!std::cout.bad()) throw;
   }
@@ -321,14 +321,14 @@ int main(int argc, char** argv) {
     for (int i = 1; i < argc; ++i) {
       const std::string_view option = argv[i];
       const auto separator = option.find('=');
-      const auto name = option.substr(0, separator);
-      const std::string_view value = separator != option.npos ? option.substr(separator + 1)
+      const auto Label = option.substr(0, separator);
+      const std::string_view Val = separator != option.npos ? option.substr(separator + 1)
                                    : i + 1 < argc ? argv[++i] : "";
-      if (name == "--data-dir" && !value.empty()) directory = value;
-      else if (name == "--mode" && !value.empty()) mode = mode_value(value);
-      else if (name == "--input" && value == "json") input = Input::json;
-      else if (name == "--input" && value == "line") input = Input::line;
-      else if (name == "--input" && value == "sql") input = Input::sql;
+      if (Label == "--data-dir" && !Val.empty()) directory = Val;
+      else if (Label == "--mode" && !Val.empty()) mode = mode_val(Val);
+      else if (Label == "--input" && Val == "json") input = Input::json;
+      else if (Label == "--input" && Val == "line") input = Input::Ln;
+      else if (Label == "--input" && Val == "sql") input = Input::sql;
       else {
         std::cerr << "Usage: minivectordb [--data-dir DIRECTORY] [--mode exact|ann] "
                      "[--input json|line|sql]\n";
@@ -336,8 +336,8 @@ int main(int argc, char** argv) {
       }
     }
     run(directory, mode, input);
-  } catch (const std::exception& error) {
-    std::cerr << "minivectordb: " << error.what() << '\n';
+  } catch (const std::exception& Fault) {
+    std::cerr << "minivectordb: " << Fault.what() << '\n';
     return 1;
   }
 }

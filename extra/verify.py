@@ -122,8 +122,8 @@ def check_public_rows(actual, expected, unordered):
             actual, expected)
         return
 
-    # Match each expected row once. Reassign a previous match if overlapping
-    # distance tolerances give one row more than one possible partner.
+    # Every expected row matches at most once; when overlapping distance tolerances
+    # offer one row several partners, an earlier assignment is reassigned.
     owners = {}
 
     def assign(wanted, visited):
@@ -367,8 +367,8 @@ def log_records(data):
 
 
 def packed_storage(binary, root):
-    # 129 coordinates exercise the partial SIMD block. Include sign bits,
-    # exponent escapes, and values in the same row that must remain raw.
+    # With 129 coordinates the partial SIMD block comes into play: sign bits,
+    # exponent escapes and rows that must stay raw all appear together.
     size = 129
     short = [0.0, -0.0, 1.5, -0.25, 5.0] * 25 + [0.0, -0.0, 0.25, 1.0]
     clustered = list(array('f', (0.91 + 0.00037 * i for i in range(size))))
@@ -528,7 +528,7 @@ def dyadic_storage(binary, root):
 def script_input(binary, root):
     arguments = (f"--data-dir={root}", "--mode=ann", "--input=sql")
     with Session(binary, root, arguments=arguments) as db:
-        # Keep the input open and send no line ending after the semicolon.
+        # Leave stdin open, and omit any line terminator after the semicolon.
         db.process.stdin.write(
             "\ufeff-- initial comment with ;\r\nCREATE TABLE docs (\r\n"
             "  id BIGINT PRIMARY KEY,\r\n  text VARCHAR(30),\r\n  v VECTOR(2)\r\n);")
@@ -701,8 +701,8 @@ def partial_log(binary, root, version):
         db.ok("COMMIT")
         db.quit()
     after = log.stat().st_size
-    # This layout uses a wide UPDATE, a compact INSERT and a wide COMMIT. Include
-    # torn length trailers at both insert and commit boundaries.
+    # The layout combines a wide UPDATE, a compact INSERT and a wide COMMIT, with
+    # torn length trailers placed at both the insert and the commit boundary.
     insert = before + 34 + 8
     for number, cut in enumerate((before + 1, before + 28, insert - 1, insert + 1,
                                   after - 35, after - 34, after - 33, after - 1, after)):
@@ -898,8 +898,8 @@ def conservative_bounds(binary, root):
             scales = (2.0**-149, 1e-20, 1.0, 1e18, 1e37)
             vectors = [list(array("f", (rng.randint(-8, 8) * scales[key % 5]
                                       for _ in range(dimension)))) for key in range(size)]
-            # Equal huge components hide the small differences from double
-            # sums; exact integer squares must still determine the order.
+            # Huge but equal components make the tiny differences vanish from double
+            # sums, so exact integer squares must decide the ordering.
             for key in range(8):
                 vectors[key] = [0.0] * dimension
                 vectors[key][0] = array("f", [1e30])[0]
@@ -950,7 +950,7 @@ def packed_bounds(binary, root):
     def units(vector):
         return [(a << 149) // b for a, b in (value.as_integer_ratio() for value in vector)]
 
-    # Both the fixed 128-byte scan and the padded, variable-stride scan.
+    # Covers the fixed 128-byte scan as well as the padded variable-stride one.
     for dimension, scale in ((33, 2.0**-143), (128, 1.0), (129, 1e35)):
         folder = root / str(dimension)
         values = {key: list(array("f", (rng.uniform(-scale, scale) for _ in range(dimension))))
@@ -1022,7 +1022,7 @@ def packed_bounds(binary, root):
             check(db, pairs, retagged=True)
             db.quit()
         with Session(binary, folder) as db:
-            # An equality on a high-cardinality column must fall back safely.
+            # Equality against a high-cardinality column has to fall back without incident.
             assert db.query(f"SELECT id FROM t WHERE marker=11 ORDER BY "
                             f"L2_DISTANCE(v,'{json.dumps(queries[0])}') LIMIT 5") == [["10"]]
             check(db, pairs, retagged=True)
@@ -1045,8 +1045,8 @@ def quantized_ties(binary, root):
             rows = ",".join(f"({key},{1 if key in excluded else 4},'{vector(outliers.get(key, 0.002))}')"
                             for key in keys)
             db.ok("INSERT INTO t VALUES " + rows, len(keys))
-        # Most rows have the same integer distance. Real distances improve
-        # near the tail of a filtered range with unaligned start and end.
+        # The integer distance ties across most rows, while true distances improve
+        # toward the tail of a filtered range whose ends are unaligned.
         assert db.query(query + "1") == [["280"]]
         assert db.query(query + "2") == [["280"], ["281"]]
         assert db.query(query + "64") == [[str(key)] for key in (280, 281, -250,
@@ -1068,8 +1068,8 @@ def grouped_distance_bounds(binary, root):
     keys = list(range(-512, 515))
     values = {key: [centers[key % 3] + ((key + j) % 7 - 3) / 32 for j in range(128)]
               for key in keys}
-    # The closest vector in another group's tail ties with the center group.
-    # The covering radius must include this outlier even though sampled rows do not.
+    # A nearest vector from another group's tail ties the center group's, and the
+    # covering radius has to admit this outlier even when sampled rows miss it.
     values[505] = values[510] = [-8] * 128
     random.Random(15037).shuffle(keys)
 
@@ -1078,7 +1078,7 @@ def grouped_distance_bounds(binary, root):
             return (f"SELECT id FROM t {where} ORDER BY "
                     f"L2_DISTANCE(v,'{json.dumps([center] * 128)}') LIMIT {limit}")
 
-        # Build the grouped cache before exercising both scoped and unscoped scans.
+        # The grouped cache is built up front; both scoped and unscoped scans then run.
         for center in centers:
             for where, subset in (("WHERE tag=0", [k for k in keys if k % 3 == 0]),
                                   ("", keys), ("WHERE id>=500", [k for k in keys if k >= 500])):
@@ -1126,8 +1126,8 @@ def shortlist_bounds(binary, root):
             batch = keys[start:start+80]
             rows = ','.join(f"({key},'{('其他' if key <= 257 else '保留')}','{vector(values[key])}')" for key in batch)
             db.ok('INSERT INTO t VALUES ' + rows, len(batch))
-        # The second bucket begins partway through a SIMD block. Most
-        # candidates share a quantized score, including the winners and ties.
+        # The second bucket starts mid-SIMD-block, and most candidates, winners and
+        # ties alike, carry the same quantized score.
         for limit in (1, 10, 16, 17):
             check(db, where, kept, limit)
             check(db, '', keys, limit)

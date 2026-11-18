@@ -22,47 +22,47 @@ struct Request {
   throw SqlError("invalid_request", message);
 }
 
-// Decode the fields used by the engine and validate the other JSON values.
-// Keep the ID's original JSON span so even large integers round-trip exactly.
+// Fields the engine actually consumes are decoded; every other JSON value is merely validated.
+// The identifier keeps its original JSON span so even huge integers round-trip bit-exactly.
 class RequestReader {
  public:
-  explicit RequestReader(std::string_view line) : line_(line) {}
+  explicit RequestReader(std::string_view Ln) : ln(Ln) {}
 
   Request read() {
     try {
-      utf8_length(line_);
+      utf8_reach(ln);
     } catch (const SqlError&) {
       invalid("request is not valid UTF-8");
     }
     Request request;
-    object([&](std::string_view key) {
-      if (key == "id") {
+    object([&](std::string_view Ky) {
+      if (Ky == "id") {
         skip_space();
-        const size_t start = at_;
-        value(0);
-        request.id = line_.substr(start, at_ - start);
-      } else if (key == "op") {
-        request.op = text_view(string());
-      } else if (key == "sql") {
+        const size_t Head = at_;
+        Val(0);
+        request.id = ln.substr(Head, at_ - Head);
+      } else if (Ky == "op") {
+        request.op = txt_view(string());
+      } else if (Ky == "sql") {
         request.sql = string();
-      } else if (key == "search_mode") {
-        request.mode = text_view(string());
+      } else if (Ky == "search_mode") {
+        request.mode = txt_view(string());
       } else {
-        value(0);
+        Val(0);
       }
     });
     skip_space();
-    if (at_ != line_.size()) invalid("unexpected data after request");
+    if (at_ != ln.size()) invalid("unexpected data after request");
     if (request.id.empty()) invalid("request needs an id");
     return request;
   }
 
  private:
   static bool digit(char ch) { return ch >= '0' && ch <= '9'; }
-  char peek() const { return at_ < line_.size() ? line_[at_] : '\0'; }
+  char peek() const { return at_ < ln.size() ? ln[at_] : '\0'; }
   char next() {
-    if (at_ == line_.size()) invalid("incomplete JSON");
-    return line_[at_++];
+    if (at_ == ln.size()) invalid("incomplete JSON");
+    return ln[at_++];
   }
   bool take(char ch) {
     if (peek() != ch) return false;
@@ -70,18 +70,18 @@ class RequestReader {
     return true;
   }
   void skip_space() {
-    while (at_ < line_.size() && std::string_view(" \r\n\t").find(peek()) != line_.npos) ++at_;
+    while (at_ < ln.size() && std::string_view(" \r\n\t").find(peek()) != ln.npos) ++at_;
   }
-  bool accept(char ch) {
+  bool Take(char ch) {
     skip_space();
     return take(ch);
   }
   void expect(char ch) {
-    if (!accept(ch)) invalid("unexpected JSON token");
+    if (!Take(ch)) invalid("unexpected JSON token");
   }
-  void literal(std::string_view text) {
-    if (!line_.substr(at_).starts_with(text)) invalid("invalid JSON literal");
-    at_ += text.size();
+  void Lit(std::string_view Txt) {
+    if (!ln.substr(at_).starts_with(Txt)) invalid("invalid JSON literal");
+    at_ += Txt.size();
   }
 
   uint32_t hex_word() {
@@ -97,39 +97,39 @@ class RequestReader {
     return word;
   }
 
-  static void append_utf8(std::string& out, uint32_t point) {
+  static void attach_utf8(std::string& out, uint32_t Pt) {
     const auto continuation = [&](unsigned shift) {
-      out.push_back(static_cast<char>(0x80 | ((point >> shift) & 0x3f)));
+      out.push_back(static_cast<char>(0x80 | ((Pt >> shift) & 0x3f)));
     };
-    if (point < 0x80) {
-      out.push_back(static_cast<char>(point));
-    } else if (point < 0x800) {
-      out.push_back(static_cast<char>(0xc0 | (point >> 6)));
+    if (Pt < 0x80) {
+      out.push_back(static_cast<char>(Pt));
+    } else if (Pt < 0x800) {
+      out.push_back(static_cast<char>(0xc0 | (Pt >> 6)));
       continuation(0);
-    } else if (point < 0x10000) {
-      out.push_back(static_cast<char>(0xe0 | (point >> 12)));
+    } else if (Pt < 0x10000) {
+      out.push_back(static_cast<char>(0xe0 | (Pt >> 12)));
       continuation(6);
       continuation(0);
     } else {
-      out.push_back(static_cast<char>(0xf0 | (point >> 18)));
+      out.push_back(static_cast<char>(0xf0 | (Pt >> 18)));
       continuation(12);
       continuation(6);
       continuation(0);
     }
   }
 
-  static bool plain_string(std::string_view text) {
+  static bool plain_string(std::string_view Txt) {
 #if defined(__x86_64__)
     const auto escape = _mm_set1_epi8('\\');
     const auto max_control = _mm_set1_epi8(0x1f);
-    while (text.size() >= 16) {
-      const auto bytes = _mm_loadu_si128(reinterpret_cast<const __m128i*>(text.data()));
-      const auto control = _mm_cmpeq_epi8(_mm_min_epu8(bytes, max_control), bytes);
-      if (_mm_movemask_epi8(_mm_or_si128(control, _mm_cmpeq_epi8(bytes, escape)))) return false;
-      text.remove_prefix(16);
+    while (Txt.size() >= 16) {
+      const auto Octets = _mm_loadu_si128(reinterpret_cast<const __m128i*>(Txt.data()));
+      const auto control = _mm_cmpeq_epi8(_mm_min_epu8(Octets, max_control), Octets);
+      if (_mm_movemask_epi8(_mm_or_si128(control, _mm_cmpeq_epi8(Octets, escape)))) return false;
+      Txt.remove_prefix(16);
     }
 #endif
-    for (unsigned char ch : text) {
+    for (unsigned char ch : Txt) {
       if (ch < 0x20 || ch == '\\') return false;
     }
     return true;
@@ -137,46 +137,46 @@ class RequestReader {
 
   SqlText string() {
     expect('"');
-    const auto close = line_.find('"', at_);
-    if (close == line_.npos) invalid("incomplete JSON");
-    const auto plain = line_.substr(at_, close - at_);
+    const auto close = ln.find('"', at_);
+    if (close == ln.npos) invalid("incomplete JSON");
+    const auto plain = ln.substr(at_, close - at_);
     if (plain_string(plain)) {
       at_ = close + 1;
       return plain;
     }
-    std::string result;
+    std::string Outcome;
     for (char ch = next(); ch != '"'; ch = next()) {
       if (static_cast<unsigned char>(ch) < 0x20) invalid("unescaped JSON control character");
       if (ch != '\\') {
-        result.push_back(ch);
+        Outcome.push_back(ch);
         continue;
       }
       switch (next()) {
-        case '"': result.push_back('"'); break;
-        case '\\': result.push_back('\\'); break;
-        case '/': result.push_back('/'); break;
-        case 'b': result.push_back('\b'); break;
-        case 'f': result.push_back('\f'); break;
-        case 'n': result.push_back('\n'); break;
-        case 'r': result.push_back('\r'); break;
-        case 't': result.push_back('\t'); break;
+        case '"': Outcome.push_back('"'); break;
+        case '\\': Outcome.push_back('\\'); break;
+        case '/': Outcome.push_back('/'); break;
+        case 'b': Outcome.push_back('\b'); break;
+        case 'f': Outcome.push_back('\f'); break;
+        case 'n': Outcome.push_back('\n'); break;
+        case 'r': Outcome.push_back('\r'); break;
+        case 't': Outcome.push_back('\t'); break;
         case 'u': {
-          uint32_t point = hex_word();
-          if (point >= 0xd800 && point <= 0xdbff) {
-            literal("\\u");
-            const uint32_t low = hex_word();
-            if (low < 0xdc00 || low > 0xdfff) invalid("invalid JSON surrogate pair");
-            point = 0x10000 + ((point - 0xd800) << 10) + low - 0xdc00;
-          } else if (point >= 0xdc00 && point <= 0xdfff) {
+          uint32_t Pt = hex_word();
+          if (Pt >= 0xd800 && Pt <= 0xdbff) {
+            Lit("\\u");
+            const uint32_t Lo = hex_word();
+            if (Lo < 0xdc00 || Lo > 0xdfff) invalid("invalid JSON surrogate pair");
+            Pt = 0x10000 + ((Pt - 0xd800) << 10) + Lo - 0xdc00;
+          } else if (Pt >= 0xdc00 && Pt <= 0xdfff) {
             invalid("unpaired JSON surrogate");
           }
-          append_utf8(result, point);
+          attach_utf8(Outcome, Pt);
           break;
         }
         default: invalid("invalid JSON escape");
       }
     }
-    return result;
+    return Outcome;
   }
 
   void digits() {
@@ -196,46 +196,46 @@ class RequestReader {
   template <typename Field>
   void object(Field field) {
     expect('{');
-    if (accept('}')) return;
+    if (Take('}')) return;
     std::set<std::string> keys;
     do {
-      auto key = string();
-      const auto view = text_view(key);
+      auto Ky = string();
+      const auto view = txt_view(Ky);
       if (!keys.emplace(view).second) invalid("duplicate JSON key");
       expect(':');
       field(view);
-    } while (accept(','));
+    } while (Take(','));
     expect('}');
   }
 
-  void value(unsigned depth) {
+  void Val(unsigned depth) {
     if (depth >= 64) invalid("JSON nesting is too deep");
     skip_space();
     switch (peek()) {
-      case '{': object([&](std::string_view) { value(depth + 1); }); break;
+      case '{': object([&](std::string_view) { Val(depth + 1); }); break;
       case '[':
         ++at_;
-        if (!accept(']')) {
-          do { value(depth + 1); } while (accept(','));
+        if (!Take(']')) {
+          do { Val(depth + 1); } while (Take(','));
           expect(']');
         }
         break;
       case '"': string(); break;
-      case 't': literal("true"); break;
-      case 'f': literal("false"); break;
-      case 'n': literal("null"); break;
+      case 't': Lit("true"); break;
+      case 'f': Lit("false"); break;
+      case 'n': Lit("null"); break;
       default: number(); break;
     }
   }
 
-  std::string_view line_;
+  std::string_view ln;
   size_t at_ = 0;
 };
 
-inline void quote(std::ostream& out, std::string_view text) {
+inline void quote(std::ostream& out, std::string_view Txt) {
   constexpr std::string_view hex = "0123456789abcdef";
   out.put('"');
-  for (unsigned char ch : text) {
+  for (unsigned char ch : Txt) {
     if (ch == '"' || ch == '\\') {
       out.put('\\');
       out.put(static_cast<char>(ch));

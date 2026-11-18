@@ -14,96 +14,96 @@ namespace mini {
 static_assert(std::endian::native == std::endian::little);
 
 template <typename T>
-T load(std::string_view bytes) {
-  T value;
-  std::memcpy(&value, bytes.data(), sizeof(value));
-  return value;
+T load(std::string_view Octets) {
+  T Val;
+  std::memcpy(&Val, Octets.data(), sizeof(Val));
+  return Val;
 }
 
 template <typename T>
-void store(std::string& bytes, T value) {
-  bytes.append(reinterpret_cast<const char*>(&value), sizeof(value));
+void store(std::string& Octets, T Val) {
+  Octets.append(reinterpret_cast<const char*>(&Val), sizeof(Val));
 }
 
 class Reader {
  public:
-  explicit Reader(std::string_view bytes) : bytes_(bytes) {}
+  explicit Reader(std::string_view Octets) : octets(Octets) {}
 
   std::string_view take(size_t length) {
-    if (length > bytes_.size()) throw std::runtime_error("truncated record");
-    const auto result = bytes_.substr(0, length);
-    bytes_.remove_prefix(length);
-    return result;
+    if (length > octets.size()) throw std::runtime_error("truncated record");
+    const auto Outcome = octets.substr(0, length);
+    octets.remove_prefix(length);
+    return Outcome;
   }
 
   template <typename T>
   T read() { return load<T>(take(sizeof(T))); }
 
-  std::string_view text() { return take(read<uint32_t>()); }
-  bool empty() const { return bytes_.empty(); }
-  size_t remaining() const { return bytes_.size(); }
+  std::string_view Txt() { return take(read<uint32_t>()); }
+  bool empty() const { return octets.empty(); }
+  size_t remaining() const { return octets.size(); }
 
  private:
-  std::string_view bytes_;
+  std::string_view octets;
 };
 
-void store_text(std::string& bytes, std::string_view value);
+void store_txt(std::string& Octets, std::string_view Val);
 
-enum class Op : uint32_t { create = 1, index, put, erase, commit, packed_put };
+enum class Op : uint32_t { Construct = 1, Ix, put, erase, Finalize, dense_put };
 struct Frame {
-  static constexpr uint32_t header_size = 28;
-  uint64_t offset;
+  static constexpr uint32_t preamble_extent = 28;
+  uint64_t Offs;
   uint32_t length;
   Op op;
-  uint32_t table;
-  int64_t key;
+  uint32_t Tbl;
+  int64_t Ky;
   uint64_t previous;
-  uint8_t header_bytes = header_size;
-  uint8_t footer_bytes = sizeof(uint32_t);
-  uint64_t payload_offset() const;
+  uint8_t preamble_octets = preamble_extent;
+  uint8_t footer_octets = sizeof(uint32_t);
+  uint64_t payload_offs() const;
   uint64_t end() const;
 };
 
-class Log {
+class Journal {
  public:
-  explicit Log(const std::filesystem::path& directory);
-  ~Log();
-  Log(const Log&) = delete;
-  Log& operator=(const Log&) = delete;
+  explicit Journal(const std::filesystem::path& directory);
+  ~Journal();
+  Journal(const Journal&) = delete;
+  Journal& operator=(const Journal&) = delete;
 
-  static constexpr uint64_t start = 8;
+  static constexpr uint64_t Head = 8;
   uint64_t end() const { return disk_end_ + pending_.size(); }
-  bool supports_packed_rows() const { return packed_rows_; }
+  bool supports_dense_recs() const { return dense_recs; }
   bool supports_decimal_vectors() const { return decimal_vectors_; }
   bool supports_dyadic_vectors() const { return compact_frames_ && decimal_vectors_; }
-  Frame append(Op op, uint32_t table = 0, int64_t key = 0,
+  Frame append(Op op, uint32_t Tbl = 0, int64_t Ky = 0,
                uint64_t previous = 0, std::string_view payload = {});
-  void commit();
-  void discard_after(uint64_t offset);
-  std::optional<Frame> frame_at(uint64_t offset, uint64_t limit);
-  Frame frame_before(uint64_t end);
-  std::string_view read(uint64_t offset, uint32_t length);
-  int compare_bytes(uint64_t left, uint32_t left_size, uint64_t right, uint32_t right_size);
+  void Finalize();
+  void discard_after(uint64_t Offs);
+  std::optional<Frame> frag_at(uint64_t Offs, uint64_t Cap);
+  Frame frag_before(uint64_t end);
+  std::string_view read(uint64_t Offs, uint32_t length);
+  int compare_octets(uint64_t Lhs, uint32_t lhs_extent, uint64_t Rhs, uint32_t rhs_extent);
   void prepare_reads();
   void release_reads() { unmap(); }
 
  private:
   void flush();
   void unmap();
-  std::optional<std::string_view> cached(uint64_t offset, uint32_t length) const;
-  void read_disk(uint64_t offset, char* destination, size_t length);
-  void write_disk(uint64_t offset, std::string_view data);
+  std::optional<std::string_view> cached(uint64_t Offs, uint32_t length) const;
+  void pull_disk(uint64_t Offs, char* destination, size_t length);
+  void push2_disk(uint64_t Offs, std::string_view data);
 
   int fd_ = -1;
-  bool packed_rows_ = false;
+  bool dense_recs = false;
   bool compact_frames_ = false;
   bool decimal_vectors_ = false;
   uint64_t disk_end_ = 0;
   std::string pending_;
-  uint64_t block_start_ = 0;
-  std::string block_;
+  uint64_t chunk_head = 0;
+  std::string chunk;
   const char* mapping_ = nullptr;
-  size_t mapped_size_ = 0;
+  size_t mapped_extent = 0;
 };
 
 }  // namespace mini

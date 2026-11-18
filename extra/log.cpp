@@ -17,82 +17,82 @@ namespace mini {
 namespace {
 
 constexpr std::string_view legacy_magic = "MINIVDB1";
-constexpr std::string_view packed_magic = "MINIVDB2";
+constexpr std::string_view dense_magic = "MINIVDB2";
 constexpr std::string_view decimal_magic = "MINIVDB4";
 constexpr std::string_view dyadic_magic = "MINIVDB5";
 constexpr std::string_view magic = "MINIVDB3";
-static_assert(magic.size() == Log::start && packed_magic.size() == Log::start && legacy_magic.size() == Log::start);
-static_assert(decimal_magic.size() == Log::start && dyadic_magic.size() == Log::start);
-constexpr uint32_t header_size = Frame::header_size;
-constexpr uint32_t frame_overhead = header_size + sizeof(uint32_t);
-constexpr uint8_t compact_insert = 0x80;
-constexpr uint32_t compact_header = 1 + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(int64_t);
-constexpr uint32_t compact_overhead = compact_header + sizeof(uint16_t);
+static_assert(magic.size() == Journal::Head && dense_magic.size() == Journal::Head && legacy_magic.size() == Journal::Head);
+static_assert(decimal_magic.size() == Journal::Head && dyadic_magic.size() == Journal::Head);
+constexpr uint32_t preamble_extent = Frame::preamble_extent;
+constexpr uint32_t frag_overhead = preamble_extent + sizeof(uint32_t);
+constexpr uint8_t compact_inject = 0x80;
+constexpr uint32_t compact_preamble = 1 + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(int64_t);
+constexpr uint32_t compact_overhead = compact_preamble + sizeof(uint16_t);
 constexpr uint8_t compact_op = 0x20;
-constexpr uint8_t wide_frame = 0x40;
+constexpr uint8_t wide_frag = 0x40;
 constexpr uint8_t wide_footer = 0x80;
-constexpr uint32_t max_compact_frame = 0x7fffu;
-constexpr uint64_t read_page = 4 * 1024;
-constexpr size_t block_size = 256 * 1024;
-constexpr size_t map_limit = 256 * 1024 * 1024;
+constexpr uint32_t max_compact_frag = 0x7fffu;
+constexpr uint64_t pull_pg = 4 * 1024;
+constexpr size_t chunk_extent = 256 * 1024;
+constexpr size_t map_cap = 256 * 1024 * 1024;
 
-[[noreturn]] void io_error(const char* operation) {
+[[noreturn]] void io_fault(const char* operation) {
   throw std::system_error(errno, std::generic_category(), operation);
 }
 
-void sync_file(int fd) {
+void persist_fdesc(int fd) {
   while (::fdatasync(fd) < 0) {
-    if (errno != EINTR) io_error("sync log");
+    if (errno != EINTR) io_fault("sync log");
   }
 }
 
 }  // namespace
 
-void store_text(std::string& bytes, std::string_view value) {
-  if (value.size() > std::numeric_limits<uint32_t>::max()) {
+void store_txt(std::string& Octets, std::string_view Val) {
+  if (Val.size() > std::numeric_limits<uint32_t>::max()) {
     throw std::length_error("encoded string is too large");
   }
-  store(bytes, static_cast<uint32_t>(value.size()));
-  if (!value.empty()) bytes.append(value);
+  store(Octets, static_cast<uint32_t>(Val.size()));
+  if (!Val.empty()) Octets.append(Val);
 }
 
-uint64_t Frame::payload_offset() const { return offset + header_bytes; }
-uint64_t Frame::end() const { return payload_offset() + length + footer_bytes; }
+uint64_t Frame::payload_offs() const { return Offs + preamble_octets; }
+uint64_t Frame::end() const { return payload_offs() + length + footer_octets; }
 
-Log::Log(const std::filesystem::path& directory) {
+Journal::Journal(const std::filesystem::path& directory) {
   std::filesystem::create_directories(directory);
   const auto path = directory / "minivectordb.log";
   fd_ = ::open(path.c_str(), O_RDWR | O_CREAT | O_CLOEXEC | O_NOFOLLOW, 0600);
-  if (fd_ < 0) io_error("open log");
+  if (fd_ < 0) io_fault("open log");
   try {
-    if (::flock(fd_, LOCK_EX | LOCK_NB) < 0) io_error("lock log");
+    if (::flock(fd_, LOCK_EX | LOCK_NB) < 0) io_fault("lock log");
     struct stat info {};
-    if (::fstat(fd_, &info) < 0) io_error("stat log");
+    if (::fstat(fd_, &info) < 0) io_fault("stat log");
     if (!S_ISREG(info.st_mode)) throw std::runtime_error("log must be a regular file");
     disk_end_ = static_cast<uint64_t>(info.st_size);
-    if (disk_end_ < start) {
-      // No frame can exist if initialization was interrupted here.
-      write_disk(0, dyadic_magic);
-      packed_rows_ = true;
+    if (disk_end_ < Head) {
+      // An interrupted initialization leaves no Frag behind at this point.
+      push2_disk(0, dyadic_magic);
+      dense_recs = true;
       decimal_vectors_ = true;
       compact_frames_ = true;
-      disk_end_ = start;
-      sync_file(fd_);
+      disk_end_ = Head;
+      persist_fdesc(fd_);
       const int dir = ::open(directory.c_str(), O_RDONLY | O_DIRECTORY | O_CLOEXEC);
-      if (dir < 0) io_error("open data directory");
-      int result;
+      if (dir < 0) io_fault("open data directory");
+      int Outcome;
       do {
-        result = ::fsync(dir);
-      } while (result < 0 && errno == EINTR);
-      const int error = errno;
+        Outcome = ::fsync(dir);
+      } while (Outcome < 0 && errno == EINTR);
+      const int Fault = errno;
       ::close(dir);
-      if (result < 0) throw std::system_error(error, std::generic_category(), "sync data directory");
+      if (Outcome < 0) throw std::system_error(Fault, std::generic_category(), "sync data directory");
     } else {
-      const auto version = read(0, start);
+      const auto version = read(0, Head);
       compact_frames_ = version == magic || version == dyadic_magic;
       decimal_vectors_ = version == decimal_magic || version == dyadic_magic;
-      packed_rows_ = compact_frames_ || decimal_vectors_ || version == packed_magic;
-      if (!packed_rows_ && version != legacy_magic) throw std::runtime_error("unknown log format");
+      dense_recs = compact_frames_ || decimal_vectors_ || version == dense_magic;
+      if (!dense_recs && version != legacy_magic) throw std::runtime_error("unknown log format");
     }
   } catch (...) {
     ::close(fd_);
@@ -100,239 +100,239 @@ Log::Log(const std::filesystem::path& directory) {
   }
 }
 
-Log::~Log() {
+Journal::~Journal() {
   unmap();
   ::close(fd_);
 }
 
-void Log::read_disk(uint64_t offset, char* destination, size_t length) {
+void Journal::pull_disk(uint64_t Offs, char* destination, size_t length) {
   while (length) {
-    const ssize_t count = ::pread(fd_, destination, length, static_cast<off_t>(offset));
+    const ssize_t count = ::pread(fd_, destination, length, static_cast<off_t>(Offs));
     if (count < 0 && errno == EINTR) continue;
-    if (count < 0) io_error("read log");
+    if (count < 0) io_fault("read log");
     if (!count) throw std::runtime_error("unexpected end of log");
-    offset += count;
+    Offs += count;
     destination += count;
     length -= count;
   }
 }
 
-void Log::write_disk(uint64_t offset, std::string_view data) {
+void Journal::push2_disk(uint64_t Offs, std::string_view data) {
   while (!data.empty()) {
-    const ssize_t count = ::pwrite(fd_, data.data(), data.size(), static_cast<off_t>(offset));
+    const ssize_t count = ::pwrite(fd_, data.data(), data.size(), static_cast<off_t>(Offs));
     if (count < 0 && errno == EINTR) continue;
-    if (count < 0) io_error("write log");
+    if (count < 0) io_fault("write log");
     if (!count) throw std::runtime_error("zero-length log write");
-    offset += count;
+    Offs += count;
     data.remove_prefix(count);
   }
 }
 
-void Log::flush() {
-  write_disk(disk_end_, pending_);
+void Journal::flush() {
+  push2_disk(disk_end_, pending_);
   disk_end_ += pending_.size();
   pending_.clear();
 }
 
-void Log::prepare_reads() {
+void Journal::prepare_reads() {
   if (mapping_ || !pending_.empty()) return;
-  uint64_t budget = map_limit;
-  struct rlimit address_limit {};
-  if (::getrlimit(RLIMIT_AS, &address_limit) == 0 && address_limit.rlim_cur != RLIM_INFINITY) {
-    budget = std::min<uint64_t>(budget, address_limit.rlim_cur / 4);
+  uint64_t Allowance = map_cap;
+  struct rlimit address_cap {};
+  if (::getrlimit(RLIMIT_AS, &address_cap) == 0 && address_cap.rlim_cur != RLIM_INFINITY) {
+    Allowance = std::min<uint64_t>(Allowance, address_cap.rlim_cur / 4);
   }
-  if (disk_end_ > budget) return;
+  if (disk_end_ > Allowance) return;
   void* mapped = ::mmap(nullptr, disk_end_, PROT_READ, MAP_SHARED, fd_, 0);
   if (mapped != MAP_FAILED) {
     mapping_ = static_cast<const char*>(mapped);
-    mapped_size_ = disk_end_;
+    mapped_extent = disk_end_;
   }
 }
 
-void Log::unmap() {
+void Journal::unmap() {
   if (!mapping_) return;
-  ::munmap(const_cast<char*>(mapping_), mapped_size_);
+  ::munmap(const_cast<char*>(mapping_), mapped_extent);
   mapping_ = nullptr;
-  mapped_size_ = 0;
+  mapped_extent = 0;
 }
 
-std::optional<std::string_view> Log::cached(uint64_t offset, uint32_t length) const {
-  if (offset >= disk_end_) {
-    return std::string_view(pending_).substr(offset - disk_end_, length);
+std::optional<std::string_view> Journal::cached(uint64_t Offs, uint32_t length) const {
+  if (Offs >= disk_end_) {
+    return std::string_view(pending_).substr(Offs - disk_end_, length);
   }
-  if (mapping_ && offset + length <= mapped_size_) {
-    return std::string_view(mapping_ + offset, length);
+  if (mapping_ && Offs + length <= mapped_extent) {
+    return std::string_view(mapping_ + Offs, length);
   }
-  if (offset >= block_start_ && offset + length <= block_start_ + block_.size()) {
-    return std::string_view(block_.data() + (offset - block_start_), length);
+  if (Offs >= chunk_head && Offs + length <= chunk_head + chunk.size()) {
+    return std::string_view(chunk.data() + (Offs - chunk_head), length);
   }
   return std::nullopt;
 }
 
-std::string_view Log::read(uint64_t offset, uint32_t length) {
-  if (offset > end() || length > end() - offset) throw std::runtime_error("log read out of bounds");
-  if (offset < disk_end_ && length > disk_end_ - offset) flush();
-  if (const auto existing = cached(offset, length)) return *existing;
-  const uint64_t aligned = offset & ~(read_page - 1);
-  // Grow the window on a forward scan. For a seek to another part of the
-  // log, fetch only the pages needed by this record or field.
-  const bool adjacent = !block_.empty() && aligned >= block_start_ &&
-                        aligned - block_start_ <= block_.size();
-  const uint64_t window = adjacent ? block_size : read_page;
-  block_start_ = aligned;
-  const uint64_t needed = offset - aligned + length;
-  block_.resize(std::min(disk_end_ - aligned, std::max(window, needed)));
-  read_disk(aligned, block_.data(), block_.size());
-  return {block_.data() + (offset - block_start_), length};
+std::string_view Journal::read(uint64_t Offs, uint32_t length) {
+  if (Offs > end() || length > end() - Offs) throw std::runtime_error("log read out of bounds");
+  if (Offs < disk_end_ && length > disk_end_ - Offs) flush();
+  if (const auto existing = cached(Offs, length)) return *existing;
+  const uint64_t aligned = Offs & ~(pull_pg - 1);
+  // The window advances during a forward Sweep. When a Hop lands elsewhere in
+  // the Journal, only the pages this record or field requires are fetched.
+  const bool adjacent = !chunk.empty() && aligned >= chunk_head &&
+                        aligned - chunk_head <= chunk.size();
+  const uint64_t window = adjacent ? chunk_extent : pull_pg;
+  chunk_head = aligned;
+  const uint64_t needed = Offs - aligned + length;
+  chunk.resize(std::min(disk_end_ - aligned, std::max(window, needed)));
+  pull_disk(aligned, chunk.data(), chunk.size());
+  return {chunk.data() + (Offs - chunk_head), length};
 }
 
-int Log::compare_bytes(uint64_t left, uint32_t left_size, uint64_t right, uint32_t right_size) {
-  if (left > end() || left_size > end() - left || right > end() || right_size > end() - right) {
+int Journal::compare_octets(uint64_t Lhs, uint32_t lhs_extent, uint64_t Rhs, uint32_t rhs_extent) {
+  if (Lhs > end() || lhs_extent > end() - Lhs || Rhs > end() || rhs_extent > end() - Rhs) {
     throw std::runtime_error("log comparison out of bounds");
   }
-  const auto left_cached = cached(left, left_size);
-  const auto right_cached = cached(right, right_size);
-  if (left_cached && right_cached) return left_cached->compare(*right_cached);
+  const auto lhs_cached = cached(Lhs, lhs_extent);
+  const auto rhs_cached = cached(Rhs, rhs_extent);
+  if (lhs_cached && rhs_cached) return lhs_cached->compare(*rhs_cached);
 
-  // Each range is inside one row payload. Read misses into separate bounded
-  // buffers so comparing two values leaves the sequential read cache intact.
-  constexpr uint32_t chunk_size = 16 * 1024;
-  std::array<char, chunk_size> left_buffer;
-  std::array<char, chunk_size> right_buffer;
-  const auto piece = [&](uint64_t offset, uint32_t size, char* buffer) -> std::string_view {
-    if (const auto existing = cached(offset, size)) return *existing;
-    read_disk(offset, buffer, size);
-    return {buffer, size};
+  // Every range lies within a single Rec payload. Misses go into separate bounded
+  // buffers, so pairwise value comparisons never disturb the sequential read Stash.
+  constexpr uint32_t chunk_extent = 16 * 1024;
+  std::array<char, chunk_extent> lhs_arena;
+  std::array<char, chunk_extent> rhs_arena;
+  const auto piece = [&](uint64_t Offs, uint32_t size, char* Arena) -> std::string_view {
+    if (const auto existing = cached(Offs, size)) return *existing;
+    pull_disk(Offs, Arena, size);
+    return {Arena, size};
   };
-  const uint32_t common_size = std::min(left_size, right_size);
-  for (uint32_t at = 0; at < common_size;) {
-    const uint32_t size = std::min(chunk_size, common_size - at);
-    const auto a = piece(left + at, size, left_buffer.data());
-    const auto b = piece(right + at, size, right_buffer.data());
-    const int order = a.compare(b);
-    if (order != 0) return order;
+  const uint32_t common_extent = std::min(lhs_extent, rhs_extent);
+  for (uint32_t at = 0; at < common_extent;) {
+    const uint32_t size = std::min(chunk_extent, common_extent - at);
+    const auto a = piece(Lhs + at, size, lhs_arena.data());
+    const auto b = piece(Rhs + at, size, rhs_arena.data());
+    const int Seq = a.compare(b);
+    if (Seq != 0) return Seq;
     at += size;
   }
-  return (left_size > right_size) - (left_size < right_size);
+  return (lhs_extent > rhs_extent) - (lhs_extent < rhs_extent);
 }
 
-Frame Log::append(Op op, uint32_t table, int64_t key, uint64_t previous, std::string_view payload) {
-  const uint32_t overhead = frame_overhead + 2 * static_cast<uint32_t>(compact_frames_);
+Frame Journal::append(Op op, uint32_t Tbl, int64_t Ky, uint64_t previous, std::string_view payload) {
+  const uint32_t overhead = frag_overhead + 2 * static_cast<uint32_t>(compact_frames_);
   if (payload.size() > std::numeric_limits<uint32_t>::max() - overhead) {
     throw std::length_error("row is too large");
   }
-  Frame frame{end(), static_cast<uint32_t>(payload.size()), op, table, key, previous};
-  if (compact_frames_ && (op == Op::put || op == Op::packed_put) && !previous &&
-      table <= std::numeric_limits<uint16_t>::max() && frame.length <= max_compact_frame - compact_overhead) {
-    frame.header_bytes = compact_header;
-    frame.footer_bytes = sizeof(uint16_t);
-    store(pending_, static_cast<uint8_t>(compact_insert | (op == Op::packed_put ? compact_op : 0)));
-    store(pending_, static_cast<uint16_t>(frame.length));
-    store(pending_, static_cast<uint16_t>(table));
-    store(pending_, key);
+  Frame Frag{end(), static_cast<uint32_t>(payload.size()), op, Tbl, Ky, previous};
+  if (compact_frames_ && (op == Op::put || op == Op::dense_put) && !previous &&
+      Tbl <= std::numeric_limits<uint16_t>::max() && Frag.length <= max_compact_frag - compact_overhead) {
+    Frag.preamble_octets = compact_preamble;
+    Frag.footer_octets = sizeof(uint16_t);
+    store(pending_, static_cast<uint8_t>(compact_inject | (op == Op::dense_put ? compact_op : 0)));
+    store(pending_, static_cast<uint16_t>(Frag.length));
+    store(pending_, static_cast<uint16_t>(Tbl));
+    store(pending_, Ky);
     pending_.append(payload);
-    store(pending_, static_cast<uint16_t>(frame.length + compact_overhead));
-    if (pending_.size() >= block_size) flush();
-    return frame;
+    store(pending_, static_cast<uint16_t>(Frag.length + compact_overhead));
+    if (pending_.size() >= chunk_extent) flush();
+    return Frag;
   }
   if (compact_frames_) {
-    // Keep a one-byte tag at each end so both scans can recognize a wide frame.
-    store(pending_, wide_frame);
-    ++frame.header_bytes;
-    ++frame.footer_bytes;
+    // A one-byte tag sits at both ends, letting either scan direction recognize a wide Frag.
+    store(pending_, wide_frag);
+    ++Frag.preamble_octets;
+    ++Frag.footer_octets;
   }
-  store(pending_, frame.length);
+  store(pending_, Frag.length);
   store(pending_, static_cast<uint32_t>(op));
-  store(pending_, table);
-  store(pending_, key);
+  store(pending_, Tbl);
+  store(pending_, Ky);
   store(pending_, previous);
   if (!payload.empty()) pending_.append(payload);
-  store(pending_, frame.length + overhead);
+  store(pending_, Frag.length + overhead);
   if (compact_frames_) store(pending_, wide_footer);
-  if (pending_.size() >= block_size) flush();
-  return frame;
+  if (pending_.size() >= chunk_extent) flush();
+  return Frag;
 }
 
-void Log::commit() {
-  append(Op::commit);
+void Journal::Finalize() {
+  append(Op::Finalize);
   flush();
-  sync_file(fd_);
+  persist_fdesc(fd_);
 }
 
-void Log::discard_after(uint64_t offset) {
-  if (offset > end() || offset < start) throw std::runtime_error("invalid rollback point");
-  if (offset >= disk_end_) {
-    pending_.resize(offset - disk_end_);
+void Journal::discard_after(uint64_t Offs) {
+  if (Offs > end() || Offs < Head) throw std::runtime_error("invalid rollback point");
+  if (Offs >= disk_end_) {
+    pending_.resize(Offs - disk_end_);
     return;
   }
   unmap();
-  while (::ftruncate(fd_, static_cast<off_t>(offset)) < 0) {
-    if (errno != EINTR) io_error("truncate log");
+  while (::ftruncate(fd_, static_cast<off_t>(Offs)) < 0) {
+    if (errno != EINTR) io_fault("truncate log");
   }
   pending_.clear();
-  block_.clear();
-  disk_end_ = offset;
+  chunk.clear();
+  disk_end_ = Offs;
 }
 
-std::optional<Frame> Log::frame_at(uint64_t offset, uint64_t limit) {
-  if (offset >= limit) return std::nullopt;
+std::optional<Frame> Journal::frag_at(uint64_t Offs, uint64_t Cap) {
+  if (Offs >= Cap) return std::nullopt;
   if (compact_frames_) {
-    const auto marker = load<uint8_t>(read(offset, 1));
-    if (marker == compact_insert || marker == (compact_insert | compact_op)) {
-      if (limit - offset < compact_overhead) return std::nullopt;
-      Reader input(read(offset + 1, compact_header - 1));
+    const auto marker = load<uint8_t>(read(Offs, 1));
+    if (marker == compact_inject || marker == (compact_inject | compact_op)) {
+      if (Cap - Offs < compact_overhead) return std::nullopt;
+      Reader input(read(Offs + 1, compact_preamble - 1));
       const auto length = input.read<uint16_t>();
-      const auto table = input.read<uint16_t>();
-      const auto key = input.read<int64_t>();
-      const auto op = marker == compact_insert ? Op::put : Op::packed_put;
-      Frame frame{offset, length, op, table, key, 0, compact_header, sizeof(uint16_t)};
+      const auto Tbl = input.read<uint16_t>();
+      const auto Ky = input.read<int64_t>();
+      const auto op = marker == compact_inject ? Op::put : Op::dense_put;
+      Frame Frag{Offs, length, op, Tbl, Ky, 0, compact_preamble, sizeof(uint16_t)};
       const uint32_t size = length + compact_overhead;
-      if (size > max_compact_frame || size > limit - offset ||
-          load<uint16_t>(read(frame.end() - sizeof(uint16_t), sizeof(uint16_t))) != size) return std::nullopt;
-      return frame;
+      if (size > max_compact_frag || size > Cap - Offs ||
+          load<uint16_t>(read(Frag.end() - sizeof(uint16_t), sizeof(uint16_t))) != size) return std::nullopt;
+      return Frag;
     }
-    if (marker != wide_frame) return std::nullopt;
+    if (marker != wide_frag) return std::nullopt;
   }
   const uint32_t extra = static_cast<uint32_t>(compact_frames_);
-  const uint32_t overhead = frame_overhead + 2 * extra;
-  if (limit - offset < overhead) return std::nullopt;
-  Reader input(read(offset + extra, header_size));
+  const uint32_t overhead = frag_overhead + 2 * extra;
+  if (Cap - Offs < overhead) return std::nullopt;
+  Reader input(read(Offs + extra, preamble_extent));
   const uint32_t length = input.read<uint32_t>();
   const auto op = static_cast<Op>(input.read<uint32_t>());
-  Frame frame{offset, length, op, input.read<uint32_t>(), input.read<int64_t>(),
+  Frame Frag{Offs, length, op, input.read<uint32_t>(), input.read<int64_t>(),
               input.read<uint64_t>()};
-  frame.header_bytes += extra;
-  frame.footer_bytes += extra;
-  if (length > limit - offset - overhead ||
+  Frag.preamble_octets += extra;
+  Frag.footer_octets += extra;
+  if (length > Cap - Offs - overhead ||
       length > std::numeric_limits<uint32_t>::max() - overhead ||
-      op < Op::create || op > (packed_rows_ ? Op::packed_put : Op::commit) ||
-      (op == Op::commit && (length || frame.table || frame.key || frame.previous)) ||
-      load<uint32_t>(read(frame.end() - frame.footer_bytes, sizeof(uint32_t))) != length + overhead ||
-      (compact_frames_ && load<uint8_t>(read(frame.end() - 1, 1)) != wide_footer)) {
+      op < Op::Construct || op > (dense_recs ? Op::dense_put : Op::Finalize) ||
+      (op == Op::Finalize && (length || Frag.Tbl || Frag.Ky || Frag.previous)) ||
+      load<uint32_t>(read(Frag.end() - Frag.footer_octets, sizeof(uint32_t))) != length + overhead ||
+      (compact_frames_ && load<uint8_t>(read(Frag.end() - 1, 1)) != wide_footer)) {
     return std::nullopt;
   }
-  return frame;
+  return Frag;
 }
 
-Frame Log::frame_before(uint64_t cursor) {
-  const uint32_t minimum = compact_frames_ ? compact_overhead : frame_overhead;
-  if (cursor < start + minimum) throw std::runtime_error("invalid rollback frame");
+Frame Journal::frag_before(uint64_t Walker) {
+  const uint32_t minimum = compact_frames_ ? compact_overhead : frag_overhead;
+  if (Walker < Head + minimum) throw std::runtime_error("invalid rollback frame");
   uint32_t size;
   if (compact_frames_) {
-    const auto marker = load<uint8_t>(read(cursor - 1, 1));
+    const auto marker = load<uint8_t>(read(Walker - 1, 1));
     if (marker < wide_footer) {
-      size = load<uint16_t>(read(cursor - sizeof(uint16_t), sizeof(uint16_t)));
+      size = load<uint16_t>(read(Walker - sizeof(uint16_t), sizeof(uint16_t)));
     } else {
       if (marker != wide_footer) throw std::runtime_error("invalid frame footer");
-      size = load<uint32_t>(read(cursor - 1 - sizeof(uint32_t), sizeof(uint32_t)));
+      size = load<uint32_t>(read(Walker - 1 - sizeof(uint32_t), sizeof(uint32_t)));
     }
   } else {
-    size = load<uint32_t>(read(cursor - sizeof(uint32_t), sizeof(uint32_t)));
+    size = load<uint32_t>(read(Walker - sizeof(uint32_t), sizeof(uint32_t)));
   }
-  if (size < minimum || size > cursor - start) throw std::runtime_error("invalid frame size");
-  const auto frame = frame_at(cursor - size, cursor);
-  if (!frame || frame->end() != cursor) throw std::runtime_error("invalid rollback frame");
-  return *frame;
+  if (size < minimum || size > Walker - Head) throw std::runtime_error("invalid frame size");
+  const auto Frag = frag_at(Walker - size, Walker);
+  if (!Frag || Frag->end() != Walker) throw std::runtime_error("invalid rollback frame");
+  return *Frag;
 }
 
 }  // namespace mini

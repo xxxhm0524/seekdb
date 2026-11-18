@@ -17,8 +17,8 @@ struct SqlError : std::runtime_error {
 
 enum class Type : uint8_t { bigint, varchar, vector };
 struct Column {
-  std::string name;
-  Type type;
+  std::string Label;
+  Type Kind;
   uint32_t length = 0;
   bool primary = false;
 };
@@ -26,61 +26,61 @@ struct Column {
 enum class LiteralKind { number, string, vector };
 using SqlText = std::variant<std::string_view, std::string>;
 
-inline std::string_view text_view(const SqlText& text) {
-  if (const auto* view = std::get_if<std::string_view>(&text)) return *view;
-  return std::get<std::string>(text);
+inline std::string_view txt_view(const SqlText& Txt) {
+  if (const auto* view = std::get_if<std::string_view>(&Txt)) return *view;
+  return std::get<std::string>(Txt);
 }
 
 struct Literal {
-  LiteralKind kind;
-  SqlText text;
+  LiteralKind Sort3;
+  SqlText Txt;
 };
 
 enum class Comparison { eq, lt, le, gt, ge };
 struct Predicate {
-  std::string column;
+  std::string Col;
   Comparison comparison;
-  Literal value;
+  Literal Val;
 };
 
 struct Expression {
-  std::string column;
-  std::optional<Literal> query;
+  std::string Col;
+  std::optional<Literal> Lookup;
   std::string alias;
 };
 struct Ordering {
-  Expression key;
+  Expression Ky;
   bool descending;
 };
-struct CreateTable { std::string name; std::vector<Column> columns; };
-struct CreateIndex { std::string name, table, column; };
+struct CreateRelation { std::string Label; std::vector<Column> columns; };
+struct CreateIndex { std::string Label, Tbl, Col; };
 struct Insert {
-  std::string table;
+  std::string Tbl;
   std::vector<std::string> columns;
-  std::vector<std::vector<Literal>> rows;
+  std::vector<std::vector<Literal>> Recs;
 };
 struct Select {
-  std::string table;
+  std::string Tbl;
   bool star = false;
   std::vector<Expression> projections;
-  std::vector<Predicate> filter;
-  std::vector<Ordering> order;
-  std::optional<uint64_t> limit;
+  std::vector<Predicate> Pred;
+  std::vector<Ordering> Seq;
+  std::optional<uint64_t> Cap;
 };
 struct Update {
-  std::string table;
+  std::string Tbl;
   std::vector<std::pair<std::string, Literal>> assignments;
-  std::vector<Predicate> filter;
+  std::vector<Predicate> Pred;
 };
-struct Delete { std::string table; std::vector<Predicate> filter; };
-enum class Transaction { begin, commit, rollback };
-using Statement = std::variant<CreateTable, CreateIndex, Insert, Select, Update, Delete, Transaction>;
+struct Delete { std::string Tbl; std::vector<Predicate> Pred; };
+enum class Transaction { begin, Finalize, Revert };
+using Statement = std::variant<CreateRelation, CreateIndex, Insert, Select, Update, Delete, Transaction>;
 
-// Unescaped literals borrow sql, which must outlive execution of the statement.
+// Unescaped literals point into sql, so that buffer has to outlive Stmt execution.
 Statement parse(std::string_view sql);
-size_t utf8_length(std::string_view value);
-int64_t bigint(const Literal& value);
-std::string_view varchar(const Literal& value, uint32_t max_chars);
-std::vector<float> vector_value(const Literal& value, uint32_t dimension);
+size_t utf8_reach(std::string_view Val);
+int64_t bigint(const Literal& Val);
+std::string_view varchar(const Literal& Val, uint32_t max_chars);
+std::vector<float> vector_val(const Literal& Val, uint32_t Dim);
 
 }  // namespace mini
